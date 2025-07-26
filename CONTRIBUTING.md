@@ -17,7 +17,7 @@ Main OpenAPI specification files are automatically validated using GitHub Action
 - Only the main OpenAPI files (named `open-api-rest.yml` or `open-api-rest.yaml`) are validated, not the component or service files
 - Two validation tools are used:
   - **Swagger CLI**: Validates the basic structure and syntax of OpenAPI files
-  - **Spectral**: Performs more detailed linting and validation
+  - **Spectral**: Performs more detailed linting and validation using the ruleset defined in `.spectral.yml`
 
 ### Local Validation
 
@@ -31,7 +31,7 @@ npm install -g @apidevtools/swagger-cli @stoplight/spectral-cli
 swagger-cli validate path/to/your/open-api-rest.yml
 
 # Lint with Spectral (only lint main OpenAPI files)
-spectral lint path/to/your/open-api-rest.yml
+spectral lint --ruleset .spectral.yml path/to/your/open-api-rest.yml
 ```
 
 Note: Only validate the main OpenAPI files (open-api-rest.yml), not the component or service files, as they are not valid OpenAPI files on their own.

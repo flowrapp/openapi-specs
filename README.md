@@ -11,7 +11,7 @@ This repository includes a GitHub Actions workflow that automatically validates 
 - **Validated Files**: Only the main OpenAPI files (named `open-api-rest.yml` or `open-api-rest.yaml`) are validated, not the component or service files
 - **Validation Tools**:
   - [Swagger CLI](https://github.com/APIDevTools/swagger-cli) - For basic OpenAPI validation
-  - [Spectral](https://github.com/stoplightio/spectral) - For linting and more detailed validation
+  - [Spectral](https://github.com/stoplightio/spectral) - For linting and more detailed validation using the ruleset defined in `.spectral.yml`
 
 ## Structure
 

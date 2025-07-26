@@ -39,5 +39,5 @@ jobs:
         run: |
           find apis -name "open-api-rest.yml" -o -name "open-api-rest.yaml" | while read file; do
             echo "Linting $file with Spectral..."
-            spectral lint "$file" || exit 1
+            spectral lint --ruleset .spectral.yml "$file" || exit 1
           done
