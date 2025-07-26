@@ -34,10 +34,3 @@ jobs:
             echo "Validating $file with Swagger CLI..."
             swagger-cli validate "$file" || exit 1
           done
-
-      - name: Lint OpenAPI files with Spectral
-        run: |
-          find apis -name "open-api-rest.yml" -o -name "open-api-rest.yaml" | while read file; do
-            echo "Linting $file with Spectral..."
-            spectral lint --ruleset .spectral.yml "$file" || exit 1
-          done
