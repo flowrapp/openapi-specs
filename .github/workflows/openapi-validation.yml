@@ -2,12 +2,11 @@ name: OpenAPI Validation
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, develop ]
     paths:
       - 'apis/**/*.yml'
       - 'apis/**/*.yaml'
   pull_request:
-    branches: [ main ]
     paths:
       - 'apis/**/*.yml'
       - 'apis/**/*.yaml'
