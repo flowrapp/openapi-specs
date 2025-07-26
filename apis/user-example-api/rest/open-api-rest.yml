@@ -1,0 +1,27 @@
+---
+openapi: 3.1.0
+info:
+  title: Flowrapp API
+  description: REST API for Flowrapp Backend
+  version: 0.0.1
+  contact:
+    name: Flowrapp Team
+    url: https://flowrapp.github.io
+    email: info@flowrapp.github.io
+  license:
+    name: Apache 2.0
+    url: https://www.apache.org/licenses/LICENSE-2.0
+
+
+servers:
+  - url: http://localhost:8080/flowrapp
+    description: Generated server url
+
+tags:
+  - name: Users
+    description: User management API
+
+paths:
+  "/api/v1/users":
+    $ref: 'v1/services/user-operations.yml#/users'
+

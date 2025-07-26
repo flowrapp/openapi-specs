@@ -1,0 +1,22 @@
+users:
+  post:
+    summary: Find a user by name
+    description: Returns a user based on the provided name
+    tags:
+      - Users
+    operationId: getUser
+    requestBody:
+      content:
+        application/json:
+          schema:
+            "$ref": '../components/components.yml#/components/schemas/UserRequestDTO'
+      required: true
+    responses:
+      '200':
+        description: User found
+        content:
+          application/json:
+            schema:
+              "$ref": "../components/components.yml#/components/schemas/UserResponseDTO"
+      '404':
+        description: User not found
