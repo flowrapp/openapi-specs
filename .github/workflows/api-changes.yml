@@ -41,7 +41,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Install dependencies
-        run: npm ci
+        run: npm install @quobix/vacuum --include=dev
 
       - name: Lint API
         run: cd api && npm exec vacuum report -- --junit open-api-rest.yml lint-results
