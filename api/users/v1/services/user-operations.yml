@@ -6,6 +6,7 @@ users:
       - Users
     operationId: getUser
     requestBody:
+      description: User information to search for
       content:
         application/json:
           schema:
