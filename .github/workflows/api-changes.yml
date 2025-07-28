@@ -27,6 +27,8 @@ jobs:
           token: ${{secrets.BUMP_TOKEN}}
           file: api/open-api-rest.yml
           command: diff
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   lint:
     name: API Linting
