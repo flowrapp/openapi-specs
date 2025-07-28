@@ -23,5 +23,4 @@ tags:
 
 paths:
   "/api/v1/users":
-    $ref: 'v1/services/user-operations.yml#/users'
-
+    $ref: 'users/v1/services/user-operations.yml#/users'

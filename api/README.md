@@ -14,13 +14,15 @@ The API follows the OpenAPI 3.1.0 specification.
 The OpenAPI specification is organized as follows:
 
 ```
-rest/
+apis/
+  ├── README.md
   ├── open-api-rest.yml           # Main OpenAPI specification file
-  └── v1/                         # Version 1 of the API
-      ├── components/             # Reusable components
-      │   └── components.yml      # Schema definitions
-      └── services/               # API operations
-          └── user-operations.yml # User-related operations
+  └── users/                      # User-related APIs
+      └── v1/                     # Version 1 of the API
+          ├── components/         # Reusable components
+          │   └── components.yml  # Schema definitions
+          └── services/           # API operations
+              └── user-operations.yml # User-related operations
 ```
 
 ## License
