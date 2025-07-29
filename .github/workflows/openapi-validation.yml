@@ -22,12 +22,5 @@ jobs:
       - name: Install Swagger CLI
         run: npm install -g @apidevtools/swagger-cli
 
-      - name: Install Spectral
-        run: npm install -g @stoplight/spectral-cli
-
       - name: Validate OpenAPI files with Swagger CLI
-        run: |
-          find apis -name "open-api-rest.yml" -o -name "open-api-rest.yaml" | while read file; do
-            echo "Validating $file with Swagger CLI..."
-            swagger-cli validate "$file" || exit 1
-          done
+        run: swagger-cli validate api/open-api-rest.yml
