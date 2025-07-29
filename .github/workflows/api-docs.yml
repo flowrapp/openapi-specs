@@ -13,8 +13,8 @@ env:
   STAINLESS_PROJECT_NAME: flowrapp
 
 jobs:
-  bundle-openapi:
-    name: Bundle OpenAPI Specification
+
+  update-docs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -24,10 +24,6 @@ jobs:
 
       - name: Bundle OpenAPI spec
         run: redocly bundle api/open-api-rest.yml -o api/bundle-openapi.yaml
-  update-docs:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
 
       - name: Push spec file to Stainless
         uses: stainless-api/upload-openapi-spec-action@main
