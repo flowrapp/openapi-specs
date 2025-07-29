@@ -7,14 +7,14 @@ info:
   contact:
     name: Flowrapp Team
     url: https://flowrapp.github.io
-    email: info@flowrapp.github.io
+    email: flowraapp@gmail.com
   license:
     name: Apache 2.0
     url: https://www.apache.org/licenses/LICENSE-2.0
 
 servers:
   - url: http://localhost:8080/flowrapp
-    description: Generated server url
+    description: Local server url
 
 tags:
   - name: Users
