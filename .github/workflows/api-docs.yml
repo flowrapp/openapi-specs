@@ -14,7 +14,9 @@ on:
       - closed
 
 env:
-  STAINLESS_PROJECT_NAME: flowrapp
+  STAINLESS_ORG: Flowrapp
+  STAINLESS_PROJECT: flowrapp
+  OAS_PATH: api/bundle-openapi.yaml
 
 jobs:
   preview:
@@ -28,6 +30,12 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 2
+
+      - name: Install dependencies
+        run: npm i -g @redocly/cli@latest
+
+      - name: Bundle OpenAPI spec
+        run: redocly bundle api/open-api-rest.yml -o api/bundle-openapi.yaml
 
       - name: Run preview builds
         uses: stainless-api/upload-openapi-spec-action/preview@v1
