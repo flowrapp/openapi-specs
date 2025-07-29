@@ -1,0 +1,75 @@
+components:
+  schemas:
+    WeeklyHoursResponseDTO:
+      type: object
+      description: Weekly hours report for users
+      properties:
+        businessId:
+          type: string
+          description: ID of the business
+          example: "abc123"
+        week:
+          type: string
+          description: ISO week format (YYYY-Www)
+          example: "2025-W31"
+        startDate:
+          type: string
+          format: date
+          description: Start date of the week
+          example: "2025-07-28"
+        endDate:
+          type: string
+          format: date
+          description: End date of the week
+          example: "2025-08-03"
+        users:
+          type: array
+          description: List of users with their hours
+          items:
+            $ref: '#/components/schemas/UserHoursDTO'
+      required:
+        - businessId
+        - week
+        - startDate
+        - endDate
+        - users
+
+    UserHoursDTO:
+      type: object
+      description: User hours information
+      properties:
+        userId:
+          type: string
+          description: ID of the user
+          example: "u001"
+        username:
+          type: string
+          description: Username of the user
+          example: "john.doe"
+        email:
+          type: string
+          description: Email of the user
+          example: "john.doe@example.com"
+        dailyHours:
+          type: object
+          description: Hours worked per day
+          additionalProperties:
+            type: number
+            format: double
+          example:
+            "2025-07-28": 8.0
+            "2025-07-29": 7.5
+            "2025-07-30": 8.0
+            "2025-07-31": 7.0
+            "2025-08-01": 8.0
+        totalHours:
+          type: number
+          format: double
+          description: Total hours worked in the week
+          example: 38.5
+      required:
+        - userId
+        - username
+        - email
+        - dailyHours
+        - totalHours

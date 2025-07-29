@@ -12,7 +12,6 @@ info:
     name: Apache 2.0
     url: https://www.apache.org/licenses/LICENSE-2.0
 
-
 servers:
   - url: http://localhost:8080/flowrapp
     description: Generated server url
@@ -28,6 +27,8 @@ tags:
     description: Business management API
   - name: Worklogs
     description: Worklog management API
+  - name: Reports
+    description: Reporting API
 
 paths:
   "/api/v1/users":
@@ -38,3 +39,20 @@ paths:
     $ref: 'admin/v1/services/admin-operations.yml#/admin'
   "/api/v1/businesses":
     $ref: 'businesses/v1/services/businesses-operations.yml#/businesses'
+  "/api/v1/businesses/{businessId}/worklogs":
+    $ref: 'worklogs/v1/services/worklogs-operations.yml#/worklogs'
+  "/api/v1/reports":
+    $ref: 'reports/v1/services/reports-operations.yml#/reports'
+
+
+components:
+  securitySchemes:
+    basicAuth:
+      type: http
+      scheme: basic
+      description: Basic authentication with username and password
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT-based authentication

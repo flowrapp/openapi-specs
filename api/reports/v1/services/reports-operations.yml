@@ -1,0 +1,52 @@
+reports:
+  /weekly-hours:
+    get:
+      summary: Get weekly hours report
+      description: Returns weekly hours report for users, either in JSON or Excel format
+      tags:
+        - Reports
+      operationId: getWeeklyHoursReport
+      security:
+        - basicAuth: []
+        - bearerAuth: []
+      parameters:
+        - name: businessId
+          in: query
+          required: true
+          description: ID of the business to filter by
+          schema:
+            type: string
+            example: "abc123"
+        - name: week
+          in: query
+          required: true
+          description: ISO week format (YYYY-Www)
+          schema:
+            type: string
+            pattern: '^\d{4}-W\d{2}$'
+            example: "2025-W31"
+        - name: userId
+          in: query
+          required: false
+          description: ID of the user to filter by
+          schema:
+            type: string
+            example: "u001"
+      responses:
+        '200':
+          description: Weekly hours report retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '../components/components.yml#/components/schemas/WeeklyHoursResponseDTO'
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                type: string
+                format: binary
+              description: Excel spreadsheet containing the weekly hours report
+        '400':
+          description: Invalid request parameters
+        '401':
+          description: Unauthorized
+        '404':
+          description: No data found for the specified parameters

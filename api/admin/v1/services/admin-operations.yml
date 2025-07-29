@@ -6,6 +6,8 @@ admin:
       tags:
         - Admin
       operationId: registerUser
+      security:
+        - basicAuth: []
       requestBody:
         description: User registration information
         content:
