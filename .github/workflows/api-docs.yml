@@ -1,0 +1,48 @@
+name: Deploy API documentation
+
+permissions:
+  contents: read
+  pull-requests: write
+
+on:
+  push:
+    branches:
+      - main
+
+env:
+  STAINLESS_PROJECT_NAME: flowrapp
+
+jobs:
+  bundle-openapi:
+    name: Bundle OpenAPI Specification
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: npm i -g @redocly/cli@latest
+
+      - name: Bundle OpenAPI spec
+        run: redocly bundle api/open-api-rest.yml -o api/bundle-openapi.yaml
+  update-docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Push spec file to Stainless
+        uses: stainless-api/upload-openapi-spec-action@main
+        with:
+          stainless_api_key: ${{ secrets.STAINLESS_API_KEY }}
+          project_name: ${{ env.STAINLESS_PROJECT_NAME }}
+          # Note: this should be the path to your specification file
+          input_path: "api/bundle-openapi.yaml"
+          # Note: this file will be your spec extended with code samples
+          output_path: "./openapi-with-code-samples.json"
+
+      - name: Deploy API docs to Bump.sh
+        uses: bump-sh/github-action@v1
+        with:
+          doc: ${{secrets.BUMP_DOC_ID}}
+          token: ${{secrets.BUMP_TOKEN}}
+          # Note: be sure this is pointing to the extended spec file
+          file: "./openapi-with-code-samples.json"
