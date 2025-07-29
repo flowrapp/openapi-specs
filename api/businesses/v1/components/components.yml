@@ -1,0 +1,95 @@
+components:
+  schemas:
+    ClockInRequestDTO:
+      type: object
+      description: Request object for clocking in
+      properties:
+        clockIn:
+          type: string
+          format: date-time
+          description: Timestamp for clock-in (optional, server uses current time if omitted)
+          example: "2025-07-29T08:30:00"
+
+    ClockOutRequestDTO:
+      type: object
+      description: Request object for clocking out
+      properties:
+        clockOut:
+          type: string
+          format: date-time
+          description: Timestamp for clock-out (optional, server uses current time if omitted)
+          example: "2025-07-29T17:30:00"
+
+    BusinessResponseDTO:
+      type: object
+      description: Business information with identifier
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: Unique identifier for the business
+          example: 101
+        name:
+          type: string
+          description: Name of the business
+          example: "Coffee Time"
+        location:
+          $ref: '#/components/schemas/LocationDTO'
+      required:
+        - id
+        - name
+        - location
+
+    LocationDTO:
+      type: object
+      description: Geographic location information
+      properties:
+        latitude:
+          type: number
+          format: double
+          description: Latitude coordinate
+          example: 30.5
+        longitude:
+          type: number
+          format: double
+          description: Longitude coordinate
+          example: 50.5
+        area:
+          type: number
+          format: double
+          description: Area size in square units
+          example: 5.3
+      required:
+        - latitude
+        - longitude
+        - area
+
+    WorkLogResponseDTO:
+      type: object
+      description: Response object containing worklog information
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: Unique identifier for the worklog
+          example: 123
+        userId:
+          type: integer
+          format: int64
+          description: Identifier of the user who created the worklog
+          example: 1
+        clockIn:
+          type: string
+          format: date-time
+          description: Timestamp when the user clocked in
+          example: "2025-07-29T08:30:00"
+        clockOut:
+          type: string
+          format: date-time
+          description: Timestamp when the user clocked out (null if not clocked out yet)
+          example: "2025-07-29T17:30:00"
+          nullable: true
+      required:
+        - id
+        - userId
+        - clockIn

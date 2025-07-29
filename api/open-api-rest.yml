@@ -24,9 +24,17 @@ tags:
     description: Authentication API
   - name: Admin
     description: Administrative API
+  - name: Businesses
+    description: Business management API
+  - name: Worklogs
+    description: Worklog management API
 
 paths:
   "/api/v1/users":
     $ref: 'users/v1/services/user-operations.yml#/users'
   "/api/v1/auth":
     $ref: 'auth/v1/services/auth-operations.yml#/auth'
+  "/api/v1/admin":
+    $ref: 'admin/v1/services/admin-operations.yml#/admin'
+  "/api/v1/businesses":
+    $ref: 'businesses/v1/services/businesses-operations.yml#/businesses'

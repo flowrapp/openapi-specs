@@ -26,6 +26,16 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Deploy preview API changes
+        uses: bump-sh/github-action@v1
+        with:
+          doc: ${{secrets.BUMP_DOC_ID}}
+          token: ${{secrets.BUMP_TOKEN}}
+          file: api/open-api-rest.yml
+          command: preview
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
   lint:
     name: API Linting
     runs-on: ubuntu-latest
