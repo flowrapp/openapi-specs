@@ -1,0 +1,24 @@
+components:
+  schemas:
+    UserRequestDTO:
+      type: object
+      description: Request object for user operations
+      properties:
+        name:
+          type: string
+          description: Name of the user
+          example: John Doe
+      required:
+        - name
+    UserResponseDTO:
+      type: object
+      description: Response object containing user information
+      properties:
+        name:
+          type: string
+          description: Name of the user
+          example: John Doe
+        dni:
+          type: string
+          description: Document National Identity of the user
+          example: 12345678A
