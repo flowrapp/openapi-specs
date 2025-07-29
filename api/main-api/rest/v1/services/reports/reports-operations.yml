@@ -1,8 +1,8 @@
 reports:
-  /weekly-hours:
+  weekly-hours:
     get:
       summary: Get weekly hours report
-      description: Returns weekly hours report for users, either in JSON or Excel format
+      description: Returns weekly hours report for users
       tags:
         - Reports
       operationId: getWeeklyHoursReport
@@ -38,12 +38,7 @@ reports:
           content:
             application/json:
               schema:
-                $ref: '../components/components.yml#/components/schemas/WeeklyHoursResponseDTO'
-            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
-              schema:
-                type: string
-                format: binary
-              description: Excel spreadsheet containing the weekly hours report
+                $ref: '../../components/reports/components.yml#/components/schemas/WeeklyHoursResponseDTO'
         '400':
           description: Invalid request parameters
         '401':

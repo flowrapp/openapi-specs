@@ -32,17 +32,23 @@ tags:
 
 paths:
   "/api/v1/users":
-    $ref: 'users/v1/services/user-operations.yml#/users'
-  "/api/v1/auth":
-    $ref: 'auth/v1/services/auth-operations.yml#/auth'
-  "/api/v1/admin":
-    $ref: 'admin/v1/services/admin-operations.yml#/admin'
+    $ref: 'v1/services/users/user-operations.yml#/users'
+  "/api/v1/auth/login":
+    $ref: 'v1/services/auth/auth-operations.yml#/auth/login'
+  "/api/v1/auth/token-refresh":
+    $ref: 'v1/services/auth/auth-operations.yml#/auth/token-refresh'
+  "/api/v1/admin/register":
+    $ref: 'v1/services/admin/admin-operations.yml#/admin/register'
   "/api/v1/businesses":
-    $ref: 'businesses/v1/services/businesses-operations.yml#/businesses'
+    $ref: 'v1/services/business/businesses-operations.yml#/businesses/get-businesses'
+  "/api/v1/businesses/{businessId}/worklogs/clock-in":
+    $ref: 'v1/services/worklogs/worklogs-operations.yml#/worklogs/clock-in'
+  "/api/v1/businesses/{businessId}/worklogs/clock-out":
+    $ref: 'v1/services/worklogs/worklogs-operations.yml#/worklogs/clock-out'
   "/api/v1/businesses/{businessId}/worklogs":
-    $ref: 'worklogs/v1/services/worklogs-operations.yml#/worklogs'
-  "/api/v1/reports":
-    $ref: 'reports/v1/services/reports-operations.yml#/reports'
+    $ref: 'v1/services/worklogs/worklogs-operations.yml#/worklogs/filtered-worklogs'
+  "/api/v1/reports/weekly-hours":
+    $ref: 'v1/services/reports/reports-operations.yml#/reports/weekly-hours'
 
 
 components:

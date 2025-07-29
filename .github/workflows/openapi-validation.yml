@@ -23,4 +23,4 @@ jobs:
         run: npm install -g @apidevtools/swagger-cli
 
       - name: Validate OpenAPI files with Swagger CLI
-        run: swagger-cli validate api/open-api-rest.yml
+        run: swagger-cli validate api/main-api/rest/open-api-rest.yml

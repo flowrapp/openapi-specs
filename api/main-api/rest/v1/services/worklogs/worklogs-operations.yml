@@ -1,5 +1,5 @@
 worklogs:
-  /clock-in:
+  clock-in:
     post:
       summary: Register start of workday
       description: Registers the start of the workday for the authenticated user
@@ -22,7 +22,7 @@ worklogs:
         content:
           application/json:
             schema:
-              $ref: '../components/components.yml#/components/schemas/ClockInRequestDTO'
+              $ref: '../../components/worklogs/components.yml#/components/schemas/ClockInRequestDTO'
         required: false
       responses:
         '200':
@@ -30,13 +30,13 @@ worklogs:
           content:
             application/json:
               schema:
-                $ref: '../components/components.yml#/components/schemas/WorkLogResponseDTO'
+                $ref: '../../components/worklogs/components.yml#/components/schemas/WorkLogResponseDTO'
         '401':
           description: Unauthorized
         '404':
           description: Business not found
 
-  /clock-out:
+  clock-out:
     put:
       summary: Close open worklog
       description: Closes the open worklog for the authenticated user
@@ -59,7 +59,7 @@ worklogs:
         content:
           application/json:
             schema:
-              $ref: '../components/components.yml#/components/schemas/ClockOutRequestDTO'
+              $ref: '../../components/worklogs/components.yml#/components/schemas/ClockOutRequestDTO'
         required: false
       responses:
         '200':
@@ -67,13 +67,13 @@ worklogs:
           content:
             application/json:
               schema:
-                $ref: '../components/components.yml#/components/schemas/WorkLogResponseDTO'
+                $ref: '../../components/worklogs/components.yml#/components/schemas/WorkLogResponseDTO'
         '401':
           description: Unauthorized
         '404':
           description: Business not found or no open worklog
 
-  /:
+  filtered-worklogs:
     get:
       summary: Get filtered worklogs
       description: Returns worklogs filtered by date
@@ -131,7 +131,7 @@ worklogs:
               schema:
                 type: array
                 items:
-                  $ref: '../components/components.yml#/components/schemas/WorkLogResponseDTO'
+                  $ref: '../../components/worklogs/components.yml#/components/schemas/WorkLogResponseDTO'
         '401':
           description: Unauthorized
         '404':

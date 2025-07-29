@@ -1,5 +1,5 @@
 auth:
-  /login:
+  login:
     post:
       summary: Authenticate a user
       description: Authenticates a user with username and password
@@ -11,7 +11,7 @@ auth:
         content:
           application/json:
             schema:
-              "$ref": '../components/components.yml#/components/schemas/LoginRequestDTO'
+              "$ref": '../../components/auth/auth-components.yml#/components/schemas/LoginRequestDTO'
         required: true
       responses:
         '200':
@@ -19,11 +19,11 @@ auth:
           content:
             application/json:
               schema:
-                "$ref": "../components/components.yml#/components/schemas/TokenResponseDTO"
+                "$ref": "../../components/auth/auth-components.yml#/components/schemas/TokenResponseDTO"
         '401':
           description: Authentication failed
 
-  /token/refresh:
+  token-refresh:
     post:
       summary: Refresh authentication tokens
       description: Generates new access and refresh tokens using a valid refresh token
@@ -35,7 +35,7 @@ auth:
         content:
           application/json:
             schema:
-              "$ref": '../components/components.yml#/components/schemas/RefreshRequestDTO'
+              "$ref": '../../components/auth/auth-components.yml#/components/schemas/RefreshRequestDTO'
         required: true
       responses:
         '200':
@@ -43,6 +43,6 @@ auth:
           content:
             application/json:
               schema:
-                "$ref": "../components/components.yml#/components/schemas/TokenResponseDTO"
+                "$ref": "../../components/auth/auth-components.yml#/components/schemas/TokenResponseDTO"
         '401':
           description: Invalid or expired refresh token

@@ -21,7 +21,7 @@ jobs:
         with:
           doc: ${{secrets.BUMP_DOC_ID}}
           token: ${{secrets.BUMP_TOKEN}}
-          file: api/open-api-rest.yml
+          file: api/main-api/rest/open-api-rest.yml
           command: diff
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -38,7 +38,7 @@ jobs:
         with:
           doc: ${{secrets.BUMP_DOC_ID}}
           token: ${{secrets.BUMP_TOKEN}}
-          file: api/open-api-rest.yml
+          file: api/main-api/rest/bundle-openapi.yaml
           command: preview
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -59,7 +59,7 @@ jobs:
         run: npm install @quobix/vacuum --include=dev
 
       - name: Lint API
-        run: cd api && npm exec vacuum report -- --junit open-api-rest.yml lint-results
+        run: cd api/main-api/rest && npm exec vacuum report -- --junit open-api-rest.yml lint-results
 
       - name: Publish Lint Results
         if: success() || failure()

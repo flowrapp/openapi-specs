@@ -10,7 +10,7 @@ users:
       content:
         application/json:
           schema:
-            "$ref": '../components/components.yml#/components/schemas/UserRequestDTO'
+            "$ref": '../../components/users/components.yml#/components/schemas/UserRequestDTO'
       required: true
     responses:
       '200':
@@ -18,6 +18,6 @@ users:
         content:
           application/json:
             schema:
-              "$ref": "../components/components.yml#/components/schemas/UserResponseDTO"
+              "$ref": "../../components/users/components.yml#/components/schemas/UserResponseDTO"
       '404':
         description: User not found

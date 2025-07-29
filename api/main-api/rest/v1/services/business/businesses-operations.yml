@@ -1,5 +1,5 @@
 businesses:
-  /:
+  get-businesses:
     get:
       summary: Get user businesses
       description: Returns the list of businesses associated with the authenticated user
@@ -17,7 +17,7 @@ businesses:
               schema:
                 type: array
                 items:
-                  $ref: '../components/components.yml#/components/schemas/BusinessResponseDTO'
+                  $ref: '../../components/business/components.yml#/components/schemas/BusinessResponseDTO'
                 example:
                   - id: 101
                     name: "Coffee Time"

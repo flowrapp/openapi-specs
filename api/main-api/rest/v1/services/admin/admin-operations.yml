@@ -1,5 +1,5 @@
 admin:
-  /register:
+  register:
     post:
       summary: Register a new user with businesses
       description: Registers a new user with associated businesses
@@ -13,7 +13,7 @@ admin:
         content:
           application/json:
             schema:
-              "$ref": '../components/components.yml#/components/schemas/RegisterRequestDTO'
+              "$ref": '../../components/admin/components.yml#/components/schemas/RegisterRequestDTO'
         required: true
       responses:
         '201':
