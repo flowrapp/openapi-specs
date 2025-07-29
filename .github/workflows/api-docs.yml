@@ -5,16 +5,40 @@ permissions:
   pull-requests: write
 
 on:
-  push:
-    branches:
-      - main
+  pull_request:
+    branches: [main]
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - closed
 
 env:
   STAINLESS_PROJECT_NAME: flowrapp
 
 jobs:
-  bundle-openapi:
-    name: Bundle OpenAPI Specification
+  preview:
+    if: github.event.action != 'closed'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Run preview builds
+        uses: stainless-api/upload-openapi-spec-action/preview@v1
+        with:
+          stainless_api_key: ${{ secrets.STAINLESS_API_KEY }}
+          org: ${{ env.STAINLESS_ORG }}
+          project: ${{ env.STAINLESS_PROJECT }}
+          oas_path: ${{ env.OAS_PATH }}
+
+  update-docs:
+    if: github.event.action == 'closed' && github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -24,25 +48,25 @@ jobs:
 
       - name: Bundle OpenAPI spec
         run: redocly bundle api/open-api-rest.yml -o api/bundle-openapi.yaml
-  update-docs:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
 
       - name: Push spec file to Stainless
-        uses: stainless-api/upload-openapi-spec-action@main
+        id: stainless_upload
+        uses: stainless-api/upload-openapi-spec-action/merge@v1
         with:
           stainless_api_key: ${{ secrets.STAINLESS_API_KEY }}
-          project_name: ${{ env.STAINLESS_PROJECT_NAME }}
-          # Note: this should be the path to your specification file
-          input_path: "api/bundle-openapi.yaml"
+          org: ${{ env.STAINLESS_ORG }}
+          project: ${{ env.STAINLESS_PROJECT }}
+          oas_path: ${{ env.OAS_PATH }}
           # Note: this file will be your spec extended with code samples
-          output_path: "./openapi-with-code-samples.json"
+          output_dir: "./"
+
+      - name: Debug - Print documented_spec_path
+        run: echo "The documented_spec_path is ${{ steps.stainless_upload.outputs.documented_spec_path }}"
 
       - name: Deploy API docs to Bump.sh
         uses: bump-sh/github-action@v1
         with:
           doc: ${{secrets.BUMP_DOC_ID}}
           token: ${{secrets.BUMP_TOKEN}}
-          # Note: be sure this is pointing to the extended spec file
-          file: "./openapi-with-code-samples.json"
+          # Using the documented_spec_path output from the stainless_upload step
+          file: ${{ steps.stainless_upload.outputs.documented_spec_path }}
