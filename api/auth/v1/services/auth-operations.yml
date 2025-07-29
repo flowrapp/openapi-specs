@@ -23,7 +23,7 @@ auth:
         '401':
           description: Authentication failed
 
-  /refresh:
+  /token/refresh:
     post:
       summary: Refresh authentication tokens
       description: Generates new access and refresh tokens using a valid refresh token
