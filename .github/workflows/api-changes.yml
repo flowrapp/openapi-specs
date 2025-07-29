@@ -9,30 +9,26 @@ on:
     branches: [develop]
 
 jobs:
-  changes:
-    name: Detect and preview API changes
+  validate:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v3
 
-      - name: Comment pull request with API diff
-        uses: bump-sh/github-action@v1
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
         with:
-          doc: ${{secrets.BUMP_DOC_ID}}
-          token: ${{secrets.BUMP_TOKEN}}
-          file: api/main-api/rest/open-api-rest.yml
-          command: diff
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          node-version: '16'
+
+      - name: Install Swagger CLI
+        run: npm install -g @apidevtools/swagger-cli
+
+      - name: Validate OpenAPI files with Swagger CLI
+        run: swagger-cli validate api/main-api/rest/open-api-rest.yml
 
   lint:
     name: API Linting
+    needs: validate
     runs-on: ubuntu-latest
-
-    permissions:
-      statuses: write
-      checks: write
 
     steps:
       - name: Checkout code
@@ -50,3 +46,22 @@ jobs:
         with:
           check_name: API Lint Results
           report_paths: lint-results-*.xml
+
+  changes:
+    name: Detect and preview API changes
+    needs: [validate, lint]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Comment pull request with API diff
+        uses: bump-sh/github-action@v1
+        with:
+          doc: ${{secrets.BUMP_DOC_ID}}
+          token: ${{secrets.BUMP_TOKEN}}
+          file: api/main-api/rest/open-api-rest.yml
+          command: diff
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
