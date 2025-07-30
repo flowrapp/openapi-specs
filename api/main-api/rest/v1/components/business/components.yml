@@ -15,10 +15,16 @@ components:
           example: "Coffee Time"
         location:
           $ref: '#/components/schemas/LocationDTO'
+        userRole:
+          type: string
+          description: Role of the current authenticated user in the business
+          enum: [OWNER, COLLABORATOR, EMPLOYEE]
+          example: "OWNER"
       required:
         - id
         - name
         - location
+        - userRole
 
     BusinessUsersResponseDTO:
       type: object

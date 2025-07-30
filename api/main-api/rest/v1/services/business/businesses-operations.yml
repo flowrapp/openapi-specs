@@ -1,8 +1,8 @@
 businesses:
   get-businesses:
     get:
-      summary: Get user businesses
-      description: Retrieves a comprehensive list of all businesses that are associated with the currently authenticated user.
+      summary: Get user businesses with roles
+      description: Retrieves a comprehensive list of all businesses that are associated with the currently authenticated user, including the role of the current user in each business.
       tags:
         - Businesses
       operationId: getUserBusinesses
@@ -25,18 +25,20 @@ businesses:
                       latitude: 30.5
                       longitude: 50.5
                       area: 5.3
+                    userRole: "OWNER"
                   - id: 102
                     name: "Tea Corner"
                     location:
                       latitude: 32.0
                       longitude: 51.2
                       area: 3.2
+                    userRole: "COLLABORATOR"
         '401':
           description: Unauthorized
 
   get-business-users:
     get:
-      summary: Get users and invitations associated with a business
+      summary: Get users associated within a business
       description: Retrieves lists of users and pending invitations associated with the specified business. Can be filtered by role.
       tags:
         - Businesses
