@@ -2,7 +2,9 @@ auth:
   login:
     post:
       summary: Authenticate a user
-      description: Authenticates a user with username and password
+      description: Authenticates a user by validating their username and password credentials. Upon successful
+        authentication, it generates and returns access and refresh tokens that can be used for 
+        subsequent authorized API requests.
       tags:
         - Authentication
       operationId: login
@@ -26,7 +28,7 @@ auth:
   token-refresh:
     post:
       summary: Refresh authentication tokens
-      description: Generates new access and refresh tokens using a valid refresh token
+      description: Renews authentication by generating new access and refresh tokens using a valid refresh token.
       tags:
         - Authentication
       operationId: refreshToken

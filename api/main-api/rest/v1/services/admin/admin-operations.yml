@@ -2,7 +2,7 @@ admin:
   register:
     post:
       summary: Register a new user with businesses
-      description: Registers a new user with associated businesses
+      description: Creates a new user account in the system with associations to one or more businesses.
       tags:
         - Admin
       operationId: registerUser

@@ -1,7 +1,7 @@
 users:
   post:
     summary: Find a user by name
-    description: Returns a user based on the provided name
+    description: Searches for and retrieves a user profile based on the provided name.
     tags:
       - Users
     operationId: getUser

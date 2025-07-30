@@ -2,7 +2,7 @@ businesses:
   get-businesses:
     get:
       summary: Get user businesses
-      description: Returns the list of businesses associated with the authenticated user
+      description: Retrieves a comprehensive list of all businesses that are associated with the currently authenticated user.
       tags:
         - Businesses
       operationId: getUserBusinesses

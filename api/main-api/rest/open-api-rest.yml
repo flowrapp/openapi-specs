@@ -18,17 +18,17 @@ servers:
 
 tags:
   - name: Users
-    description: User management API
+    description: Operations related to user management, including user profile retrieval, creation, and updates.
   - name: Authentication
-    description: Authentication API
+    description: Endpoints for user authentication, token management, and session handling.
   - name: Admin
-    description: Administrative API
+    description: Administrative operations that require elevated privileges.
   - name: Businesses
-    description: Business management API
+    description: Operations for managing business entities.
   - name: Worklogs
-    description: Worklog management API
+    description: Time tracking recording and management operations.
   - name: Reports
-    description: Reporting API
+    description: Reporting and analytics endpoints that provide aggregated data and insights.
 
 paths:
   "/api/v1/users":
@@ -47,8 +47,8 @@ paths:
     $ref: 'v1/services/worklogs/worklogs-operations.yml#/worklogs/clock-out'
   "/api/v1/businesses/{businessId}/worklogs":
     $ref: 'v1/services/worklogs/worklogs-operations.yml#/worklogs/filtered-worklogs'
-  "/api/v1/reports/weekly-hours":
-    $ref: 'v1/services/reports/reports-operations.yml#/reports/weekly-hours'
+  "/api/v1/timesheets/weekly-hours":
+    $ref: 'v1/services/timesheet/timesheet-operations.yml#/reports/weekly-hours'
 
 
 components:

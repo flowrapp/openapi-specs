@@ -2,7 +2,7 @@ worklogs:
   clock-in:
     post:
       summary: Register start of workday
-      description: Registers the start of the workday for the authenticated user
+      description: Records the start time of a work session for the authenticated user at a specific business location.
       tags:
         - Worklogs
       operationId: clockIn
@@ -39,7 +39,7 @@ worklogs:
   clock-out:
     put:
       summary: Close open worklog
-      description: Closes the open worklog for the authenticated user
+      description: Finalizes an active work session by recording the end time for the authenticated user at a specific business location.
       tags:
         - Worklogs
       operationId: clockOut
@@ -76,7 +76,7 @@ worklogs:
   filtered-worklogs:
     get:
       summary: Get filtered worklogs
-      description: Returns worklogs filtered by date
+      description: Retrieves a collection of worklog records for a specific business, filtered by various time-based and user criteria.
       tags:
         - Worklogs
       operationId: getWorklogs
