@@ -25,6 +25,8 @@ tags:
     description: Administrative operations that require elevated privileges.
   - name: Businesses
     description: Operations for managing business entities.
+  - name: Invitations
+    description: Operations for managing invitations to join businesses.
   - name: Worklogs
     description: Time tracking recording and management operations.
   - name: Reports
@@ -41,6 +43,8 @@ paths:
     $ref: 'v1/services/admin/admin-operations.yml#/admin/register'
   "/api/v1/businesses":
     $ref: 'v1/services/business/businesses-operations.yml#/businesses/get-businesses'
+  "/api/v1/businesses/{businessId}/users":
+    $ref: 'v1/services/business/businesses-operations.yml#/businesses/get-business-users'
   "/api/v1/businesses/{businessId}/worklogs/clock-in":
     $ref: 'v1/services/worklogs/worklogs-operations.yml#/worklogs/clock-in'
   "/api/v1/businesses/{businessId}/worklogs/clock-out":
@@ -49,6 +53,12 @@ paths:
     $ref: 'v1/services/worklogs/worklogs-operations.yml#/worklogs/filtered-worklogs'
   "/api/v1/timesheets/weekly-hours":
     $ref: 'v1/services/timesheet/timesheet-operations.yml#/reports/weekly-hours'
+  "/api/v1/businesses/{businessId}/invitations":
+    $ref: 'v1/services/business/businesses-operations.yml#/businesses/create-business-invitation'
+  "/api/v1/businesses/{businessId}/invitations/{invitationId}":
+    $ref: 'v1/services/business/businesses-operations.yml#/businesses/delete-business-invitation'
+  "/api/v1/invitations/accept":
+    $ref: 'v1/services/invitations/invitations-operations.yml#/invitations/accept-invitation'
 
 
 components:

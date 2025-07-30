@@ -20,6 +20,52 @@ components:
         - name
         - location
 
+    BusinessUsersResponseDTO:
+      type: object
+      description: Combined response containing both users and invitations for a business
+      properties:
+        users:
+          type: array
+          description: List of users associated with the business
+          items:
+            $ref: '#/components/schemas/BusinessUserResponseDTO'
+        invitations:
+          type: array
+          description: List of pending invitations for the business
+          items:
+            $ref: '../invitations/components.yml#/components/schemas/InvitationResponseDTO'
+      required:
+        - users
+        - invitations
+
+    BusinessUserResponseDTO:
+      type: object
+      description: User information associated with a business
+      properties:
+        userId:
+          type: string
+          description: Unique identifier for the user
+          example: "user-1"
+        username:
+          type: string
+          description: Username of the user
+          example: "john.doe"
+        email:
+          type: string
+          description: Email address of the user
+          example: "john@example.com"
+        role:
+          type: string
+          description: Role of the user in the business
+          enum: [OWNER, COLLABORATOR, EMPLOYEE]
+          example: "OWNER"
+      required:
+        - userId
+        - username
+        - email
+        - role
+
+
     LocationDTO:
       type: object
       description: Geographic location information

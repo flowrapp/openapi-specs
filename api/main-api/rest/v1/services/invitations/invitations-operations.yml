@@ -1,0 +1,42 @@
+invitations:
+  accept-invitation:
+    post:
+      summary: Accept an invitation
+      description: Accepts an invitation to join a business using a token.
+      tags:
+        - Invitations
+      operationId: acceptInvitation
+      parameters:
+        - name: token
+          in: query
+          required: true
+          description: Token to validate the invitation
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Invitation accepted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    description: Success message
+                    example: "Invitation accepted successfully"
+                  businessId:
+                    type: string
+                    description: ID of the business the user has joined
+                    example: "business-123"
+                  role:
+                    type: string
+                    description: Role assigned to the user in the business
+                    enum: [COLLABORATOR, EMPLOYEE]
+                    example: "COLLABORATOR"
+        '400':
+          description: Invalid request or token
+        '404':
+          description: Invitation not found
+        '410':
+          description: Invitation expired or already used
