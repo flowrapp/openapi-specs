@@ -41,7 +41,7 @@ invitations:
         '410':
           description: Invitation expired or already used
 
-  create-business-invitation:
+  get-and-create-invitations:
     post:
       summary: Create a business invitation
       description: Creates a new invitation to join a business with a specified role.
@@ -92,6 +92,58 @@ invitations:
           description: Business not found
         '409':
           description: Conflict - User already invited or already a member
+    get:
+      summary: Get invitations for a business
+      description: Retrieves a list of all pending invitations for the specified business.
+      tags:
+        - Invitations
+      operationId: getBusinessInvitations
+      security:
+        - basicAuth: [ ]
+        - bearerAuth: [ ]
+      parameters:
+        - name: businessId
+          in: path
+          required: true
+          description: Unique identifier of the business
+          schema:
+            type: string
+        - name: status
+          in: query
+          required: false
+          description: Filter invitations by status
+          schema:
+            type: string
+            enum: [ PENDING, ACCEPTED, DECLINED, EXPIRED ]
+            default: PENDING
+      responses:
+        '200':
+          description: Invitations retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '../../components/invitations/components.yml#/components/schemas/InvitationResponseDTO'
+              example:
+                - id: "inv-123"
+                  email: "invitee@example.com"
+                  role: "COLLABORATOR"
+                  status: "PENDING"
+                  createdAt: "2023-06-15T14:30:00Z"
+                  expiresAt: "2023-06-22T14:30:00Z"
+                - id: "inv-124"
+                  email: "another@example.com"
+                  role: "EMPLOYEE"
+                  status: "PENDING"
+                  createdAt: "2023-06-16T10:15:00Z"
+                  expiresAt: "2023-06-23T10:15:00Z"
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden - User does not have permission to view invitations
+        '404':
+          description: Business not found
 
   delete-business-invitation:
     delete:
@@ -126,56 +178,4 @@ invitations:
         '404':
           description: Business or invitation not found
 
-  get-business-invitations:
-    get:
-      summary: Get invitations for a business
-      description: Retrieves a list of all pending invitations for the specified business.
-      tags:
-        - Invitations
-      operationId: getBusinessInvitations
-      security:
-        - basicAuth: []
-        - bearerAuth: []
-      parameters:
-        - name: businessId
-          in: path
-          required: true
-          description: Unique identifier of the business
-          schema:
-            type: string
-        - name: status
-          in: query
-          required: false
-          description: Filter invitations by status
-          schema:
-            type: string
-            enum: [PENDING, ACCEPTED, DECLINED, EXPIRED]
-            default: PENDING
-      responses:
-        '200':
-          description: Invitations retrieved successfully
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '../../components/invitations/components.yml#/components/schemas/InvitationResponseDTO'
-              example:
-                - id: "inv-123"
-                  email: "invitee@example.com"
-                  role: "COLLABORATOR"
-                  status: "PENDING"
-                  createdAt: "2023-06-15T14:30:00Z"
-                  expiresAt: "2023-06-22T14:30:00Z"
-                - id: "inv-124"
-                  email: "another@example.com"
-                  role: "EMPLOYEE"
-                  status: "PENDING"
-                  createdAt: "2023-06-16T10:15:00Z"
-                  expiresAt: "2023-06-23T10:15:00Z"
-        '401':
-          description: Unauthorized
-        '403':
-          description: Forbidden - User does not have permission to view invitations
-        '404':
-          description: Business not found
+

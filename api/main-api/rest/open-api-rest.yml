@@ -29,7 +29,7 @@ tags:
     description: Operations for managing invitations to join businesses.
   - name: Worklogs
     description: Time tracking recording and management operations.
-  - name: Reports
+  - name: Timesheet
     description: Reporting and analytics endpoints that provide aggregated data and insights.
   - name: System
     description: System utility endpoints for monitoring and health checks.
@@ -59,13 +59,10 @@ paths:
     $ref: 'v1/services/worklogs/worklogs-operations.yml#/worklogs/clock-out'
   "/api/v1/businesses/{businessId}/worklogs":
     $ref: 'v1/services/worklogs/worklogs-operations.yml#/worklogs/filtered-worklogs'
-  "/api/v1/businesses/{businessId}timesheets/weekly-hours":
-    $ref: 'v1/services/timesheet/timesheet-operations.yml#/reports/weekly-hours'
+  "/api/v1/businesses/{businessId}/timesheets/weekly-hours":
+    $ref: 'v1/services/timesheet/timesheet-operations.yml#/timesheet/weekly-hours'
   "/api/v1/businesses/{businessId}/invitations":
-    post:
-      $ref: 'v1/services/invitations/invitations-operations.yml#/invitations/create-business-invitation/post'
-    get:
-      $ref: 'v1/services/invitations/invitations-operations.yml#/invitations/get-business-invitations/get'
+    $ref: 'v1/services/invitations/invitations-operations.yml#/invitations/get-and-create-invitations'
   "/api/v1/businesses/{businessId}/invitations/{invitationId}":
     $ref: 'v1/services/invitations/invitations-operations.yml#/invitations/delete-business-invitation'
   "/api/v1/invitations/accept":

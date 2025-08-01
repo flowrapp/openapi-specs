@@ -1,10 +1,10 @@
-reports:
+timesheet:
   weekly-hours:
     get:
       summary: Get weekly hours report
       description: Generates and retrieves a comprehensive weekly hours report for users within a specified business.
       tags:
-        - Reports
+        - Timesheet
       operationId: getWeeklyHoursReport
       security:
         - basicAuth: []
