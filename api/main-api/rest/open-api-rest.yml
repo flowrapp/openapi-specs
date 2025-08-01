@@ -1,0 +1,85 @@
+---
+openapi: 3.1.0
+info:
+  title: Flowrapp API
+  description: REST API for Flowrapp Backend
+  version: 0.0.1
+  contact:
+    name: Flowrapp Team
+    url: https://flowrapp.github.io
+    email: flowraapp@gmail.com
+  license:
+    name: Apache 2.0
+    url: https://www.apache.org/licenses/LICENSE-2.0
+
+servers:
+  - url: http://localhost:8080/flowrapp
+    description: Local server url
+
+tags:
+  - name: Users
+    description: Operations related to user management, including user profile retrieval, creation, and updates.
+  - name: Authentication
+    description: Endpoints for user authentication, token management, and session handling.
+  - name: Admin
+    description: Administrative operations that require elevated privileges.
+  - name: Businesses
+    description: Operations for managing business entities.
+  - name: Invitations
+    description: Operations for managing invitations to join businesses.
+  - name: Worklogs
+    description: Time tracking recording and management operations.
+  - name: Reports
+    description: Reporting and analytics endpoints that provide aggregated data and insights.
+  - name: System
+    description: System utility endpoints for monitoring and health checks.
+  - name: Push Tokens
+    description: Operations for managing push notification tokens.
+
+paths:
+  "/api/v1/ping":
+    $ref: 'v1/services/system/system-operations.yml#/system/ping'
+  "/api/v1/push-tokens":
+    $ref: 'v1/services/pushTokens/push-tokens-operations.yml#/pushTokens/push-tokens'
+  "/api/v1/users":
+    $ref: 'v1/services/users/user-operations.yml#/users'
+  "/api/v1/auth/login":
+    $ref: 'v1/services/auth/auth-operations.yml#/auth/login'
+  "/api/v1/auth/token-refresh":
+    $ref: 'v1/services/auth/auth-operations.yml#/auth/token-refresh'
+  "/api/v1/admin/register":
+    $ref: 'v1/services/admin/admin-operations.yml#/admin/register'
+  "/api/v1/businesses":
+    $ref: 'v1/services/business/businesses-operations.yml#/businesses/get-businesses'
+  "/api/v1/businesses/{businessId}/users":
+    $ref: 'v1/services/business/businesses-operations.yml#/businesses/get-business-users'
+  "/api/v1/businesses/{businessId}/worklogs/clock-in":
+    $ref: 'v1/services/worklogs/worklogs-operations.yml#/worklogs/clock-in'
+  "/api/v1/businesses/{businessId}/worklogs/clock-out":
+    $ref: 'v1/services/worklogs/worklogs-operations.yml#/worklogs/clock-out'
+  "/api/v1/businesses/{businessId}/worklogs":
+    $ref: 'v1/services/worklogs/worklogs-operations.yml#/worklogs/filtered-worklogs'
+  "/api/v1/businesses/{businessId}timesheets/weekly-hours":
+    $ref: 'v1/services/timesheet/timesheet-operations.yml#/reports/weekly-hours'
+  "/api/v1/businesses/{businessId}/invitations":
+    post:
+      $ref: 'v1/services/invitations/invitations-operations.yml#/invitations/create-business-invitation/post'
+    get:
+      $ref: 'v1/services/invitations/invitations-operations.yml#/invitations/get-business-invitations/get'
+  "/api/v1/businesses/{businessId}/invitations/{invitationId}":
+    $ref: 'v1/services/invitations/invitations-operations.yml#/invitations/delete-business-invitation'
+  "/api/v1/invitations/accept":
+    $ref: 'v1/services/invitations/invitations-operations.yml#/invitations/accept-invitation'
+
+
+components:
+  securitySchemes:
+    basicAuth:
+      type: http
+      scheme: basic
+      description: Basic authentication with username and password
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT-based authentication

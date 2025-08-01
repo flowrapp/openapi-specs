@@ -23,7 +23,7 @@ jobs:
         run: npm i -g @redocly/cli@latest
 
       - name: Bundle OpenAPI spec
-        run: redocly bundle api/open-api-rest.yml -o api/bundle-openapi.yaml
+        run: redocly bundle api/main-api/rest/open-api-rest.yml -o api/main-api/rest/bundle-openapi.yaml
 
       - name: Push spec file to Stainless
         uses: stainless-api/upload-openapi-spec-action@main
@@ -31,7 +31,7 @@ jobs:
           stainless_api_key: ${{ secrets.STAINLESS_API_KEY }}
           project_name: ${{ env.STAINLESS_PROJECT_NAME }}
           # Note: this should be the path to your specification file
-          input_path: "api/bundle-openapi.yaml"
+          input_path: "api/main-api/rest/bundle-openapi.yaml"
           # Note: this file will be your spec extended with code samples
           output_path: "./openapi-with-code-samples.json"
 

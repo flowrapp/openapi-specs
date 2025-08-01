@@ -1,0 +1,50 @@
+auth:
+  login:
+    post:
+      summary: Authenticate a user
+      description: Authenticates a user by validating their username and password credentials. Upon successful
+        authentication, it generates and returns access and refresh tokens that can be used for 
+        subsequent authorized API requests.
+      tags:
+        - Authentication
+      operationId: login
+      requestBody:
+        description: User credentials
+        content:
+          application/json:
+            schema:
+              "$ref": '../../components/auth/auth-components.yml#/components/schemas/LoginRequestDTO'
+        required: true
+      responses:
+        '200':
+          description: Authentication successful
+          content:
+            application/json:
+              schema:
+                "$ref": "../../components/auth/auth-components.yml#/components/schemas/TokenResponseDTO"
+        '401':
+          description: Authentication failed
+
+  token-refresh:
+    post:
+      summary: Refresh authentication tokens
+      description: Renews authentication by generating new access and refresh tokens using a valid refresh token.
+      tags:
+        - Authentication
+      operationId: refreshToken
+      requestBody:
+        description: Refresh token
+        content:
+          application/json:
+            schema:
+              "$ref": '../../components/auth/auth-components.yml#/components/schemas/RefreshRequestDTO'
+        required: true
+      responses:
+        '200':
+          description: Token refresh successful
+          content:
+            application/json:
+              schema:
+                "$ref": "../../components/auth/auth-components.yml#/components/schemas/TokenResponseDTO"
+        '401':
+          description: Invalid or expired refresh token

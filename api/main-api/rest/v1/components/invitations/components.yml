@@ -1,0 +1,58 @@
+components:
+  schemas:
+    InvitationRequestDTO:
+      type: object
+      description: Request to invite a user to a business
+      properties:
+        email:
+          type: string
+          description: Email address of the invitee
+          example: "invitee@example.com"
+        role:
+          type: string
+          description: Role to assign to the invitee
+          enum: [COLLABORATOR, EMPLOYEE]
+          example: "COLLABORATOR"
+      required:
+        - email
+        - role
+
+    InvitationResponseDTO:
+      type: object
+      description: Response containing invitation details
+      properties:
+        id:
+          type: string
+          description: Unique identifier for the invitation
+          example: "inv-123"
+        email:
+          type: string
+          description: Email address of the invitee
+          example: "invitee@example.com"
+        role:
+          type: string
+          description: Role assigned to the invitee
+          enum: [COLLABORATOR, EMPLOYEE]
+          example: "COLLABORATOR"
+        status:
+          type: string
+          description: Status of the invitation
+          enum: [PENDING, ACCEPTED, DECLINED, EXPIRED]
+          example: "PENDING"
+        createdAt:
+          type: string
+          format: date-time
+          description: Date and time when the invitation was created
+          example: "2023-06-15T14:30:00Z"
+        expiresAt:
+          type: string
+          format: date-time
+          description: Date and time when the invitation expires
+          example: "2023-06-22T14:30:00Z"
+      required:
+        - id
+        - email
+        - role
+        - status
+        - createdAt
+        - expiresAt

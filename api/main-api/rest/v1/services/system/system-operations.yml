@@ -1,0 +1,25 @@
+system:
+  ping:
+    get:
+      summary: API Health Check
+      description: Simple endpoint to verify that the API is up and running
+      tags:
+        - System
+      operationId: ping
+      responses:
+        '200':
+          description: API is operational
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "OK"
+                  timestamp:
+                    type: string
+                    format: date-time
+                    example: "2023-07-01T12:00:00Z"
+                required:
+                  - status

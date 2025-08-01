@@ -9,8 +9,47 @@ on:
     branches: [develop]
 
 jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '16'
+
+      - name: Install Swagger CLI
+        run: npm install -g @apidevtools/swagger-cli
+
+      - name: Validate OpenAPI files with Swagger CLI
+        run: swagger-cli validate api/main-api/rest/open-api-rest.yml
+
+  lint:
+    name: API Linting
+    needs: validate
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: npm install @quobix/vacuum --include=dev
+
+      - name: Lint API
+        run: cd api/main-api/rest && npm exec vacuum report -- --junit open-api-rest.yml lint-results
+
+      - name: Publish Lint Results
+        if: success() || failure()
+        uses: mikepenz/action-junit-report@v5
+        with:
+          check_name: API Lint Results
+          report_paths: lint-results-*.xml
+
   changes:
     name: Detect and preview API changes
+    needs: [validate, lint]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -21,32 +60,8 @@ jobs:
         with:
           doc: ${{secrets.BUMP_DOC_ID}}
           token: ${{secrets.BUMP_TOKEN}}
-          file: api/open-api-rest.yml
+          file: api/main-api/rest/open-api-rest.yml
           command: diff
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  lint:
-    name: API Linting
-    runs-on: ubuntu-latest
-
-    permissions:
-      statuses: write
-      checks: write
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Install dependencies
-        run: npm install @quobix/vacuum --include=dev
-
-      - name: Lint API
-        run: cd api && npm exec vacuum report -- --junit open-api-rest.yml lint-results
-
-      - name: Publish Lint Results
-        if: success() || failure()
-        uses: mikepenz/action-junit-report@v5
-        with:
-          check_name: API Lint Results
-          report_paths: lint-results-*.xml
