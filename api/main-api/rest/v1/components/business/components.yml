@@ -1,0 +1,91 @@
+components:
+  schemas:
+    BusinessResponseDTO:
+      type: object
+      description: Business information with identifier
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: Unique identifier for the business
+          example: 101
+        name:
+          type: string
+          description: Name of the business
+          example: "Coffee Time"
+        location:
+          $ref: '#/components/schemas/LocationDTO'
+        userRole:
+          type: string
+          description: Role of the current authenticated user in the business
+          enum: [OWNER, COLLABORATOR, EMPLOYEE]
+          example: "OWNER"
+      required:
+        - id
+        - name
+        - location
+        - userRole
+
+    BusinessUsersResponseDTO:
+      type: object
+      description: Response containing users associated with a business
+      properties:
+        users:
+          type: array
+          description: List of users associated with the business
+          items:
+            $ref: '#/components/schemas/BusinessUserResponseDTO'
+      required:
+        - users
+
+    BusinessUserResponseDTO:
+      type: object
+      description: User information associated with a business
+      properties:
+        userId:
+          type: string
+          description: Unique identifier for the user
+          example: "user-1"
+        username:
+          type: string
+          description: Username of the user
+          example: "john.doe"
+        email:
+          type: string
+          description: Email address of the user
+          example: "john@example.com"
+        role:
+          type: string
+          description: Role of the user in the business
+          enum: [OWNER, COLLABORATOR, EMPLOYEE]
+          example: "OWNER"
+      required:
+        - userId
+        - username
+        - email
+        - role
+
+
+    LocationDTO:
+      type: object
+      description: Geographic location information
+      properties:
+        latitude:
+          type: number
+          format: double
+          description: Latitude coordinate
+          example: 30.5
+        longitude:
+          type: number
+          format: double
+          description: Longitude coordinate
+          example: 50.5
+        area:
+          type: number
+          format: double
+          description: Area size in square units
+          example: 5.3
+      required:
+        - latitude
+        - longitude
+        - area

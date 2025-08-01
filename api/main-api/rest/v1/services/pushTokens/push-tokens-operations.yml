@@ -1,0 +1,71 @@
+pushTokens:
+  push-tokens:
+    post:
+      summary: Register push notification token
+      description: Registers a device push notification token for the authenticated user
+      tags:
+        - Push Tokens
+      operationId: registerPushToken
+      security:
+        - basicAuth: []
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '../../components/pushTokens/components.yml#/components/schemas/PushTokenRequestDTO'
+      responses:
+        '201':
+          description: Push token registered successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Push token registered successfully"
+        '400':
+          description: Invalid request
+        '401':
+          description: Unauthorized
+
+    delete:
+      summary: Delete push notification token
+      description: Deletes a device push notification token for the authenticated user
+      tags:
+        - Push Tokens
+      operationId: deletePushToken
+      security:
+        - basicAuth: []
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '../../components/pushTokens/components.yml#/components/schemas/DeletePushTokenRequestDTO'
+      responses:
+        '200':
+          description: Push token deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "Push token deleted successfully"
+        '400':
+          description: Invalid request
+        '401':
+          description: Unauthorized
+        '404':
+          description: Push token not found

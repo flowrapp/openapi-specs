@@ -1,0 +1,39 @@
+components:
+  schemas:
+    LoginRequestDTO:
+      type: object
+      description: Request object for user login
+      properties:
+        username:
+          type: string
+          description: Username for authentication
+          example: user
+        password:
+          type: string
+          description: Password for authentication
+          example: pass
+      required:
+        - username
+        - password
+    TokenResponseDTO:
+      type: object
+      description: Response object containing authentication tokens
+      properties:
+        accessToken:
+          type: string
+          description: JWT access token
+          example: eyJhbGciOiJIUzI1NiIs...
+        refreshToken:
+          type: string
+          description: Refresh token for obtaining new access tokens
+          example: d8a1fef4-234d-4c2b-bd7a-...
+    RefreshRequestDTO:
+      type: object
+      description: Request object for token refresh
+      properties:
+        refreshToken:
+          type: string
+          description: Refresh token for obtaining new access tokens
+          example: d8a1fef4-234d-4c2b-bd7a-...
+      required:
+        - refreshToken

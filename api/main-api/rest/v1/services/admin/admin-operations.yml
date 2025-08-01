@@ -1,0 +1,24 @@
+admin:
+  register:
+    post:
+      summary: Register a new user with businesses
+      description: Creates a new user account in the system with associations to one or more businesses.
+      tags:
+        - Admin
+      operationId: registerUser
+      security:
+        - basicAuth: []
+      requestBody:
+        description: User registration information
+        content:
+          application/json:
+            schema:
+              "$ref": '../../components/admin/components.yml#/components/schemas/RegisterRequestDTO'
+        required: true
+      responses:
+        '201':
+          description: User registered successfully
+        '400':
+          description: Invalid request data
+        '409':
+          description: Username or email already exists

@@ -1,0 +1,32 @@
+components:
+  schemas:
+    PushTokenRequestDTO:
+      type: object
+      properties:
+        token:
+          type: string
+          description: The push notification token
+          example: "abcdef123456"
+        platform:
+          type: string
+          description: The device platform
+          enum: [ANDROID, IOS]
+          example: "ANDROID"
+        deviceId:
+          type: string
+          description: Unique identifier for the device
+          example: "uuid-of-device"
+      required:
+        - token
+        - platform
+        - deviceId
+
+    DeletePushTokenRequestDTO:
+      type: object
+      properties:
+        deviceId:
+          type: string
+          description: Unique identifier for the device
+          example: "uuid-of-device"
+      required:
+        - deviceId

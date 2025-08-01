@@ -1,0 +1,70 @@
+components:
+  schemas:
+    RegisterRequestDTO:
+      type: object
+      description: Request object for user registration
+      properties:
+        username:
+          type: string
+          description: Username for the new user
+          example: username
+        mail:
+          type: string
+          description: Email address for the new user
+          example: mail
+        business:
+          type: array
+          description: List of businesses associated with the user
+          items:
+            $ref: '#/components/schemas/BusinessDTO'
+          example:
+            - name: Business 1
+              location:
+                latitude: 30.5
+                longitude: 50.5
+                area: 5.3
+            - name: Business 2
+              location:
+                latitude: 35.2
+                longitude: 45.7
+                area: 3.9
+      required:
+        - username
+        - mail
+        - business
+    BusinessDTO:
+      type: object
+      description: Business information
+      properties:
+        name:
+          type: string
+          description: Name of the business
+          example: Business 1
+        location:
+          $ref: '#/components/schemas/LocationDTO'
+      required:
+        - name
+        - location
+    LocationDTO:
+      type: object
+      description: Geographic location information
+      properties:
+        latitude:
+          type: number
+          format: double
+          description: Latitude coordinate
+          example: 30.5
+        longitude:
+          type: number
+          format: double
+          description: Longitude coordinate
+          example: 50.5
+        area:
+          type: number
+          format: double
+          description: Area size in square units
+          example: 5.3
+      required:
+        - latitude
+        - longitude
+        - area
