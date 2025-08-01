@@ -7,8 +7,6 @@ components:
         content:
           type: array
           description: The page content (array of items)
-          items:
-            type: object
         page:
           type: integer
           format: int32
