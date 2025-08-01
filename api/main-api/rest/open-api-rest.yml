@@ -31,8 +31,12 @@ tags:
     description: Time tracking recording and management operations.
   - name: Reports
     description: Reporting and analytics endpoints that provide aggregated data and insights.
+  - name: System
+    description: System utility endpoints for monitoring and health checks.
 
 paths:
+  "/api/v1/ping":
+    $ref: 'v1/services/system/system-operations.yml#/system/ping'
   "/api/v1/users":
     $ref: 'v1/services/users/user-operations.yml#/users'
   "/api/v1/auth/login":
