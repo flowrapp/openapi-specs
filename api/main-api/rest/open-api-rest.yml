@@ -62,10 +62,7 @@ paths:
   "/api/v1/businesses/{businessId}/timesheets/weekly-hours":
     $ref: 'v1/services/timesheet/timesheet-operations.yml#/timesheet/weekly-hours'
   "/api/v1/businesses/{businessId}/invitations":
-    post:
-      $ref: 'v1/services/invitations/invitations-operations.yml#/invitations/create-business-invitation/post'
-    get:
-      $ref: 'v1/services/invitations/invitations-operations.yml#/invitations/get-business-invitations/get'
+    $ref: 'v1/services/invitations/invitations-operations.yml#/invitations/get-and-create-invitations'
   "/api/v1/businesses/{businessId}/invitations/{invitationId}":
     $ref: 'v1/services/invitations/invitations-operations.yml#/invitations/delete-business-invitation'
   "/api/v1/invitations/accept":
