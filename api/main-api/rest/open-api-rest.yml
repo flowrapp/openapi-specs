@@ -55,12 +55,14 @@ paths:
     $ref: 'v1/services/worklogs/worklogs-operations.yml#/worklogs/clock-out'
   "/api/v1/businesses/{businessId}/worklogs":
     $ref: 'v1/services/worklogs/worklogs-operations.yml#/worklogs/filtered-worklogs'
-  "/api/v1/timesheets/weekly-hours":
+  "/api/v1/businesses/{businessId}timesheets/weekly-hours":
     $ref: 'v1/services/timesheet/timesheet-operations.yml#/reports/weekly-hours'
   "/api/v1/businesses/{businessId}/invitations":
-    $ref: 'v1/services/business/businesses-operations.yml#/businesses/create-business-invitation'
+    $ref: 'v1/services/invitations/invitations-operations.yml#/invitations/create-business-invitation'
+  "/api/v1/businesses/{businessId}/invitations/list":
+    $ref: 'v1/services/invitations/invitations-operations.yml#/invitations/get-business-invitations'
   "/api/v1/businesses/{businessId}/invitations/{invitationId}":
-    $ref: 'v1/services/business/businesses-operations.yml#/businesses/delete-business-invitation'
+    $ref: 'v1/services/invitations/invitations-operations.yml#/invitations/delete-business-invitation'
   "/api/v1/invitations/accept":
     $ref: 'v1/services/invitations/invitations-operations.yml#/invitations/accept-invitation'
 

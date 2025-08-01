@@ -28,21 +28,15 @@ components:
 
     BusinessUsersResponseDTO:
       type: object
-      description: Combined response containing both users and invitations for a business
+      description: Response containing users associated with a business
       properties:
         users:
           type: array
           description: List of users associated with the business
           items:
             $ref: '#/components/schemas/BusinessUserResponseDTO'
-        invitations:
-          type: array
-          description: List of pending invitations for the business
-          items:
-            $ref: '../invitations/components.yml#/components/schemas/InvitationResponseDTO'
       required:
         - users
-        - invitations
 
     BusinessUserResponseDTO:
       type: object

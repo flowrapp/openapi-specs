@@ -39,7 +39,7 @@ businesses:
   get-business-users:
     get:
       summary: Get users associated within a business
-      description: Retrieves lists of users and pending invitations associated with the specified business. Can be filtered by role.
+      description: Retrieves a list of users associated with the specified business. Can be filtered by role.
       tags:
         - Businesses
       operationId: getBusinessUsers
@@ -60,16 +60,9 @@ businesses:
           schema:
             type: string
             enum: [OWNER, COLLABORATOR, EMPLOYEE]
-        - name: includePending
-          in: query
-          required: false
-          description: Whether to include pending invitations
-          schema:
-            type: boolean
-            default: false
       responses:
         '200':
-          description: Users and invitations retrieved successfully
+          description: Users retrieved successfully
           content:
             application/json:
               schema:
@@ -84,101 +77,7 @@ businesses:
                     username: "jane.smith"
                     email: "jane@example.com"
                     role: "COLLABORATOR"
-                invitations:
-                  - id: "inv-123"
-                    email: "invitee@example.com"
-                    role: "COLLABORATOR"
-                    status: "PENDING"
-                    createdAt: "2023-06-15T14:30:00Z"
-                    expiresAt: "2023-06-22T14:30:00Z"
         '401':
           description: Unauthorized
         '404':
           description: Business not found
-
-  create-business-invitation:
-    post:
-      summary: Create a business invitation
-      description: Creates a new invitation to join a business with a specified role.
-      tags:
-        - Businesses
-        - Invitations
-      operationId: createBusinessInvitation
-      security:
-        - basicAuth: []
-        - bearerAuth: []
-      parameters:
-        - name: businessId
-          in: path
-          required: true
-          description: Unique identifier of the business
-          schema:
-            type: string
-      requestBody:
-        description: Invitation details
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '../../components/invitations/components.yml#/components/schemas/InvitationRequestDTO'
-            example:
-              email: "invitee@example.com"
-              role: "COLLABORATOR"
-      responses:
-        '201':
-          description: Invitation created successfully
-          content:
-            application/json:
-              schema:
-                $ref: '../../components/invitations/components.yml#/components/schemas/InvitationResponseDTO'
-              example:
-                id: "inv-123"
-                email: "invitee@example.com"
-                role: "COLLABORATOR"
-                status: "PENDING"
-                createdAt: "2023-06-15T14:30:00Z"
-                expiresAt: "2023-06-22T14:30:00Z"
-        '400':
-          description: Invalid request
-        '401':
-          description: Unauthorized
-        '403':
-          description: Forbidden - User does not have permission to create invitations
-        '404':
-          description: Business not found
-        '409':
-          description: Conflict - User already invited or already a member
-
-  delete-business-invitation:
-    delete:
-      summary: Delete a business invitation
-      description: Deletes an existing invitation to join a business.
-      tags:
-        - Businesses
-        - Invitations
-      operationId: deleteBusinessInvitation
-      security:
-        - basicAuth: []
-        - bearerAuth: []
-      parameters:
-        - name: businessId
-          in: path
-          required: true
-          description: Unique identifier of the business
-          schema:
-            type: string
-        - name: invitationId
-          in: path
-          required: true
-          description: Unique identifier of the invitation
-          schema:
-            type: string
-      responses:
-        '204':
-          description: Invitation deleted successfully
-        '401':
-          description: Unauthorized
-        '403':
-          description: Forbidden - User does not have permission to delete invitations
-        '404':
-          description: Business or invitation not found

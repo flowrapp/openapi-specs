@@ -11,7 +11,7 @@ reports:
         - bearerAuth: []
       parameters:
         - name: businessId
-          in: query
+          in: path
           required: true
           description: ID of the business to filter by
           schema:
