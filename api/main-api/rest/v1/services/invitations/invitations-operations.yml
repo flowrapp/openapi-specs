@@ -19,21 +19,7 @@ invitations:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    description: Success message
-                    example: "Invitation accepted successfully"
-                  businessId:
-                    type: string
-                    description: ID of the business the user has joined
-                    example: "business-123"
-                  role:
-                    type: string
-                    description: Role assigned to the user in the business
-                    enum: [COLLABORATOR, EMPLOYEE]
-                    example: "COLLABORATOR"
+                $ref: '../../components/invitations/components.yml#/components/schemas/AcceptInvitationResponseDTO'
         '400':
           description: Invalid request or token
         '404':
@@ -57,7 +43,7 @@ invitations:
           required: true
           description: Unique identifier of the business
           schema:
-            type: string
+            type: integer
       requestBody:
         description: Invitation details
         required: true
@@ -67,7 +53,7 @@ invitations:
               $ref: '../../components/invitations/components.yml#/components/schemas/InvitationRequestDTO'
             example:
               email: "invitee@example.com"
-              role: "COLLABORATOR"
+              role: "MANAGER"
       responses:
         '201':
           description: Invitation created successfully
@@ -76,9 +62,9 @@ invitations:
               schema:
                 $ref: '../../components/invitations/components.yml#/components/schemas/InvitationResponseDTO'
               example:
-                id: "inv-123"
+                id: 123
                 email: "invitee@example.com"
-                role: "COLLABORATOR"
+                role: "MANAGER"
                 status: "PENDING"
                 createdAt: "2023-06-15T14:30:00Z"
                 expiresAt: "2023-06-22T14:30:00Z"
@@ -107,7 +93,7 @@ invitations:
           required: true
           description: Unique identifier of the business
           schema:
-            type: string
+            type: integer
         - name: status
           in: query
           required: false
@@ -126,13 +112,13 @@ invitations:
                 items:
                   $ref: '../../components/invitations/components.yml#/components/schemas/InvitationResponseDTO'
               example:
-                - id: "inv-123"
+                - id: 123
                   email: "invitee@example.com"
                   role: "COLLABORATOR"
                   status: "PENDING"
                   createdAt: "2023-06-15T14:30:00Z"
                   expiresAt: "2023-06-22T14:30:00Z"
-                - id: "inv-124"
+                - id: 124
                   email: "another@example.com"
                   role: "EMPLOYEE"
                   status: "PENDING"
@@ -161,13 +147,13 @@ invitations:
           required: true
           description: Unique identifier of the business
           schema:
-            type: string
+            type: integer
         - name: invitationId
           in: path
           required: true
           description: Unique identifier of the invitation
           schema:
-            type: string
+            type: integer
       responses:
         '204':
           description: Invitation deleted successfully
@@ -177,5 +163,3 @@ invitations:
           description: Forbidden - User does not have permission to delete invitations
         '404':
           description: Business or invitation not found
-
-

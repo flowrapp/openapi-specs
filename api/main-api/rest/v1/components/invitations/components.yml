@@ -11,10 +11,32 @@ components:
         role:
           type: string
           description: Role to assign to the invitee
-          enum: [COLLABORATOR, EMPLOYEE]
-          example: "COLLABORATOR"
+          enum: [OWNER, MANAGER, EMPLOYEE]
+          example: "MANAGER"
       required:
         - email
+        - role
+
+    AcceptInvitationResponseDTO:
+      type: object
+      description: Response after successfully accepting an invitation
+      properties:
+        invitationId:
+          type: integer
+          description: ID of the invitation that was accepted
+          example: 123
+        businessId:
+          type: integer
+          description: ID of the business the user has joined
+          example: 123
+        role:
+          type: string
+          description: Role assigned to the user in the business
+          enum: [OWNER, MANAGER, EMPLOYEE]
+          example: "MANAGER"
+      required:
+        - invitationId
+        - businessId
         - role
 
     InvitationResponseDTO:
@@ -22,9 +44,9 @@ components:
       description: Response containing invitation details
       properties:
         id:
-          type: string
+          type: integer
           description: Unique identifier for the invitation
-          example: "inv-123"
+          example: 123
         email:
           type: string
           description: Email address of the invitee
