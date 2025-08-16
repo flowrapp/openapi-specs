@@ -13,6 +13,7 @@ invitations:
           description: Token to validate the invitation
           schema:
             type: string
+            pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
       responses:
         '200':
           description: Invitation accepted successfully
