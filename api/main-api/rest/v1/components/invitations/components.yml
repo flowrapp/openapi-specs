@@ -54,8 +54,8 @@ components:
         role:
           type: string
           description: Role assigned to the invitee
-          enum: [COLLABORATOR, EMPLOYEE]
-          example: "COLLABORATOR"
+          enum: [OWNER, MANAGER, EMPLOYEE]
+          example: "MANAGER"
         status:
           type: string
           description: Status of the invitation
