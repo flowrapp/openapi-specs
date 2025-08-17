@@ -42,7 +42,9 @@ paths:
   "/api/v1/push-tokens":
     $ref: 'v1/services/pushTokens/push-tokens-operations.yml#/pushTokens/push-tokens'
   "/api/v1/users":
-    $ref: 'v1/services/users/user-operations.yml#/users'
+    $ref: 'v1/services/users/user-operations.yml#/users/byName'
+  "/api/v1/users/password":
+    $ref: 'v1/services/users/user-operations.yml#/users/change-password'
   "/api/v1/auth/login":
     $ref: 'v1/services/auth/auth-operations.yml#/auth/login'
   "/api/v1/auth/token-refresh":
