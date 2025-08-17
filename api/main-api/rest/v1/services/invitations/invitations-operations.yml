@@ -53,10 +53,6 @@ invitations:
       responses:
         '200':
           description: Invitation accepted successfully
-          content:
-            application/json:
-              schema:
-                $ref: '../../components/invitations/components.yml#/components/schemas/AcceptInvitationResponseDTO'
         '400':
           description: Invalid request or token
         '404':

@@ -40,28 +40,6 @@ components:
         - email
         - role
 
-    AcceptInvitationResponseDTO:
-      type: object
-      description: Response after successfully accepting an invitation
-      properties:
-        invitationId:
-          type: integer
-          description: ID of the invitation that was accepted
-          example: 123
-        businessId:
-          type: integer
-          description: ID of the business the user has joined
-          example: 123
-        role:
-          type: string
-          description: Role assigned to the user in the business
-          enum: [OWNER, MANAGER, EMPLOYEE]
-          example: "MANAGER"
-      required:
-        - invitationId
-        - businessId
-        - role
-
     InvitationResponseDTO:
       type: object
       description: Response containing invitation details
