@@ -1,4 +1,40 @@
 invitations:
+  register-user-from-invitation:
+    post:
+      summary: Register user from invitation
+      description: Registers a new user who received an invitation email, clicked on it, and filled out the registration form with their details. This endpoint is called after the user submits the form.
+      tags:
+        - Invitations
+      operationId: registerUserFromInvitation
+      parameters:
+        - name: token
+          in: query
+          required: true
+          description: Token from the invitation email to validate the user registration
+          schema:
+            type: string
+            pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      requestBody:
+        description: Registration details for the new user
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '../../components/invitations/components.yml#/components/schemas/RegisterUserFromInvitationRequestDTO'
+            example:
+              username: "johndoe"
+              phone: "+1234567890"
+              password: "securePassword123"
+      responses:
+        '201':
+          description: User registered successfully
+        '400':
+          description: Invalid request or token
+        '404':
+          description: Token not found
+        '409':
+          description: Username or phone already exists
+
   accept-invitation:
     post:
       summary: Accept an invitation

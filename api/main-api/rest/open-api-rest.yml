@@ -67,6 +67,8 @@ paths:
     $ref: 'v1/services/invitations/invitations-operations.yml#/invitations/delete-business-invitation'
   "/api/v1/invitations/accept":
     $ref: 'v1/services/invitations/invitations-operations.yml#/invitations/accept-invitation'
+  "/api/v1/invitations/register":
+    $ref: 'v1/services/invitations/invitations-operations.yml#/invitations/register-user-from-invitation'
 
 
 components:
