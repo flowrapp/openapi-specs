@@ -1,4 +1,40 @@
 invitations:
+  register-user-from-invitation:
+    post:
+      summary: Register user from invitation
+      description: Registers a new user an accepts the invitation.
+      tags:
+        - Invitations
+      operationId: registerUserFromInvitation
+      parameters:
+        - name: token
+          in: query
+          required: true
+          description: Token from the invitation email to validate the user registration
+          schema:
+            type: string
+            pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      requestBody:
+        description: Registration details for the new user
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '../../components/invitations/components.yml#/components/schemas/RegisterUserFromInvitationRequestDTO'
+            example:
+              username: "johndoe"
+              phone: "+1234567890"
+              password: "securePassword123"
+      responses:
+        '201':
+          description: User registered successfully
+        '400':
+          description: Invalid request or token
+        '404':
+          description: Token not found
+        '409':
+          description: Username or phone already exists
+
   accept-invitation:
     post:
       summary: Accept an invitation
@@ -6,6 +42,9 @@ invitations:
       tags:
         - Invitations
       operationId: acceptInvitation
+      security:
+        - basicAuth: [ ]
+        - bearerAuth: [ ]
       parameters:
         - name: token
           in: query
@@ -13,27 +52,10 @@ invitations:
           description: Token to validate the invitation
           schema:
             type: string
+            pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
       responses:
         '200':
           description: Invitation accepted successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    description: Success message
-                    example: "Invitation accepted successfully"
-                  businessId:
-                    type: string
-                    description: ID of the business the user has joined
-                    example: "business-123"
-                  role:
-                    type: string
-                    description: Role assigned to the user in the business
-                    enum: [COLLABORATOR, EMPLOYEE]
-                    example: "COLLABORATOR"
         '400':
           description: Invalid request or token
         '404':
@@ -57,7 +79,7 @@ invitations:
           required: true
           description: Unique identifier of the business
           schema:
-            type: string
+            type: integer
       requestBody:
         description: Invitation details
         required: true
@@ -67,7 +89,7 @@ invitations:
               $ref: '../../components/invitations/components.yml#/components/schemas/InvitationRequestDTO'
             example:
               email: "invitee@example.com"
-              role: "COLLABORATOR"
+              role: "MANAGER"
       responses:
         '201':
           description: Invitation created successfully
@@ -76,9 +98,9 @@ invitations:
               schema:
                 $ref: '../../components/invitations/components.yml#/components/schemas/InvitationResponseDTO'
               example:
-                id: "inv-123"
+                id: 123
                 email: "invitee@example.com"
-                role: "COLLABORATOR"
+                role: "MANAGER"
                 status: "PENDING"
                 createdAt: "2023-06-15T14:30:00Z"
                 expiresAt: "2023-06-22T14:30:00Z"
@@ -107,7 +129,7 @@ invitations:
           required: true
           description: Unique identifier of the business
           schema:
-            type: string
+            type: integer
         - name: status
           in: query
           required: false
@@ -126,13 +148,13 @@ invitations:
                 items:
                   $ref: '../../components/invitations/components.yml#/components/schemas/InvitationResponseDTO'
               example:
-                - id: "inv-123"
+                - id: 123
                   email: "invitee@example.com"
                   role: "COLLABORATOR"
                   status: "PENDING"
                   createdAt: "2023-06-15T14:30:00Z"
                   expiresAt: "2023-06-22T14:30:00Z"
-                - id: "inv-124"
+                - id: 124
                   email: "another@example.com"
                   role: "EMPLOYEE"
                   status: "PENDING"
@@ -161,13 +183,13 @@ invitations:
           required: true
           description: Unique identifier of the business
           schema:
-            type: string
+            type: integer
         - name: invitationId
           in: path
           required: true
           description: Unique identifier of the invitation
           schema:
-            type: string
+            type: integer
       responses:
         '204':
           description: Invitation deleted successfully
@@ -178,4 +200,46 @@ invitations:
         '404':
           description: Business or invitation not found
 
-
+  get-invitations:
+    get:
+      summary: Get invitations for user
+      description: Retrieves a list of all invitations for the currently authenticated user.
+      tags:
+        - Invitations
+      operationId: getUserInvitations
+      security:
+        - basicAuth: [ ]
+        - bearerAuth: [ ]
+      parameters:
+        - name: status
+          in: query
+          required: false
+          description: Filter invitations by status
+          schema:
+            type: string
+            enum: [ PENDING, ACCEPTED, DECLINED, EXPIRED ]
+            default: PENDING
+      responses:
+        '200':
+          description: Invitations retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '../../components/invitations/components.yml#/components/schemas/InvitationResponseDTO'
+              example:
+                - id: 123
+                  email: "invitee@example.com"
+                  role: "COLLABORATOR"
+                  status: "PENDING"
+                  createdAt: "2023-06-15T14:30:00Z"
+                  expiresAt: "2023-06-22T14:30:00Z"
+                - id: 124
+                  email: "another@example.com"
+                  role: "EMPLOYEE"
+                  status: "PENDING"
+                  createdAt: "2023-06-16T10:15:00Z"
+                  expiresAt: "2023-06-23T10:15:00Z"
+        '401':
+          description: Unauthorized
