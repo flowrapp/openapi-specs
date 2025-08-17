@@ -199,3 +199,47 @@ invitations:
           description: Forbidden - User does not have permission to delete invitations
         '404':
           description: Business or invitation not found
+
+  get-invitations:
+    get:
+      summary: Get invitations for the authenticated user
+      description: Retrieves a list of all invitations for the currently authenticated user.
+      tags:
+        - Invitations
+      operationId: getUserInvitations
+      security:
+        - basicAuth: [ ]
+        - bearerAuth: [ ]
+      parameters:
+        - name: status
+          in: query
+          required: false
+          description: Filter invitations by status
+          schema:
+            type: string
+            enum: [ PENDING, ACCEPTED, DECLINED, EXPIRED ]
+            default: PENDING
+      responses:
+        '200':
+          description: Invitations retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '../../components/invitations/components.yml#/components/schemas/InvitationResponseDTO'
+              example:
+                - id: 123
+                  email: "invitee@example.com"
+                  role: "COLLABORATOR"
+                  status: "PENDING"
+                  createdAt: "2023-06-15T14:30:00Z"
+                  expiresAt: "2023-06-22T14:30:00Z"
+                - id: 124
+                  email: "another@example.com"
+                  role: "EMPLOYEE"
+                  status: "PENDING"
+                  createdAt: "2023-06-16T10:15:00Z"
+                  expiresAt: "2023-06-23T10:15:00Z"
+        '401':
+          description: Unauthorized
