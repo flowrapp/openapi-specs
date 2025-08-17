@@ -55,7 +55,7 @@ paths:
     $ref: 'v1/services/business/businesses-operations.yml#/businesses/get-business-users'
   "/api/v1/businesses/{businessId}/worklogs/clock-in":
     $ref: 'v1/services/worklogs/worklogs-operations.yml#/worklogs/clock-in'
-  "/api/v1/businesses/{businessId}/worklogs{worklogId}/clock-out":
+  "/api/v1/businesses/{businessId}/worklogs/{worklogId}/clock-out":
     $ref: 'v1/services/worklogs/worklogs-operations.yml#/worklogs/clock-out'
   "/api/v1/businesses/{businessId}/worklogs":
     $ref: 'v1/services/worklogs/worklogs-operations.yml#/worklogs/filtered-worklogs'
