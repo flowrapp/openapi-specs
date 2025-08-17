@@ -2,7 +2,7 @@ invitations:
   register-user-from-invitation:
     post:
       summary: Register user from invitation
-      description: Registers a new user who received an invitation email, clicked on it, and filled out the registration form with their details. This endpoint is called after the user submits the form.
+      description: Registers a new user an accepts the invitation.
       tags:
         - Invitations
       operationId: registerUserFromInvitation
@@ -42,6 +42,9 @@ invitations:
       tags:
         - Invitations
       operationId: acceptInvitation
+      security:
+        - basicAuth: [ ]
+        - bearerAuth: [ ]
       parameters:
         - name: token
           in: query
