@@ -1,5 +1,28 @@
 components:
   schemas:
+    RegisterUserFromInvitationRequestDTO:
+      type: object
+      description: Registration details for a new user who received an invitation
+      properties:
+        username:
+          type: string
+          description: Username for the new user
+          example: "johndoe"
+        phone:
+          type: string
+          description: Phone number of the user
+          maxLength: 15
+          example: "+1234567890"
+        password:
+          type: string
+          description: Password for the new user
+          format: password
+          example: "securePassword123"
+      required:
+        - username
+        - phone
+        - password
+
     InvitationRequestDTO:
       type: object
       description: Request to invite a user to a business
@@ -11,8 +34,8 @@ components:
         role:
           type: string
           description: Role to assign to the invitee
-          enum: [COLLABORATOR, EMPLOYEE]
-          example: "COLLABORATOR"
+          enum: [OWNER, MANAGER, EMPLOYEE]
+          example: "MANAGER"
       required:
         - email
         - role
@@ -22,9 +45,9 @@ components:
       description: Response containing invitation details
       properties:
         id:
-          type: string
+          type: integer
           description: Unique identifier for the invitation
-          example: "inv-123"
+          example: 123
         email:
           type: string
           description: Email address of the invitee
@@ -32,8 +55,8 @@ components:
         role:
           type: string
           description: Role assigned to the invitee
-          enum: [COLLABORATOR, EMPLOYEE]
-          example: "COLLABORATOR"
+          enum: [OWNER, MANAGER, EMPLOYEE]
+          example: "MANAGER"
         status:
           type: string
           description: Status of the invitation
