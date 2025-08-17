@@ -22,3 +22,14 @@ components:
           type: string
           description: Document National Identity of the user
           example: 12345678A
+    PasswordChangeRequestDTO:
+      type: object
+      description: Request object for changing user password
+      properties:
+        password:
+          type: string
+          description: New password for the user
+          format: password
+          example: "newSecurePassword123"
+      required:
+        - password
