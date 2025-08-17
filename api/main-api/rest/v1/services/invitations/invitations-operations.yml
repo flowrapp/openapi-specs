@@ -202,7 +202,7 @@ invitations:
 
   get-invitations:
     get:
-      summary: Get invitations for the authenticated user
+      summary: Get invitations for user
       description: Retrieves a list of all invitations for the currently authenticated user.
       tags:
         - Invitations
