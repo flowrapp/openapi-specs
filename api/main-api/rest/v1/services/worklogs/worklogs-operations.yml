@@ -54,6 +54,13 @@ worklogs:
           schema:
             type: integer
             format: int64
+        - name: worklogId
+          in: path
+          required: true
+          description: ID of the worklog to close
+          schema:
+            type: integer
+            format: int64
       requestBody:
         description: Clock-out information (optional)
         content:
@@ -136,3 +143,130 @@ worklogs:
           description: Unauthorized
         '404':
           description: Business not found
+
+  get-worklogs:
+    get:
+      summary: Get user worklogs
+      description: Retrieves a collection of worklog records for the authenticated user.
+      tags:
+        - Worklogs
+      operationId: getUserWorklogs
+      security:
+        - basicAuth: []
+        - bearerAuth: []
+      parameters:
+        - name: from
+          in: query
+          required: false
+          description: Start date for filtering (format YYYY-MM-DD)
+          schema:
+            type: string
+            format: date
+            example: "2025-07-22"
+        - name: to
+          in: query
+          required: false
+          description: End date for filtering (format YYYY-MM-DD)
+          schema:
+            type: string
+            format: date
+            example: "2025-07-28"
+        - name: date
+          in: query
+          required: false
+          description: Specific date for filtering (alternative to from/to, format YYYY-MM-DD)
+          schema:
+            type: string
+            format: date
+            example: "2025-07-29"
+        - name: businessId
+          in: query
+          required: false
+          description: Filter by business ID
+          schema:
+            type: integer
+            format: int64
+            example: 123
+      responses:
+        '200':
+          description: Worklogs retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '../../components/worklogs/components.yml#/components/schemas/WorkLogResponseDTO'
+        '401':
+          description: Unauthorized
+
+  get-modify-worklog:
+    get:
+      summary: Get worklog by ID
+      description: Retrieves a specific worklog by its unique identifier.
+      tags:
+        - Worklogs
+      operationId: getWorklogById
+      security:
+        - basicAuth: []
+        - bearerAuth: []
+      parameters:
+        - name: worklogId
+          in: path
+          required: true
+          description: ID of the worklog to retrieve
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Worklog retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '../../components/worklogs/components.yml#/components/schemas/WorkLogResponseDTO'
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden - User does not have permission to view this worklog
+        '404':
+          description: Worklog not found
+
+    put:
+      summary: Update worklog
+      description: Updates the clock-in and clock-out times for a specific worklog.
+      tags:
+        - Worklogs
+      operationId: updateWorklog
+      security:
+        - basicAuth: []
+        - bearerAuth: []
+      parameters:
+        - name: worklogId
+          in: path
+          required: true
+          description: ID of the worklog to update
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        description: Updated clock-in and clock-out information
+        content:
+          application/json:
+            schema:
+              $ref: '../../components/worklogs/components.yml#/components/schemas/WorkLogUpdateRequestDTO'
+        required: true
+      responses:
+        '200':
+          description: Worklog updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '../../components/worklogs/components.yml#/components/schemas/WorkLogResponseDTO'
+        '400':
+          description: Invalid request (e.g., clock-out before clock-in)
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden - User does not have permission to update this worklog
+        '404':
+          description: Worklog not found
