@@ -15,8 +15,8 @@ timesheet:
           required: true
           description: ID of the business to filter by
           schema:
-            type: string
-            example: "abc123"
+            type: integer
+            example: 123
         - name: week
           in: query
           required: true
@@ -30,8 +30,8 @@ timesheet:
           required: false
           description: ID of the user to filter by
           schema:
-            type: string
-            example: "u001"
+            type: integer
+            example: 12
       responses:
         '200':
           description: Weekly hours report retrieved successfully
