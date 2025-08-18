@@ -20,6 +20,22 @@ components:
           description: Timestamp for clock-out (optional, server uses current time if omitted)
           example: "2025-07-29T17:30:00"
 
+    WorkLogUpdateRequestDTO:
+      type: object
+      description: Request object for updating a worklog with clock-in and clock-out times
+      properties:
+        clockIn:
+          type: string
+          format: date-time
+          description: Timestamp for clock-in
+          example: "2025-07-29T08:30:00"
+        clockOut:
+          type: string
+          format: date-time
+          description: Timestamp for clock-out
+          example: "2025-07-29T17:30:00"
+          nullable: true
+
     WorkLogResponseDTO:
       type: object
       description: Response object containing worklog information
