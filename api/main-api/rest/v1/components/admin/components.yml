@@ -49,6 +49,7 @@ components:
       required:
         - name
         - location
+        - timezoneOffset
     LocationDTO:
       type: object
       description: Geographic location information
