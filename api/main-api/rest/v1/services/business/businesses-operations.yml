@@ -21,7 +21,7 @@ businesses:
                 example:
                   - id: 101
                     name: "Coffee Time"
-                    timezoneOffset: "Europe/Madrid"
+                    zone: "Europe/Madrid"
                     location:
                       latitude: 30.5
                       longitude: 50.5
@@ -29,7 +29,7 @@ businesses:
                     userRole: "OWNER"
                   - id: 102
                     name: "Tea Corner"
-                    timezoneOffset: "Europe/Madrid"
+                    zone: "Europe/Madrid"
                     location:
                       latitude: 32.0
                       longitude: 51.2

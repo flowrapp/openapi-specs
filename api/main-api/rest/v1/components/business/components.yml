@@ -13,9 +13,9 @@ components:
           type: string
           description: Name of the business
           example: "Coffee Time"
-        timezoneOffset:
+        zone:
           type: string
-          description: Timezone offset in minutes from UTC
+          description: IANA time zone identifier for the business (e.g., America/Caracas)
           example: Europe/Madrid
         location:
           $ref: '#/components/schemas/LocationDTO'
@@ -27,7 +27,7 @@ components:
       required:
         - id
         - name
-        - timezoneOffset
+        - zone
         - location
         - userRole
 
