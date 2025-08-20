@@ -150,7 +150,7 @@ invitations:
               example:
                 - id: 123
                   email: "invitee@example.com"
-                  role: "COLLABORATOR"
+                  role: "MANAGER"
                   status: "PENDING"
                   createdAt: "2023-06-15T14:30:00+00:00"
                   expiresAt: "2023-06-22T14:30:00+00:00"
@@ -231,7 +231,7 @@ invitations:
               example:
                 - id: 123
                   email: "invitee@example.com"
-                  role: "COLLABORATOR"
+                  role: "MANAGER"
                   status: "PENDING"
                   createdAt: "2023-06-15T14:30:00+00:00"
                   expiresAt: "2023-06-22T14:30:00+00:00"

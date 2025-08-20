@@ -22,7 +22,7 @@ components:
         userRole:
           type: string
           description: Role of the current authenticated user in the business
-          enum: [OWNER, COLLABORATOR, EMPLOYEE]
+          enum: [OWNER, MANAGER, EMPLOYEE]
           example: "OWNER"
       required:
         - id
