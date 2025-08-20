@@ -68,13 +68,15 @@ businesses:
           content:
             application/json:
               schema:
-                $ref: '../../components/business/components.yml#/components/schemas/BusinessUserResponseDTO'
+                type: array
+                items:
+                  $ref: '../../components/business/components.yml#/components/schemas/BusinessUserResponseDTO'
               example:
                 - userId: 1
                   username: "john.doe"
                   role: "OWNER"
                 - userId: 2
-                  email: "jane@example.com"
+                  username: "jane.doe"
                   role: "COLLABORATOR"
         '401':
           description: Unauthorized
