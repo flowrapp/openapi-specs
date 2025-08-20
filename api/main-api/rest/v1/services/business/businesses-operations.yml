@@ -21,6 +21,7 @@ businesses:
                 example:
                   - id: 101
                     name: "Coffee Time"
+                    timezoneOffset: "Europe/Madrid"
                     location:
                       latitude: 30.5
                       longitude: 50.5
@@ -28,6 +29,7 @@ businesses:
                     userRole: "OWNER"
                   - id: 102
                     name: "Tea Corner"
+                    timezoneOffset: "Europe/Madrid"
                     location:
                       latitude: 32.0
                       longitude: 51.2
@@ -68,19 +70,12 @@ businesses:
               schema:
                 $ref: '../../components/business/components.yml#/components/schemas/BusinessUserResponseDTO'
               example:
-                content:
-                  - userId: "user-1"
-                    username: "john.doe"
-                    email: "john@example.com"
-                    role: "OWNER"
-                  - userId: "user-2"
-                    username: "jane.smith"
-                    email: "jane@example.com"
-                    role: "COLLABORATOR"
-                page: 0
-                size: 20
-                totalElements: 2
-                totalPages: 1
+                - userId: "user-1"
+                  username: "john.doe"
+                  role: "OWNER"
+                - userId: "user-2"
+                  email: "jane@example.com"
+                  role: "COLLABORATOR"
         '401':
           description: Unauthorized
         '404':
