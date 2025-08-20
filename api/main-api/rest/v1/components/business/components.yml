@@ -58,7 +58,7 @@ components:
         role:
           type: string
           description: Role of the user in the business
-          enum: [OWNER, COLLABORATOR, EMPLOYEE]
+          enum: [OWNER, MANAGER, EMPLOYEE]
           example: "OWNER"
       required:
         - userId

@@ -34,7 +34,7 @@ businesses:
                       latitude: 32.0
                       longitude: 51.2
                       area: 3.2
-                    userRole: "COLLABORATOR"
+                    userRole: "MANAGER"
         '401':
           description: Unauthorized
 
@@ -61,7 +61,7 @@ businesses:
           description: Filter users by role
           schema:
             type: string
-            enum: [OWNER, COLLABORATOR, EMPLOYEE]
+            enum: [OWNER, MANAGER, EMPLOYEE]
       responses:
         '200':
           description: Users retrieved successfully
@@ -77,7 +77,7 @@ businesses:
                   role: "OWNER"
                 - userId: 2
                   username: "jane.doe"
-                  role: "COLLABORATOR"
+                  role: "MANAGER"
         '401':
           description: Unauthorized
         '404':
