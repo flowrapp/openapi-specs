@@ -13,6 +13,10 @@ components:
           type: string
           description: Name of the business
           example: "Coffee Time"
+        timezoneOffset:
+          type: string
+          description: Timezone offset in minutes from UTC
+          example: Europe/Madrid
         location:
           $ref: '#/components/schemas/LocationDTO'
         userRole:
@@ -23,6 +27,7 @@ components:
       required:
         - id
         - name
+        - timezoneOffset
         - location
         - userRole
 
@@ -50,10 +55,6 @@ components:
           type: string
           description: Username of the user
           example: "john.doe"
-        email:
-          type: string
-          description: Email address of the user
-          example: "john@example.com"
         role:
           type: string
           description: Role of the user in the business
@@ -62,7 +63,6 @@ components:
       required:
         - userId
         - username
-        - email
         - role
 
 
