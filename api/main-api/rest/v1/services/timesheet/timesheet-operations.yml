@@ -15,8 +15,8 @@ timesheet:
           required: true
           description: ID of the business to filter by
           schema:
-            type: string
-            example: "abc123"
+            type: integer
+            example: 123
         - name: week
           in: query
           required: true
@@ -30,8 +30,50 @@ timesheet:
           required: false
           description: ID of the user to filter by
           schema:
+            type: integer
+            example: 12
+      responses:
+        '200':
+          description: Weekly hours report retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '../../components/timesheet/components.yml#/components/schemas/WeeklyHoursResponseDTO'
+            text/csv:
+              schema:
+                type: string
+        '400':
+          description: Invalid request parameters
+        '401':
+          description: Unauthorized
+        '404':
+          description: No data found for the specified parameters
+  user-weekly-hours:
+    get:
+      summary: Get current user's weekly hours report
+      description: Retrieves the weekly hours report for the authenticated user.
+      tags:
+        - Timesheet
+      operationId: getCurrentUserWeeklyHoursReport
+      security:
+        - basicAuth: []
+        - bearerAuth: []
+      parameters:
+        - name: week
+          in: query
+          required: true
+          description: ISO week format (YYYY-Www)
+          schema:
             type: string
-            example: "u001"
+            pattern: '^\d{4}-W\d{2}$'
+            example: "2025-W31"
+        - name: businessId
+          in: query
+          required: false
+          description: ID of the business to filter
+          schema:
+            type: integer
+            example: 12
       responses:
         '200':
           description: Weekly hours report retrieved successfully

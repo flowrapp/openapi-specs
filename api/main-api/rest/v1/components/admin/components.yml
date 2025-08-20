@@ -42,9 +42,14 @@ components:
           example: Business 1
         location:
           $ref: '#/components/schemas/LocationDTO'
+        timezoneOffset:
+          type: string
+          description: IANA time zone identifier for the business (e.g., America/Caracas)
+          example: America/Caracas
       required:
         - name
         - location
+        - timezoneOffset
     LocationDTO:
       type: object
       description: Geographic location information

@@ -101,7 +101,7 @@ worklogs:
         - name: from
           in: query
           required: false
-          description: Start date for filtering (format YYYY-MM-DD)
+          description: Start date for filtering (format YYYY-MM-DD). UTC timezone is used.
           schema:
             type: string
             format: date
@@ -109,7 +109,7 @@ worklogs:
         - name: to
           in: query
           required: false
-          description: End date for filtering (format YYYY-MM-DD)
+          description: End date for filtering (format YYYY-MM-DD). UTC timezone is used.
           schema:
             type: string
             format: date
@@ -117,7 +117,7 @@ worklogs:
         - name: date
           in: query
           required: false
-          description: Specific date for filtering (alternative to from/to, format YYYY-MM-DD)
+          description: Specific date for filtering (alternative to from/to, format YYYY-MM-DD). UTC timezone is used.
           schema:
             type: string
             format: date

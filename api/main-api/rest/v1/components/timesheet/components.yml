@@ -5,9 +5,9 @@ components:
       description: Weekly hours report for users
       properties:
         businessId:
-          type: string
+          type: integer
           description: ID of the business
-          example: "abc123"
+          example: 123
         week:
           type: string
           description: ISO week format (YYYY-Www)
@@ -39,17 +39,13 @@ components:
       description: User hours information
       properties:
         userId:
-          type: string
+          type: integer
           description: ID of the user
-          example: "u001"
+          example: 12
         username:
           type: string
           description: Username of the user
           example: "john.doe"
-        email:
-          type: string
-          description: Email of the user
-          example: "john.doe@example.com"
         dailyHours:
           type: object
           description: Hours worked per day
