@@ -8,7 +8,7 @@ components:
           type: string
           format: date-time
           description: Timestamp for clock-in (optional, server uses current time if omitted)
-          example: "2025-07-29T08:30:00"
+          example: "2025-07-29T08:30:00+00:00"
 
     ClockOutRequestDTO:
       type: object
@@ -18,7 +18,7 @@ components:
           type: string
           format: date-time
           description: Timestamp for clock-out (optional, server uses current time if omitted)
-          example: "2025-07-29T17:30:00"
+          example: "2025-07-29T17:30:00+00:00"
 
     WorkLogUpdateRequestDTO:
       type: object
@@ -28,12 +28,12 @@ components:
           type: string
           format: date-time
           description: Timestamp for clock-in
-          example: "2025-07-29T08:30:00"
+          example: "2025-07-29T08:30:00+00:00"
         clockOut:
           type: string
           format: date-time
           description: Timestamp for clock-out
-          example: "2025-07-29T17:30:00"
+          example: "2025-07-29T17:30:00+00:00"
           nullable: true
 
     WorkLogResponseDTO:
@@ -54,12 +54,12 @@ components:
           type: string
           format: date-time
           description: Timestamp when the user clocked in
-          example: "2025-07-29T08:30:00"
+          example: "2025-07-29T08:30:00+00:00"
         clockOut:
           type: string
           format: date-time
           description: Timestamp when the user clocked out (null if not clocked out yet)
-          example: "2025-07-29T17:30:00"
+          example: "2025-07-29T17:30:00+00:00"
           nullable: true
       required:
         - id
