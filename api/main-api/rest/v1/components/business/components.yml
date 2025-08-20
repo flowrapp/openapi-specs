@@ -13,16 +13,21 @@ components:
           type: string
           description: Name of the business
           example: "Coffee Time"
+        zone:
+          type: string
+          description: IANA time zone identifier for the business (e.g., America/Caracas)
+          example: Europe/Madrid
         location:
           $ref: '#/components/schemas/LocationDTO'
         userRole:
           type: string
           description: Role of the current authenticated user in the business
-          enum: [OWNER, COLLABORATOR, EMPLOYEE]
+          enum: [OWNER, MANAGER, EMPLOYEE]
           example: "OWNER"
       required:
         - id
         - name
+        - zone
         - location
         - userRole
 
@@ -43,26 +48,21 @@ components:
       description: User information associated with a business
       properties:
         userId:
-          type: string
+          type: integer
           description: Unique identifier for the user
-          example: "user-1"
+          example: 1
         username:
           type: string
           description: Username of the user
           example: "john.doe"
-        email:
-          type: string
-          description: Email address of the user
-          example: "john@example.com"
         role:
           type: string
           description: Role of the user in the business
-          enum: [OWNER, COLLABORATOR, EMPLOYEE]
+          enum: [OWNER, MANAGER, EMPLOYEE]
           example: "OWNER"
       required:
         - userId
         - username
-        - email
         - role
 
 
