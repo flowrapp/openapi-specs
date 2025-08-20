@@ -54,7 +54,7 @@ businesses:
           required: true
           description: Unique identifier of the business
           schema:
-            type: string
+            type: integer
         - name: role
           in: query
           required: false
@@ -70,10 +70,10 @@ businesses:
               schema:
                 $ref: '../../components/business/components.yml#/components/schemas/BusinessUserResponseDTO'
               example:
-                - userId: "user-1"
+                - userId: 1
                   username: "john.doe"
                   role: "OWNER"
-                - userId: "user-2"
+                - userId: 2
                   email: "jane@example.com"
                   role: "COLLABORATOR"
         '401':

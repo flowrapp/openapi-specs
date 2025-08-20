@@ -48,9 +48,9 @@ components:
       description: User information associated with a business
       properties:
         userId:
-          type: string
+          type: integer
           description: Unique identifier for the user
-          example: "user-1"
+          example: 1
         username:
           type: string
           description: Username of the user
