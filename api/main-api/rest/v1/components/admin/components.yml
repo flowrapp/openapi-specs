@@ -19,11 +19,13 @@ components:
             $ref: '#/components/schemas/BusinessDTO'
           example:
             - name: Business 1
+              zone: America/Caracas
               location:
                 latitude: 30.5
                 longitude: 50.5
                 area: 5.3
             - name: Business 2
+              zone: Europe/Madrid
               location:
                 latitude: 35.2
                 longitude: 45.7
@@ -42,14 +44,14 @@ components:
           example: Business 1
         location:
           $ref: '#/components/schemas/LocationDTO'
-        timezoneOffset:
+        zone:
           type: string
           description: IANA time zone identifier for the business (e.g., America/Caracas)
           example: America/Caracas
       required:
         - name
         - location
-        - timezoneOffset
+        - zone
     LocationDTO:
       type: object
       description: Geographic location information
