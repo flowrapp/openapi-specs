@@ -49,6 +49,10 @@ paths:
     $ref: 'v1/services/auth/auth-operations.yml#/auth/login'
   "/api/v1/auth/token-refresh":
     $ref: 'v1/services/auth/auth-operations.yml#/auth/token-refresh'
+  "/api/v1/auth/oauth/github":
+    $ref: 'v1/services/auth/auth-operations.yml#/auth/github'
+  "/api/v1/auth/oauth/google":
+    $ref: 'v1/services/auth/auth-operations.yml#/auth/google'
   "/api/v1/admin/register":
     $ref: 'v1/services/admin/admin-operations.yml#/admin/register'
   "/api/v1/businesses":
