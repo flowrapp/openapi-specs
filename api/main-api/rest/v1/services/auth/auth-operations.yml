@@ -76,7 +76,7 @@ auth:
   google:
     post:
       summary: Authenticate via Google OAuth
-      description: Exchanges a Google OAuth credential (e.g., ID token) for Flowrapp access and refresh tokens.
+      description: Exchanges a Google OAuth credential (such as an ID token or authorization code) for Flowrapp access and refresh tokens.
       tags:
         - Authentication
       operationId: oauthGoogle
