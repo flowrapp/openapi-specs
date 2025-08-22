@@ -52,7 +52,7 @@ auth:
   github:
     post:
       summary: Authenticate via GitHub OAuth
-      description: Exchanges a GitHub OAuth credential for Flowrapp access and refresh tokens.
+      description: Exchanges a GitHub OAuth authorization code for Flowrapp access and refresh tokens.
       tags:
         - Authentication
       operationId: oauthGithub
