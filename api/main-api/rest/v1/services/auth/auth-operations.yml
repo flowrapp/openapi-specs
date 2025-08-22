@@ -48,3 +48,51 @@ auth:
                 "$ref": "../../components/auth/auth-components.yml#/components/schemas/TokenResponseDTO"
         '401':
           description: Invalid or expired refresh token
+
+  github:
+    post:
+      summary: Authenticate via GitHub OAuth
+      description: Exchanges a GitHub OAuth credential for Flowrapp access and refresh tokens.
+      tags:
+        - Authentication
+      operationId: oauthGithub
+      requestBody:
+        description: GitHub OAuth credential
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '../../components/auth/auth-components.yml#/components/schemas/OAuthCredentialRequestDTO'
+      responses:
+        '200':
+          description: OAuth authentication successful
+          content:
+            application/json:
+              schema:
+                $ref: '../../components/auth/auth-components.yml#/components/schemas/TokenResponseDTO'
+        '401':
+          description: Invalid OAuth credential
+
+  google:
+    post:
+      summary: Authenticate via Google OAuth
+      description: Exchanges a Google OAuth credential (e.g., ID token) for Flowrapp access and refresh tokens.
+      tags:
+        - Authentication
+      operationId: oauthGoogle
+      requestBody:
+        description: Google OAuth credential
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '../../components/auth/auth-components.yml#/components/schemas/OAuthCredentialRequestDTO'
+      responses:
+        '200':
+          description: OAuth authentication successful
+          content:
+            application/json:
+              schema:
+                $ref: '../../components/auth/auth-components.yml#/components/schemas/TokenResponseDTO'
+        '401':
+          description: Invalid OAuth credential

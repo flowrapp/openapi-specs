@@ -37,3 +37,13 @@ components:
           example: d8a1fef4-234d-4c2b-bd7a-...
       required:
         - refreshToken
+    OAuthCredentialRequestDTO:
+      type: object
+      description: Request object containing a third-party OAuth credential (e.g., Google ID token or GitHub OAuth credential)
+      properties:
+        credential:
+          type: string
+          description: The credential string obtained from the OAuth provider
+          example: eyJhbGciOiJSUzI1NiIsImtpZCI6IjE2MjM0NTY3ODkwIn0...
+      required:
+        - credential
