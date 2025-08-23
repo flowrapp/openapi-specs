@@ -20,12 +20,20 @@ components:
           example:
             - name: Business 1
               zone: America/Caracas
+              address: C/ sin nombre 43
+              town: Barbate
+              city: Cádiz
+              country: España
               location:
                 latitude: 30.5
                 longitude: 50.5
                 area: 5.3
             - name: Business 2
               zone: Europe/Madrid
+              address: C/ sin nombre 43
+              town: Barbate
+              city: Cádiz
+              country: España
               location:
                 latitude: 35.2
                 longitude: 45.7
@@ -42,6 +50,22 @@ components:
           type: string
           description: Name of the business
           example: Business 1
+        address:
+          type: string
+          description: Address of the business
+          example: C/Sin nombre 453
+        town:
+          type: string
+          description: Town of the business
+          example: Barbate
+        city:
+          type: string
+          description: City of the business
+          example: Cádiz
+        country:
+          type: string
+          description: Country of the business
+          example: España
         location:
           $ref: '#/components/schemas/LocationDTO'
         zone:
@@ -51,6 +75,10 @@ components:
       required:
         - name
         - location
+        - address
+        - town
+        - city
+        - country
         - zone
     LocationDTO:
       type: object
