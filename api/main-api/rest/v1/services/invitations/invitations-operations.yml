@@ -137,7 +137,6 @@ invitations:
           schema:
             type: string
             enum: [ PENDING, ACCEPTED, DECLINED, EXPIRED ]
-            default: PENDING
       responses:
         '200':
           description: Invitations retrieved successfully
@@ -218,7 +217,6 @@ invitations:
           schema:
             type: string
             enum: [ PENDING, ACCEPTED, DECLINED, EXPIRED ]
-            default: PENDING
       responses:
         '200':
           description: Invitations retrieved successfully

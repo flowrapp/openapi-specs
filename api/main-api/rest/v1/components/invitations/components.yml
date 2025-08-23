@@ -34,7 +34,7 @@ components:
         role:
           type: string
           description: Role to assign to the invitee
-          enum: [OWNER, MANAGER, EMPLOYEE]
+          enum: [MANAGER, EMPLOYEE]
           example: "MANAGER"
       required:
         - email
