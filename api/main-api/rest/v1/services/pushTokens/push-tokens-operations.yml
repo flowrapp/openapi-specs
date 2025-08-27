@@ -22,7 +22,7 @@ pushTokens:
           description: Invalid request
         '401':
           description: Unauthorized
-
+  deletion:
     delete:
       summary: Delete push notification token
       description: Deletes a device push notification token for the authenticated user
