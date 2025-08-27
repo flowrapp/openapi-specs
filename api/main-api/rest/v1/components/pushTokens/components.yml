@@ -23,10 +23,12 @@ components:
 
     DeletePushTokenRequestDTO:
       type: object
-      properties:
-        deviceId:
-          type: string
+      parameters:
+        - name: deviceId
+          in: path
+          required: true
           description: Unique identifier for the device
-          example: "uuid-of-device"
+          schema:
+            type: string
       required:
         - deviceId
