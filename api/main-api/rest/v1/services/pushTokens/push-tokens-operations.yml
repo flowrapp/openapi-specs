@@ -18,22 +18,11 @@ pushTokens:
       responses:
         '201':
           description: Push token registered successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                    example: true
-                  message:
-                    type: string
-                    example: "Push token registered successfully"
         '400':
           description: Invalid request
         '401':
           description: Unauthorized
-
+  deletion:
     delete:
       summary: Delete push notification token
       description: Deletes a device push notification token for the authenticated user
@@ -43,26 +32,16 @@ pushTokens:
       security:
         - basicAuth: []
         - bearerAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '../../components/pushTokens/components.yml#/components/schemas/DeletePushTokenRequestDTO'
+      parameters:
+        - name: deviceId
+          in: path
+          required: true
+          description: Unique identifier for the device
+          schema:
+            type: string
       responses:
         '200':
           description: Push token deleted successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                    example: true
-                  message:
-                    type: string
-                    example: "Push token deleted successfully"
         '400':
           description: Invalid request
         '401':
