@@ -32,6 +32,13 @@ pushTokens:
       security:
         - basicAuth: []
         - bearerAuth: []
+      parameters:
+        - name: deviceId
+          in: path
+          required: true
+          description: Unique identifier for the device
+          schema:
+            type: string
       responses:
         '200':
           description: Push token deleted successfully
