@@ -41,6 +41,8 @@ paths:
     $ref: 'v1/services/system/system-operations.yml#/system/ping'
   "/api/v1/push-tokens":
     $ref: 'v1/services/pushTokens/push-tokens-operations.yml#/pushTokens/push-tokens'
+  "/api/v1/push-tokens/{deviceId}":
+    $ref: 'v1/services/pushTokens/push-tokens-operations.yml#/pushTokens/deletion'
   "/api/v1/users":
     $ref: 'v1/services/users/user-operations.yml#/users/byName'
   "/api/v1/users/password":
