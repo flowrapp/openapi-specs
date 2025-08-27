@@ -32,12 +32,6 @@ pushTokens:
       security:
         - basicAuth: []
         - bearerAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '../../components/pushTokens/components.yml#/components/schemas/DeletePushTokenRequestDTO'
       responses:
         '200':
           description: Push token deleted successfully
