@@ -18,17 +18,6 @@ pushTokens:
       responses:
         '201':
           description: Push token registered successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                    example: true
-                  message:
-                    type: string
-                    example: "Push token registered successfully"
         '400':
           description: Invalid request
         '401':
@@ -52,17 +41,6 @@ pushTokens:
       responses:
         '200':
           description: Push token deleted successfully
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                    example: true
-                  message:
-                    type: string
-                    example: "Push token deleted successfully"
         '400':
           description: Invalid request
         '401':
