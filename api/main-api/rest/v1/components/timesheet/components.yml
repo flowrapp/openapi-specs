@@ -60,7 +60,7 @@ components:
             "2025-08-01": 8h 10m
         totalHours:
           type: string
-          format: ^(\d+h)?\s*(\d+s)?$
+          pattern: ^(\d+h)?\s*(\d+m)?$
           description: Total hours worked in the week
           example: 38h 30m
       required:
