@@ -59,10 +59,10 @@ components:
             "2025-07-31": 7h
             "2025-08-01": 8h 10m
         totalHours:
-          type: number
-          format: double
+          type: string
+          format: ^(\d+h)?\s*(\d+s)?$
           description: Total hours worked in the week
-          example: 38.5
+          example: 38h 30m
       required:
         - userId
         - username
