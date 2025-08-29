@@ -50,19 +50,19 @@ components:
           type: object
           description: Hours worked per day
           additionalProperties:
-            type: number
-            format: double
+            type: string
+            format: ^(\d+h)?\s*(\d+s)?$
           example:
-            "2025-07-28": 8.0
-            "2025-07-29": 7.5
-            "2025-07-30": 8.0
-            "2025-07-31": 7.0
-            "2025-08-01": 8.0
+            "2025-07-28": "8h 54m"
+            "2025-07-29": "7h 30m"
+            "2025-07-30": "8h"
+            "2025-07-31": "7h"
+            "2025-08-01": "8h 10m"
         totalHours:
-          type: number
-          format: double
+          type: string
+          pattern: ^(\d+h)?\s*(\d+m)?$
           description: Total hours worked in the week
-          example: 38.5
+          example: "38h 30m"
       required:
         - userId
         - username
