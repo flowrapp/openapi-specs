@@ -17,6 +17,22 @@ components:
           type: string
           description: IANA time zone identifier for the business (e.g., America/Caracas)
           example: Europe/Madrid
+        address:
+          type: string
+          description: Address of the business
+          example: "C/Sin nombre 453"
+        town:
+          type: string
+          description: Town of the business
+          example: "Barbate"
+        city:
+          type: string
+          description: City of the business
+          example: "Cádiz"
+        country:
+          type: string
+          description: Country of the business
+          example: "España"
         location:
           $ref: '#/components/schemas/LocationDTO'
         userRole:
@@ -28,6 +44,10 @@ components:
         - id
         - name
         - zone
+        - address
+        - town
+        - city
+        - country
         - location
         - userRole
 
