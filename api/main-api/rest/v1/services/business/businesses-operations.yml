@@ -34,6 +34,10 @@ businesses:
                   - id: 102
                     name: "Tea Corner"
                     zone: "Europe/Madrid"
+                    address: "C/ sin nombre 43"
+                    town: "Barbate"
+                    city: "Cádiz"
+                    country: "España"
                     location:
                       latitude: 32.0
                       longitude: 51.2
