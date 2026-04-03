@@ -6,6 +6,7 @@ invitations:
       tags:
         - Invitations
       operationId: registerUserFromInvitation
+      security: []
       parameters:
         - name: token
           in: query

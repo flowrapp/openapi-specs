@@ -9,59 +9,173 @@ on:
     branches: [develop, main]
 
 jobs:
+
   validate:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        spec:
+          - api/main-api/rest/open-api-rest.yml
+          - api/bff-api/rest/open-api-rest.yml
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
-          node-version: '16'
+          node-version: '20'
 
-      - name: Install Swagger CLI
-        run: npm install -g @apidevtools/swagger-cli
+      - name: Install Redocly CLI
+        run: npm i -g @redocly/cli@latest
 
-      - name: Validate OpenAPI files with Swagger CLI
-        run: swagger-cli validate api/main-api/rest/open-api-rest.yml
+      - name: Validate OpenAPI spec
+        run: redocly lint --skip-rule no-unused-components ${{ matrix.spec }}
 
   lint:
     name: API Linting
     needs: validate
     runs-on: ubuntu-latest
-
+    strategy:
+      matrix:
+        include:
+          - spec: api/main-api/rest/open-api-rest.yml
+            name: main-api
+          - spec: api/bff-api/rest/open-api-rest.yml
+            name: bff-api
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Install dependencies
+      - name: Install vacuum
         run: npm install @quobix/vacuum --include=dev
 
       - name: Lint API
-        run: cd api/main-api/rest && npm exec vacuum report -- --junit open-api-rest.yml lint-results
+        run: npx vacuum report --junit ${{ matrix.spec }} lint-results-${{ matrix.name }}
 
       - name: Publish Lint Results
         if: success() || failure()
         uses: mikepenz/action-junit-report@v5
         with:
-          check_name: API Lint Results
+          check_name: "API Lint Results (${{ matrix.name }})"
           report_paths: lint-results-*.xml
 
   changes:
     name: Detect and preview API changes
     needs: [validate, lint]
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - spec: api/main-api/rest/open-api-rest.yml
+            name: Main API
+            bundle-name: main-api
+          - spec: api/bff-api/rest/open-api-rest.yml
+            name: BFF API
+            bundle-name: bff-api
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Comment pull request with API diff
-        uses: bump-sh/github-action@v1
+      - name: Fetch base branch
+        run: git fetch --depth=1 origin ${{ github.base_ref }}
+
+      - name: Check if spec exists in base branch
+        id: base_check
+        run: |
+          if git cat-file -e "origin/${{ github.base_ref }}:${{ matrix.spec }}" 2>/dev/null; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::${{ matrix.name }} spec does not exist in base branch — skipping diff."
+          fi
+
+      # oasdiff git-ref syntax can't resolve $ref in multi-file specs,
+      # so we bundle both base and revision into single files first.
+      - name: Install Redocly CLI
+        if: steps.base_check.outputs.exists == 'true'
+        run: npm i -g @redocly/cli@latest
+
+      - name: Bundle revision spec (HEAD)
+        if: steps.base_check.outputs.exists == 'true'
+        run: redocly bundle ${{ matrix.spec }} -o .oasdiff-revision-${{ matrix.bundle-name }}.yaml
+
+      - name: Bundle base spec (target branch)
+        if: steps.base_check.outputs.exists == 'true'
+        run: |
+          # Check out the base branch version of the spec directory into a temp location
+          git worktree add /tmp/base-worktree "origin/${{ github.base_ref }}" --no-checkout
+          cd /tmp/base-worktree
+          git checkout "origin/${{ github.base_ref }}" -- $(dirname "${{ matrix.spec }}")
+          redocly bundle "${{ matrix.spec }}" -o "$GITHUB_WORKSPACE/.oasdiff-base-${{ matrix.bundle-name }}.yaml"
+          cd -
+          git worktree remove /tmp/base-worktree --force
+
+      - name: Generate changelog
+        if: steps.base_check.outputs.exists == 'true'
+        id: changelog
+        uses: oasdiff/oasdiff-action/changelog@v0.0.37
         with:
-          doc: ${{secrets.BUMP_DOC_ID}}
-          token: ${{secrets.BUMP_TOKEN}}
-          file: api/main-api/rest/open-api-rest.yml
-          command: diff
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          base: .oasdiff-base-${{ matrix.bundle-name }}.yaml
+          revision: .oasdiff-revision-${{ matrix.bundle-name }}.yaml
+          format: markdown
+          output-to-file: changelog.md
 
+      - name: Check breaking changes
+        if: steps.base_check.outputs.exists == 'true'
+        uses: oasdiff/oasdiff-action/breaking@v0.0.37
+        with:
+          base: .oasdiff-base-${{ matrix.bundle-name }}.yaml
+          revision: .oasdiff-revision-${{ matrix.bundle-name }}.yaml
+          fail-on: ERR
+          err-ignore: .oasdiff-err-ignore.md
+
+      - name: Post PR comment with changes
+        if: (success() || failure()) && steps.base_check.outputs.exists == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const name = '${{ matrix.name }}';
+            const marker = `<!-- oasdiff-${name.replace(/\s+/g, '-').toLowerCase()} -->`;
+
+            let changelog = '';
+            try {
+              changelog = fs.readFileSync('changelog.md', 'utf8').trim();
+            } catch {
+              changelog = '';
+            }
+
+            if (!changelog) {
+              console.log(`No API changes detected for ${name}.`);
+              return;
+            }
+
+            const body = [
+              marker,
+              `## ${name} — API Changes`,
+              '',
+              changelog,
+            ].join('\n');
+
+            // Find existing comment to update
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+
+            const existing = comments.find(c => c.body.includes(marker));
+
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body,
+              });
+            }

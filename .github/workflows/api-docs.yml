@@ -2,7 +2,12 @@ name: Deploy API documentation
 
 permissions:
   contents: read
-  pull-requests: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
 
 on:
   push:
@@ -14,7 +19,7 @@ env:
 
 jobs:
 
-  update-docs:
+  build-docs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -22,23 +27,118 @@ jobs:
       - name: Install dependencies
         run: npm i -g @redocly/cli@latest
 
-      - name: Bundle OpenAPI spec
+      - name: Bundle main-api spec
         run: redocly bundle api/main-api/rest/open-api-rest.yml -o api/main-api/rest/bundle-openapi.yaml
 
-      - name: Push spec file to Stainless
+      - name: Bundle bff-api spec
+        run: redocly bundle api/bff-api/rest/open-api-rest.yml -o api/bff-api/rest/bundle-openapi.yaml
+
+      - name: Push main-api spec to Stainless (code samples)
         uses: stainless-api/upload-openapi-spec-action@main
         with:
           stainless_api_key: ${{ secrets.STAINLESS_API_KEY }}
           project_name: ${{ env.STAINLESS_PROJECT_NAME }}
-          # Note: this should be the path to your specification file
           input_path: "api/main-api/rest/bundle-openapi.yaml"
-          # Note: this file will be your spec extended with code samples
-          output_path: "./openapi-with-code-samples.json"
+          output_path: "./main-api-with-code-samples.json"
 
-      - name: Deploy API docs to Bump.sh
-        uses: bump-sh/github-action@v1
+      - name: Build GitHub Pages site
+        run: |
+          mkdir -p _site
+
+          # --- Landing page ---
+          cat > _site/index.html << 'LANDING'
+          <!doctype html>
+          <html lang="en">
+          <head>
+            <meta charset="utf-8" />
+            <meta name="viewport" content="width=device-width, initial-scale=1" />
+            <title>Flowrapp API Documentation</title>
+            <style>
+              body { font-family: system-ui, sans-serif; max-width: 640px; margin: 80px auto; padding: 0 20px; }
+              h1 { margin-bottom: 0.25em; }
+              p { color: #555; }
+              a.card { display: block; padding: 16px 20px; margin: 12px 0; border: 1px solid #ddd;
+                       border-radius: 8px; text-decoration: none; color: inherit; }
+              a.card:hover { border-color: #6366f1; background: #f5f3ff; }
+              a.card h2 { margin: 0 0 4px; font-size: 1.1em; }
+              a.card span { color: #888; font-size: 0.9em; }
+            </style>
+          </head>
+          <body>
+            <h1>Flowrapp API Docs</h1>
+            <p>Select an API reference to view:</p>
+            <a class="card" href="./main-api/">
+              <h2>Main API (Backend)</h2>
+              <span>Core REST API &mdash; users, businesses, worklogs, invitations</span>
+            </a>
+            <a class="card" href="./bff-api/">
+              <h2>BFF API (Mobile)</h2>
+              <span>Backend-for-Frontend &mdash; aggregated endpoints for the mobile app</span>
+            </a>
+          </body>
+          </html>
+          LANDING
+
+          # --- Main API reference (with Stainless code samples) ---
+          mkdir -p _site/main-api
+          cat > _site/main-api/index.html << 'MAINEOF'
+          <!doctype html>
+          <html lang="en">
+          <head>
+            <meta charset="utf-8" />
+            <meta name="viewport" content="width=device-width, initial-scale=1" />
+            <title>Flowrapp Main API Reference</title>
+          </head>
+          <body>
+            <div id="app"></div>
+            <script src="https://cdn.jsdelivr.net/npm/@scalar/api-reference"></script>
+            <script>
+              Scalar.createApiReference('#app', {
+                url: './openapi.json',
+                theme: 'default',
+              })
+            </script>
+          </body>
+          </html>
+          MAINEOF
+          cp ./main-api-with-code-samples.json _site/main-api/openapi.json
+
+          # --- BFF API reference ---
+          mkdir -p _site/bff-api
+          cat > _site/bff-api/index.html << 'BFFEOF'
+          <!doctype html>
+          <html lang="en">
+          <head>
+            <meta charset="utf-8" />
+            <meta name="viewport" content="width=device-width, initial-scale=1" />
+            <title>Flowrapp BFF API Reference</title>
+          </head>
+          <body>
+            <div id="app"></div>
+            <script src="https://cdn.jsdelivr.net/npm/@scalar/api-reference"></script>
+            <script>
+              Scalar.createApiReference('#app', {
+                url: './openapi.yaml',
+                theme: 'default',
+              })
+            </script>
+          </body>
+          </html>
+          BFFEOF
+          cp api/bff-api/rest/bundle-openapi.yaml _site/bff-api/openapi.yaml
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
         with:
-          doc: ${{secrets.BUMP_DOC_ID}}
-          token: ${{secrets.BUMP_TOKEN}}
-          # Note: be sure this is pointing to the extended spec file
-          file: "./openapi-with-code-samples.json"
+          path: _site
+
+  deploy-pages:
+    needs: build-docs
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
