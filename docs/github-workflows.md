@@ -2,83 +2,84 @@
 
 This document provides visual representations of the GitHub workflows used in this repository.
 
-## API Documentation Workflow
+## API Documentation Workflow (`api-docs.yml`)
 
-This workflow deploys the API documentation to Bump.sh when changes are pushed to the main branch.
+Deploys interactive API documentation to **GitHub Pages** using [Scalar](https://github.com/scalar/scalar) when changes are pushed to the `main` branch. Also enriches the Main API spec with code samples via [Stainless](https://stainless.com).
 
 ```mermaid
 flowchart TD
-    A[Push to main branch] --> B[Bundle OpenAPI Specification]
-    B --> C[Push spec file to Stainless]
-    C --> D[Deploy API docs to Bump.sh]
-    
-    subgraph "Bundle OpenAPI Specification"
+    A[Push to main branch] --> B[Build Docs]
+    B --> C[Deploy to GitHub Pages]
+
+    subgraph "Build Docs (build-docs job)"
     B1[Checkout code] --> B2[Install Redocly CLI]
-    B2 --> B3[Bundle OpenAPI spec]
+    B2 --> B3[Bundle main-api spec]
+    B3 --> B4[Bundle bff-api spec]
+    B4 --> B5[Push main-api to Stainless]
+    B5 --> B6["Build static site (_site/)"]
+    B6 --> B6a["Landing page (index.html)"]
+    B6 --> B6b["Main API reference (Scalar + code samples)"]
+    B6 --> B6c["BFF API reference (Scalar)"]
+    B6c --> B7[Upload Pages artifact]
     end
-    
-    subgraph "Push spec file to Stainless"
-    C1[Upload OpenAPI spec] --> C2[Generate code samples]
-    C2 --> C3[Output documented spec path]
-    end
-    
-    subgraph "Deploy API docs to Bump.sh"
-    D1[Use documented spec path] --> D2[Update Bump.sh documentation]
+
+    subgraph "Deploy (deploy-pages job)"
+    C1[Deploy to GitHub Pages]
     end
 ```
 
-## API Changes Workflow
+### Pages structure
 
-This workflow runs on pull requests to the develop branch to detect and preview API changes.
+| URL path       | Content                                        |
+| -------------- | ---------------------------------------------- |
+| `/`            | Landing page with links to both API references |
+| `/main-api/`   | Scalar reference for the Main API              |
+| `/bff-api/`    | Scalar reference for the BFF API               |
+
+## API Changes Workflow (`api-changes.yml`)
+
+Runs on pull requests to `develop` or `main`. Validates, lints, and generates a changelog diff for each API spec using [oasdiff](https://github.com/oasdiff/oasdiff). Posts the diff as a PR comment.
 
 ```mermaid
 flowchart TD
-    A[Pull Request to develop branch] --> B[Detect and preview API changes]
-    A --> C[API Linting]
-    
-    subgraph "Detect and preview API changes"
-    B1[Checkout code] --> B2[Generate API diff with Bump.sh]
-    B2 --> B3[Comment on PR with changes]
+    A[Pull Request to develop / main] --> B[Validate]
+    B --> C[Lint]
+    C --> D[Detect Changes]
+
+    subgraph "Validate (matrix: main-api, bff-api)"
+    B1[Checkout code] --> B2[Install Redocly CLI]
+    B2 --> B3[Validate spec with redocly lint]
     end
-    
-    subgraph "API Linting"
+
+    subgraph "Lint (matrix: main-api, bff-api)"
     C1[Checkout code] --> C2[Install Vacuum]
-    C2 --> C3[Lint API]
-    C3 --> C4[Publish lint results]
+    C2 --> C3[Lint spec]
+    C3 --> C4[Publish JUnit results]
     end
-```
 
-## OpenAPI Validation Workflow
-
-This workflow validates OpenAPI files when they are changed in a push or pull request.
-
-```mermaid
-flowchart TD
-    A[Push to main/develop or PR] --> B[Validate OpenAPI files]
-    
-    subgraph "Validate OpenAPI files"
-    B1[Checkout code] --> B2[Setup Node.js]
-    B2 --> B3[Install Swagger CLI]
-    B3 --> B4[Install Spectral]
-    B4 --> B5[Validate OpenAPI files with Swagger CLI]
+    subgraph "Detect Changes (matrix: main-api, bff-api)"
+    D1[Checkout with full history] --> D2[Fetch base branch]
+    D2 --> D3["oasdiff changelog (markdown)"]
+    D3 --> D4["oasdiff breaking (fail on ERR)"]
+    D4 --> D5[Post/update PR comment]
     end
 ```
 
 ## Workflow Relationships
 
-This diagram shows how the three workflows relate to each other in the development process.
-
 ```mermaid
 flowchart LR
     A[Developer creates/updates API spec] --> B[Push changes]
     B --> C[Pull Request]
-    C --> D[OpenAPI Validation]
-    C --> E[API Changes]
-    D --> F{Validation passes?}
-    E --> F
-    F -->|Yes| G[Merge to main]
-    F -->|No| H[Fix issues]
-    H --> B
-    G --> I[API Documentation]
-    I --> J[Updated docs on Bump.sh]
+    C --> D[Validate both specs]
+    C --> E[Lint both specs]
+    C --> F[oasdiff changelog + breaking check]
+    D --> G{All checks pass?}
+    E --> G
+    F --> G
+    G -->|Yes| H[Merge to main]
+    G -->|No| I[Fix issues]
+    I --> B
+    H --> J[Build Scalar docs]
+    J --> K[Deploy to GitHub Pages]
 ```

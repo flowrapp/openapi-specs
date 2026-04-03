@@ -5,4 +5,11 @@ package.json
 package-lock.json
 api/lint-results*
 
-api/bundle-openapi.yaml
+# Bundled specs (generated during CI)
+api/*/rest/bundle-openapi.yaml
+*-with-code-samples.json
+
+# GitHub Pages build output
+_site/
+
+.DS_Store
