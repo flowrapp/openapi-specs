@@ -1,0 +1,112 @@
+---
+openapi: 3.1.0
+info:
+  title: Flowrapp BFF API
+  description: >
+    Backend for Frontend API for the Flowrapp mobile application.
+    This BFF aggregates and shapes data from the Flowrapp main API to serve
+    the specific needs of the mobile frontend, providing role-based endpoints
+    for workers and managers.
+  version: 0.0.1
+  contact:
+    name: Flowrapp Team
+    url: https://flowrapp.github.io
+    email: flowraapp@gmail.com
+  license:
+    name: Apache 2.0
+    url: https://www.apache.org/licenses/LICENSE-2.0
+
+servers:
+  - url: http://localhost:8081/flowrapp-bff
+    description: Local BFF server
+
+tags:
+  - name: System
+    description: System utility endpoints for health checks.
+  - name: Authentication
+    description: >
+      User authentication and token management endpoints.
+      These are pass-through proxies to the main API.
+  - name: User
+    description: Current user profile and account management.
+  - name: Push Tokens
+    description: Push notification token management. Pass-through to the main API.
+  - name: Worker
+    description: >
+      Worker-facing endpoints for clock-in/out and work history views.
+      These endpoints are scoped to the authenticated worker's own data.
+  - name: Manager
+    description: >
+      Manager-facing endpoints for business oversight, worker management,
+      work history reporting, invitation management, and timesheet export.
+
+paths:
+  # ── System ──────────────────────────────────────────────────────────────
+  "/api/v1/ping":
+    $ref: 'v1/services/system/system-operations.yml#/system/ping'
+
+  # ── Authentication (pass-through, no auth required) ─────────────────────
+  "/api/v1/auth/login":
+    $ref: 'v1/services/auth/auth-operations.yml#/auth/login'
+  "/api/v1/auth/token-refresh":
+    $ref: 'v1/services/auth/auth-operations.yml#/auth/token-refresh'
+  "/api/v1/auth/oauth/github":
+    $ref: 'v1/services/auth/auth-operations.yml#/auth/github'
+  "/api/v1/auth/oauth/google":
+    $ref: 'v1/services/auth/auth-operations.yml#/auth/google'
+
+  # ── User (shared, authenticated) ────────────────────────────────────────
+  "/api/v1/me":
+    $ref: 'v1/services/user/user-operations.yml#/user/profile'
+  "/api/v1/me/password":
+    $ref: 'v1/services/user/user-operations.yml#/user/change-password'
+
+  # ── Push Tokens (shared, authenticated) ─────────────────────────────────
+  "/api/v1/push-tokens":
+    $ref: 'v1/services/pushTokens/push-tokens-operations.yml#/pushTokens/push-tokens'
+  "/api/v1/push-tokens/{deviceId}":
+    $ref: 'v1/services/pushTokens/push-tokens-operations.yml#/pushTokens/deletion'
+
+  # ── Worker ──────────────────────────────────────────────────────────────
+  "/api/v1/worker/businesses":
+    $ref: 'v1/services/worker/worker-operations.yml#/worker/businesses'
+  "/api/v1/worker/businesses/{businessId}/clock":
+    $ref: 'v1/services/worker/worker-operations.yml#/worker/clock-view'
+  "/api/v1/worker/businesses/{businessId}/clock-in":
+    $ref: 'v1/services/worker/worker-operations.yml#/worker/clock-in'
+  "/api/v1/worker/businesses/{businessId}/worklogs/{worklogId}/clock-out":
+    $ref: 'v1/services/worker/worker-operations.yml#/worker/clock-out'
+  "/api/v1/worker/businesses/{businessId}/history/day":
+    $ref: 'v1/services/worker/worker-operations.yml#/worker/history-day'
+  "/api/v1/worker/businesses/{businessId}/history/week":
+    $ref: 'v1/services/worker/worker-operations.yml#/worker/history-week'
+  "/api/v1/worker/businesses/{businessId}/history/month":
+    $ref: 'v1/services/worker/worker-operations.yml#/worker/history-month'
+
+  # ── Manager ─────────────────────────────────────────────────────────────
+  "/api/v1/manager/businesses":
+    $ref: 'v1/services/manager/manager-operations.yml#/manager/businesses'
+  "/api/v1/manager/businesses/{businessId}/workers":
+    $ref: 'v1/services/manager/manager-operations.yml#/manager/workers'
+  "/api/v1/manager/businesses/{businessId}/history/day":
+    $ref: 'v1/services/manager/manager-operations.yml#/manager/history-day'
+  "/api/v1/manager/businesses/{businessId}/history/week":
+    $ref: 'v1/services/manager/manager-operations.yml#/manager/history-week'
+  "/api/v1/manager/businesses/{businessId}/history/month":
+    $ref: 'v1/services/manager/manager-operations.yml#/manager/history-month'
+  "/api/v1/manager/businesses/{businessId}/worklogs/{worklogId}":
+    $ref: 'v1/services/manager/manager-operations.yml#/manager/edit-worklog'
+  "/api/v1/manager/businesses/{businessId}/invitations":
+    $ref: 'v1/services/manager/manager-operations.yml#/manager/invitations'
+  "/api/v1/manager/businesses/{businessId}/invitations/{invitationId}":
+    $ref: 'v1/services/manager/manager-operations.yml#/manager/delete-invitation'
+  "/api/v1/manager/businesses/{businessId}/export/weekly-timesheet":
+    $ref: 'v1/services/manager/manager-operations.yml#/manager/export-weekly-timesheet'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT-based authentication. Tokens are obtained via the login or OAuth endpoints.

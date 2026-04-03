@@ -1,0 +1,290 @@
+worker:
+  businesses:
+    get:
+      summary: Get worker's businesses
+      description: >
+        Returns the list of businesses the authenticated worker belongs to, including full
+        business details and the worker's role in each business.
+      tags:
+        - Worker
+      operationId: getWorkerBusinesses
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Businesses retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '../../components/worker/components.yml#/components/schemas/WorkerBusinessResponseDTO'
+              example:
+                - id: 101
+                  name: "Coffee Time"
+                  zone: "Europe/Madrid"
+                  address: "C/ Gran Vía 43"
+                  town: "Barbate"
+                  city: "Cádiz"
+                  country: "España"
+                  location:
+                    latitude: 36.19
+                    longitude: -5.99
+                    area: 50.0
+                  userRole: "EMPLOYEE"
+        '401':
+          description: Unauthorized
+
+  clock-view:
+    get:
+      summary: Get worker clock view
+      description: >
+        Returns the worker's clock view for a given date (defaults to today). This is the main
+        aggregation endpoint that combines: today's completed sessions, the currently active
+        session (if clocked in), and running totals for the current week and month.
+      tags:
+        - Worker
+      operationId: getWorkerClockView
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: businessId
+          in: path
+          required: true
+          description: ID of the business
+          schema:
+            type: integer
+            format: int64
+        - name: date
+          in: query
+          required: false
+          description: Date to view (YYYY-MM-DD). Defaults to today.
+          schema:
+            type: string
+            format: date
+            example: "2025-07-29"
+      responses:
+        '200':
+          description: Clock view retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '../../components/worker/components.yml#/components/schemas/ClockViewResponseDTO'
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden - User is not a member of this business
+        '404':
+          description: Business not found
+
+  clock-in:
+    post:
+      summary: Clock in
+      description: >
+        Records the start of a work session for the authenticated worker at the specified business.
+        Pass-through to the main API.
+      tags:
+        - Worker
+      operationId: workerClockIn
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: businessId
+          in: path
+          required: true
+          description: ID of the business
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        description: Optional clock-in timestamp
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '../../components/worker/components.yml#/components/schemas/ClockInRequestDTO'
+      responses:
+        '200':
+          description: Clock-in successful
+          content:
+            application/json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/SessionDTO'
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden - User is not a member of this business
+        '404':
+          description: Business not found
+        '409':
+          description: Conflict - User already has an active session
+
+  clock-out:
+    put:
+      summary: Clock out
+      description: >
+        Records the end of an active work session for the authenticated worker.
+        Pass-through to the main API.
+      tags:
+        - Worker
+      operationId: workerClockOut
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: businessId
+          in: path
+          required: true
+          description: ID of the business
+          schema:
+            type: integer
+            format: int64
+        - name: worklogId
+          in: path
+          required: true
+          description: ID of the active worklog to close
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        description: Optional clock-out timestamp
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '../../components/worker/components.yml#/components/schemas/ClockOutRequestDTO'
+      responses:
+        '200':
+          description: Clock-out successful
+          content:
+            application/json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/SessionDTO'
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden - User does not own this worklog
+        '404':
+          description: Worklog not found
+
+  history-day:
+    get:
+      summary: Get worker day history
+      description: >
+        Returns the detailed work history for a specific day, including all individual
+        clock-in/clock-out sessions and total seconds worked.
+      tags:
+        - Worker
+      operationId: getWorkerDayHistory
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: businessId
+          in: path
+          required: true
+          description: ID of the business
+          schema:
+            type: integer
+            format: int64
+        - name: date
+          in: query
+          required: false
+          description: Date to view (YYYY-MM-DD). Defaults to today.
+          schema:
+            type: string
+            format: date
+            example: "2025-03-10"
+      responses:
+        '200':
+          description: Day history retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '../../components/worker/components.yml#/components/schemas/WorkerDayHistoryResponseDTO'
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden - User is not a member of this business
+        '404':
+          description: Business not found
+
+  history-week:
+    get:
+      summary: Get worker week history
+      description: >
+        Returns the work history for an ISO week, broken down by day with individual sessions
+        per day. Includes total seconds and session count for the week.
+      tags:
+        - Worker
+      operationId: getWorkerWeekHistory
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: businessId
+          in: path
+          required: true
+          description: ID of the business
+          schema:
+            type: integer
+            format: int64
+        - name: week
+          in: query
+          required: false
+          description: ISO 8601 week (YYYY-Www). Defaults to current week.
+          schema:
+            type: string
+            pattern: '^\d{4}-W\d{2}$'
+            example: "2025-W31"
+      responses:
+        '200':
+          description: Week history retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '../../components/worker/components.yml#/components/schemas/WorkerWeekHistoryResponseDTO'
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden - User is not a member of this business
+        '404':
+          description: Business not found
+
+  history-month:
+    get:
+      summary: Get worker month history
+      description: >
+        Returns a calendar view for a month with day-level totals only (no session detail).
+        Use the day history endpoint to drill into a specific day's sessions.
+      tags:
+        - Worker
+      operationId: getWorkerMonthHistory
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: businessId
+          in: path
+          required: true
+          description: ID of the business
+          schema:
+            type: integer
+            format: int64
+        - name: month
+          in: query
+          required: false
+          description: Year and month (YYYY-MM). Defaults to current month.
+          schema:
+            type: string
+            pattern: '^\d{4}-\d{2}$'
+            example: "2025-03"
+      responses:
+        '200':
+          description: Month history retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '../../components/worker/components.yml#/components/schemas/WorkerMonthHistoryResponseDTO'
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden - User is not a member of this business
+        '404':
+          description: Business not found

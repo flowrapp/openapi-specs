@@ -6,6 +6,9 @@ users:
       tags:
         - Users
       operationId: getUser
+      security:
+        - basicAuth: []
+        - bearerAuth: []
       requestBody:
         description: User information to search for
         content:

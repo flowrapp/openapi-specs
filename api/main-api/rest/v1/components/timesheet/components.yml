@@ -46,6 +46,11 @@ components:
           type: string
           description: Username of the user
           example: "john.doe"
+        email:
+          type: string
+          format: email
+          description: Email address of the user
+          example: "john.doe@example.com"
         dailyHours:
           type: object
           description: Hours worked per day

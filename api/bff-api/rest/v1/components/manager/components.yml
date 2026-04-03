@@ -1,0 +1,357 @@
+components:
+  schemas:
+    ManagerBusinessDashboardResponseDTO:
+      type: object
+      description: Manager dashboard with aggregate business statistics
+      properties:
+        totalBusinesses:
+          type: integer
+          format: int32
+          description: Total number of businesses managed by this user
+          example: 4
+        totalWorkers:
+          type: integer
+          format: int32
+          description: Total number of workers across all managed businesses
+          example: 41
+        businesses:
+          type: array
+          description: List of managed businesses with summary info
+          items:
+            $ref: '#/components/schemas/ManagerBusinessSummaryDTO'
+      required:
+        - totalBusinesses
+        - totalWorkers
+        - businesses
+
+    ManagerBusinessSummaryDTO:
+      type: object
+      description: Summary information for a business in the manager dashboard
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: Unique identifier for the business
+          example: 1
+        name:
+          type: string
+          description: Name of the business
+          example: "Downtown Office"
+        city:
+          type: string
+          description: City where the business is located
+          example: "New York"
+        workerCount:
+          type: integer
+          format: int32
+          description: Number of workers in this business
+          example: 12
+      required:
+        - id
+        - name
+        - city
+        - workerCount
+
+    ManagerWorkersResponseDTO:
+      type: object
+      description: List of workers for a specific business
+      properties:
+        totalWorkers:
+          type: integer
+          format: int32
+          description: Total number of workers in this business
+          example: 5
+        workers:
+          type: array
+          description: List of workers
+          items:
+            $ref: '#/components/schemas/ManagerWorkerDTO'
+      required:
+        - totalWorkers
+        - workers
+
+    ManagerWorkerDTO:
+      type: object
+      description: Worker information within a business context
+      properties:
+        userId:
+          type: integer
+          format: int64
+          description: Unique identifier of the worker
+          example: 1
+        name:
+          type: string
+          description: Display name of the worker
+          example: "John Doe"
+        email:
+          type: string
+          format: email
+          description: Email address of the worker
+          example: "john.doe@example.com"
+      required:
+        - userId
+        - name
+        - email
+
+    ManagerDayHistoryResponseDTO:
+      type: object
+      description: All workers' sessions for a specific day in a business
+      properties:
+        date:
+          type: string
+          format: date
+          description: The date of this history entry
+          example: "2025-03-10"
+        totalSeconds:
+          type: integer
+          format: int64
+          description: Total seconds worked by all workers on this date
+          example: 86400
+        totalWorkers:
+          type: integer
+          format: int32
+          description: Number of workers who worked on this date
+          example: 3
+        workers:
+          type: array
+          description: Per-worker breakdown with session details
+          items:
+            $ref: '#/components/schemas/ManagerDayWorkerDTO'
+      required:
+        - date
+        - totalSeconds
+        - totalWorkers
+        - workers
+
+    ManagerDayWorkerDTO:
+      type: object
+      description: A single worker's sessions for a day
+      properties:
+        userId:
+          type: integer
+          format: int64
+          description: Unique identifier of the worker
+          example: 1
+        name:
+          type: string
+          description: Display name of the worker
+          example: "John Doe"
+        totalSeconds:
+          type: integer
+          format: int64
+          description: Total seconds worked by this worker on this day
+          example: 30600
+        sessions:
+          type: array
+          description: Individual work sessions
+          items:
+            $ref: '../common/components.yml#/components/schemas/SessionDTO'
+      required:
+        - userId
+        - name
+        - totalSeconds
+        - sessions
+
+    ManagerWeekHistoryResponseDTO:
+      type: object
+      description: Weekly work history for a business with per-day and per-worker totals
+      properties:
+        week:
+          type: string
+          description: ISO 8601 week identifier
+          pattern: '^\d{4}-W\d{2}$'
+          example: "2025-W31"
+        totalSeconds:
+          type: integer
+          format: int64
+          description: Total seconds worked by all workers in this week
+          example: 432000
+        days:
+          type: array
+          description: Per-day breakdown with worker-level totals
+          items:
+            $ref: '#/components/schemas/ManagerWeekDayDTO'
+      required:
+        - week
+        - totalSeconds
+        - days
+
+    ManagerWeekDayDTO:
+      type: object
+      description: A single day within a manager week view, showing per-worker totals
+      properties:
+        date:
+          type: string
+          format: date
+          description: The date
+          example: "2025-07-28"
+        totalSeconds:
+          type: integer
+          format: int64
+          description: Total seconds worked by all workers on this day
+          example: 86400
+        workers:
+          type: array
+          description: Per-worker totals for this day (no session detail)
+          items:
+            $ref: '#/components/schemas/ManagerWeekDayWorkerDTO'
+      required:
+        - date
+        - totalSeconds
+        - workers
+
+    ManagerWeekDayWorkerDTO:
+      type: object
+      description: A worker's total for a single day in the week view
+      properties:
+        userId:
+          type: integer
+          format: int64
+          description: Unique identifier of the worker
+          example: 1
+        name:
+          type: string
+          description: Display name of the worker
+          example: "John Doe"
+        totalSeconds:
+          type: integer
+          format: int64
+          description: Total seconds worked by this worker on this day
+          example: 28800
+      required:
+        - userId
+        - name
+        - totalSeconds
+
+    ManagerMonthHistoryResponseDTO:
+      type: object
+      description: >
+        Monthly work history calendar for a business.
+        Returns day-level totals with worker counts (no session detail).
+      properties:
+        month:
+          type: string
+          description: Year and month in YYYY-MM format
+          pattern: '^\d{4}-\d{2}$'
+          example: "2025-03"
+        totalSeconds:
+          type: integer
+          format: int64
+          description: Total seconds worked by all workers in this month
+          example: 2376000
+        totalSessions:
+          type: integer
+          format: int32
+          description: Total number of work sessions in this month
+          example: 100
+        days:
+          type: array
+          description: Per-day summary for the month
+          items:
+            $ref: '#/components/schemas/ManagerMonthDayDTO'
+      required:
+        - month
+        - totalSeconds
+        - totalSessions
+        - days
+
+    ManagerMonthDayDTO:
+      type: object
+      description: A single day within a manager month view
+      properties:
+        date:
+          type: string
+          format: date
+          description: The date
+          example: "2025-03-01"
+        totalSeconds:
+          type: integer
+          format: int64
+          description: Total seconds worked by all workers on this day
+          example: 86400
+        workerCount:
+          type: integer
+          format: int32
+          description: Number of workers who worked on this day
+          example: 5
+      required:
+        - date
+        - totalSeconds
+        - workerCount
+
+    WorklogUpdateRequestDTO:
+      type: object
+      description: Request to update a worklog's clock-in and/or clock-out times
+      properties:
+        clockIn:
+          type: string
+          format: date-time
+          description: Updated clock-in timestamp
+          example: "2025-07-29T08:30:00+02:00"
+        clockOut:
+          type:
+            - string
+            - 'null'
+          format: date-time
+          description: Updated clock-out timestamp (null to clear)
+          example: "2025-07-29T17:30:00+02:00"
+
+    InvitationRequestDTO:
+      type: object
+      description: Request to invite a user to join a business
+      properties:
+        email:
+          type: string
+          format: email
+          description: Email address of the person to invite
+          example: "invitee@example.com"
+        role:
+          type: string
+          description: Role to assign to the invitee
+          enum: [MANAGER, EMPLOYEE]
+          example: "EMPLOYEE"
+      required:
+        - email
+        - role
+
+    InvitationResponseDTO:
+      type: object
+      description: Invitation details
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: Unique identifier of the invitation
+          example: 123
+        email:
+          type: string
+          format: email
+          description: Email address of the invitee
+          example: "invitee@example.com"
+        role:
+          type: string
+          description: Role assigned to the invitee
+          enum: [OWNER, MANAGER, EMPLOYEE]
+          example: "EMPLOYEE"
+        status:
+          type: string
+          description: Current status of the invitation
+          enum: [PENDING, ACCEPTED, DECLINED, EXPIRED]
+          example: "PENDING"
+        createdAt:
+          type: string
+          format: date-time
+          description: When the invitation was created
+          example: "2025-06-15T14:30:00+00:00"
+        expiresAt:
+          type: string
+          format: date-time
+          description: When the invitation expires
+          example: "2025-06-22T14:30:00+00:00"
+      required:
+        - id
+        - email
+        - role
+        - status
+        - createdAt
+        - expiresAt

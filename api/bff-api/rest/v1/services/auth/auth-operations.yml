@@ -2,59 +2,64 @@ auth:
   login:
     post:
       summary: Authenticate a user
-      description: Authenticates a user by validating their username and password credentials. Upon successful
-        authentication, it generates and returns access and refresh tokens that can be used for 
-        subsequent authorized API requests.
+      description: >
+        Authenticates a user by validating their email and password credentials.
+        Returns access and refresh tokens for subsequent API requests.
+        This is a pass-through to the main API.
       tags:
         - Authentication
       operationId: login
       security: []
       requestBody:
         description: User credentials
+        required: true
         content:
           application/json:
             schema:
-              "$ref": '../../components/auth/auth-components.yml#/components/schemas/LoginRequestDTO'
-        required: true
+              $ref: '../../components/auth/components.yml#/components/schemas/LoginRequestDTO'
       responses:
         '200':
           description: Authentication successful
           content:
             application/json:
               schema:
-                "$ref": "../../components/auth/auth-components.yml#/components/schemas/TokenResponseDTO"
+                $ref: '../../components/auth/components.yml#/components/schemas/TokenResponseDTO'
         '401':
-          description: Authentication failed
+          description: Invalid credentials
 
   token-refresh:
     post:
       summary: Refresh authentication tokens
-      description: Renews authentication by generating new access and refresh tokens using a valid refresh token.
+      description: >
+        Renews authentication by generating new access and refresh tokens using a valid refresh token.
+        Pass-through to the main API.
       tags:
         - Authentication
       operationId: refreshToken
       security: []
       requestBody:
         description: Refresh token
+        required: true
         content:
           application/json:
             schema:
-              "$ref": '../../components/auth/auth-components.yml#/components/schemas/RefreshRequestDTO'
-        required: true
+              $ref: '../../components/auth/components.yml#/components/schemas/RefreshRequestDTO'
       responses:
         '200':
           description: Token refresh successful
           content:
             application/json:
               schema:
-                "$ref": "../../components/auth/auth-components.yml#/components/schemas/TokenResponseDTO"
+                $ref: '../../components/auth/components.yml#/components/schemas/TokenResponseDTO'
         '401':
           description: Invalid or expired refresh token
 
   github:
     post:
       summary: Authenticate via GitHub OAuth
-      description: Exchanges a GitHub OAuth authorization code for Flowrapp access and refresh tokens.
+      description: >
+        Exchanges a GitHub OAuth authorization code for Flowrapp access and refresh tokens.
+        Pass-through to the main API.
       tags:
         - Authentication
       operationId: oauthGithub
@@ -65,21 +70,23 @@ auth:
         content:
           application/json:
             schema:
-              $ref: '../../components/auth/auth-components.yml#/components/schemas/OAuthCredentialRequestDTO'
+              $ref: '../../components/auth/components.yml#/components/schemas/OAuthCredentialRequestDTO'
       responses:
         '200':
           description: OAuth authentication successful
           content:
             application/json:
               schema:
-                $ref: '../../components/auth/auth-components.yml#/components/schemas/TokenResponseDTO'
+                $ref: '../../components/auth/components.yml#/components/schemas/TokenResponseDTO'
         '401':
           description: Invalid OAuth credential
 
   google:
     post:
       summary: Authenticate via Google OAuth
-      description: Exchanges a Google OAuth credential (such as an ID token or authorization code) for Flowrapp access and refresh tokens.
+      description: >
+        Exchanges a Google OAuth credential (ID token) for Flowrapp access and refresh tokens.
+        Pass-through to the main API.
       tags:
         - Authentication
       operationId: oauthGoogle
@@ -90,13 +97,13 @@ auth:
         content:
           application/json:
             schema:
-              $ref: '../../components/auth/auth-components.yml#/components/schemas/OAuthCredentialRequestDTO'
+              $ref: '../../components/auth/components.yml#/components/schemas/OAuthCredentialRequestDTO'
       responses:
         '200':
           description: OAuth authentication successful
           content:
             application/json:
               schema:
-                $ref: '../../components/auth/auth-components.yml#/components/schemas/TokenResponseDTO'
+                $ref: '../../components/auth/components.yml#/components/schemas/TokenResponseDTO'
         '401':
           description: Invalid OAuth credential

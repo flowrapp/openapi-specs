@@ -1,0 +1,420 @@
+manager:
+  businesses:
+    get:
+      summary: Get manager business dashboard
+      description: >
+        Returns the manager's business dashboard with aggregate statistics. Includes the total
+        number of businesses, total workers across all businesses, and a summary of each
+        business with its worker count.
+      tags:
+        - Manager
+      operationId: getManagerBusinessDashboard
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Dashboard retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '../../components/manager/components.yml#/components/schemas/ManagerBusinessDashboardResponseDTO'
+              example:
+                totalBusinesses: 2
+                totalWorkers: 17
+                businesses:
+                  - id: 1
+                    name: "Downtown Office"
+                    city: "New York"
+                    workerCount: 12
+                  - id: 2
+                    name: "Uptown Branch"
+                    city: "New York"
+                    workerCount: 5
+        '401':
+          description: Unauthorized
+
+  workers:
+    get:
+      summary: Get business workers
+      description: Returns the list of workers for a specific business managed by the authenticated user.
+      tags:
+        - Manager
+      operationId: getManagerBusinessWorkers
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: businessId
+          in: path
+          required: true
+          description: ID of the business
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Workers list retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '../../components/manager/components.yml#/components/schemas/ManagerWorkersResponseDTO'
+              example:
+                totalWorkers: 3
+                workers:
+                  - userId: 1
+                    name: "John Doe"
+                    email: "john.doe@example.com"
+                  - userId: 2
+                    name: "Jane Smith"
+                    email: "jane.smith@example.com"
+                  - userId: 3
+                    name: "Bob Wilson"
+                    email: "bob.wilson@example.com"
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden - User is not a manager of this business
+        '404':
+          description: Business not found
+
+  history-day:
+    get:
+      summary: Get manager day history
+      description: >
+        Returns all workers' sessions for a specific day in a business. Shows each worker's
+        individual clock-in/clock-out sessions and their daily total.
+      tags:
+        - Manager
+      operationId: getManagerDayHistory
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: businessId
+          in: path
+          required: true
+          description: ID of the business
+          schema:
+            type: integer
+            format: int64
+        - name: date
+          in: query
+          required: false
+          description: Date to view (YYYY-MM-DD). Defaults to today.
+          schema:
+            type: string
+            format: date
+            example: "2025-03-10"
+      responses:
+        '200':
+          description: Day history retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '../../components/manager/components.yml#/components/schemas/ManagerDayHistoryResponseDTO'
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden - User is not a manager of this business
+        '404':
+          description: Business not found
+
+  history-week:
+    get:
+      summary: Get manager week history
+      description: >
+        Returns a weekly summary for a business, broken down by day with per-worker totals
+        for each day. Use the day history endpoint for session-level detail.
+      tags:
+        - Manager
+      operationId: getManagerWeekHistory
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: businessId
+          in: path
+          required: true
+          description: ID of the business
+          schema:
+            type: integer
+            format: int64
+        - name: week
+          in: query
+          required: false
+          description: ISO 8601 week (YYYY-Www). Defaults to current week.
+          schema:
+            type: string
+            pattern: '^\d{4}-W\d{2}$'
+            example: "2025-W31"
+      responses:
+        '200':
+          description: Week history retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '../../components/manager/components.yml#/components/schemas/ManagerWeekHistoryResponseDTO'
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden - User is not a manager of this business
+        '404':
+          description: Business not found
+
+  history-month:
+    get:
+      summary: Get manager month history
+      description: >
+        Returns a monthly calendar view for a business with day-level totals and worker counts.
+        No session-level detail. Use the day history endpoint to drill into a specific day.
+      tags:
+        - Manager
+      operationId: getManagerMonthHistory
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: businessId
+          in: path
+          required: true
+          description: ID of the business
+          schema:
+            type: integer
+            format: int64
+        - name: month
+          in: query
+          required: false
+          description: Year and month (YYYY-MM). Defaults to current month.
+          schema:
+            type: string
+            pattern: '^\d{4}-\d{2}$'
+            example: "2025-03"
+      responses:
+        '200':
+          description: Month history retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '../../components/manager/components.yml#/components/schemas/ManagerMonthHistoryResponseDTO'
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden - User is not a manager of this business
+        '404':
+          description: Business not found
+
+  edit-worklog:
+    put:
+      summary: Edit a worklog
+      description: >
+        Updates the clock-in and/or clock-out times of an existing worklog. This is a manager-only
+        operation for correcting worker time entries.
+      tags:
+        - Manager
+      operationId: managerUpdateWorklog
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: businessId
+          in: path
+          required: true
+          description: ID of the business
+          schema:
+            type: integer
+            format: int64
+        - name: worklogId
+          in: path
+          required: true
+          description: ID of the worklog to update
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        description: Updated clock-in and/or clock-out times
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '../../components/manager/components.yml#/components/schemas/WorklogUpdateRequestDTO'
+      responses:
+        '200':
+          description: Worklog updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/SessionDTO'
+        '400':
+          description: Invalid request (e.g., clock-out before clock-in)
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden - User is not a manager of this business
+        '404':
+          description: Worklog not found
+
+  invitations:
+    post:
+      summary: Create a business invitation
+      description: >
+        Creates a new invitation for a person to join a business with a specified role.
+        An email will be sent to the invitee. Pass-through to the main API.
+      tags:
+        - Manager
+      operationId: managerCreateInvitation
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: businessId
+          in: path
+          required: true
+          description: ID of the business
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        description: Invitation details
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '../../components/manager/components.yml#/components/schemas/InvitationRequestDTO'
+            example:
+              email: "newworker@example.com"
+              role: "EMPLOYEE"
+      responses:
+        '201':
+          description: Invitation created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '../../components/manager/components.yml#/components/schemas/InvitationResponseDTO'
+        '400':
+          description: Invalid request
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden - User is not a manager of this business
+        '404':
+          description: Business not found
+        '409':
+          description: Conflict - User already invited or already a member
+
+    get:
+      summary: List business invitations
+      description: Returns the list of invitations for a specific business, optionally filtered by status.
+      tags:
+        - Manager
+      operationId: managerGetBusinessInvitations
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: businessId
+          in: path
+          required: true
+          description: ID of the business
+          schema:
+            type: integer
+            format: int64
+        - name: status
+          in: query
+          required: false
+          description: Filter invitations by status
+          schema:
+            type: string
+            enum: [PENDING, ACCEPTED, DECLINED, EXPIRED]
+      responses:
+        '200':
+          description: Invitations retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '../../components/manager/components.yml#/components/schemas/InvitationResponseDTO'
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden - User is not a manager of this business
+        '404':
+          description: Business not found
+
+  delete-invitation:
+    delete:
+      summary: Delete a business invitation
+      description: Deletes an existing invitation to join a business. Pass-through to the main API.
+      tags:
+        - Manager
+      operationId: managerDeleteInvitation
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: businessId
+          in: path
+          required: true
+          description: ID of the business
+          schema:
+            type: integer
+            format: int64
+        - name: invitationId
+          in: path
+          required: true
+          description: ID of the invitation to delete
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '204':
+          description: Invitation deleted successfully
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden - User is not a manager of this business
+        '404':
+          description: Business or invitation not found
+
+  export-weekly-timesheet:
+    get:
+      summary: Export weekly timesheet as PDF
+      description: >
+        Generates and downloads a PDF document containing the weekly timesheet for a business.
+        The PDF includes each worker's daily clock-in/clock-out times and total hours for the
+        specified week.
+      tags:
+        - Manager
+      operationId: exportWeeklyTimesheetPdf
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: businessId
+          in: path
+          required: true
+          description: ID of the business
+          schema:
+            type: integer
+            format: int64
+        - name: week
+          in: query
+          required: true
+          description: ISO 8601 week to export (YYYY-Www)
+          schema:
+            type: string
+            pattern: '^\d{4}-W\d{2}$'
+            example: "2025-W31"
+      responses:
+        '200':
+          description: PDF generated successfully
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+          headers:
+            Content-Disposition:
+              description: Attachment filename
+              schema:
+                type: string
+                example: 'attachment; filename="timesheet-2025-W31.pdf"'
+        '400':
+          description: Invalid week format
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden - User is not a manager of this business
+        '404':
+          description: Business not found or no data for the specified week
