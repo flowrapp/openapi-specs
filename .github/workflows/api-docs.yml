@@ -38,7 +38,7 @@ jobs:
         with:
           stainless_api_key: ${{ secrets.STAINLESS_API_KEY }}
           project_name: ${{ env.STAINLESS_PROJECT_NAME }}
-          input_path: "api/main-api/rest/bundle-openapi.yaml"
+          input_path: "api/bff-api/rest/bundle-openapi.yaml"
           output_path: "./main-api-with-code-samples.json"
 
       - name: Build GitHub Pages site
