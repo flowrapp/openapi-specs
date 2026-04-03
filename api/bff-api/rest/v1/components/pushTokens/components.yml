@@ -1,0 +1,23 @@
+components:
+  schemas:
+    PushTokenRequestDTO:
+      type: object
+      description: Request to register a device push notification token
+      properties:
+        token:
+          type: string
+          description: The push notification token from the device
+          example: "fcm-token-abc123xyz"
+        platform:
+          type: string
+          description: The device platform
+          enum: [ANDROID, IOS]
+          example: "ANDROID"
+        deviceId:
+          type: string
+          description: Unique identifier for the device
+          example: "550e8400-e29b-41d4-a716-446655440000"
+      required:
+        - token
+        - platform
+        - deviceId

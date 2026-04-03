@@ -1,0 +1,57 @@
+components:
+  schemas:
+    SessionDTO:
+      type: object
+      description: A single work session (clock-in/clock-out pair)
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: Unique identifier of the worklog
+          example: 123
+        clockIn:
+          type: string
+          format: date-time
+          description: Timestamp when the user clocked in
+          example: "2025-07-29T08:30:00+02:00"
+        clockOut:
+          type:
+            - string
+            - 'null'
+          format: date-time
+          description: Timestamp when the user clocked out (null if session is still active)
+          example: "2025-07-29T17:30:00+02:00"
+        durationSeconds:
+          type:
+            - integer
+            - 'null'
+          format: int64
+          description: Duration of the session in seconds (null if session is still active)
+          example: 32400
+      required:
+        - id
+        - clockIn
+
+    LocationDTO:
+      type: object
+      description: Geographic location information
+      properties:
+        latitude:
+          type: number
+          format: double
+          description: Latitude coordinate
+          example: 36.19
+        longitude:
+          type: number
+          format: double
+          description: Longitude coordinate
+          example: -5.99
+        area:
+          type: number
+          format: double
+          description: Geofence area radius in meters
+          example: 50.0
+      required:
+        - latitude
+        - longitude
+        - area

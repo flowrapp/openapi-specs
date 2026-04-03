@@ -1,0 +1,29 @@
+system:
+  ping:
+    get:
+      summary: API Health Check
+      description: Simple endpoint to verify that the BFF API is up and running
+      tags:
+        - System
+      operationId: ping
+      security: []
+      responses:
+        '200':
+          description: API is operational
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "OK"
+                  timestamp:
+                    type: string
+                    format: date-time
+                    example: "2025-07-01T12:00:00+00:00"
+                required:
+                  - status
+                  - timestamp
+        '503':
+          description: Service unavailable

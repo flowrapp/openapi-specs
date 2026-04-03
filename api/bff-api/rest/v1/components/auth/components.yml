@@ -1,0 +1,53 @@
+components:
+  schemas:
+    LoginRequestDTO:
+      type: object
+      description: Request object for user login
+      properties:
+        username:
+          type: string
+          description: Username (email) for authentication
+          example: "user@example.com"
+        password:
+          type: string
+          description: Password for authentication
+          format: password
+          example: "securePassword123"
+      required:
+        - username
+        - password
+
+    TokenResponseDTO:
+      type: object
+      description: Response object containing authentication tokens
+      properties:
+        accessToken:
+          type: string
+          description: JWT access token for API authorization
+          example: "eyJhbGciOiJIUzI1NiIs..."
+        refreshToken:
+          type: string
+          description: Refresh token for obtaining new access tokens
+          example: "d8a1fef4-234d-4c2b-bd7a-..."
+
+    RefreshRequestDTO:
+      type: object
+      description: Request object for token refresh
+      properties:
+        refreshToken:
+          type: string
+          description: Refresh token previously issued during login
+          example: "d8a1fef4-234d-4c2b-bd7a-..."
+      required:
+        - refreshToken
+
+    OAuthCredentialRequestDTO:
+      type: object
+      description: Request object containing a third-party OAuth credential
+      properties:
+        credential:
+          type: string
+          description: The credential string obtained from the OAuth provider (e.g., Google ID token or GitHub authorization code)
+          example: "eyJhbGciOiJSUzI1NiIsImtpZCI6IjE2MjM0NTY3ODkwIn0..."
+      required:
+        - credential
