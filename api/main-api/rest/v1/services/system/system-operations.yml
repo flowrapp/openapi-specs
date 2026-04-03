@@ -6,6 +6,7 @@ system:
       tags:
         - System
       operationId: ping
+      security: []
       responses:
         '200':
           description: API is operational

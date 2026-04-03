@@ -8,6 +8,7 @@ auth:
       tags:
         - Authentication
       operationId: login
+      security: []
       requestBody:
         description: User credentials
         content:
@@ -32,6 +33,7 @@ auth:
       tags:
         - Authentication
       operationId: refreshToken
+      security: []
       requestBody:
         description: Refresh token
         content:
@@ -56,6 +58,7 @@ auth:
       tags:
         - Authentication
       operationId: oauthGithub
+      security: []
       requestBody:
         description: GitHub OAuth credential
         required: true
@@ -80,6 +83,7 @@ auth:
       tags:
         - Authentication
       operationId: oauthGoogle
+      security: []
       requestBody:
         description: Google OAuth credential
         required: true
