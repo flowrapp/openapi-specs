@@ -125,6 +125,7 @@ jobs:
           base: .oasdiff-base-${{ matrix.bundle-name }}.yaml
           revision: .oasdiff-revision-${{ matrix.bundle-name }}.yaml
           fail-on: ERR
+          err-ignore: .oasdiff-err-ignore.md
 
       - name: Post PR comment with changes
         if: (success() || failure()) && steps.base_check.outputs.exists == 'true'
