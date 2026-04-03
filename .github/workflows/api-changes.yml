@@ -67,8 +67,10 @@ jobs:
         include:
           - spec: api/main-api/rest/open-api-rest.yml
             name: Main API
+            bundle-name: main-api
           - spec: api/bff-api/rest/open-api-rest.yml
             name: BFF API
+            bundle-name: bff-api
     steps:
       - uses: actions/checkout@v4
 
@@ -85,13 +87,34 @@ jobs:
             echo "::notice::${{ matrix.name }} spec does not exist in base branch — skipping diff."
           fi
 
+      # oasdiff git-ref syntax can't resolve $ref in multi-file specs,
+      # so we bundle both base and revision into single files first.
+      - name: Install Redocly CLI
+        if: steps.base_check.outputs.exists == 'true'
+        run: npm i -g @redocly/cli@latest
+
+      - name: Bundle revision spec (HEAD)
+        if: steps.base_check.outputs.exists == 'true'
+        run: redocly bundle ${{ matrix.spec }} -o .oasdiff-revision-${{ matrix.bundle-name }}.yaml
+
+      - name: Bundle base spec (target branch)
+        if: steps.base_check.outputs.exists == 'true'
+        run: |
+          # Check out the base branch version of the spec directory into a temp location
+          git worktree add /tmp/base-worktree "origin/${{ github.base_ref }}" --no-checkout
+          cd /tmp/base-worktree
+          git checkout "origin/${{ github.base_ref }}" -- $(dirname "${{ matrix.spec }}")
+          redocly bundle "${{ matrix.spec }}" -o "$GITHUB_WORKSPACE/.oasdiff-base-${{ matrix.bundle-name }}.yaml"
+          cd -
+          git worktree remove /tmp/base-worktree --force
+
       - name: Generate changelog
         if: steps.base_check.outputs.exists == 'true'
         id: changelog
         uses: oasdiff/oasdiff-action/changelog@v0.0.37
         with:
-          base: "origin/${{ github.base_ref }}:${{ matrix.spec }}"
-          revision: "HEAD:${{ matrix.spec }}"
+          base: .oasdiff-base-${{ matrix.bundle-name }}.yaml
+          revision: .oasdiff-revision-${{ matrix.bundle-name }}.yaml
           format: markdown
           output-to-file: changelog.md
 
@@ -99,8 +122,8 @@ jobs:
         if: steps.base_check.outputs.exists == 'true'
         uses: oasdiff/oasdiff-action/breaking@v0.0.37
         with:
-          base: "origin/${{ github.base_ref }}:${{ matrix.spec }}"
-          revision: "HEAD:${{ matrix.spec }}"
+          base: .oasdiff-base-${{ matrix.bundle-name }}.yaml
+          revision: .oasdiff-revision-${{ matrix.bundle-name }}.yaml
           fail-on: ERR
 
       - name: Post PR comment with changes

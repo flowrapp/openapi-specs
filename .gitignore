@@ -8,6 +8,7 @@ api/lint-results*
 # Bundled specs (generated during CI)
 api/*/rest/bundle-openapi.yaml
 *-with-code-samples.json
+.oasdiff-*.yaml
 
 # GitHub Pages build output
 _site/
