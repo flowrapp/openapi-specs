@@ -2,7 +2,11 @@ timesheet:
   weekly-hours:
     get:
       summary: Get weekly hours report
-      description: Generates and retrieves a comprehensive weekly hours report for users within a specified business.
+      description: |
+        Generates and retrieves a comprehensive weekly hours report for users within a specified business.
+
+        **Deprecated:** Use `GET /api/v1/businesses/{businessId}/reports` instead, which provides flexible date-range filtering and machine-friendly seconds values.
+      deprecated: true
       tags:
         - Timesheet
       operationId: getWeeklyHoursReport
@@ -51,7 +55,11 @@ timesheet:
   user-weekly-hours:
     get:
       summary: Get current user's weekly hours report
-      description: Retrieves the weekly hours report for the authenticated user.
+      description: |
+        Retrieves the weekly hours report for the authenticated user.
+
+        **Deprecated:** Use `GET /api/v1/reports` instead, which provides flexible date-range filtering and machine-friendly seconds values.
+      deprecated: true
       tags:
         - Timesheet
       operationId: getCurrentUserWeeklyHoursReport
