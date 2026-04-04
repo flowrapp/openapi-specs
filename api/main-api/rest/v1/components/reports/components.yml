@@ -1,0 +1,31 @@
+components:
+  schemas:
+    ReportResponseDTO:
+      type: object
+      description: Daily time report for a user at a business. Each record represents the total worked seconds for a single user on a single calendar day.
+      properties:
+        userId:
+          type: integer
+          format: int64
+          description: ID of the user
+          example: 12
+        businessId:
+          type: integer
+          format: int64
+          description: ID of the business
+          example: 123
+        day:
+          type: string
+          format: date
+          description: The calendar date of this report
+          example: "2025-07-28"
+        seconds:
+          type: integer
+          format: int64
+          description: Total worked seconds for this user on this day
+          example: 32040
+      required:
+        - userId
+        - businessId
+        - day
+        - seconds
