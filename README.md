@@ -8,10 +8,8 @@ Interactive API references are hosted on **GitHub Pages** and powered by [Scalar
 
 | API | Description |
 | --- | --- |
-| [Main API](https://YOUR_GITHUB_PAGES_URL/main-api/) | Core backend — users, businesses, worklogs, invitations |
-| [BFF API](https://YOUR_GITHUB_PAGES_URL/bff-api/) | Backend-for-Frontend — aggregated endpoints for the mobile app |
-
-> Replace `YOUR_GITHUB_PAGES_URL` with the actual GitHub Pages URL after enabling Pages in the repository settings.
+| [Main API](https://flowrapp.github.io/main-api/) | Core backend — users, businesses, worklogs, invitations |
+| [BFF API](https://flowrapp.github.io/bff-api/) | Backend-for-Frontend — aggregated endpoints for the mobile app |
 
 ## Structure
 
