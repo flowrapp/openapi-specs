@@ -1,0 +1,116 @@
+reports:
+  business-reports:
+    get:
+      summary: Get business reports
+      description: |
+        Retrieves daily time reports for a specific business within a date range.
+        Returns raw daily seconds per user, suitable for aggregation into weekly, monthly, or custom period totals.
+        Caller must be the owner of the business.
+      tags:
+        - Reports
+      operationId: getBusinessReports
+      security:
+        - basicAuth: []
+        - bearerAuth: []
+      parameters:
+        - name: businessId
+          in: path
+          required: true
+          description: ID of the business
+          schema:
+            type: integer
+            format: int64
+            example: 123
+        - name: from
+          in: query
+          required: true
+          description: Start date of the range (inclusive, format YYYY-MM-DD)
+          schema:
+            type: string
+            format: date
+            example: "2025-07-01"
+        - name: to
+          in: query
+          required: true
+          description: End date of the range (inclusive, format YYYY-MM-DD)
+          schema:
+            type: string
+            format: date
+            example: "2025-07-31"
+        - name: userId
+          in: query
+          required: false
+          description: Filter by a specific user ID within the business
+          schema:
+            type: integer
+            format: int64
+            example: 12
+      responses:
+        '200':
+          description: Reports retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '../../components/reports/components.yml#/components/schemas/ReportResponseDTO'
+        '400':
+          description: Invalid request parameters
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden - User is not the owner of the business
+        '404':
+          description: Business not found
+
+  user-reports:
+    get:
+      summary: Get current user's reports
+      description: |
+        Retrieves daily time reports for the authenticated user within a date range.
+        Returns raw daily seconds, suitable for aggregation into weekly, monthly, or custom period totals.
+        Always scoped to the current user's own data.
+      tags:
+        - Reports
+      operationId: getUserReports
+      security:
+        - basicAuth: []
+        - bearerAuth: []
+      parameters:
+        - name: from
+          in: query
+          required: true
+          description: Start date of the range (inclusive, format YYYY-MM-DD)
+          schema:
+            type: string
+            format: date
+            example: "2025-07-01"
+        - name: to
+          in: query
+          required: true
+          description: End date of the range (inclusive, format YYYY-MM-DD)
+          schema:
+            type: string
+            format: date
+            example: "2025-07-31"
+        - name: businessId
+          in: query
+          required: false
+          description: Filter by a specific business ID
+          schema:
+            type: integer
+            format: int64
+            example: 123
+      responses:
+        '200':
+          description: Reports retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '../../components/reports/components.yml#/components/schemas/ReportResponseDTO'
+        '400':
+          description: Invalid request parameters
+        '401':
+          description: Unauthorized
