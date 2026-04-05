@@ -34,7 +34,19 @@ worklogs:
         '401':
           description: Unauthorized
         '404':
-          description: Business not found
+          description: Business not found or user is not a member of the business
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+              examples:
+                BUSINESS_NOT_FOUND:
+                  summary: "1006 - business does not exist"
+                  value:
+                    status: 404
+                    detail: "1006 - business does not exist"
+      x-functional-errors:
+        - 1006
 
   clock-out:
     put:
@@ -75,10 +87,67 @@ worklogs:
             application/json:
               schema:
                 $ref: '../../components/worklogs/components.yml#/components/schemas/WorkLogResponseDTO'
+        '400':
+          description: Worklog times are invalid (e.g. clock-out before clock-in)
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+              examples:
+                WORKLOG_NOT_VALID:
+                  summary: "1025 - worklog is not valid"
+                  value:
+                    status: 400
+                    detail: "1025 - worklog is not valid"
         '401':
           description: Unauthorized
+        '403':
+          description: User is not the owner of the worklog or the worklog is already closed
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+              examples:
+                WORKLOG_NOT_OWNER:
+                  summary: "1019 - user is not the owner of worklog"
+                  value:
+                    status: 403
+                    detail: "1019 - user is not the owner of worklog"
+                WORKLOG_CLOSED:
+                  summary: "1018 - worklog already closed"
+                  value:
+                    status: 403
+                    detail: "1018 - worklog already closed"
         '404':
-          description: Business not found or no open worklog
+          description: Worklog not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+              examples:
+                WORKLOG_NOT_FOUND:
+                  summary: "1017 - worklog not found"
+                  value:
+                    status: 404
+                    detail: "1017 - worklog not found"
+        '409':
+          description: Worklog overlaps with an existing worklog
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+              examples:
+                WORKLOG_OVERLAP:
+                  summary: "1022 - worklog overlaps with existing worklog"
+                  value:
+                    status: 409
+                    detail: "1022 - worklog overlaps with existing worklog"
+      x-functional-errors:
+        - 1017
+        - 1018
+        - 1019
+        - 1022
+        - 1025
 
   filtered-worklogs:
     get:
@@ -141,8 +210,33 @@ worklogs:
                   $ref: '../../components/worklogs/components.yml#/components/schemas/WorkLogResponseDTO'
         '401':
           description: Unauthorized
+        '403':
+          description: Current user is not the owner of the business
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+              examples:
+                USER_NOT_OWNER_OF_BUSINESS:
+                  summary: "1020 - user is not the owner of business"
+                  value:
+                    status: 403
+                    detail: "1020 - user is not the owner of business"
         '404':
           description: Business not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+              examples:
+                BUSINESS_NOT_FOUND:
+                  summary: "1006 - business does not exist"
+                  value:
+                    status: 404
+                    detail: "1006 - business does not exist"
+      x-functional-errors:
+        - 1006
+        - 1020
 
   get-worklogs:
     get:
@@ -227,9 +321,32 @@ worklogs:
         '401':
           description: Unauthorized
         '403':
-          description: Forbidden - User does not have permission to view this worklog
+          description: User is not the owner of the worklog
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+              examples:
+                WORKLOG_NOT_OWNER:
+                  summary: "1019 - user is not the owner of worklog"
+                  value:
+                    status: 403
+                    detail: "1019 - user is not the owner of worklog"
         '404':
           description: Worklog not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+              examples:
+                WORKLOG_NOT_FOUND:
+                  summary: "1017 - worklog not found"
+                  value:
+                    status: 404
+                    detail: "1017 - worklog not found"
+      x-functional-errors:
+        - 1017
+        - 1019
 
     put:
       summary: Update worklog
@@ -263,10 +380,57 @@ worklogs:
               schema:
                 $ref: '../../components/worklogs/components.yml#/components/schemas/WorkLogResponseDTO'
         '400':
-          description: Invalid request (e.g., clock-out before clock-in)
+          description: Worklog times are invalid (e.g. clock-out before clock-in)
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+              examples:
+                WORKLOG_NOT_VALID:
+                  summary: "1025 - worklog is not valid"
+                  value:
+                    status: 400
+                    detail: "1025 - worklog is not valid"
         '401':
           description: Unauthorized
         '403':
-          description: Forbidden - User does not have permission to update this worklog
+          description: User is not the owner of the worklog
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+              examples:
+                WORKLOG_NOT_OWNER:
+                  summary: "1019 - user is not the owner of worklog"
+                  value:
+                    status: 403
+                    detail: "1019 - user is not the owner of worklog"
         '404':
           description: Worklog not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+              examples:
+                WORKLOG_NOT_FOUND:
+                  summary: "1017 - worklog not found"
+                  value:
+                    status: 404
+                    detail: "1017 - worklog not found"
+        '409':
+          description: Updated worklog overlaps with an existing worklog
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+              examples:
+                WORKLOG_OVERLAP:
+                  summary: "1022 - worklog overlaps with existing worklog"
+                  value:
+                    status: 409
+                    detail: "1022 - worklog overlaps with existing worklog"
+      x-functional-errors:
+        - 1017
+        - 1019
+        - 1022
+        - 1025

@@ -29,12 +29,46 @@ invitations:
       responses:
         '201':
           description: User registered successfully
-        '400':
-          description: Invalid request or token
+        '403':
+          description: Invitation expired
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+              examples:
+                INVITATION_EXPIRED:
+                  summary: "1010 - invitation expired"
+                  value:
+                    status: 403
+                    detail: "1010 - invitation expired"
         '404':
-          description: Token not found
+          description: Invitation token not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+              examples:
+                INVITATION_NOT_FOUND:
+                  summary: "1005 - invitation not found"
+                  value:
+                    status: 404
+                    detail: "1005 - invitation not found"
         '409':
-          description: Username or phone already exists
+          description: User is already registered
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+              examples:
+                USER_ALREADY_ENABLED:
+                  summary: "1014 - user already enabled"
+                  value:
+                    status: 409
+                    detail: "1014 - user already enabled"
+      x-functional-errors:
+        - 1005
+        - 1010
+        - 1014
 
   accept-invitation:
     post:
@@ -57,12 +91,39 @@ invitations:
       responses:
         '200':
           description: Invitation accepted successfully
-        '400':
-          description: Invalid request or token
+        '403':
+          description: Invitation cannot be accepted by the current user or has expired
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+              examples:
+                INVITATION_NOT_FOR_CURRENT_USER:
+                  summary: "1009 - invitation not for current user"
+                  value:
+                    status: 403
+                    detail: "1009 - invitation not for current user"
+                INVITATION_EXPIRED:
+                  summary: "1010 - invitation expired"
+                  value:
+                    status: 403
+                    detail: "1010 - invitation expired"
         '404':
-          description: Invitation not found
-        '410':
-          description: Invitation expired or already used
+          description: Invitation token not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+              examples:
+                INVITATION_NOT_FOUND:
+                  summary: "1005 - invitation not found"
+                  value:
+                    status: 404
+                    detail: "1005 - invitation not found"
+      x-functional-errors:
+        - 1005
+        - 1009
+        - 1010
 
   get-and-create-invitations:
     post:
@@ -105,16 +166,54 @@ invitations:
                 status: "PENDING"
                 createdAt: "2023-06-15T14:30:00+00:00"
                 expiresAt: "2023-06-22T14:30:00+00:00"
-        '400':
-          description: Invalid request
         '401':
           description: Unauthorized
         '403':
-          description: Forbidden - User does not have permission to create invitations
+          description: Current user is not the owner of the business
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+              examples:
+                USER_INVITATION_NOT_OWNER:
+                  summary: "1011 - user not authorized for invitation"
+                  value:
+                    status: 403
+                    detail: "1011 - user not authorized for invitation"
         '404':
           description: Business not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+              examples:
+                BUSINESS_NOT_FOUND:
+                  summary: "1006 - business does not exist"
+                  value:
+                    status: 404
+                    detail: "1006 - business does not exist"
         '409':
-          description: Conflict - User already invited or already a member
+          description: User is already a member or already has a pending invitation
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+              examples:
+                USER_ALREADY_MEMBER_OF_BUSINESS:
+                  summary: "1007 - user already member of business"
+                  value:
+                    status: 409
+                    detail: "1007 - user already member of business"
+                INVITATION_ALREADY_EXISTS:
+                  summary: "1008 - user is already invited to this business"
+                  value:
+                    status: 409
+                    detail: "1008 - user is already invited to this business"
+      x-functional-errors:
+        - 1006
+        - 1007
+        - 1008
+        - 1011
     get:
       summary: Get invitations for a business
       description: Retrieves a list of all pending invitations for the specified business.
@@ -163,9 +262,32 @@ invitations:
         '401':
           description: Unauthorized
         '403':
-          description: Forbidden - User does not have permission to view invitations
+          description: Current user is not the owner of the business
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+              examples:
+                USER_INVITATION_NOT_OWNER:
+                  summary: "1011 - user not authorized for invitation"
+                  value:
+                    status: 403
+                    detail: "1011 - user not authorized for invitation"
         '404':
           description: Business not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+              examples:
+                BUSINESS_NOT_FOUND:
+                  summary: "1006 - business does not exist"
+                  value:
+                    status: 404
+                    detail: "1006 - business does not exist"
+      x-functional-errors:
+        - 1006
+        - 1011
 
   delete-business-invitation:
     delete:
@@ -196,9 +318,44 @@ invitations:
         '401':
           description: Unauthorized
         '403':
-          description: Forbidden - User does not have permission to delete invitations
+          description: Current user is not the owner or invitation is not in a deletable state
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+              examples:
+                USER_INVITATION_NOT_OWNER:
+                  summary: "1011 - user not authorized for invitation"
+                  value:
+                    status: 403
+                    detail: "1011 - user not authorized for invitation"
+                INVITATION_NOT_PENDING:
+                  summary: "1013 - invitation not pending"
+                  value:
+                    status: 403
+                    detail: "1013 - invitation not pending"
         '404':
           description: Business or invitation not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+              examples:
+                BUSINESS_NOT_FOUND:
+                  summary: "1006 - business does not exist"
+                  value:
+                    status: 404
+                    detail: "1006 - business does not exist"
+                INVITATION_NOT_FOUND:
+                  summary: "1005 - invitation not found"
+                  value:
+                    status: 404
+                    detail: "1005 - invitation not found"
+      x-functional-errors:
+        - 1005
+        - 1006
+        - 1011
+        - 1013
 
   get-invitations:
     get:

@@ -31,9 +31,27 @@ jobs:
       - name: Validate OpenAPI spec
         run: redocly lint --skip-rule no-unused-components ${{ matrix.spec }}
 
+  validate-error-codes:
+    name: Validate functional error codes
+    needs: validate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install js-yaml
+        run: npm install js-yaml
+
+      - name: Validate x-functional-errors codes
+        run: node scripts/validate-error-codes.js
+
   lint:
     name: API Linting
-    needs: validate
+    needs: [validate, validate-error-codes]
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -60,7 +78,7 @@ jobs:
 
   changes:
     name: Detect and preview API changes
-    needs: [validate, lint]
+    needs: [validate, validate-error-codes, lint]
     runs-on: ubuntu-latest
     strategy:
       matrix:
