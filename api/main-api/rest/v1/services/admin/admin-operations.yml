@@ -19,6 +19,42 @@ admin:
         '201':
           description: User registered successfully
         '400':
-          description: Invalid request data
+          description: Invalid timezone in request
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+              examples:
+                ZONE_ID_NOT_FOUND:
+                  summary: "1021 - zone id not found"
+                  value:
+                    status: 400
+                    detail: "1021 - zone id not found"
         '409':
-          description: Username or email already exists
+          description: Username already exists
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+              examples:
+                USERNAME_ALREADY_EXISTS:
+                  summary: "1002 - user already exists"
+                  value:
+                    status: 409
+                    detail: "1002 - user already exists"
+        '500':
+          description: Admin seed user not found (infrastructure configuration error)
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+              examples:
+                ADMIN_USER_NOT_FOUND:
+                  summary: "1001 - admin user not found"
+                  value:
+                    status: 500
+                    detail: "1001 - admin user not found"
+      x-functional-errors:
+        - 1001
+        - 1002
+        - 1021

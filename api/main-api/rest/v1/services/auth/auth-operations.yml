@@ -25,6 +25,18 @@ auth:
                 "$ref": "../../components/auth/auth-components.yml#/components/schemas/TokenResponseDTO"
         '401':
           description: Authentication failed
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+              examples:
+                INVALID_CREDENTIALS:
+                  summary: "1003 - invalid credentials"
+                  value:
+                    status: 401
+                    detail: "1003 - invalid credentials"
+      x-functional-errors:
+        - 1003
 
   token-refresh:
     post:
@@ -50,6 +62,31 @@ auth:
                 "$ref": "../../components/auth/auth-components.yml#/components/schemas/TokenResponseDTO"
         '401':
           description: Invalid or expired refresh token
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+              examples:
+                INVALID_REFRESH_TOKEN:
+                  summary: "1004 - invalid refresh token"
+                  value:
+                    status: 401
+                    detail: "1004 - invalid refresh token"
+        '404':
+          description: User not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+              examples:
+                USER_NOT_FOUND:
+                  summary: "1000 - user not found"
+                  value:
+                    status: 404
+                    detail: "1000 - user not found"
+      x-functional-errors:
+        - 1000
+        - 1004
 
   github:
     post:
@@ -75,6 +112,18 @@ auth:
                 $ref: '../../components/auth/auth-components.yml#/components/schemas/TokenResponseDTO'
         '401':
           description: Invalid OAuth credential
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+              examples:
+                OAUTH2_INVALID_TOKEN:
+                  summary: "1023 - oauth2 token is invalid"
+                  value:
+                    status: 401
+                    detail: "1023 - oauth2 token is invalid"
+      x-functional-errors:
+        - 1023
 
   google:
     post:
@@ -100,3 +149,15 @@ auth:
                 $ref: '../../components/auth/auth-components.yml#/components/schemas/TokenResponseDTO'
         '401':
           description: Invalid OAuth credential
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+              examples:
+                OAUTH2_INVALID_TOKEN:
+                  summary: "1023 - oauth2 token is invalid"
+                  value:
+                    status: 401
+                    detail: "1023 - oauth2 token is invalid"
+      x-functional-errors:
+        - 1023

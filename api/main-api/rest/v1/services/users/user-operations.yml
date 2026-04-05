@@ -25,6 +25,18 @@ users:
                 "$ref": "../../components/users/components.yml#/components/schemas/UserResponseDTO"
         '404':
           description: User not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+              examples:
+                USER_NOT_FOUND:
+                  summary: "1000 - user not found"
+                  value:
+                    status: 404
+                    detail: "1000 - user not found"
+      x-functional-errors:
+        - 1000
 
   change-password:
     put:
@@ -47,8 +59,33 @@ users:
         '200':
           description: Password changed successfully
         '400':
-          description: Invalid password format
+          description: User auth provider not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+              examples:
+                USER_AUTH_PROVIDER_NOT_FOUND:
+                  summary: "1024 - user auth provider not found"
+                  value:
+                    status: 400
+                    detail: "1024 - user auth provider not found"
         '401':
           description: Unauthorized
         '403':
           description: Forbidden - User does not have permission to change this password
+        '404':
+          description: User not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+              examples:
+                USER_NOT_FOUND:
+                  summary: "1000 - user not found"
+                  value:
+                    status: 404
+                    detail: "1000 - user not found"
+      x-functional-errors:
+        - 1000
+        - 1024

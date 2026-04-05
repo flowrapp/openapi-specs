@@ -1,0 +1,104 @@
+# AUTO-GENERATED — do not edit manually.
+# Regenerate by running from the backend repo root:
+#   mvn compile exec:java \
+#     -Dexec.mainClass="io.github.flowrapp.exception.FunctionalErrorSpecGenerator" \
+#     -Dexec.args="<path-to-openapi-specs>/api/main-api/rest/v1/components/common/error-components.yml" \
+#     -pl domain
+components:
+  schemas:
+    ProblemDetail:
+      type: object
+      description: |
+        RFC 9457 Problem Details response. Returned for all business errors.
+
+        The `detail` field contains a functional error string in the format `"<code> - <message>"`.
+        Use the numeric prefix to identify the specific error programmatically.
+
+        Example: `"1003 - invalid credentials"`
+
+        Note: code 1016 (CURRENT_USER_NOT_FOUND, HTTP 500) may be returned by any
+        authenticated endpoint when the JWT principal cannot be resolved to a user record.
+      properties:
+        type:
+          type: string
+          format: uri
+          description: URI reference identifying the problem type
+        title:
+          type: string
+          description: Short human-readable summary
+        status:
+          type: integer
+          description: HTTP status code
+          example: 404
+        detail:
+          type: string
+          description: |
+            Functional error in the format "<code> - <message>".
+            Parse the numeric prefix to identify the error using FunctionalErrorCode.
+          example: "1003 - invalid credentials"
+        instance:
+          type: string
+          format: uri
+          description: URI reference identifying the specific occurrence
+
+    FunctionalErrorCode:
+      type: integer
+      description: |
+        Business error code embedded in the `detail` field of ProblemDetail responses.
+        Format: `"<code> - <message>"` (e.g. `"1003 - invalid credentials"`)
+
+        | Code | HTTP Status | Name | Message |
+        |------|-------------|------|---------|
+        | 1000 | 404 | USER_NOT_FOUND | user not found |
+        | 1001 | 500 | ADMIN_USER_NOT_FOUND | admin user not found |
+        | 1002 | 409 | USERNAME_ALREADY_EXISTS | user already exists |
+        | 1003 | 401 | INVALID_CREDENTIALS | invalid credentials |
+        | 1004 | 401 | INVALID_REFRESH_TOKEN | invalid refresh token |
+        | 1005 | 404 | INVITATION_NOT_FOUND | invitation not found |
+        | 1006 | 404 | BUSINESS_NOT_FOUND | business does not exist |
+        | 1007 | 409 | USER_ALREADY_MEMBER_OF_BUSINESS | user already member of business |
+        | 1008 | 409 | INVITATION_ALREADY_EXISTS | user is already invited to this business |
+        | 1009 | 403 | INVITATION_NOT_FOR_CURRENT_USER | invitation not for current user |
+        | 1010 | 403 | INVITATION_EXPIRED | invitation expired |
+        | 1011 | 403 | USER_INVITATION_NOT_OWNER | user not authorized for invitation |
+        | 1012 | 403 | INVITATION_ALREADY_ACCEPTED | invitation already accepted |
+        | 1013 | 403 | INVITATION_NOT_PENDING | invitation not pending |
+        | 1014 | 409 | USER_ALREADY_ENABLED | user already enabled |
+        | 1015 | 403 | USER_IS_NOT_MEMBER_OF_BUSINESS | user is not member of business |
+        | 1016 | 500 | CURRENT_USER_NOT_FOUND | Current user not found |
+        | 1017 | 404 | WORKLOG_NOT_FOUND | worklog not found |
+        | 1018 | 403 | WORKLOG_CLOSED | worklog already closed |
+        | 1019 | 403 | WORKLOG_NOT_OWNER | user is not the owner of worklog |
+        | 1020 | 403 | USER_NOT_OWNER_OF_BUSINESS | user is not the owner of business |
+        | 1021 | 400 | ZONE_ID_NOT_FOUND | zone id not found |
+        | 1022 | 409 | WORKLOG_OVERLAP | worklog overlaps with existing worklog |
+        | 1023 | 401 | OAUTH2_INVALID_TOKEN | oauth2 token is invalid |
+        | 1024 | 400 | USER_AUTH_PROVIDER_NOT_FOUND | user auth provider not found |
+        | 1025 | 400 | WORKLOG_NOT_VALID | worklog is not valid |
+      enum:
+        - 1000
+        - 1001
+        - 1002
+        - 1003
+        - 1004
+        - 1005
+        - 1006
+        - 1007
+        - 1008
+        - 1009
+        - 1010
+        - 1011
+        - 1012
+        - 1013
+        - 1014
+        - 1015
+        - 1016
+        - 1017
+        - 1018
+        - 1019
+        - 1020
+        - 1021
+        - 1022
+        - 1023
+        - 1024
+        - 1025
