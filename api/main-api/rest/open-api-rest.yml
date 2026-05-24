@@ -79,6 +79,8 @@ paths:
     $ref: 'v1/services/timesheet/timesheet-operations.yml#/timesheet/user-weekly-hours'
   "/api/v1/businesses/{businessId}/reports":
     $ref: 'v1/services/reports/reports-operations.yml#/reports/business-reports'
+  "/api/v1/businesses/{businessId}/reports/worked-hours.pdf":
+    $ref: 'v1/services/reports/reports-operations.yml#/reports/business-worked-hours-report-pdf'
   "/api/v1/reports":
     $ref: 'v1/services/reports/reports-operations.yml#/reports/user-reports'
   "/api/v1/businesses/{businessId}/invitations":
