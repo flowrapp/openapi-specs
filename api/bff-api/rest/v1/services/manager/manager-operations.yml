@@ -418,3 +418,62 @@ manager:
           description: Forbidden - User is not a manager of this business
         '404':
           description: Business not found or no data for the specified week
+
+  export-worked-hours-report:
+    get:
+      summary: Export worked hours report as PDF
+      description: >
+        Downloads a PDF report with worked-hours information for every employee in the business
+        within the requested date range. This endpoint is a pass-through proxy to the main API,
+        where privileged business access is enforced for OWNER and MANAGER roles.
+      tags:
+        - Manager
+      operationId: exportManagerWorkedHoursReportPdf
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: businessId
+          in: path
+          required: true
+          description: ID of the business
+          schema:
+            type: integer
+            format: int64
+        - name: from
+          in: query
+          required: true
+          description: Start date of the report range, inclusive (format YYYY-MM-DD)
+          schema:
+            type: string
+            format: date
+            example: "2025-01-01"
+        - name: to
+          in: query
+          required: true
+          description: End date of the report range, inclusive (format YYYY-MM-DD)
+          schema:
+            type: string
+            format: date
+            example: "2025-12-31"
+      responses:
+        '200':
+          description: PDF generated successfully
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+          headers:
+            Content-Disposition:
+              description: Attachment filename
+              schema:
+                type: string
+                example: 'attachment; filename="worked-hours-report-2025-01-01-2025-12-31.pdf"'
+        '400':
+          description: Invalid date range
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden - User does not have privileged access to this business
+        '404':
+          description: Business not found
