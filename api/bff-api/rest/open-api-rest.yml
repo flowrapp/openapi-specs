@@ -102,6 +102,8 @@ paths:
     $ref: 'v1/services/manager/manager-operations.yml#/manager/delete-invitation'
   "/api/v1/manager/businesses/{businessId}/export/weekly-timesheet":
     $ref: 'v1/services/manager/manager-operations.yml#/manager/export-weekly-timesheet'
+  "/api/v1/manager/businesses/{businessId}/export/worked-hours-report":
+    $ref: 'v1/services/manager/manager-operations.yml#/manager/export-worked-hours-report'
 
 components:
   securitySchemes:
