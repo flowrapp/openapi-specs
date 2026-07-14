@@ -51,3 +51,26 @@ components:
           example: "eyJhbGciOiJSUzI1NiIsImtpZCI6IjE2MjM0NTY3ODkwIn0..."
       required:
         - credential
+
+    RegisterUserFromInvitationRequestDTO:
+      type: object
+      description: Registration details for a new user who received an invitation
+      properties:
+        username:
+          type: string
+          description: Username for the new user
+          example: "johndoe"
+        phone:
+          type: string
+          description: Phone number of the user
+          maxLength: 15
+          example: "+1234567890"
+        password:
+          type: string
+          description: Password for the new user
+          format: password
+          example: "securePassword123"
+      required:
+        - username
+        - phone
+        - password

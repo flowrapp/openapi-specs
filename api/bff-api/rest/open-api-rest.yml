@@ -54,6 +54,8 @@ paths:
     $ref: 'v1/services/auth/auth-operations.yml#/auth/github'
   "/api/v1/auth/oauth/google":
     $ref: 'v1/services/auth/auth-operations.yml#/auth/google'
+  "/api/v1/invitations/register":
+    $ref: 'v1/services/auth/auth-operations.yml#/auth/register-from-invitation'
 
   # ── User (shared, authenticated) ────────────────────────────────────────
   "/api/v1/me":
