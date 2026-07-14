@@ -8,8 +8,8 @@ Interactive API references are hosted on **GitHub Pages** and powered by [Scalar
 
 | API | Description |
 | --- | --- |
-| [Main API](https://flowrapp.github.io/main-api/) | Core backend — users, businesses, worklogs, invitations |
-| [BFF API](https://flowrapp.github.io/bff-api/) | Backend-for-Frontend — aggregated endpoints for the mobile app |
+| [Main API]([https://flowrapp.github.io/main-api/](https://flowrapp.github.io/openapi-specs/main-api/)) | Core backend — users, businesses, worklogs, invitations |
+| [BFF API]([https://flowrapp.github.io/bff-api/](https://flowrapp.github.io/openapi-specs/bff-api/)) | Backend-for-Frontend — aggregated endpoints for the mobile app |
 
 ## Structure
 
