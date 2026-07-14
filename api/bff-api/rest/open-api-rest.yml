@@ -60,6 +60,12 @@ paths:
     $ref: 'v1/services/user/user-operations.yml#/user/profile'
   "/api/v1/me/password":
     $ref: 'v1/services/user/user-operations.yml#/user/change-password'
+  "/api/v1/me/invitations":
+    $ref: 'v1/services/user/user-operations.yml#/user/invitations'
+  "/api/v1/me/invitations/{invitationId}/accept":
+    $ref: 'v1/services/user/user-operations.yml#/user/accept-invitation'
+  "/api/v1/me/invitations/{invitationId}/decline":
+    $ref: 'v1/services/user/user-operations.yml#/user/decline-invitation'
 
   # ── Push Tokens (shared, authenticated) ─────────────────────────────────
   "/api/v1/push-tokens":

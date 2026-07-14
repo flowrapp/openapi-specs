@@ -43,3 +43,98 @@ user:
           description: Invalid password format
         '401':
           description: Unauthorized
+
+  invitations:
+    get:
+      summary: List current user's invitations
+      description: >
+        Returns invitations addressed to the currently authenticated user. By default,
+        only pending invitations are returned so the response is ready for the mobile inbox.
+      tags:
+        - User
+      operationId: getCurrentUserInvitations
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          required: false
+          description: Filter invitations by status. Defaults to pending invitations.
+          schema:
+            type: string
+            enum: [PENDING, ACCEPTED, DECLINED, EXPIRED]
+            default: PENDING
+      responses:
+        '200':
+          description: Invitations retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '../../components/user/components.yml#/components/schemas/UserInvitationResponseDTO'
+              example:
+                - id: 123
+                  businessId: 101
+                  businessName: "Coffee Time"
+                  email: "invitee@example.com"
+                  role: "EMPLOYEE"
+                  status: "PENDING"
+                  createdAt: "2026-07-14T10:30:00+02:00"
+                  expiresAt: "2026-07-21T10:30:00+02:00"
+        '401':
+          description: Unauthorized
+
+  accept-invitation:
+    post:
+      summary: Accept an invitation
+      description: Accepts a pending invitation addressed to the currently authenticated user.
+      tags:
+        - User
+      operationId: acceptCurrentUserInvitation
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: invitationId
+          in: path
+          required: true
+          description: Unique identifier of the invitation
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Invitation accepted successfully
+        '401':
+          description: Unauthorized
+        '403':
+          description: Invitation does not belong to the user, has expired, or is not pending
+        '404':
+          description: Invitation not found
+
+  decline-invitation:
+    post:
+      summary: Decline an invitation
+      description: Declines a pending invitation addressed to the currently authenticated user.
+      tags:
+        - User
+      operationId: declineCurrentUserInvitation
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: invitationId
+          in: path
+          required: true
+          description: Unique identifier of the invitation
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Invitation declined successfully
+        '401':
+          description: Unauthorized
+        '403':
+          description: Invitation does not belong to the user, has expired, or is not pending
+        '404':
+          description: Invitation not found
