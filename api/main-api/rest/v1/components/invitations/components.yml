@@ -48,6 +48,14 @@ components:
           type: integer
           description: Unique identifier for the invitation
           example: 123
+        businessId:
+          type: integer
+          description: Unique identifier of the business issuing the invitation
+          example: 101
+        businessName:
+          type: string
+          description: Name of the business issuing the invitation
+          example: "Coffee Time"
         email:
           type: string
           description: Email address of the invitee
@@ -74,6 +82,8 @@ components:
           example: "2023-06-22T14:30:00+00:00"
       required:
         - id
+        - businessId
+        - businessName
         - email
         - role
         - status
