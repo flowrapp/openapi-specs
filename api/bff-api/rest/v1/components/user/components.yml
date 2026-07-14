@@ -44,3 +44,56 @@ components:
           example: "newSecurePassword123"
       required:
         - password
+
+    UserInvitationResponseDTO:
+      type: object
+      description: Invitation addressed to the currently authenticated user
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: Unique identifier of the invitation
+          example: 123
+        businessId:
+          type: integer
+          format: int64
+          description: Unique identifier of the business issuing the invitation
+          example: 101
+        businessName:
+          type: string
+          description: Name of the business issuing the invitation
+          example: "Coffee Time"
+        email:
+          type: string
+          format: email
+          description: Email address of the invitee
+          example: "invitee@example.com"
+        role:
+          type: string
+          description: Role offered to the invitee
+          enum: [OWNER, MANAGER, EMPLOYEE]
+          example: "EMPLOYEE"
+        status:
+          type: string
+          description: Current status of the invitation
+          enum: [PENDING, ACCEPTED, DECLINED, EXPIRED]
+          example: "PENDING"
+        createdAt:
+          type: string
+          format: date-time
+          description: When the invitation was created
+          example: "2026-07-14T10:30:00+02:00"
+        expiresAt:
+          type: string
+          format: date-time
+          description: When the invitation expires
+          example: "2026-07-21T10:30:00+02:00"
+      required:
+        - id
+        - businessId
+        - businessName
+        - email
+        - role
+        - status
+        - createdAt
+        - expiresAt

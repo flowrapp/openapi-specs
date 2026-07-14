@@ -73,7 +73,7 @@ invitations:
   accept-invitation:
     post:
       summary: Accept an invitation
-      description: Accepts an invitation to join a business using a token.
+      description: Accepts an invitation addressed to the currently authenticated user.
       tags:
         - Invitations
       operationId: acceptInvitation
@@ -81,18 +81,17 @@ invitations:
         - basicAuth: [ ]
         - bearerAuth: [ ]
       parameters:
-        - name: token
-          in: query
+        - name: invitationId
+          in: path
           required: true
-          description: Token to validate the invitation
+          description: Unique identifier of the invitation
           schema:
-            type: string
-            pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+            type: integer
       responses:
         '200':
           description: Invitation accepted successfully
         '403':
-          description: Invitation cannot be accepted by the current user or has expired
+          description: Invitation cannot be accepted by the current user, has expired, or is not pending
           content:
             application/problem+json:
               schema:
@@ -108,8 +107,13 @@ invitations:
                   value:
                     status: 403
                     detail: "1010 - invitation expired"
+                INVITATION_NOT_PENDING:
+                  summary: "1013 - invitation not pending"
+                  value:
+                    status: 403
+                    detail: "1013 - invitation not pending"
         '404':
-          description: Invitation token not found
+          description: Invitation not found
           content:
             application/problem+json:
               schema:
@@ -124,6 +128,67 @@ invitations:
         - 1005
         - 1009
         - 1010
+        - 1013
+
+  decline-invitation:
+    post:
+      summary: Decline an invitation
+      description: Declines an invitation addressed to the currently authenticated user.
+      tags:
+        - Invitations
+      operationId: declineInvitation
+      security:
+        - basicAuth: [ ]
+        - bearerAuth: [ ]
+      parameters:
+        - name: invitationId
+          in: path
+          required: true
+          description: Unique identifier of the invitation
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Invitation declined successfully
+        '403':
+          description: Invitation cannot be declined by the current user, has expired, or is not pending
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+              examples:
+                INVITATION_NOT_FOR_CURRENT_USER:
+                  summary: "1009 - invitation not for current user"
+                  value:
+                    status: 403
+                    detail: "1009 - invitation not for current user"
+                INVITATION_EXPIRED:
+                  summary: "1010 - invitation expired"
+                  value:
+                    status: 403
+                    detail: "1010 - invitation expired"
+                INVITATION_NOT_PENDING:
+                  summary: "1013 - invitation not pending"
+                  value:
+                    status: 403
+                    detail: "1013 - invitation not pending"
+        '404':
+          description: Invitation not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+              examples:
+                INVITATION_NOT_FOUND:
+                  summary: "1005 - invitation not found"
+                  value:
+                    status: 404
+                    detail: "1005 - invitation not found"
+      x-functional-errors:
+        - 1005
+        - 1009
+        - 1010
+        - 1013
 
   get-and-create-invitations:
     post:
@@ -161,6 +226,8 @@ invitations:
                 $ref: '../../components/invitations/components.yml#/components/schemas/InvitationResponseDTO'
               example:
                 id: 123
+                businessId: 101
+                businessName: "Coffee Time"
                 email: "invitee@example.com"
                 role: "MANAGER"
                 status: "PENDING"
@@ -248,12 +315,16 @@ invitations:
                   $ref: '../../components/invitations/components.yml#/components/schemas/InvitationResponseDTO'
               example:
                 - id: 123
+                  businessId: 101
+                  businessName: "Coffee Time"
                   email: "invitee@example.com"
                   role: "MANAGER"
                   status: "PENDING"
                   createdAt: "2023-06-15T14:30:00+00:00"
                   expiresAt: "2023-06-22T14:30:00+00:00"
                 - id: 124
+                  businessId: 101
+                  businessName: "Coffee Time"
                   email: "another@example.com"
                   role: "EMPLOYEE"
                   status: "PENDING"
@@ -386,12 +457,16 @@ invitations:
                   $ref: '../../components/invitations/components.yml#/components/schemas/InvitationResponseDTO'
               example:
                 - id: 123
+                  businessId: 101
+                  businessName: "Coffee Time"
                   email: "invitee@example.com"
                   role: "MANAGER"
                   status: "PENDING"
                   createdAt: "2023-06-15T14:30:00+00:00"
                   expiresAt: "2023-06-22T14:30:00+00:00"
                 - id: 124
+                  businessId: 202
+                  businessName: "Bistro Central"
                   email: "another@example.com"
                   role: "EMPLOYEE"
                   status: "PENDING"
