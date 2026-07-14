@@ -107,3 +107,42 @@ auth:
                 $ref: '../../components/auth/components.yml#/components/schemas/TokenResponseDTO'
         '401':
           description: Invalid OAuth credential
+
+  register-from-invitation:
+    post:
+      summary: Register user from invitation
+      description: >
+        Registers a new user and accepts the invitation associated with the token.
+        This is a pass-through to the main API.
+      tags:
+        - Authentication
+      operationId: registerUserFromInvitation
+      security: []
+      parameters:
+        - name: token
+          in: query
+          required: true
+          description: Token from the invitation email used to validate the registration
+          schema:
+            type: string
+            pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+      requestBody:
+        description: Registration details for the new user
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '../../components/auth/components.yml#/components/schemas/RegisterUserFromInvitationRequestDTO'
+            example:
+              username: "johndoe"
+              phone: "+1234567890"
+              password: "securePassword123"
+      responses:
+        '201':
+          description: User registered and invitation accepted successfully
+        '403':
+          description: Invitation expired
+        '404':
+          description: Invitation token not found
+        '409':
+          description: User is already registered
