@@ -19,6 +19,7 @@ components:
             $ref: '#/components/schemas/BusinessDTO'
           example:
             - name: Business 1
+              nif: B12345678
               zone: America/Caracas
               address: C/ sin nombre 43
               town: Barbate
@@ -29,6 +30,7 @@ components:
                 longitude: 50.5
                 area: 5.3
             - name: Business 2
+              nif: 12345678Z
               zone: Europe/Madrid
               address: C/ sin nombre 43
               town: Barbate
@@ -50,6 +52,10 @@ components:
           type: string
           description: Name of the business
           example: Business 1
+        nif:
+          type: string
+          description: Spanish tax identification number for a legal entity or an individual
+          example: B12345678
         address:
           type: string
           description: Address of the business
@@ -74,6 +80,7 @@ components:
           example: America/Caracas
       required:
         - name
+        - nif
         - location
         - address
         - town
