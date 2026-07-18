@@ -41,6 +41,42 @@ components:
       required:
         - refreshToken
 
+    ForgotPasswordRequestDTO:
+      type: object
+      description: Request object for starting password recovery
+      properties:
+        email:
+          type: string
+          format: email
+          description: Email address associated with the account
+          example: "user@example.com"
+      required:
+        - email
+
+    ResetPasswordRequestDTO:
+      type: object
+      description: Request object for resetting a password with an email verification code
+      properties:
+        email:
+          type: string
+          format: email
+          description: Email address associated with the password recovery request
+          example: "user@example.com"
+        code:
+          type: string
+          pattern: '^[0-9]{6}$'
+          description: Six-digit, single-use verification code sent by email
+          example: "123456"
+        password:
+          type: string
+          format: password
+          description: New password for the user
+          example: "newSecurePassword123"
+      required:
+        - email
+        - code
+        - password
+
     OAuthCredentialRequestDTO:
       type: object
       description: Request object containing a third-party OAuth credential
