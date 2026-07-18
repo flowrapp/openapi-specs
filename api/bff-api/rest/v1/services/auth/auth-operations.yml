@@ -54,6 +54,56 @@ auth:
         '401':
           description: Invalid or expired refresh token
 
+  forgot-password:
+    post:
+      summary: Request a password reset
+      description: >
+        Requests a six-digit password reset code by email. The response does not reveal
+        whether the email is registered. Pass-through to the main API.
+      tags:
+        - Authentication
+      operationId: forgotPassword
+      security: []
+      requestBody:
+        description: Email address for password recovery
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '../../components/auth/components.yml#/components/schemas/ForgotPasswordRequestDTO'
+      responses:
+        '202':
+          description: Password reset request accepted
+        '400':
+          description: Invalid request
+        '429':
+          description: Too many password reset requests
+
+  reset-password:
+    post:
+      summary: Reset a forgotten password
+      description: >
+        Sets a new password using the six-digit verification code sent to the user's
+        email address. Pass-through to the main API.
+      tags:
+        - Authentication
+      operationId: resetPassword
+      security: []
+      requestBody:
+        description: Password reset details
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '../../components/auth/components.yml#/components/schemas/ResetPasswordRequestDTO'
+      responses:
+        '204':
+          description: Password reset successfully
+        '400':
+          description: Invalid request, verification code, or password
+        '429':
+          description: Too many verification attempts
+
   github:
     post:
       summary: Authenticate via GitHub OAuth

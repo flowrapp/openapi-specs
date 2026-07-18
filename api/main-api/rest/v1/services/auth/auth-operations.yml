@@ -88,6 +88,64 @@ auth:
         - 1000
         - 1004
 
+  forgot-password:
+    post:
+      summary: Request a password reset
+      description: >
+        Sends a six-digit password reset code to the supplied email address when an
+        eligible account exists. The response does not reveal whether the email is registered.
+      tags:
+        - Authentication
+      operationId: forgotPassword
+      security: []
+      requestBody:
+        description: Email address for password recovery
+        content:
+          application/json:
+            schema:
+              $ref: '../../components/auth/auth-components.yml#/components/schemas/ForgotPasswordRequestDTO'
+        required: true
+      responses:
+        '202':
+          description: Password reset request accepted
+        '400':
+          description: Invalid request
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+        '429':
+          description: Too many password reset requests
+
+  reset-password:
+    post:
+      summary: Reset a forgotten password
+      description: >
+        Sets a new password using the six-digit, single-use verification code sent
+        to the user's email address. The code expires after a limited time.
+      tags:
+        - Authentication
+      operationId: resetPassword
+      security: []
+      requestBody:
+        description: Password reset details
+        content:
+          application/json:
+            schema:
+              $ref: '../../components/auth/auth-components.yml#/components/schemas/ResetPasswordRequestDTO'
+        required: true
+      responses:
+        '204':
+          description: Password reset successfully
+        '400':
+          description: Invalid request, verification code, or password
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+        '429':
+          description: Too many verification attempts
+
   github:
     post:
       summary: Authenticate via GitHub OAuth
