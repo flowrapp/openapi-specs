@@ -172,10 +172,11 @@ auth:
         - name: token
           in: query
           required: true
-          description: Token from the invitation email used to validate the registration
+          description: Human-readable invitation code or legacy UUID from the invitation email
           schema:
             type: string
-            pattern: '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+            pattern: '^(?:[2-9A-HJ-NP-Z]{8}|[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$'
+            example: 7K3M9XQ2
       requestBody:
         description: Registration details for the new user
         required: true
