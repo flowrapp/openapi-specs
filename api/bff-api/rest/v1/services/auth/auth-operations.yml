@@ -58,7 +58,7 @@ auth:
     post:
       summary: Request a password reset
       description: >
-        Requests a six-digit password reset code by email. The response does not reveal
+        Requests a password reset code by email. The response does not reveal
         whether the email is registered. Pass-through to the main API.
       tags:
         - Authentication
@@ -83,7 +83,7 @@ auth:
     post:
       summary: Reset a forgotten password
       description: >
-        Sets a new password using the six-digit verification code sent to the user's
+        Sets a new password using the verification code sent to the user's
         email address. Pass-through to the main API.
       tags:
         - Authentication
