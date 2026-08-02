@@ -92,7 +92,7 @@ auth:
     post:
       summary: Request a password reset
       description: >
-        Sends a six-digit password reset code to the supplied email address when an
+        Sends a password reset code to the supplied email address when an
         eligible account exists. The response does not reveal whether the email is registered.
       tags:
         - Authentication
@@ -121,7 +121,7 @@ auth:
     post:
       summary: Reset a forgotten password
       description: >
-        Sets a new password using the six-digit, single-use verification code sent
+        Sets a new password using the single-use verification code sent
         to the user's email address. The code expires after a limited time.
       tags:
         - Authentication

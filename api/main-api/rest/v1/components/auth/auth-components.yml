@@ -59,9 +59,8 @@ components:
           example: user@example.com
         code:
           type: string
-          pattern: '^[0-9]{6}$'
-          description: Six-digit, single-use verification code sent by email
-          example: "123456"
+          description: Single-use verification code sent by email
+          example: "550e8400-e29b-41d4-a716-446655440000"
         password:
           type: string
           format: password
