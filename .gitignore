@@ -14,3 +14,5 @@ api/*/rest/bundle-openapi.yaml
 _site/
 
 .DS_Store
+
+.pi-subagents
