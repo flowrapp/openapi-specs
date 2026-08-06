@@ -67,6 +67,8 @@ paths:
     $ref: 'v1/services/business/businesses-operations.yml#/businesses/get-businesses'
   "/api/v1/businesses/{businessId}/users":
     $ref: 'v1/services/business/businesses-operations.yml#/businesses/get-business-users'
+  "/api/v1/businesses/{businessId}/geofence-events/{eventId}":
+    $ref: 'v1/services/geofenceEvents/geofence-events-operations.yml#/geofenceEvents/upsert-geofence-event'
   "/api/v1/businesses/{businessId}/worklogs/clock-in":
     $ref: 'v1/services/worklogs/worklogs-operations.yml#/worklogs/clock-in'
   "/api/v1/businesses/{businessId}/worklogs/{worklogId}/clock-out":
