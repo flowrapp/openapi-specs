@@ -38,7 +38,7 @@ tags:
   - name: Manager
     description: >
       Manager-facing endpoints for business oversight, worker management,
-      work history reporting, invitation management, and timesheet export.
+      work history reporting, owner-only invitation management, and timesheet export.
 
 paths:
   # ── System ──────────────────────────────────────────────────────────────
