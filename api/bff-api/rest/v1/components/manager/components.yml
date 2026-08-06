@@ -88,10 +88,16 @@ components:
           format: email
           description: Email address of the worker
           example: "john.doe@example.com"
+        role:
+          type: string
+          description: Role of the user in the business
+          enum: [OWNER, MANAGER, EMPLOYEE]
+          example: "EMPLOYEE"
       required:
         - userId
         - name
         - email
+        - role
 
     ManagerDayHistoryResponseDTO:
       type: object
@@ -308,8 +314,8 @@ components:
         role:
           type: string
           description: Role to assign to the invitee
-          enum: [MANAGER, EMPLOYEE]
-          example: "EMPLOYEE"
+          enum: [OWNER, MANAGER, EMPLOYEE]
+          example: "OWNER"
       required:
         - email
         - role
