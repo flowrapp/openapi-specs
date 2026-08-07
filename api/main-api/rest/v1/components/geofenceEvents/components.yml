@@ -1,0 +1,26 @@
+components:
+  schemas:
+    GeofenceEventRequestDTO:
+      type: object
+      description: Geofence transition captured by a worker's device
+      additionalProperties: false
+      properties:
+        deviceId:
+          type: string
+          format: uuid
+          description: Unique identifier of the device that emitted the event
+          example: "7c9e6679-7425-40de-944b-e07fc1f90ae7"
+        type:
+          type: string
+          description: Geofence transition type
+          enum: [ENTER, EXIT]
+          example: ENTER
+        occurredAt:
+          type: string
+          format: date-time
+          description: Timestamp when the transition occurred on the device
+          example: "2026-08-06T08:15:00Z"
+      required:
+        - deviceId
+        - type
+        - occurredAt

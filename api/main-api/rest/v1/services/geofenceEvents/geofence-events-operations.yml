@@ -1,0 +1,75 @@
+geofenceEvents:
+  upsert-geofence-event:
+    put:
+      summary: Register a geofence event
+      description: >
+        Idempotently registers a geofence event emitted by a device for the authenticated user
+        at the specified business. Repeating the request with the same event ID and payload does
+        not create a duplicate event.
+      tags:
+        - Businesses
+      operationId: upsertGeofenceEvent
+      security:
+        - basicAuth: []
+        - bearerAuth: []
+      parameters:
+        - name: businessId
+          in: path
+          required: true
+          description: ID of the business whose geofence emitted the event
+          schema:
+            type: integer
+            format: int64
+        - name: eventId
+          in: path
+          required: true
+          description: Client-generated identifier used to make event delivery idempotent
+          schema:
+            type: string
+            format: uuid
+          example: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+      requestBody:
+        required: true
+        description: Geofence event data captured by the device
+        content:
+          application/json:
+            schema:
+              $ref: '../../components/geofenceEvents/components.yml#/components/schemas/GeofenceEventRequestDTO'
+      responses:
+        '201':
+          description: Geofence event created successfully
+        '204':
+          description: An identical geofence event was already registered
+        '400':
+          description: Invalid geofence event
+        '401':
+          description: Unauthorized
+        '403':
+          description: User is not a member of the business
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+              examples:
+                USER_IS_NOT_MEMBER_OF_BUSINESS:
+                  summary: "1015 - user is not member of business"
+                  value:
+                    status: 403
+                    detail: "1015 - user is not member of business"
+        '404':
+          description: Business not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+              examples:
+                BUSINESS_NOT_FOUND:
+                  summary: "1006 - business does not exist"
+                  value:
+                    status: 404
+                    detail: "1006 - business does not exist"
+        '409':
+          description: The event ID is already associated with a different payload
+      x-functional-errors:
+        - 1006
+        - 1015
