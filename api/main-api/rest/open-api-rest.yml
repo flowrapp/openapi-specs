@@ -37,6 +37,8 @@ tags:
     description: System utility endpoints for monitoring and health checks.
   - name: Push Tokens
     description: Operations for managing push notification tokens.
+  - name: Contracts
+    description: Operations for managing user contracts within businesses.
 
 paths:
   "/api/v1/ping":
@@ -101,6 +103,14 @@ paths:
     $ref: 'v1/services/invitations/invitations-operations.yml#/invitations/decline-invitation'
   "/api/v1/invitations/register":
     $ref: 'v1/services/invitations/invitations-operations.yml#/invitations/register-user-from-invitation'
+  "/api/v1/businesses/{businessId}/users/{userId}/contracts":
+    $ref: 'v1/services/contracts/contracts-operations.yml#/contracts/business-user-contracts'
+  "/api/v1/businesses/{businessId}/users/{userId}/contracts/current":
+    $ref: 'v1/services/contracts/contracts-operations.yml#/contracts/current-business-user-contract'
+  "/api/v1/businesses/{businessId}/users/{userId}/contracts/{contractId}":
+    $ref: 'v1/services/contracts/contracts-operations.yml#/contracts/business-user-contract'
+  "/api/v1/contracts":
+    $ref: 'v1/services/contracts/contracts-operations.yml#/contracts/current-user-contracts'
 
 
 components:
