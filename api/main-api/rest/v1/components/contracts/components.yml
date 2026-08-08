@@ -1,0 +1,127 @@
+components:
+  parameters:
+    Page:
+      name: page
+      in: query
+      required: false
+      description: Zero-based slice number
+      schema:
+        type: integer
+        format: int32
+        minimum: 0
+        default: 0
+    Size:
+      name: size
+      in: query
+      required: false
+      description: Number of contracts in the slice
+      schema:
+        type: integer
+        format: int32
+        minimum: 1
+        maximum: 100
+        default: 20
+  schemas:
+    ContractRequestDTO:
+      type: object
+      description: Contract details supplied when creating or updating a contract
+      properties:
+        totalWeekHours:
+          type: number
+          format: double
+          description: Number of hours agreed for a working week
+          exclusiveMinimum: 0
+          example: 40.0
+        startDate:
+          type: string
+          format: date-time
+          description: Instant from which the contract is effective
+          example: "2025-01-01T00:00:00+00:00"
+        endDate:
+          type: ["string", "null"]
+          format: date-time
+          description: Instant until which the contract is effective, or null for an open-ended contract
+          example: "2025-12-31T23:59:59+00:00"
+      required:
+        - totalWeekHours
+        - startDate
+        - endDate
+
+    ContractResponseDTO:
+      type: object
+      description: Contract details for a user in a business
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: Unique identifier for the contract
+          example: 123
+        businessId:
+          type: integer
+          format: int64
+          description: Unique identifier of the business associated with the contract
+          example: 101
+        totalWeekHours:
+          type: number
+          format: double
+          description: Number of hours agreed for a working week
+          example: 40.0
+        startDate:
+          type: string
+          format: date-time
+          description: Instant from which the contract is effective
+          example: "2025-01-01T00:00:00+00:00"
+        endDate:
+          type: ["string", "null"]
+          format: date-time
+          description: Instant until which the contract is effective, or null for an open-ended contract
+          example: "2025-12-31T23:59:59+00:00"
+        createdAt:
+          type: string
+          format: date-time
+          description: Instant when the contract was created
+          example: "2024-12-20T10:15:00+00:00"
+        updatedAt:
+          type: string
+          format: date-time
+          description: Instant when the contract was last updated
+          example: "2024-12-20T10:15:00+00:00"
+      required:
+        - id
+        - businessId
+        - totalWeekHours
+        - startDate
+        - endDate
+        - createdAt
+        - updatedAt
+
+    ContractSliceResponseDTO:
+      type: object
+      description: Slice of contracts without a total-count query
+      properties:
+        content:
+          type: array
+          description: Contracts in the requested slice
+          items:
+            $ref: '#/components/schemas/ContractResponseDTO'
+        page:
+          type: integer
+          format: int32
+          minimum: 0
+          description: Current page number, zero-based
+          example: 0
+        size:
+          type: integer
+          format: int32
+          minimum: 1
+          description: Requested page size
+          example: 20
+        hasNext:
+          type: boolean
+          description: Whether another slice is available
+          example: true
+      required:
+        - content
+        - page
+        - size
+        - hasNext
