@@ -32,7 +32,7 @@ contracts:
               $ref: '../../components/contracts/components.yml#/components/schemas/ContractRequestDTO'
             example:
               totalWeekHours: 40.0
-              startDate: "2025-01-01T00:00:00+00:00"
+              startDate: "2025-01-01"
               endDate: null
       responses:
         '201':
@@ -121,7 +121,7 @@ contracts:
                   - id: 123
                     businessId: 101
                     totalWeekHours: 40.0
-                    startDate: "2025-01-01T00:00:00+00:00"
+                    startDate: "2025-01-01"
                     endDate: null
                     createdAt: "2024-12-20T10:15:00+00:00"
                     updatedAt: "2024-12-20T10:15:00+00:00"
@@ -186,7 +186,7 @@ contracts:
                 id: 123
                 businessId: 101
                 totalWeekHours: 40.0
-                startDate: "2025-01-01T00:00:00+00:00"
+                startDate: "2025-01-01"
                 endDate: null
                 createdAt: "2024-12-20T10:15:00+00:00"
                 updatedAt: "2024-12-20T10:15:00+00:00"
@@ -252,7 +252,7 @@ contracts:
               $ref: '../../components/contracts/components.yml#/components/schemas/ContractRequestDTO'
             example:
               totalWeekHours: 35.0
-              startDate: "2025-01-01T00:00:00+00:00"
+              startDate: "2025-01-01"
               endDate: null
       responses:
         '200':
@@ -320,15 +320,15 @@ contracts:
                   - id: 123
                     businessId: 101
                     totalWeekHours: 40.0
-                    startDate: "2025-01-01T00:00:00+00:00"
+                    startDate: "2025-01-01"
                     endDate: null
                     createdAt: "2024-12-20T10:15:00+00:00"
                     updatedAt: "2024-12-20T10:15:00+00:00"
                   - id: 122
                     businessId: 202
                     totalWeekHours: 20.0
-                    startDate: "2024-06-01T00:00:00+00:00"
-                    endDate: "2024-12-31T23:59:59+00:00"
+                    startDate: "2024-06-01"
+                    endDate: "2024-12-31"
                     createdAt: "2024-05-20T10:15:00+00:00"
                     updatedAt: "2024-05-20T10:15:00+00:00"
                 page: 0
