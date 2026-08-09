@@ -34,14 +34,14 @@ components:
           example: 40.0
         startDate:
           type: string
-          format: date-time
-          description: Instant from which the contract is effective
-          example: "2025-01-01T00:00:00+00:00"
+          format: date
+          description: Date from which the contract is effective
+          example: "2025-01-01"
         endDate:
           type: ["string", "null"]
-          format: date-time
-          description: Instant until which the contract is effective, or null for an open-ended contract
-          example: "2025-12-31T23:59:59+00:00"
+          format: date
+          description: Date until which the contract is effective, or null for an open-ended contract
+          example: "2025-12-31"
       required:
         - totalWeekHours
         - startDate
@@ -68,14 +68,14 @@ components:
           example: 40.0
         startDate:
           type: string
-          format: date-time
-          description: Instant from which the contract is effective
-          example: "2025-01-01T00:00:00+00:00"
+          format: date
+          description: Date from which the contract is effective
+          example: "2025-01-01"
         endDate:
           type: ["string", "null"]
-          format: date-time
-          description: Instant until which the contract is effective, or null for an open-ended contract
-          example: "2025-12-31T23:59:59+00:00"
+          format: date
+          description: Date until which the contract is effective, or null for an open-ended contract
+          example: "2025-12-31"
         createdAt:
           type: string
           format: date-time
