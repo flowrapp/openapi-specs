@@ -6,7 +6,7 @@ openingHours:
       summary: List recurring opening-hours configurations
       security: [{ bearerAuth: [] }]
       parameters:
-        - $ref: '#/parameters/BusinessId'
+        - $ref: '../../components/scheduling/components.yml#/components/parameters/BusinessId'
       responses:
         '200':
           description: Configurations retrieved
@@ -16,8 +16,8 @@ openingHours:
                 type: array
                 items:
                   $ref: '../../components/scheduling/components.yml#/components/schemas/OpeningHoursConfigurationResponseDTO'
-        '403': {$ref: '#/responses/Forbidden'}
-        '404': {$ref: '#/responses/NotFound'}
+        '403': {$ref: '../../components/scheduling/components.yml#/components/responses/Forbidden'}
+        '404': {$ref: '../../components/scheduling/components.yml#/components/responses/NotFound'}
       x-functional-errors: [1006, 1020]
   configuration:
     put:
@@ -26,8 +26,8 @@ openingHours:
       summary: Create or replace a complete weekly opening-hours configuration
       security: [{ bearerAuth: [] }]
       parameters:
-        - $ref: '#/parameters/BusinessId'
-        - $ref: '#/parameters/ValidFrom'
+        - $ref: '../../components/scheduling/components.yml#/components/parameters/BusinessId'
+        - $ref: '../../components/scheduling/components.yml#/components/parameters/ValidFrom'
       requestBody:
         required: true
         content:
@@ -41,10 +41,10 @@ openingHours:
             application/json:
               schema:
                 $ref: '../../components/scheduling/components.yml#/components/schemas/OpeningHoursConfigurationResponseDTO'
-        '400': {$ref: '#/responses/BadRequest'}
-        '403': {$ref: '#/responses/Forbidden'}
-        '404': {$ref: '#/responses/NotFound'}
-        '409': {$ref: '#/responses/Conflict'}
+        '400': {$ref: '../../components/scheduling/components.yml#/components/responses/BadRequest'}
+        '403': {$ref: '../../components/scheduling/components.yml#/components/responses/Forbidden'}
+        '404': {$ref: '../../components/scheduling/components.yml#/components/responses/NotFound'}
+        '409': {$ref: '../../components/scheduling/components.yml#/components/responses/Conflict'}
       x-functional-errors: [1006, 1020, 1033, 1034]
     delete:
       tags: [Opening Hours]
@@ -52,12 +52,12 @@ openingHours:
       summary: Delete a recurring opening-hours configuration
       security: [{ bearerAuth: [] }]
       parameters:
-        - $ref: '#/parameters/BusinessId'
-        - $ref: '#/parameters/ValidFrom'
+        - $ref: '../../components/scheduling/components.yml#/components/parameters/BusinessId'
+        - $ref: '../../components/scheduling/components.yml#/components/parameters/ValidFrom'
       responses:
         '204': {description: Configuration deleted or already absent}
-        '403': {$ref: '#/responses/Forbidden'}
-        '404': {$ref: '#/responses/NotFound'}
+        '403': {$ref: '../../components/scheduling/components.yml#/components/responses/Forbidden'}
+        '404': {$ref: '../../components/scheduling/components.yml#/components/responses/NotFound'}
       x-functional-errors: [1006, 1020]
   overrides:
     get:
@@ -66,9 +66,9 @@ openingHours:
       summary: List opening-hours overrides in a date range
       security: [{ bearerAuth: [] }]
       parameters:
-        - $ref: '#/parameters/BusinessId'
-        - $ref: '#/parameters/From'
-        - $ref: '#/parameters/To'
+        - $ref: '../../components/scheduling/components.yml#/components/parameters/BusinessId'
+        - $ref: '../../components/scheduling/components.yml#/components/parameters/From'
+        - $ref: '../../components/scheduling/components.yml#/components/parameters/To'
       responses:
         '200':
           description: Overrides retrieved
@@ -78,9 +78,9 @@ openingHours:
                 type: array
                 items:
                   $ref: '../../components/scheduling/components.yml#/components/schemas/OpeningHoursOverrideResponseDTO'
-        '400': {$ref: '#/responses/BadRequest'}
-        '403': {$ref: '#/responses/Forbidden'}
-        '404': {$ref: '#/responses/NotFound'}
+        '400': {$ref: '../../components/scheduling/components.yml#/components/responses/BadRequest'}
+        '403': {$ref: '../../components/scheduling/components.yml#/components/responses/Forbidden'}
+        '404': {$ref: '../../components/scheduling/components.yml#/components/responses/NotFound'}
       x-functional-errors: [1006, 1020, 1032]
   override:
     put:
@@ -89,8 +89,8 @@ openingHours:
       summary: Create or replace an opening-hours override for a date
       security: [{ bearerAuth: [] }]
       parameters:
-        - $ref: '#/parameters/BusinessId'
-        - $ref: '#/parameters/Date'
+        - $ref: '../../components/scheduling/components.yml#/components/parameters/BusinessId'
+        - $ref: '../../components/scheduling/components.yml#/components/parameters/Date'
       requestBody:
         required: true
         content:
@@ -104,9 +104,9 @@ openingHours:
             application/json:
               schema:
                 $ref: '../../components/scheduling/components.yml#/components/schemas/OpeningHoursOverrideResponseDTO'
-        '400': {$ref: '#/responses/BadRequest'}
-        '403': {$ref: '#/responses/Forbidden'}
-        '404': {$ref: '#/responses/NotFound'}
+        '400': {$ref: '../../components/scheduling/components.yml#/components/responses/BadRequest'}
+        '403': {$ref: '../../components/scheduling/components.yml#/components/responses/Forbidden'}
+        '404': {$ref: '../../components/scheduling/components.yml#/components/responses/NotFound'}
       x-functional-errors: [1006, 1020, 1033]
     delete:
       tags: [Opening Hours]
@@ -114,12 +114,12 @@ openingHours:
       summary: Delete an opening-hours override
       security: [{ bearerAuth: [] }]
       parameters:
-        - $ref: '#/parameters/BusinessId'
-        - $ref: '#/parameters/Date'
+        - $ref: '../../components/scheduling/components.yml#/components/parameters/BusinessId'
+        - $ref: '../../components/scheduling/components.yml#/components/parameters/Date'
       responses:
         '204': {description: Override deleted or already absent}
-        '403': {$ref: '#/responses/Forbidden'}
-        '404': {$ref: '#/responses/NotFound'}
+        '403': {$ref: '../../components/scheduling/components.yml#/components/responses/Forbidden'}
+        '404': {$ref: '../../components/scheduling/components.yml#/components/responses/NotFound'}
       x-functional-errors: [1006, 1020]
 
 jobRoles:
@@ -130,7 +130,7 @@ jobRoles:
       summary: List job roles for a business
       security: [{ bearerAuth: [] }]
       parameters:
-        - $ref: '#/parameters/BusinessId'
+        - $ref: '../../components/scheduling/components.yml#/components/parameters/BusinessId'
         - name: includeInactive
           in: query
           required: false
@@ -144,8 +144,8 @@ jobRoles:
                 type: array
                 items:
                   $ref: '../../components/scheduling/components.yml#/components/schemas/BusinessJobRoleResponseDTO'
-        '403': {$ref: '#/responses/Forbidden'}
-        '404': {$ref: '#/responses/NotFound'}
+        '403': {$ref: '../../components/scheduling/components.yml#/components/responses/Forbidden'}
+        '404': {$ref: '../../components/scheduling/components.yml#/components/responses/NotFound'}
       x-functional-errors: [1006, 1020]
     post:
       tags: [Job Roles]
@@ -153,7 +153,7 @@ jobRoles:
       summary: Create a job role
       security: [{ bearerAuth: [] }]
       parameters:
-        - $ref: '#/parameters/BusinessId'
+        - $ref: '../../components/scheduling/components.yml#/components/parameters/BusinessId'
       requestBody:
         required: true
         content:
@@ -167,10 +167,10 @@ jobRoles:
             application/json:
               schema:
                 $ref: '../../components/scheduling/components.yml#/components/schemas/BusinessJobRoleResponseDTO'
-        '400': {$ref: '#/responses/BadRequest'}
-        '403': {$ref: '#/responses/Forbidden'}
-        '404': {$ref: '#/responses/NotFound'}
-        '409': {$ref: '#/responses/Conflict'}
+        '400': {$ref: '../../components/scheduling/components.yml#/components/responses/BadRequest'}
+        '403': {$ref: '../../components/scheduling/components.yml#/components/responses/Forbidden'}
+        '404': {$ref: '../../components/scheduling/components.yml#/components/responses/NotFound'}
+        '409': {$ref: '../../components/scheduling/components.yml#/components/responses/Conflict'}
       x-functional-errors: [1006, 1020, 1033, 1036]
   item:
     put:
@@ -179,8 +179,8 @@ jobRoles:
       summary: Update a job role without changing its code
       security: [{ bearerAuth: [] }]
       parameters:
-        - $ref: '#/parameters/BusinessId'
-        - $ref: '#/parameters/JobRoleId'
+        - $ref: '../../components/scheduling/components.yml#/components/parameters/BusinessId'
+        - $ref: '../../components/scheduling/components.yml#/components/parameters/JobRoleId'
       requestBody:
         required: true
         content:
@@ -194,10 +194,10 @@ jobRoles:
             application/json:
               schema:
                 $ref: '../../components/scheduling/components.yml#/components/schemas/BusinessJobRoleResponseDTO'
-        '400': {$ref: '#/responses/BadRequest'}
-        '403': {$ref: '#/responses/Forbidden'}
-        '404': {$ref: '#/responses/NotFound'}
-        '409': {$ref: '#/responses/Conflict'}
+        '400': {$ref: '../../components/scheduling/components.yml#/components/responses/BadRequest'}
+        '403': {$ref: '../../components/scheduling/components.yml#/components/responses/Forbidden'}
+        '404': {$ref: '../../components/scheduling/components.yml#/components/responses/NotFound'}
+        '409': {$ref: '../../components/scheduling/components.yml#/components/responses/Conflict'}
       x-functional-errors: [1006, 1020, 1033, 1035, 1037]
   assignments:
     get:
@@ -206,8 +206,8 @@ jobRoles:
       summary: List job roles assigned to a business member
       security: [{ bearerAuth: [] }]
       parameters:
-        - $ref: '#/parameters/BusinessId'
-        - $ref: '#/parameters/UserId'
+        - $ref: '../../components/scheduling/components.yml#/components/parameters/BusinessId'
+        - $ref: '../../components/scheduling/components.yml#/components/parameters/UserId'
       responses:
         '200':
           description: Assigned roles retrieved
@@ -217,8 +217,8 @@ jobRoles:
                 type: array
                 items:
                   $ref: '../../components/scheduling/components.yml#/components/schemas/BusinessJobRoleResponseDTO'
-        '403': {$ref: '#/responses/Forbidden'}
-        '404': {$ref: '#/responses/NotFound'}
+        '403': {$ref: '../../components/scheduling/components.yml#/components/responses/Forbidden'}
+        '404': {$ref: '../../components/scheduling/components.yml#/components/responses/NotFound'}
       x-functional-errors: [1006, 1015, 1020]
     put:
       tags: [Job Roles]
@@ -226,8 +226,8 @@ jobRoles:
       summary: Atomically replace all job roles assigned to a business member
       security: [{ bearerAuth: [] }]
       parameters:
-        - $ref: '#/parameters/BusinessId'
-        - $ref: '#/parameters/UserId'
+        - $ref: '../../components/scheduling/components.yml#/components/parameters/BusinessId'
+        - $ref: '../../components/scheduling/components.yml#/components/parameters/UserId'
       requestBody:
         required: true
         content:
@@ -243,9 +243,9 @@ jobRoles:
                 type: array
                 items:
                   $ref: '../../components/scheduling/components.yml#/components/schemas/BusinessJobRoleResponseDTO'
-        '400': {$ref: '#/responses/BadRequest'}
-        '403': {$ref: '#/responses/Forbidden'}
-        '404': {$ref: '#/responses/NotFound'}
+        '400': {$ref: '../../components/scheduling/components.yml#/components/responses/BadRequest'}
+        '403': {$ref: '../../components/scheduling/components.yml#/components/responses/Forbidden'}
+        '404': {$ref: '../../components/scheduling/components.yml#/components/responses/NotFound'}
       x-functional-errors: [1006, 1015, 1020, 1033, 1035]
 
 shiftTemplates:
@@ -256,7 +256,7 @@ shiftTemplates:
       summary: List shift templates for a business
       security: [{ bearerAuth: [] }]
       parameters:
-        - $ref: '#/parameters/BusinessId'
+        - $ref: '../../components/scheduling/components.yml#/components/parameters/BusinessId'
         - name: includeInactive
           in: query
           required: false
@@ -270,8 +270,8 @@ shiftTemplates:
                 type: array
                 items:
                   $ref: '../../components/scheduling/components.yml#/components/schemas/ShiftTemplateResponseDTO'
-        '403': {$ref: '#/responses/Forbidden'}
-        '404': {$ref: '#/responses/NotFound'}
+        '403': {$ref: '../../components/scheduling/components.yml#/components/responses/Forbidden'}
+        '404': {$ref: '../../components/scheduling/components.yml#/components/responses/NotFound'}
       x-functional-errors: [1006, 1020]
     post:
       tags: [Shift Templates]
@@ -279,7 +279,7 @@ shiftTemplates:
       summary: Create a shift template
       security: [{ bearerAuth: [] }]
       parameters:
-        - $ref: '#/parameters/BusinessId'
+        - $ref: '../../components/scheduling/components.yml#/components/parameters/BusinessId'
       requestBody:
         required: true
         content:
@@ -293,10 +293,10 @@ shiftTemplates:
             application/json:
               schema:
                 $ref: '../../components/scheduling/components.yml#/components/schemas/ShiftTemplateResponseDTO'
-        '400': {$ref: '#/responses/BadRequest'}
-        '403': {$ref: '#/responses/Forbidden'}
-        '404': {$ref: '#/responses/NotFound'}
-        '409': {$ref: '#/responses/Conflict'}
+        '400': {$ref: '../../components/scheduling/components.yml#/components/responses/BadRequest'}
+        '403': {$ref: '../../components/scheduling/components.yml#/components/responses/Forbidden'}
+        '404': {$ref: '../../components/scheduling/components.yml#/components/responses/NotFound'}
+        '409': {$ref: '../../components/scheduling/components.yml#/components/responses/Conflict'}
       x-functional-errors: [1006, 1020, 1033, 1039]
   item:
     put:
@@ -305,8 +305,8 @@ shiftTemplates:
       summary: Update a shift template
       security: [{ bearerAuth: [] }]
       parameters:
-        - $ref: '#/parameters/BusinessId'
-        - $ref: '#/parameters/ShiftTemplateId'
+        - $ref: '../../components/scheduling/components.yml#/components/parameters/BusinessId'
+        - $ref: '../../components/scheduling/components.yml#/components/parameters/ShiftTemplateId'
       requestBody:
         required: true
         content:
@@ -320,10 +320,10 @@ shiftTemplates:
             application/json:
               schema:
                 $ref: '../../components/scheduling/components.yml#/components/schemas/ShiftTemplateResponseDTO'
-        '400': {$ref: '#/responses/BadRequest'}
-        '403': {$ref: '#/responses/Forbidden'}
-        '404': {$ref: '#/responses/NotFound'}
-        '409': {$ref: '#/responses/Conflict'}
+        '400': {$ref: '../../components/scheduling/components.yml#/components/responses/BadRequest'}
+        '403': {$ref: '../../components/scheduling/components.yml#/components/responses/Forbidden'}
+        '404': {$ref: '../../components/scheduling/components.yml#/components/responses/NotFound'}
+        '409': {$ref: '../../components/scheduling/components.yml#/components/responses/Conflict'}
       x-functional-errors: [1006, 1020, 1033, 1038, 1039, 1040]
   overrides:
     get:
@@ -332,9 +332,9 @@ shiftTemplates:
       summary: List shift-template overrides in a date range
       security: [{ bearerAuth: [] }]
       parameters:
-        - $ref: '#/parameters/BusinessId'
-        - $ref: '#/parameters/From'
-        - $ref: '#/parameters/To'
+        - $ref: '../../components/scheduling/components.yml#/components/parameters/BusinessId'
+        - $ref: '../../components/scheduling/components.yml#/components/parameters/From'
+        - $ref: '../../components/scheduling/components.yml#/components/parameters/To'
       responses:
         '200':
           description: Overrides retrieved
@@ -344,9 +344,9 @@ shiftTemplates:
                 type: array
                 items:
                   $ref: '../../components/scheduling/components.yml#/components/schemas/ShiftTemplateOverrideResponseDTO'
-        '400': {$ref: '#/responses/BadRequest'}
-        '403': {$ref: '#/responses/Forbidden'}
-        '404': {$ref: '#/responses/NotFound'}
+        '400': {$ref: '../../components/scheduling/components.yml#/components/responses/BadRequest'}
+        '403': {$ref: '../../components/scheduling/components.yml#/components/responses/Forbidden'}
+        '404': {$ref: '../../components/scheduling/components.yml#/components/responses/NotFound'}
       x-functional-errors: [1006, 1020, 1032]
   override:
     put:
@@ -355,9 +355,9 @@ shiftTemplates:
       summary: Create or replace a shift-template override for a date
       security: [{ bearerAuth: [] }]
       parameters:
-        - $ref: '#/parameters/BusinessId'
-        - $ref: '#/parameters/ShiftTemplateId'
-        - $ref: '#/parameters/Date'
+        - $ref: '../../components/scheduling/components.yml#/components/parameters/BusinessId'
+        - $ref: '../../components/scheduling/components.yml#/components/parameters/ShiftTemplateId'
+        - $ref: '../../components/scheduling/components.yml#/components/parameters/Date'
       requestBody:
         required: true
         content:
@@ -371,9 +371,9 @@ shiftTemplates:
             application/json:
               schema:
                 $ref: '../../components/scheduling/components.yml#/components/schemas/ShiftTemplateOverrideResponseDTO'
-        '400': {$ref: '#/responses/BadRequest'}
-        '403': {$ref: '#/responses/Forbidden'}
-        '404': {$ref: '#/responses/NotFound'}
+        '400': {$ref: '../../components/scheduling/components.yml#/components/responses/BadRequest'}
+        '403': {$ref: '../../components/scheduling/components.yml#/components/responses/Forbidden'}
+        '404': {$ref: '../../components/scheduling/components.yml#/components/responses/NotFound'}
       x-functional-errors: [1006, 1020, 1033, 1038]
     delete:
       tags: [Shift Templates]
@@ -381,13 +381,13 @@ shiftTemplates:
       summary: Delete a shift-template override
       security: [{ bearerAuth: [] }]
       parameters:
-        - $ref: '#/parameters/BusinessId'
-        - $ref: '#/parameters/ShiftTemplateId'
-        - $ref: '#/parameters/Date'
+        - $ref: '../../components/scheduling/components.yml#/components/parameters/BusinessId'
+        - $ref: '../../components/scheduling/components.yml#/components/parameters/ShiftTemplateId'
+        - $ref: '../../components/scheduling/components.yml#/components/parameters/Date'
       responses:
         '204': {description: Override deleted or already absent}
-        '403': {$ref: '#/responses/Forbidden'}
-        '404': {$ref: '#/responses/NotFound'}
+        '403': {$ref: '../../components/scheduling/components.yml#/components/responses/Forbidden'}
+        '404': {$ref: '../../components/scheduling/components.yml#/components/responses/NotFound'}
       x-functional-errors: [1006, 1020, 1038]
 
 shiftDemands:
@@ -398,7 +398,7 @@ shiftDemands:
       summary: List recurring shift-demand configurations
       security: [{ bearerAuth: [] }]
       parameters:
-        - $ref: '#/parameters/BusinessId'
+        - $ref: '../../components/scheduling/components.yml#/components/parameters/BusinessId'
       responses:
         '200':
           description: Demand configurations retrieved
@@ -408,8 +408,8 @@ shiftDemands:
                 type: array
                 items:
                   $ref: '../../components/scheduling/components.yml#/components/schemas/ShiftDemandConfigurationResponseDTO'
-        '403': {$ref: '#/responses/Forbidden'}
-        '404': {$ref: '#/responses/NotFound'}
+        '403': {$ref: '../../components/scheduling/components.yml#/components/responses/Forbidden'}
+        '404': {$ref: '../../components/scheduling/components.yml#/components/responses/NotFound'}
       x-functional-errors: [1006, 1020]
   configuration:
     put:
@@ -418,8 +418,8 @@ shiftDemands:
       summary: Create or replace a complete shift-demand matrix
       security: [{ bearerAuth: [] }]
       parameters:
-        - $ref: '#/parameters/BusinessId'
-        - $ref: '#/parameters/ValidFrom'
+        - $ref: '../../components/scheduling/components.yml#/components/parameters/BusinessId'
+        - $ref: '../../components/scheduling/components.yml#/components/parameters/ValidFrom'
       requestBody:
         required: true
         content:
@@ -433,10 +433,10 @@ shiftDemands:
             application/json:
               schema:
                 $ref: '../../components/scheduling/components.yml#/components/schemas/ShiftDemandConfigurationResponseDTO'
-        '400': {$ref: '#/responses/BadRequest'}
-        '403': {$ref: '#/responses/Forbidden'}
-        '404': {$ref: '#/responses/NotFound'}
-        '409': {$ref: '#/responses/Conflict'}
+        '400': {$ref: '../../components/scheduling/components.yml#/components/responses/BadRequest'}
+        '403': {$ref: '../../components/scheduling/components.yml#/components/responses/Forbidden'}
+        '404': {$ref: '../../components/scheduling/components.yml#/components/responses/NotFound'}
+        '409': {$ref: '../../components/scheduling/components.yml#/components/responses/Conflict'}
       x-functional-errors: [1006, 1020, 1033, 1034, 1035, 1038]
     delete:
       tags: [Shift Demands]
@@ -444,12 +444,12 @@ shiftDemands:
       summary: Delete a shift-demand configuration
       security: [{ bearerAuth: [] }]
       parameters:
-        - $ref: '#/parameters/BusinessId'
-        - $ref: '#/parameters/ValidFrom'
+        - $ref: '../../components/scheduling/components.yml#/components/parameters/BusinessId'
+        - $ref: '../../components/scheduling/components.yml#/components/parameters/ValidFrom'
       responses:
         '204': {description: Configuration deleted or already absent}
-        '403': {$ref: '#/responses/Forbidden'}
-        '404': {$ref: '#/responses/NotFound'}
+        '403': {$ref: '../../components/scheduling/components.yml#/components/responses/Forbidden'}
+        '404': {$ref: '../../components/scheduling/components.yml#/components/responses/NotFound'}
       x-functional-errors: [1006, 1020]
   overrides:
     get:
@@ -458,9 +458,9 @@ shiftDemands:
       summary: List shift-demand overrides in a date range
       security: [{ bearerAuth: [] }]
       parameters:
-        - $ref: '#/parameters/BusinessId'
-        - $ref: '#/parameters/From'
-        - $ref: '#/parameters/To'
+        - $ref: '../../components/scheduling/components.yml#/components/parameters/BusinessId'
+        - $ref: '../../components/scheduling/components.yml#/components/parameters/From'
+        - $ref: '../../components/scheduling/components.yml#/components/parameters/To'
       responses:
         '200':
           description: Overrides retrieved
@@ -470,9 +470,9 @@ shiftDemands:
                 type: array
                 items:
                   $ref: '../../components/scheduling/components.yml#/components/schemas/ShiftDemandOverrideResponseDTO'
-        '400': {$ref: '#/responses/BadRequest'}
-        '403': {$ref: '#/responses/Forbidden'}
-        '404': {$ref: '#/responses/NotFound'}
+        '400': {$ref: '../../components/scheduling/components.yml#/components/responses/BadRequest'}
+        '403': {$ref: '../../components/scheduling/components.yml#/components/responses/Forbidden'}
+        '404': {$ref: '../../components/scheduling/components.yml#/components/responses/NotFound'}
       x-functional-errors: [1006, 1020, 1032]
   override:
     put:
@@ -481,9 +481,9 @@ shiftDemands:
       summary: Create or replace a shift-demand override for a date
       security: [{ bearerAuth: [] }]
       parameters:
-        - $ref: '#/parameters/BusinessId'
-        - $ref: '#/parameters/ShiftDemandId'
-        - $ref: '#/parameters/Date'
+        - $ref: '../../components/scheduling/components.yml#/components/parameters/BusinessId'
+        - $ref: '../../components/scheduling/components.yml#/components/parameters/ShiftDemandId'
+        - $ref: '../../components/scheduling/components.yml#/components/parameters/Date'
       requestBody:
         required: true
         content:
@@ -497,9 +497,9 @@ shiftDemands:
             application/json:
               schema:
                 $ref: '../../components/scheduling/components.yml#/components/schemas/ShiftDemandOverrideResponseDTO'
-        '400': {$ref: '#/responses/BadRequest'}
-        '403': {$ref: '#/responses/Forbidden'}
-        '404': {$ref: '#/responses/NotFound'}
+        '400': {$ref: '../../components/scheduling/components.yml#/components/responses/BadRequest'}
+        '403': {$ref: '../../components/scheduling/components.yml#/components/responses/Forbidden'}
+        '404': {$ref: '../../components/scheduling/components.yml#/components/responses/NotFound'}
       x-functional-errors: [1006, 1020, 1033, 1041]
     delete:
       tags: [Shift Demands]
@@ -507,84 +507,12 @@ shiftDemands:
       summary: Delete a shift-demand override
       security: [{ bearerAuth: [] }]
       parameters:
-        - $ref: '#/parameters/BusinessId'
-        - $ref: '#/parameters/ShiftDemandId'
-        - $ref: '#/parameters/Date'
+        - $ref: '../../components/scheduling/components.yml#/components/parameters/BusinessId'
+        - $ref: '../../components/scheduling/components.yml#/components/parameters/ShiftDemandId'
+        - $ref: '../../components/scheduling/components.yml#/components/parameters/Date'
       responses:
         '204': {description: Override deleted or already absent}
-        '403': {$ref: '#/responses/Forbidden'}
-        '404': {$ref: '#/responses/NotFound'}
+        '403': {$ref: '../../components/scheduling/components.yml#/components/responses/Forbidden'}
+        '404': {$ref: '../../components/scheduling/components.yml#/components/responses/NotFound'}
       x-functional-errors: [1006, 1020, 1041]
 
-parameters:
-  BusinessId:
-    name: businessId
-    in: path
-    required: true
-    schema: {type: integer, format: int64}
-  UserId:
-    name: userId
-    in: path
-    required: true
-    schema: {type: integer, format: int64}
-  JobRoleId:
-    name: jobRoleId
-    in: path
-    required: true
-    schema: {type: integer, format: int64}
-  ShiftTemplateId:
-    name: shiftTemplateId
-    in: path
-    required: true
-    schema: {type: integer, format: int64}
-  ShiftDemandId:
-    name: shiftDemandId
-    in: path
-    required: true
-    schema: {type: integer, format: int64}
-  ValidFrom:
-    name: validFrom
-    in: path
-    required: true
-    schema: {type: string, format: date}
-  Date:
-    name: date
-    in: path
-    required: true
-    schema: {type: string, format: date}
-  From:
-    name: from
-    in: query
-    required: true
-    schema: {type: string, format: date}
-  To:
-    name: to
-    in: query
-    required: true
-    schema: {type: string, format: date}
-
-responses:
-  BadRequest:
-    description: Invalid request or scheduling configuration
-    content:
-      application/problem+json:
-        schema:
-          $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
-  Forbidden:
-    description: Current user is not the business owner
-    content:
-      application/problem+json:
-        schema:
-          $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
-  NotFound:
-    description: Business or nested resource not found
-    content:
-      application/problem+json:
-        schema:
-          $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
-  Conflict:
-    description: Scheduling configuration conflict
-    content:
-      application/problem+json:
-        schema:
-          $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'

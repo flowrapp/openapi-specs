@@ -1,4 +1,75 @@
 components:
+  parameters:
+    BusinessId:
+      name: businessId
+      in: path
+      required: true
+      schema: {type: integer, format: int64}
+    UserId:
+      name: userId
+      in: path
+      required: true
+      schema: {type: integer, format: int64}
+    JobRoleId:
+      name: jobRoleId
+      in: path
+      required: true
+      schema: {type: integer, format: int64}
+    ShiftTemplateId:
+      name: shiftTemplateId
+      in: path
+      required: true
+      schema: {type: integer, format: int64}
+    ShiftDemandId:
+      name: shiftDemandId
+      in: path
+      required: true
+      schema: {type: integer, format: int64}
+    ValidFrom:
+      name: validFrom
+      in: path
+      required: true
+      schema: {type: string, format: date}
+    Date:
+      name: date
+      in: path
+      required: true
+      schema: {type: string, format: date}
+    From:
+      name: from
+      in: query
+      required: true
+      schema: {type: string, format: date}
+    To:
+      name: to
+      in: query
+      required: true
+      schema: {type: string, format: date}
+  responses:
+    BadRequest:
+      description: Invalid request or scheduling configuration
+      content:
+        application/problem+json:
+          schema:
+            $ref: '../common/error-components.yml#/components/schemas/ProblemDetail'
+    Forbidden:
+      description: Current user is not the business owner
+      content:
+        application/problem+json:
+          schema:
+            $ref: '../common/error-components.yml#/components/schemas/ProblemDetail'
+    NotFound:
+      description: Business or nested resource not found
+      content:
+        application/problem+json:
+          schema:
+            $ref: '../common/error-components.yml#/components/schemas/ProblemDetail'
+    Conflict:
+      description: Scheduling configuration conflict
+      content:
+        application/problem+json:
+          schema:
+            $ref: '../common/error-components.yml#/components/schemas/ProblemDetail'
   schemas:
     DayOfWeekDTO:
       type: string
@@ -75,7 +146,7 @@ components:
           maxItems: 7
           items:
             $ref: '#/components/schemas/OpeningHoursDayRequestDTO'
-      required: [validUntil, days]
+      required: [days]
 
     OpeningHoursConfigurationResponseDTO:
       type: object
@@ -90,7 +161,7 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/OpeningHoursDayResponseDTO'
-      required: [validFrom, validUntil, days]
+      required: [validFrom, days]
 
     OpeningHoursOverrideTypeDTO:
       type: string
@@ -252,17 +323,17 @@ components:
         type:
           $ref: '#/components/schemas/ShiftTemplateOverrideTypeDTO'
         startTime:
-          oneOf:
-            - $ref: '#/components/schemas/LocalMinuteTimeDTO'
-            - type: "null"
+          type: [string, "null"]
+          format: time
+          pattern: '^([01][0-9]|2[0-3]):[0-5][0-9]$'
         endTime:
-          oneOf:
-            - $ref: '#/components/schemas/LocalMinuteTimeDTO'
-            - type: "null"
+          type: [string, "null"]
+          format: time
+          pattern: '^([01][0-9]|2[0-3]):[0-5][0-9]$'
         reason:
           type: [string, "null"]
           maxLength: 500
-      required: [type, startTime, endTime]
+      required: [type]
 
     ShiftTemplateOverrideResponseDTO:
       type: object
@@ -279,13 +350,13 @@ components:
         type:
           $ref: '#/components/schemas/ShiftTemplateOverrideTypeDTO'
         startTime:
-          oneOf:
-            - $ref: '#/components/schemas/LocalMinuteTimeDTO'
-            - type: "null"
+          type: [string, "null"]
+          format: time
+          pattern: '^([01][0-9]|2[0-3]):[0-5][0-9]$'
         endTime:
-          oneOf:
-            - $ref: '#/components/schemas/LocalMinuteTimeDTO'
-            - type: "null"
+          type: [string, "null"]
+          format: time
+          pattern: '^([01][0-9]|2[0-3]):[0-5][0-9]$'
         reason:
           type: [string, "null"]
         createdAt:
@@ -294,7 +365,7 @@ components:
         updatedAt:
           type: string
           format: date-time
-      required: [id, shiftTemplateId, date, type, startTime, endTime, createdAt, updatedAt]
+      required: [id, shiftTemplateId, date, type, createdAt, updatedAt]
 
     ShiftDemandRequestDTO:
       type: object
@@ -362,7 +433,7 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ShiftDemandRequestDTO'
-      required: [validUntil, demands]
+      required: [demands]
 
     ShiftDemandConfigurationResponseDTO:
       type: object
@@ -377,7 +448,7 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ShiftDemandResponseDTO'
-      required: [validFrom, validUntil, demands]
+      required: [validFrom, demands]
 
     ShiftDemandOverrideRequestDTO:
       type: object
