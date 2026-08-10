@@ -1,51 +1,30 @@
-# AUTO-GENERATED — do not edit manually.
-# Regenerate by running from the backend repo root:
-#   mvn compile exec:java \
-#     -Dexec.mainClass="io.github.flowrapp.exception.FunctionalErrorSpecGenerator" \
-#     -Dexec.args="<path-to-openapi-specs>/api/main-api/rest/v1/components/common/error-components.yml" \
-#     -pl domain
 components:
   schemas:
     ProblemDetail:
       type: object
       description: |
-        RFC 9457 Problem Details response. Returned for all business errors.
-
-        The `detail` field contains a functional error string in the format `"<code> - <message>"`.
-        Use the numeric prefix to identify the specific error programmatically.
-
-        Example: `"1003 - invalid credentials"`
-
-        Note: code 1016 (CURRENT_USER_NOT_FOUND, HTTP 500) may be returned by any
-        authenticated endpoint when the JWT principal cannot be resolved to a user record.
+        RFC 9457 Problem Details response. Returned for business errors.
+        The `detail` field contains `"<code> - <message>"`.
       properties:
         type:
           type: string
           format: uri
-          description: URI reference identifying the problem type
         title:
           type: string
-          description: Short human-readable summary
         status:
           type: integer
-          description: HTTP status code
           example: 404
         detail:
           type: string
-          description: |
-            Functional error in the format "<code> - <message>".
-            Parse the numeric prefix to identify the error using FunctionalErrorCode.
           example: "1003 - invalid credentials"
         instance:
           type: string
           format: uri
-          description: URI reference identifying the specific occurrence
 
     FunctionalErrorCode:
       type: integer
       description: |
-        Business error code embedded in the `detail` field of ProblemDetail responses.
-        Format: `"<code> - <message>"` (e.g. `"1003 - invalid credentials"`)
+        Business error code embedded in `ProblemDetail.detail`.
 
         | Code | HTTP Status | Name | Message |
         |------|-------------|------|---------|
@@ -75,6 +54,22 @@ components:
         | 1023 | 401 | OAUTH2_INVALID_TOKEN | oauth2 token is invalid |
         | 1024 | 400 | USER_AUTH_PROVIDER_NOT_FOUND | user auth provider not found |
         | 1025 | 400 | WORKLOG_NOT_VALID | worklog is not valid |
+        | 1026 | 400 | PASSWORD_RESET_CODE_INVALID | password reset code is invalid or expired |
+        | 1027 | 429 | PASSWORD_RESET_TOO_MANY_ATTEMPTS | too many password reset attempts |
+        | 1028 | 403 | CONTRACT_OPERATION_NOT_ENOUGH_PERMISSIONS | User does not have permission to create a contract |
+        | 1029 | 409 | CONTRACT_OVERLAPS | Contract overlaps with existing contract |
+        | 1030 | 404 | CONTRACT_NOT_FOUND | Contract not found |
+        | 1031 | 403 | CONTRACT_IS_NOT_FOR_USER | Contract is not for the current user |
+        | 1032 | 400 | INVALID_DATE_RANGE | from date must be before or equal to to date |
+        | 1033 | 400 | INVALID_SCHEDULING_CONFIGURATION | scheduling configuration is invalid |
+        | 1034 | 409 | SCHEDULING_CONFIGURATION_CONFLICT | scheduling configuration conflicts with existing data |
+        | 1035 | 404 | BUSINESS_JOB_ROLE_NOT_FOUND | business job role not found |
+        | 1036 | 409 | BUSINESS_JOB_ROLE_CODE_ALREADY_EXISTS | business job role code already exists |
+        | 1037 | 409 | BUSINESS_JOB_ROLE_IN_USE | business job role is used by an active or future demand |
+        | 1038 | 404 | SHIFT_TEMPLATE_NOT_FOUND | shift template not found |
+        | 1039 | 409 | SHIFT_TEMPLATE_NAME_ALREADY_EXISTS | shift template name already exists |
+        | 1040 | 409 | SHIFT_TEMPLATE_IN_USE | shift template is used by an active or future demand |
+        | 1041 | 404 | SHIFT_DEMAND_NOT_FOUND | shift demand not found |
       enum:
         - 1000
         - 1001
@@ -102,3 +97,19 @@ components:
         - 1023
         - 1024
         - 1025
+        - 1026
+        - 1027
+        - 1028
+        - 1029
+        - 1030
+        - 1031
+        - 1032
+        - 1033
+        - 1034
+        - 1035
+        - 1036
+        - 1037
+        - 1038
+        - 1039
+        - 1040
+        - 1041
