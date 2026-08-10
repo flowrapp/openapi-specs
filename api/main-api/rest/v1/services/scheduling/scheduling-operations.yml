@@ -199,55 +199,6 @@ jobRoles:
         '404': {$ref: '../../components/scheduling/components.yml#/components/responses/NotFound'}
         '409': {$ref: '../../components/scheduling/components.yml#/components/responses/Conflict'}
       x-functional-errors: [1006, 1020, 1033, 1035, 1037]
-  assignments:
-    get:
-      tags: [Job Roles]
-      operationId: getBusinessUserJobRoles
-      summary: List job roles assigned to a business member
-      security: [{ bearerAuth: [] }]
-      parameters:
-        - $ref: '../../components/scheduling/components.yml#/components/parameters/BusinessId'
-        - $ref: '../../components/scheduling/components.yml#/components/parameters/UserId'
-      responses:
-        '200':
-          description: Assigned roles retrieved
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '../../components/scheduling/components.yml#/components/schemas/BusinessJobRoleResponseDTO'
-        '403': {$ref: '../../components/scheduling/components.yml#/components/responses/Forbidden'}
-        '404': {$ref: '../../components/scheduling/components.yml#/components/responses/NotFound'}
-      x-functional-errors: [1006, 1015, 1020]
-    put:
-      tags: [Job Roles]
-      operationId: replaceBusinessUserJobRoles
-      summary: Atomically replace all job roles assigned to a business member
-      security: [{ bearerAuth: [] }]
-      parameters:
-        - $ref: '../../components/scheduling/components.yml#/components/parameters/BusinessId'
-        - $ref: '../../components/scheduling/components.yml#/components/parameters/UserId'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '../../components/scheduling/components.yml#/components/schemas/BusinessUserJobRolesRequestDTO'
-      responses:
-        '200':
-          description: Assigned roles replaced
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '../../components/scheduling/components.yml#/components/schemas/BusinessJobRoleResponseDTO'
-        '400': {$ref: '../../components/scheduling/components.yml#/components/responses/BadRequest'}
-        '403': {$ref: '../../components/scheduling/components.yml#/components/responses/Forbidden'}
-        '404': {$ref: '../../components/scheduling/components.yml#/components/responses/NotFound'}
-      x-functional-errors: [1006, 1015, 1020, 1033, 1035]
-
 shiftTemplates:
   collection:
     get:
@@ -515,4 +466,3 @@ shiftDemands:
         '403': {$ref: '../../components/scheduling/components.yml#/components/responses/Forbidden'}
         '404': {$ref: '../../components/scheduling/components.yml#/components/responses/NotFound'}
       x-functional-errors: [1006, 1020, 1041]
-

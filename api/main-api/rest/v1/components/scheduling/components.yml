@@ -254,17 +254,6 @@ components:
           format: date-time
       required: [id, businessId, code, name, active, createdAt, updatedAt]
 
-    BusinessUserJobRolesRequestDTO:
-      type: object
-      properties:
-        jobRoleIds:
-          type: array
-          uniqueItems: true
-          items:
-            type: integer
-            format: int64
-      required: [jobRoleIds]
-
     ShiftTemplateRequestDTO:
       type: object
       properties:

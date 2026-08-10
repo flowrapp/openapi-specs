@@ -26,6 +26,11 @@ components:
       type: object
       description: Contract details supplied when creating or updating a contract
       properties:
+        jobRoleId:
+          type: integer
+          format: int64
+          description: Active job role contracted within the business
+          example: 10
         totalWeekHours:
           type: number
           format: double
@@ -43,6 +48,7 @@ components:
           description: Date until which the contract is effective, or null for an open-ended contract
           example: "2025-12-31"
       required:
+        - jobRoleId
         - totalWeekHours
         - startDate
         - endDate
@@ -61,6 +67,11 @@ components:
           format: int64
           description: Unique identifier of the business associated with the contract
           example: 101
+        jobRoleId:
+          type: integer
+          format: int64
+          description: Job role associated with the contract
+          example: 10
         totalWeekHours:
           type: number
           format: double
@@ -89,6 +100,7 @@ components:
       required:
         - id
         - businessId
+        - jobRoleId
         - totalWeekHours
         - startDate
         - endDate
