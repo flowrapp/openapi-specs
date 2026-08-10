@@ -218,6 +218,7 @@ invitations:
             example:
               email: "invitee@example.com"
               role: "MANAGER"
+              contract: null
       responses:
         '201':
           description: Invitation created successfully
@@ -231,6 +232,7 @@ invitations:
                 businessName: "Coffee Time"
                 email: "invitee@example.com"
                 role: "MANAGER"
+                contract: null
                 status: "PENDING"
                 createdAt: "2023-06-15T14:30:00+00:00"
                 expiresAt: "2023-06-22T14:30:00+00:00"
@@ -320,6 +322,7 @@ invitations:
                   businessName: "Coffee Time"
                   email: "invitee@example.com"
                   role: "MANAGER"
+                  contract: null
                   status: "PENDING"
                   createdAt: "2023-06-15T14:30:00+00:00"
                   expiresAt: "2023-06-22T14:30:00+00:00"
@@ -328,6 +331,7 @@ invitations:
                   businessName: "Coffee Time"
                   email: "another@example.com"
                   role: "EMPLOYEE"
+                  contract: null
                   status: "PENDING"
                   createdAt: "2023-06-16T10:15:00+00:00"
                   expiresAt: "2023-06-23T10:15:00+00:00"
@@ -462,6 +466,7 @@ invitations:
                   businessName: "Coffee Time"
                   email: "invitee@example.com"
                   role: "MANAGER"
+                  contract: null
                   status: "PENDING"
                   createdAt: "2023-06-15T14:30:00+00:00"
                   expiresAt: "2023-06-22T14:30:00+00:00"
@@ -470,6 +475,7 @@ invitations:
                   businessName: "Bistro Central"
                   email: "another@example.com"
                   role: "EMPLOYEE"
+                  contract: null
                   status: "PENDING"
                   createdAt: "2023-06-16T10:15:00+00:00"
                   expiresAt: "2023-06-23T10:15:00+00:00"

@@ -31,6 +31,7 @@ contracts:
             schema:
               $ref: '../../components/contracts/components.yml#/components/schemas/ContractRequestDTO'
             example:
+              jobRoleId: 10
               totalWeekHours: 40.0
               startDate: "2025-01-01"
               endDate: null
@@ -44,8 +45,9 @@ contracts:
               example:
                 id: 123
                 businessId: 101
+                jobRoleId: 10
                 totalWeekHours: 40.0
-                startDate: "2025-01-01T00:00:00+00:00"
+                startDate: "2025-01-01"
                 endDate: null
                 createdAt: "2024-12-20T10:15:00+00:00"
                 updatedAt: "2024-12-20T10:15:00+00:00"
@@ -120,6 +122,7 @@ contracts:
                 content:
                   - id: 123
                     businessId: 101
+                    jobRoleId: 10
                     totalWeekHours: 40.0
                     startDate: "2025-01-01"
                     endDate: null
@@ -153,8 +156,8 @@ contracts:
 
   current-business-user-contract:
     get:
-      summary: Get the current contract for a user in a business
-      description: Retrieves the contract effective now with the most recent start date. An open-ended contract is valid when its end date is null.
+      summary: Get current contracts for a user in a business
+      description: Retrieves every contract effective now. A user may have simultaneous contracts for different job roles.
       tags:
         - Contracts
       operationId: getCurrentUserContract
@@ -177,19 +180,22 @@ contracts:
             format: int64
       responses:
         '200':
-          description: Current contract retrieved successfully
+          description: Current contracts retrieved successfully
           content:
             application/json:
               schema:
-                $ref: '../../components/contracts/components.yml#/components/schemas/ContractResponseDTO'
+                type: array
+                items:
+                  $ref: '../../components/contracts/components.yml#/components/schemas/ContractResponseDTO'
               example:
-                id: 123
-                businessId: 101
-                totalWeekHours: 40.0
-                startDate: "2025-01-01"
-                endDate: null
-                createdAt: "2024-12-20T10:15:00+00:00"
-                updatedAt: "2024-12-20T10:15:00+00:00"
+                - id: 123
+                  businessId: 101
+                  jobRoleId: 10
+                  totalWeekHours: 10.0
+                  startDate: "2025-01-01"
+                  endDate: null
+                  createdAt: "2024-12-20T10:15:00+00:00"
+                  updatedAt: "2024-12-20T10:15:00+00:00"
         '401':
           description: Unauthorized
         '403':
@@ -202,7 +208,7 @@ contracts:
                 status: 403
                 detail: "1020 - user is not the owner of business"
         '404':
-          description: Business, user, or current contract not found
+          description: Business or user not found
           content:
             application/problem+json:
               schema:
@@ -251,6 +257,7 @@ contracts:
             schema:
               $ref: '../../components/contracts/components.yml#/components/schemas/ContractRequestDTO'
             example:
+              jobRoleId: 10
               totalWeekHours: 35.0
               startDate: "2025-01-01"
               endDate: null
@@ -319,6 +326,7 @@ contracts:
                 content:
                   - id: 123
                     businessId: 101
+                    jobRoleId: 10
                     totalWeekHours: 40.0
                     startDate: "2025-01-01"
                     endDate: null
@@ -326,6 +334,7 @@ contracts:
                     updatedAt: "2024-12-20T10:15:00+00:00"
                   - id: 122
                     businessId: 202
+                    jobRoleId: 20
                     totalWeekHours: 20.0
                     startDate: "2024-06-01"
                     endDate: "2024-12-31"

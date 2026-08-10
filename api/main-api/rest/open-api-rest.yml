@@ -131,8 +131,6 @@ paths:
     $ref: 'v1/services/scheduling/scheduling-operations.yml#/jobRoles/collection'
   "/api/v1/businesses/{businessId}/job-roles/{jobRoleId}":
     $ref: 'v1/services/scheduling/scheduling-operations.yml#/jobRoles/item'
-  "/api/v1/businesses/{businessId}/users/{userId}/job-roles":
-    $ref: 'v1/services/scheduling/scheduling-operations.yml#/jobRoles/assignments'
   "/api/v1/businesses/{businessId}/shift-templates":
     $ref: 'v1/services/scheduling/scheduling-operations.yml#/shiftTemplates/collection'
   "/api/v1/businesses/{businessId}/shift-templates/{shiftTemplateId}":
