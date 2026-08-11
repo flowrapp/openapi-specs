@@ -583,6 +583,27 @@ planning:
         '403': {$ref: '../../components/scheduling/components.yml#/components/responses/Forbidden'}
         '404': {$ref: '../../components/scheduling/components.yml#/components/responses/NotFound'}
       x-functional-errors: [1006, 1020, 1032, 1034, 1039, 1041, 1044, 1045, 1047]
+  publish:
+    post:
+      tags: [Planning]
+      operationId: publishPlanning
+      summary: Publish a ready business planning
+      description: Idempotently transitions a planning from READY to PUBLISHED. An already published planning is returned unchanged.
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '../../components/scheduling/components.yml#/components/parameters/BusinessId'
+        - $ref: '../../components/scheduling/components.yml#/components/parameters/WeekStart'
+      responses:
+        '200':
+          description: Planning published or already published
+          content:
+            application/json:
+              schema:
+                $ref: '../../components/scheduling/components.yml#/components/schemas/PlanningResponseDTO'
+        '403': {$ref: '../../components/scheduling/components.yml#/components/responses/Forbidden'}
+        '404': {$ref: '../../components/scheduling/components.yml#/components/responses/NotFound'}
+        '409': {$ref: '../../components/scheduling/components.yml#/components/responses/Conflict'}
+      x-functional-errors: [1006, 1020, 1046, 1048]
   currentUserScheduledShifts:
     get:
       tags: [Planning]

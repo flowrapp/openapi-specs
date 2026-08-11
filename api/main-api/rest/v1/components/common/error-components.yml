@@ -76,6 +76,7 @@ components:
         | 1045 | 400 | INVALID_PLANNING | planning is invalid |
         | 1046 | 404 | PLANNING_NOT_FOUND | planning not found |
         | 1047 | 400 | INVALID_SCHEDULED_SHIFT | scheduled shift is invalid |
+        | 1048 | 409 | PLANNING_NOT_READY | planning is not ready to publish |
       enum:
         - 1000
         - 1001
@@ -125,3 +126,4 @@ components:
         - 1045
         - 1046
         - 1047
+        - 1048
