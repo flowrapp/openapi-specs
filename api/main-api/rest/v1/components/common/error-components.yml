@@ -60,16 +60,18 @@ components:
         | 1029 | 409 | CONTRACT_OVERLAPS | Contract overlaps with existing contract |
         | 1030 | 404 | CONTRACT_NOT_FOUND | Contract not found |
         | 1031 | 403 | CONTRACT_IS_NOT_FOR_USER | Contract is not for the current user |
-        | 1032 | 400 | INVALID_DATE_RANGE | from date must be before or equal to to date |
-        | 1033 | 400 | INVALID_SCHEDULING_CONFIGURATION | scheduling configuration is invalid |
-        | 1034 | 409 | SCHEDULING_CONFIGURATION_CONFLICT | scheduling configuration conflicts with existing data |
-        | 1035 | 404 | BUSINESS_JOB_ROLE_NOT_FOUND | business job role not found |
-        | 1036 | 409 | BUSINESS_JOB_ROLE_CODE_ALREADY_EXISTS | business job role code already exists |
-        | 1037 | 409 | BUSINESS_JOB_ROLE_IN_USE | business job role is used by an active or future demand |
-        | 1038 | 404 | SHIFT_TEMPLATE_NOT_FOUND | shift template not found |
-        | 1039 | 409 | SHIFT_TEMPLATE_NAME_ALREADY_EXISTS | shift template name already exists |
-        | 1040 | 409 | SHIFT_TEMPLATE_IN_USE | shift template is used by an active or future demand |
-        | 1041 | 404 | SHIFT_DEMAND_NOT_FOUND | shift demand not found |
+        | 1032 | 400 | INVALID_OPENING_HOURS_CONFIGURATION | opening hours configuration is invalid |
+        | 1033 | 409 | OPENING_HOURS_CONFIGURATION_OVERLAPS | opening hours configuration overlaps an existing configuration |
+        | 1034 | 404 | JOB_ROLE_NOT_FOUND | job role not found |
+        | 1035 | 409 | JOB_ROLE_CODE_ALREADY_EXISTS | job role code already exists |
+        | 1036 | 400 | INVALID_JOB_ROLE_ASSIGNMENT | job roles must be active and belong to the business |
+        | 1037 | 400 | CONTRACT_USER_IS_NOT_EMPLOYEE | contracts can only be assigned to employees |
+        | 1038 | 400 | INVALID_SHIFT_TEMPLATE | shift template is invalid |
+        | 1039 | 404 | SHIFT_TEMPLATE_NOT_FOUND | shift template not found |
+        | 1040 | 409 | SHIFT_TEMPLATE_NAME_ALREADY_EXISTS | shift template name already exists |
+        | 1041 | 400 | INVALID_SHIFT_DEMAND_CONFIGURATION | shift demand configuration is invalid |
+        | 1042 | 409 | SHIFT_DEMAND_CONFIGURATION_OVERLAPS | shift demand configuration overlaps an existing configuration |
+        | 1043 | 404 | SHIFT_DEMAND_NOT_FOUND | shift demand not found |
       enum:
         - 1000
         - 1001
@@ -113,3 +115,5 @@ components:
         - 1039
         - 1040
         - 1041
+        - 1042
+        - 1043
