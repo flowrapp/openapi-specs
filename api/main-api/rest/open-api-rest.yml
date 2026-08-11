@@ -47,6 +47,8 @@ tags:
     description: Reusable shift templates and date-specific exceptions.
   - name: Shift Demands
     description: Recurring staffing-demand matrices and date-specific exceptions.
+  - name: Planning
+    description: Weekly business plannings and scheduled shifts.
 
 paths:
   "/api/v1/ping":
@@ -147,6 +149,14 @@ paths:
     $ref: 'v1/services/scheduling/scheduling-operations.yml#/shiftDemands/overrides'
   "/api/v1/businesses/{businessId}/shift-demands/{shiftDemandId}/overrides/{date}":
     $ref: 'v1/services/scheduling/scheduling-operations.yml#/shiftDemands/override'
+  "/api/v1/businesses/{businessId}/planning-settings":
+    $ref: 'v1/services/scheduling/scheduling-operations.yml#/planning/settings'
+  "/api/v1/businesses/{businessId}/plannings":
+    $ref: 'v1/services/scheduling/scheduling-operations.yml#/planning/collection'
+  "/api/v1/businesses/{businessId}/plannings/{weekStart}":
+    $ref: 'v1/services/scheduling/scheduling-operations.yml#/planning/item'
+  "/api/v1/scheduled-shifts":
+    $ref: 'v1/services/scheduling/scheduling-operations.yml#/planning/currentUserScheduledShifts'
 
 
 components:

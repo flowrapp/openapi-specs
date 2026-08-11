@@ -45,6 +45,11 @@ components:
       in: query
       required: true
       schema: {type: string, format: date}
+    WeekStart:
+      name: weekStart
+      in: path
+      required: true
+      schema: {type: string, format: date}
   responses:
     BadRequest:
       description: Invalid request or scheduling configuration
@@ -489,3 +494,84 @@ components:
           type: string
           format: date-time
       required: [id, shiftDemandId, date, minimumEmployees, targetEmployees, maximumEmployees, createdAt, updatedAt]
+
+    PlanningSettingsDTO:
+      type: object
+      properties:
+        generationDay:
+          $ref: '#/components/schemas/DayOfWeekDTO'
+        generationTime:
+          $ref: '#/components/schemas/LocalMinuteTimeDTO'
+      required: [generationDay, generationTime]
+
+    PlanningStatusDTO:
+      type: string
+      enum: [DRAFT, SOLVING, READY, PUBLISHED, ARCHIVED]
+
+    ScheduledShiftResponseDTO:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        planningId:
+          type: integer
+          format: int64
+        businessId:
+          type: integer
+          format: int64
+        userId:
+          type: integer
+          format: int64
+        jobRoleId:
+          type: integer
+          format: int64
+        shiftTemplateId:
+          type: [integer, "null"]
+          format: int64
+        startAt:
+          type: string
+          format: date-time
+        endAt:
+          type: string
+          format: date-time
+        breakMinutes:
+          type: integer
+          format: int32
+          minimum: 0
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required: [id, planningId, businessId, userId, jobRoleId, startAt, endAt, breakMinutes, createdAt, updatedAt]
+
+    PlanningResponseDTO:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        businessId:
+          type: integer
+          format: int64
+        weekStart:
+          type: string
+          format: date
+        weekEnd:
+          type: string
+          format: date
+        status:
+          $ref: '#/components/schemas/PlanningStatusDTO'
+        createdAt:
+          type: string
+          format: date-time
+        publishedAt:
+          type: [string, "null"]
+          format: date-time
+        scheduledShifts:
+          type: array
+          items:
+            $ref: '#/components/schemas/ScheduledShiftResponseDTO'
+      required: [id, businessId, weekStart, weekEnd, status, createdAt, scheduledShifts]

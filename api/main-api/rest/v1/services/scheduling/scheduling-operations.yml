@@ -466,3 +466,140 @@ shiftDemands:
         '403': {$ref: '../../components/scheduling/components.yml#/components/responses/Forbidden'}
         '404': {$ref: '../../components/scheduling/components.yml#/components/responses/NotFound'}
       x-functional-errors: [1006, 1020, 1043]
+
+planning:
+  settings:
+    get:
+      tags: [Planning]
+      operationId: getPlanningSettings
+      summary: Get planning generation settings for a business
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '../../components/scheduling/components.yml#/components/parameters/BusinessId'
+      responses:
+        '200':
+          description: Planning settings retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '../../components/scheduling/components.yml#/components/schemas/PlanningSettingsDTO'
+        '403': {$ref: '../../components/scheduling/components.yml#/components/responses/Forbidden'}
+        '404': {$ref: '../../components/scheduling/components.yml#/components/responses/NotFound'}
+      x-functional-errors: [1006, 1020]
+    put:
+      tags: [Planning]
+      operationId: replacePlanningSettings
+      summary: Create or replace planning generation settings
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '../../components/scheduling/components.yml#/components/parameters/BusinessId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '../../components/scheduling/components.yml#/components/schemas/PlanningSettingsDTO'
+      responses:
+        '200':
+          description: Planning settings replaced
+          content:
+            application/json:
+              schema:
+                $ref: '../../components/scheduling/components.yml#/components/schemas/PlanningSettingsDTO'
+        '400': {$ref: '../../components/scheduling/components.yml#/components/responses/BadRequest'}
+        '403': {$ref: '../../components/scheduling/components.yml#/components/responses/Forbidden'}
+        '404': {$ref: '../../components/scheduling/components.yml#/components/responses/NotFound'}
+      x-functional-errors: [1006, 1020, 1044]
+    delete:
+      tags: [Planning]
+      operationId: deletePlanningSettings
+      summary: Delete planning generation settings
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '../../components/scheduling/components.yml#/components/parameters/BusinessId'
+      responses:
+        '204': {description: Planning settings deleted or already absent}
+        '403': {$ref: '../../components/scheduling/components.yml#/components/responses/Forbidden'}
+        '404': {$ref: '../../components/scheduling/components.yml#/components/responses/NotFound'}
+      x-functional-errors: [1006, 1020]
+  collection:
+    get:
+      tags: [Planning]
+      operationId: getPlannings
+      summary: List business plannings in a date range
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '../../components/scheduling/components.yml#/components/parameters/BusinessId'
+        - $ref: '../../components/scheduling/components.yml#/components/parameters/From'
+        - $ref: '../../components/scheduling/components.yml#/components/parameters/To'
+      responses:
+        '200':
+          description: Plannings retrieved
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '../../components/scheduling/components.yml#/components/schemas/PlanningResponseDTO'
+        '400': {$ref: '../../components/scheduling/components.yml#/components/responses/BadRequest'}
+        '403': {$ref: '../../components/scheduling/components.yml#/components/responses/Forbidden'}
+        '404': {$ref: '../../components/scheduling/components.yml#/components/responses/NotFound'}
+      x-functional-errors: [1006, 1020, 1045]
+  item:
+    get:
+      tags: [Planning]
+      operationId: getPlanning
+      summary: Get a business planning by week start
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '../../components/scheduling/components.yml#/components/parameters/BusinessId'
+        - $ref: '../../components/scheduling/components.yml#/components/parameters/WeekStart'
+      responses:
+        '200':
+          description: Planning retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '../../components/scheduling/components.yml#/components/schemas/PlanningResponseDTO'
+        '403': {$ref: '../../components/scheduling/components.yml#/components/responses/Forbidden'}
+        '404': {$ref: '../../components/scheduling/components.yml#/components/responses/NotFound'}
+      x-functional-errors: [1006, 1020, 1046]
+    put:
+      tags: [Planning]
+      operationId: createPlanning
+      summary: Idempotently create a business planning for a week
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '../../components/scheduling/components.yml#/components/parameters/BusinessId'
+        - $ref: '../../components/scheduling/components.yml#/components/parameters/WeekStart'
+      responses:
+        '200':
+          description: Planning created or retrieved if it already exists
+          content:
+            application/json:
+              schema:
+                $ref: '../../components/scheduling/components.yml#/components/schemas/PlanningResponseDTO'
+        '400': {$ref: '../../components/scheduling/components.yml#/components/responses/BadRequest'}
+        '403': {$ref: '../../components/scheduling/components.yml#/components/responses/Forbidden'}
+        '404': {$ref: '../../components/scheduling/components.yml#/components/responses/NotFound'}
+      x-functional-errors: [1006, 1020, 1032, 1034, 1039, 1041, 1044, 1045, 1047]
+  currentUserScheduledShifts:
+    get:
+      tags: [Planning]
+      operationId: getCurrentUserScheduledShifts
+      summary: List the current user's shifts from published plannings
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '../../components/scheduling/components.yml#/components/parameters/From'
+        - $ref: '../../components/scheduling/components.yml#/components/parameters/To'
+      responses:
+        '200':
+          description: Published scheduled shifts retrieved
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '../../components/scheduling/components.yml#/components/schemas/ScheduledShiftResponseDTO'
+        '400': {$ref: '../../components/scheduling/components.yml#/components/responses/BadRequest'}
+      x-functional-errors: [1047]
