@@ -358,6 +358,7 @@ components:
 
     ShiftDemandRequestDTO:
       type: object
+      description: A positive recurring staffing demand. Omit combinations with no demand.
       properties:
         shiftTemplateId:
           type: integer
@@ -371,14 +372,17 @@ components:
           type: integer
           format: int32
           minimum: 0
+          description: Must be less than or equal to targetEmployees.
         targetEmployees:
           type: integer
           format: int32
           minimum: 0
+          description: Must be between minimumEmployees and maximumEmployees.
         maximumEmployees:
           type: integer
           format: int32
           minimum: 1
+          description: Must be greater than or equal to targetEmployees.
       required: [shiftTemplateId, jobRoleId, dayOfWeek, minimumEmployees, targetEmployees, maximumEmployees]
 
     ShiftDemandResponseDTO:
@@ -414,6 +418,7 @@ components:
 
     ShiftDemandConfigurationRequestDTO:
       type: object
+      description: Sparse weekly demand matrix. Missing shift, job-role and day combinations mean zero demand.
       properties:
         validUntil:
           type: [string, "null"]

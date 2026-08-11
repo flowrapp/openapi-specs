@@ -45,7 +45,7 @@ openingHours:
         '403': {$ref: '../../components/scheduling/components.yml#/components/responses/Forbidden'}
         '404': {$ref: '../../components/scheduling/components.yml#/components/responses/NotFound'}
         '409': {$ref: '../../components/scheduling/components.yml#/components/responses/Conflict'}
-      x-functional-errors: [1006, 1020, 1033, 1034]
+      x-functional-errors: [1006, 1020, 1032, 1033]
     delete:
       tags: [Opening Hours]
       operationId: deleteOpeningHoursConfiguration
@@ -107,7 +107,7 @@ openingHours:
         '400': {$ref: '../../components/scheduling/components.yml#/components/responses/BadRequest'}
         '403': {$ref: '../../components/scheduling/components.yml#/components/responses/Forbidden'}
         '404': {$ref: '../../components/scheduling/components.yml#/components/responses/NotFound'}
-      x-functional-errors: [1006, 1020, 1033]
+      x-functional-errors: [1006, 1020, 1032]
     delete:
       tags: [Opening Hours]
       operationId: deleteOpeningHoursOverride
@@ -171,7 +171,7 @@ jobRoles:
         '403': {$ref: '../../components/scheduling/components.yml#/components/responses/Forbidden'}
         '404': {$ref: '../../components/scheduling/components.yml#/components/responses/NotFound'}
         '409': {$ref: '../../components/scheduling/components.yml#/components/responses/Conflict'}
-      x-functional-errors: [1006, 1020, 1033, 1036]
+      x-functional-errors: [1006, 1020, 1035]
   item:
     put:
       tags: [Job Roles]
@@ -198,7 +198,7 @@ jobRoles:
         '403': {$ref: '../../components/scheduling/components.yml#/components/responses/Forbidden'}
         '404': {$ref: '../../components/scheduling/components.yml#/components/responses/NotFound'}
         '409': {$ref: '../../components/scheduling/components.yml#/components/responses/Conflict'}
-      x-functional-errors: [1006, 1020, 1033, 1035, 1037]
+      x-functional-errors: [1006, 1020, 1034]
 shiftTemplates:
   collection:
     get:
@@ -248,7 +248,7 @@ shiftTemplates:
         '403': {$ref: '../../components/scheduling/components.yml#/components/responses/Forbidden'}
         '404': {$ref: '../../components/scheduling/components.yml#/components/responses/NotFound'}
         '409': {$ref: '../../components/scheduling/components.yml#/components/responses/Conflict'}
-      x-functional-errors: [1006, 1020, 1033, 1039]
+      x-functional-errors: [1006, 1020, 1038, 1040]
   item:
     put:
       tags: [Shift Templates]
@@ -275,7 +275,7 @@ shiftTemplates:
         '403': {$ref: '../../components/scheduling/components.yml#/components/responses/Forbidden'}
         '404': {$ref: '../../components/scheduling/components.yml#/components/responses/NotFound'}
         '409': {$ref: '../../components/scheduling/components.yml#/components/responses/Conflict'}
-      x-functional-errors: [1006, 1020, 1033, 1038, 1039, 1040]
+      x-functional-errors: [1006, 1020, 1038, 1039, 1040]
   overrides:
     get:
       tags: [Shift Templates]
@@ -325,7 +325,7 @@ shiftTemplates:
         '400': {$ref: '../../components/scheduling/components.yml#/components/responses/BadRequest'}
         '403': {$ref: '../../components/scheduling/components.yml#/components/responses/Forbidden'}
         '404': {$ref: '../../components/scheduling/components.yml#/components/responses/NotFound'}
-      x-functional-errors: [1006, 1020, 1033, 1038]
+      x-functional-errors: [1006, 1020, 1038, 1039]
     delete:
       tags: [Shift Templates]
       operationId: deleteShiftTemplateOverride
@@ -388,7 +388,7 @@ shiftDemands:
         '403': {$ref: '../../components/scheduling/components.yml#/components/responses/Forbidden'}
         '404': {$ref: '../../components/scheduling/components.yml#/components/responses/NotFound'}
         '409': {$ref: '../../components/scheduling/components.yml#/components/responses/Conflict'}
-      x-functional-errors: [1006, 1020, 1033, 1034, 1035, 1038]
+      x-functional-errors: [1006, 1020, 1034, 1039, 1041, 1042]
     delete:
       tags: [Shift Demands]
       operationId: deleteShiftDemandConfiguration
@@ -451,7 +451,7 @@ shiftDemands:
         '400': {$ref: '../../components/scheduling/components.yml#/components/responses/BadRequest'}
         '403': {$ref: '../../components/scheduling/components.yml#/components/responses/Forbidden'}
         '404': {$ref: '../../components/scheduling/components.yml#/components/responses/NotFound'}
-      x-functional-errors: [1006, 1020, 1033, 1041]
+      x-functional-errors: [1006, 1020, 1041, 1043]
     delete:
       tags: [Shift Demands]
       operationId: deleteShiftDemandOverride
@@ -465,4 +465,4 @@ shiftDemands:
         '204': {description: Override deleted or already absent}
         '403': {$ref: '../../components/scheduling/components.yml#/components/responses/Forbidden'}
         '404': {$ref: '../../components/scheduling/components.yml#/components/responses/NotFound'}
-      x-functional-errors: [1006, 1020, 1041]
+      x-functional-errors: [1006, 1020, 1043]
