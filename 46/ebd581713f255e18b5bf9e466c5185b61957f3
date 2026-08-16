@@ -1,0 +1,14 @@
+api/scheduling_solver/openapi.json
+  h_a041df4244d543 1501,1518-1527,2416
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.22",
+  "base_commit_sha": "46ebd581713f255e18b5bf9e466c5185b61957f3",
+  "prompts": {},
+  "humans": {
+    "h_a041df4244d543": {
+      "author": "sergiobpa <sergiobpa@ext.inditex.com>"
+    }
+  }
+}
