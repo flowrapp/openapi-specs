@@ -1,126 +1,107 @@
-openingHours:
-  configurations:
+recurringSchedules:
+  collection:
     get:
-      tags: [Opening Hours]
-      operationId: getOpeningHoursConfigurations
-      summary: List recurring opening-hours configurations
+      tags: [Recurring Schedules]
+      operationId: getRecurringSchedules
+      summary: List recurring schedules for a business
       security: [{ bearerAuth: [] }]
       parameters:
         - $ref: '../../components/scheduling/components.yml#/components/parameters/BusinessId'
       responses:
         '200':
-          description: Configurations retrieved
+          description: Recurring schedules retrieved
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '../../components/scheduling/components.yml#/components/schemas/OpeningHoursConfigurationResponseDTO'
+                  $ref: '../../components/scheduling/components.yml#/components/schemas/RecurringScheduleResponseDTO'
         '403': {$ref: '../../components/scheduling/components.yml#/components/responses/Forbidden'}
         '404': {$ref: '../../components/scheduling/components.yml#/components/responses/NotFound'}
       x-functional-errors: [1006, 1020]
-  configuration:
-    put:
-      tags: [Opening Hours]
-      operationId: replaceOpeningHoursConfiguration
-      summary: Create or replace a complete weekly opening-hours configuration
+    post:
+      tags: [Recurring Schedules]
+      operationId: createRecurringSchedule
+      summary: Create a recurring schedule
       security: [{ bearerAuth: [] }]
       parameters:
         - $ref: '../../components/scheduling/components.yml#/components/parameters/BusinessId'
-        - $ref: '../../components/scheduling/components.yml#/components/parameters/ValidFrom'
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '../../components/scheduling/components.yml#/components/schemas/OpeningHoursConfigurationRequestDTO'
+              $ref: '../../components/scheduling/components.yml#/components/schemas/RecurringScheduleRequestDTO'
       responses:
-        '200':
-          description: Configuration replaced
+        '201':
+          description: Recurring schedule created
           content:
             application/json:
               schema:
-                $ref: '../../components/scheduling/components.yml#/components/schemas/OpeningHoursConfigurationResponseDTO'
+                $ref: '../../components/scheduling/components.yml#/components/schemas/RecurringScheduleResponseDTO'
         '400': {$ref: '../../components/scheduling/components.yml#/components/responses/BadRequest'}
         '403': {$ref: '../../components/scheduling/components.yml#/components/responses/Forbidden'}
         '404': {$ref: '../../components/scheduling/components.yml#/components/responses/NotFound'}
         '409': {$ref: '../../components/scheduling/components.yml#/components/responses/Conflict'}
-      x-functional-errors: [1006, 1020, 1032, 1033]
-    delete:
-      tags: [Opening Hours]
-      operationId: deleteOpeningHoursConfiguration
-      summary: Delete a recurring opening-hours configuration
+      x-functional-errors: [1006, 1020, 1050, 1051]
+  item:
+    get:
+      tags: [Recurring Schedules]
+      operationId: getRecurringSchedule
+      summary: Get a recurring schedule by its start date
       security: [{ bearerAuth: [] }]
       parameters:
         - $ref: '../../components/scheduling/components.yml#/components/parameters/BusinessId'
         - $ref: '../../components/scheduling/components.yml#/components/parameters/ValidFrom'
       responses:
-        '204': {description: Configuration deleted or already absent}
-        '403': {$ref: '../../components/scheduling/components.yml#/components/responses/Forbidden'}
-        '404': {$ref: '../../components/scheduling/components.yml#/components/responses/NotFound'}
-      x-functional-errors: [1006, 1020]
-  overrides:
-    get:
-      tags: [Opening Hours]
-      operationId: getOpeningHoursOverrides
-      summary: List opening-hours overrides in a date range
-      security: [{ bearerAuth: [] }]
-      parameters:
-        - $ref: '../../components/scheduling/components.yml#/components/parameters/BusinessId'
-        - $ref: '../../components/scheduling/components.yml#/components/parameters/From'
-        - $ref: '../../components/scheduling/components.yml#/components/parameters/To'
-      responses:
         '200':
-          description: Overrides retrieved
+          description: Recurring schedule retrieved
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '../../components/scheduling/components.yml#/components/schemas/OpeningHoursOverrideResponseDTO'
-        '400': {$ref: '../../components/scheduling/components.yml#/components/responses/BadRequest'}
+                $ref: '../../components/scheduling/components.yml#/components/schemas/RecurringScheduleResponseDTO'
         '403': {$ref: '../../components/scheduling/components.yml#/components/responses/Forbidden'}
         '404': {$ref: '../../components/scheduling/components.yml#/components/responses/NotFound'}
-      x-functional-errors: [1006, 1020, 1032]
-  override:
+      x-functional-errors: [1006, 1052]
     put:
-      tags: [Opening Hours]
-      operationId: upsertOpeningHoursOverride
-      summary: Create or replace an opening-hours override for a date
+      tags: [Recurring Schedules]
+      operationId: replaceRecurringSchedule
+      summary: Replace a complete recurring schedule
       security: [{ bearerAuth: [] }]
       parameters:
         - $ref: '../../components/scheduling/components.yml#/components/parameters/BusinessId'
-        - $ref: '../../components/scheduling/components.yml#/components/parameters/Date'
+        - $ref: '../../components/scheduling/components.yml#/components/parameters/ValidFrom'
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '../../components/scheduling/components.yml#/components/schemas/OpeningHoursOverrideRequestDTO'
+              $ref: '../../components/scheduling/components.yml#/components/schemas/RecurringScheduleRequestDTO'
       responses:
         '200':
-          description: Override stored
+          description: Recurring schedule replaced
           content:
             application/json:
               schema:
-                $ref: '../../components/scheduling/components.yml#/components/schemas/OpeningHoursOverrideResponseDTO'
+                $ref: '../../components/scheduling/components.yml#/components/schemas/RecurringScheduleResponseDTO'
         '400': {$ref: '../../components/scheduling/components.yml#/components/responses/BadRequest'}
         '403': {$ref: '../../components/scheduling/components.yml#/components/responses/Forbidden'}
         '404': {$ref: '../../components/scheduling/components.yml#/components/responses/NotFound'}
-      x-functional-errors: [1006, 1020, 1032]
+        '409': {$ref: '../../components/scheduling/components.yml#/components/responses/Conflict'}
+      x-functional-errors: [1006, 1020, 1050, 1051, 1049]
     delete:
-      tags: [Opening Hours]
-      operationId: deleteOpeningHoursOverride
-      summary: Delete an opening-hours override
+      tags: [Recurring Schedules]
+      operationId: deleteRecurringSchedule
+      summary: Delete a recurring schedule
       security: [{ bearerAuth: [] }]
       parameters:
         - $ref: '../../components/scheduling/components.yml#/components/parameters/BusinessId'
-        - $ref: '../../components/scheduling/components.yml#/components/parameters/Date'
+        - $ref: '../../components/scheduling/components.yml#/components/parameters/ValidFrom'
       responses:
-        '204': {description: Override deleted or already absent}
+        '204': {description: Recurring schedule deleted}
         '403': {$ref: '../../components/scheduling/components.yml#/components/responses/Forbidden'}
         '404': {$ref: '../../components/scheduling/components.yml#/components/responses/NotFound'}
-      x-functional-errors: [1006, 1020]
+      x-functional-errors: [1006, 1020, 1052]
 
 jobRoles:
   collection:
@@ -199,274 +180,6 @@ jobRoles:
         '404': {$ref: '../../components/scheduling/components.yml#/components/responses/NotFound'}
         '409': {$ref: '../../components/scheduling/components.yml#/components/responses/Conflict'}
       x-functional-errors: [1006, 1020, 1034]
-shiftTemplates:
-  collection:
-    get:
-      tags: [Shift Templates]
-      operationId: getShiftTemplates
-      summary: List shift templates for a business
-      security: [{ bearerAuth: [] }]
-      parameters:
-        - $ref: '../../components/scheduling/components.yml#/components/parameters/BusinessId'
-        - name: includeInactive
-          in: query
-          required: false
-          schema: {type: boolean, default: false}
-      responses:
-        '200':
-          description: Shift templates retrieved
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '../../components/scheduling/components.yml#/components/schemas/ShiftTemplateResponseDTO'
-        '403': {$ref: '../../components/scheduling/components.yml#/components/responses/Forbidden'}
-        '404': {$ref: '../../components/scheduling/components.yml#/components/responses/NotFound'}
-      x-functional-errors: [1006, 1020]
-    post:
-      tags: [Shift Templates]
-      operationId: createShiftTemplate
-      summary: Create a shift template
-      security: [{ bearerAuth: [] }]
-      parameters:
-        - $ref: '../../components/scheduling/components.yml#/components/parameters/BusinessId'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '../../components/scheduling/components.yml#/components/schemas/ShiftTemplateRequestDTO'
-      responses:
-        '201':
-          description: Shift template created
-          content:
-            application/json:
-              schema:
-                $ref: '../../components/scheduling/components.yml#/components/schemas/ShiftTemplateResponseDTO'
-        '400': {$ref: '../../components/scheduling/components.yml#/components/responses/BadRequest'}
-        '403': {$ref: '../../components/scheduling/components.yml#/components/responses/Forbidden'}
-        '404': {$ref: '../../components/scheduling/components.yml#/components/responses/NotFound'}
-        '409': {$ref: '../../components/scheduling/components.yml#/components/responses/Conflict'}
-      x-functional-errors: [1006, 1020, 1038, 1040]
-  item:
-    put:
-      tags: [Shift Templates]
-      operationId: updateShiftTemplate
-      summary: Update a shift template
-      security: [{ bearerAuth: [] }]
-      parameters:
-        - $ref: '../../components/scheduling/components.yml#/components/parameters/BusinessId'
-        - $ref: '../../components/scheduling/components.yml#/components/parameters/ShiftTemplateId'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '../../components/scheduling/components.yml#/components/schemas/ShiftTemplateRequestDTO'
-      responses:
-        '200':
-          description: Shift template updated
-          content:
-            application/json:
-              schema:
-                $ref: '../../components/scheduling/components.yml#/components/schemas/ShiftTemplateResponseDTO'
-        '400': {$ref: '../../components/scheduling/components.yml#/components/responses/BadRequest'}
-        '403': {$ref: '../../components/scheduling/components.yml#/components/responses/Forbidden'}
-        '404': {$ref: '../../components/scheduling/components.yml#/components/responses/NotFound'}
-        '409': {$ref: '../../components/scheduling/components.yml#/components/responses/Conflict'}
-      x-functional-errors: [1006, 1020, 1038, 1039, 1040]
-  overrides:
-    get:
-      tags: [Shift Templates]
-      operationId: getShiftTemplateOverrides
-      summary: List shift-template overrides in a date range
-      security: [{ bearerAuth: [] }]
-      parameters:
-        - $ref: '../../components/scheduling/components.yml#/components/parameters/BusinessId'
-        - $ref: '../../components/scheduling/components.yml#/components/parameters/From'
-        - $ref: '../../components/scheduling/components.yml#/components/parameters/To'
-      responses:
-        '200':
-          description: Overrides retrieved
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '../../components/scheduling/components.yml#/components/schemas/ShiftTemplateOverrideResponseDTO'
-        '400': {$ref: '../../components/scheduling/components.yml#/components/responses/BadRequest'}
-        '403': {$ref: '../../components/scheduling/components.yml#/components/responses/Forbidden'}
-        '404': {$ref: '../../components/scheduling/components.yml#/components/responses/NotFound'}
-      x-functional-errors: [1006, 1020, 1032]
-  override:
-    put:
-      tags: [Shift Templates]
-      operationId: upsertShiftTemplateOverride
-      summary: Create or replace a shift-template override for a date
-      security: [{ bearerAuth: [] }]
-      parameters:
-        - $ref: '../../components/scheduling/components.yml#/components/parameters/BusinessId'
-        - $ref: '../../components/scheduling/components.yml#/components/parameters/ShiftTemplateId'
-        - $ref: '../../components/scheduling/components.yml#/components/parameters/Date'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '../../components/scheduling/components.yml#/components/schemas/ShiftTemplateOverrideRequestDTO'
-      responses:
-        '200':
-          description: Override stored
-          content:
-            application/json:
-              schema:
-                $ref: '../../components/scheduling/components.yml#/components/schemas/ShiftTemplateOverrideResponseDTO'
-        '400': {$ref: '../../components/scheduling/components.yml#/components/responses/BadRequest'}
-        '403': {$ref: '../../components/scheduling/components.yml#/components/responses/Forbidden'}
-        '404': {$ref: '../../components/scheduling/components.yml#/components/responses/NotFound'}
-      x-functional-errors: [1006, 1020, 1038, 1039]
-    delete:
-      tags: [Shift Templates]
-      operationId: deleteShiftTemplateOverride
-      summary: Delete a shift-template override
-      security: [{ bearerAuth: [] }]
-      parameters:
-        - $ref: '../../components/scheduling/components.yml#/components/parameters/BusinessId'
-        - $ref: '../../components/scheduling/components.yml#/components/parameters/ShiftTemplateId'
-        - $ref: '../../components/scheduling/components.yml#/components/parameters/Date'
-      responses:
-        '204': {description: Override deleted or already absent}
-        '403': {$ref: '../../components/scheduling/components.yml#/components/responses/Forbidden'}
-        '404': {$ref: '../../components/scheduling/components.yml#/components/responses/NotFound'}
-      x-functional-errors: [1006, 1020, 1038]
-
-shiftDemands:
-  configurations:
-    get:
-      tags: [Shift Demands]
-      operationId: getShiftDemandConfigurations
-      summary: List recurring shift-demand configurations
-      security: [{ bearerAuth: [] }]
-      parameters:
-        - $ref: '../../components/scheduling/components.yml#/components/parameters/BusinessId'
-      responses:
-        '200':
-          description: Demand configurations retrieved
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '../../components/scheduling/components.yml#/components/schemas/ShiftDemandConfigurationResponseDTO'
-        '403': {$ref: '../../components/scheduling/components.yml#/components/responses/Forbidden'}
-        '404': {$ref: '../../components/scheduling/components.yml#/components/responses/NotFound'}
-      x-functional-errors: [1006, 1020]
-  configuration:
-    put:
-      tags: [Shift Demands]
-      operationId: replaceShiftDemandConfiguration
-      summary: Create or replace a complete shift-demand matrix
-      security: [{ bearerAuth: [] }]
-      parameters:
-        - $ref: '../../components/scheduling/components.yml#/components/parameters/BusinessId'
-        - $ref: '../../components/scheduling/components.yml#/components/parameters/ValidFrom'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '../../components/scheduling/components.yml#/components/schemas/ShiftDemandConfigurationRequestDTO'
-      responses:
-        '200':
-          description: Demand configuration replaced
-          content:
-            application/json:
-              schema:
-                $ref: '../../components/scheduling/components.yml#/components/schemas/ShiftDemandConfigurationResponseDTO'
-        '400': {$ref: '../../components/scheduling/components.yml#/components/responses/BadRequest'}
-        '403': {$ref: '../../components/scheduling/components.yml#/components/responses/Forbidden'}
-        '404': {$ref: '../../components/scheduling/components.yml#/components/responses/NotFound'}
-        '409': {$ref: '../../components/scheduling/components.yml#/components/responses/Conflict'}
-      x-functional-errors: [1006, 1020, 1034, 1039, 1041, 1042]
-    delete:
-      tags: [Shift Demands]
-      operationId: deleteShiftDemandConfiguration
-      summary: Delete a shift-demand configuration
-      security: [{ bearerAuth: [] }]
-      parameters:
-        - $ref: '../../components/scheduling/components.yml#/components/parameters/BusinessId'
-        - $ref: '../../components/scheduling/components.yml#/components/parameters/ValidFrom'
-      responses:
-        '204': {description: Configuration deleted or already absent}
-        '403': {$ref: '../../components/scheduling/components.yml#/components/responses/Forbidden'}
-        '404': {$ref: '../../components/scheduling/components.yml#/components/responses/NotFound'}
-      x-functional-errors: [1006, 1020]
-  overrides:
-    get:
-      tags: [Shift Demands]
-      operationId: getShiftDemandOverrides
-      summary: List shift-demand overrides in a date range
-      security: [{ bearerAuth: [] }]
-      parameters:
-        - $ref: '../../components/scheduling/components.yml#/components/parameters/BusinessId'
-        - $ref: '../../components/scheduling/components.yml#/components/parameters/From'
-        - $ref: '../../components/scheduling/components.yml#/components/parameters/To'
-      responses:
-        '200':
-          description: Overrides retrieved
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '../../components/scheduling/components.yml#/components/schemas/ShiftDemandOverrideResponseDTO'
-        '400': {$ref: '../../components/scheduling/components.yml#/components/responses/BadRequest'}
-        '403': {$ref: '../../components/scheduling/components.yml#/components/responses/Forbidden'}
-        '404': {$ref: '../../components/scheduling/components.yml#/components/responses/NotFound'}
-      x-functional-errors: [1006, 1020, 1032]
-  override:
-    put:
-      tags: [Shift Demands]
-      operationId: upsertShiftDemandOverride
-      summary: Create or replace a shift-demand override for a date
-      security: [{ bearerAuth: [] }]
-      parameters:
-        - $ref: '../../components/scheduling/components.yml#/components/parameters/BusinessId'
-        - $ref: '../../components/scheduling/components.yml#/components/parameters/ShiftDemandId'
-        - $ref: '../../components/scheduling/components.yml#/components/parameters/Date'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '../../components/scheduling/components.yml#/components/schemas/ShiftDemandOverrideRequestDTO'
-      responses:
-        '200':
-          description: Override stored
-          content:
-            application/json:
-              schema:
-                $ref: '../../components/scheduling/components.yml#/components/schemas/ShiftDemandOverrideResponseDTO'
-        '400': {$ref: '../../components/scheduling/components.yml#/components/responses/BadRequest'}
-        '403': {$ref: '../../components/scheduling/components.yml#/components/responses/Forbidden'}
-        '404': {$ref: '../../components/scheduling/components.yml#/components/responses/NotFound'}
-      x-functional-errors: [1006, 1020, 1041, 1043]
-    delete:
-      tags: [Shift Demands]
-      operationId: deleteShiftDemandOverride
-      summary: Delete a shift-demand override
-      security: [{ bearerAuth: [] }]
-      parameters:
-        - $ref: '../../components/scheduling/components.yml#/components/parameters/BusinessId'
-        - $ref: '../../components/scheduling/components.yml#/components/parameters/ShiftDemandId'
-        - $ref: '../../components/scheduling/components.yml#/components/parameters/Date'
-      responses:
-        '204': {description: Override deleted or already absent}
-        '403': {$ref: '../../components/scheduling/components.yml#/components/responses/Forbidden'}
-        '404': {$ref: '../../components/scheduling/components.yml#/components/responses/NotFound'}
-      x-functional-errors: [1006, 1020, 1043]
-
 planning:
   settings:
     get:

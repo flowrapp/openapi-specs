@@ -39,14 +39,10 @@ tags:
     description: Operations for managing push notification tokens.
   - name: Contracts
     description: Operations for managing user contracts within businesses.
-  - name: Opening Hours
-    description: Recurring business opening hours and date-specific exceptions.
+  - name: Recurring Schedules
+    description: Versioned recurring weekly opening hours, shifts and staffing demand.
   - name: Job Roles
     description: Business job-role catalogs and member assignments.
-  - name: Shift Templates
-    description: Reusable shift templates and date-specific exceptions.
-  - name: Shift Demands
-    description: Recurring staffing-demand matrices and date-specific exceptions.
   - name: Planning
     description: Weekly business plannings and scheduled shifts.
 
@@ -121,34 +117,14 @@ paths:
     $ref: 'v1/services/contracts/contracts-operations.yml#/contracts/business-user-contract'
   "/api/v1/contracts":
     $ref: 'v1/services/contracts/contracts-operations.yml#/contracts/current-user-contracts'
-  "/api/v1/businesses/{businessId}/opening-hours":
-    $ref: 'v1/services/scheduling/scheduling-operations.yml#/openingHours/configurations'
-  "/api/v1/businesses/{businessId}/opening-hours/{validFrom}":
-    $ref: 'v1/services/scheduling/scheduling-operations.yml#/openingHours/configuration'
-  "/api/v1/businesses/{businessId}/opening-hours/overrides":
-    $ref: 'v1/services/scheduling/scheduling-operations.yml#/openingHours/overrides'
-  "/api/v1/businesses/{businessId}/opening-hours/overrides/{date}":
-    $ref: 'v1/services/scheduling/scheduling-operations.yml#/openingHours/override'
+  "/api/v1/businesses/{businessId}/recurring-schedules":
+    $ref: 'v1/services/scheduling/scheduling-operations.yml#/recurringSchedules/collection'
+  "/api/v1/businesses/{businessId}/recurring-schedules/{validFrom}":
+    $ref: 'v1/services/scheduling/scheduling-operations.yml#/recurringSchedules/item'
   "/api/v1/businesses/{businessId}/job-roles":
     $ref: 'v1/services/scheduling/scheduling-operations.yml#/jobRoles/collection'
   "/api/v1/businesses/{businessId}/job-roles/{jobRoleId}":
     $ref: 'v1/services/scheduling/scheduling-operations.yml#/jobRoles/item'
-  "/api/v1/businesses/{businessId}/shift-templates":
-    $ref: 'v1/services/scheduling/scheduling-operations.yml#/shiftTemplates/collection'
-  "/api/v1/businesses/{businessId}/shift-templates/{shiftTemplateId}":
-    $ref: 'v1/services/scheduling/scheduling-operations.yml#/shiftTemplates/item'
-  "/api/v1/businesses/{businessId}/shift-templates/overrides":
-    $ref: 'v1/services/scheduling/scheduling-operations.yml#/shiftTemplates/overrides'
-  "/api/v1/businesses/{businessId}/shift-templates/{shiftTemplateId}/overrides/{date}":
-    $ref: 'v1/services/scheduling/scheduling-operations.yml#/shiftTemplates/override'
-  "/api/v1/businesses/{businessId}/shift-demands":
-    $ref: 'v1/services/scheduling/scheduling-operations.yml#/shiftDemands/configurations'
-  "/api/v1/businesses/{businessId}/shift-demands/{validFrom}":
-    $ref: 'v1/services/scheduling/scheduling-operations.yml#/shiftDemands/configuration'
-  "/api/v1/businesses/{businessId}/shift-demands/overrides":
-    $ref: 'v1/services/scheduling/scheduling-operations.yml#/shiftDemands/overrides'
-  "/api/v1/businesses/{businessId}/shift-demands/{shiftDemandId}/overrides/{date}":
-    $ref: 'v1/services/scheduling/scheduling-operations.yml#/shiftDemands/override'
   "/api/v1/businesses/{businessId}/planning-settings":
     $ref: 'v1/services/scheduling/scheduling-operations.yml#/planning/settings'
   "/api/v1/businesses/{businessId}/plannings":
