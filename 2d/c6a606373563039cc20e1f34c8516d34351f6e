@@ -1,0 +1,18 @@
+api/main-api/rest/open-api-rest.yml
+  h_a041df4244d543 122
+api/main-api/rest/v1/components/scheduling/components.yml
+  h_a041df4244d543 18-19,22,98,135,174,208,218
+api/main-api/rest/v1/services/scheduling/scheduling-operations.yml
+  h_a041df4244d543 51,55,69,73,95,99
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.22",
+  "base_commit_sha": "2dc6a606373563039cc20e1f34c8516d34351f6e",
+  "prompts": {},
+  "humans": {
+    "h_a041df4244d543": {
+      "author": "sergiobpa <sergiobpa@ext.inditex.com>"
+    }
+  }
+}
