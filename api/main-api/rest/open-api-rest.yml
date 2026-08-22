@@ -41,6 +41,8 @@ tags:
     description: Operations for managing user contracts within businesses.
   - name: Recurring Schedules
     description: Versioned recurring weekly opening hours, shifts and staffing demand.
+  - name: Schedule Exceptions
+    description: Date-specific replacements for recurring opening hours, shifts and staffing demand.
   - name: Job Roles
     description: Business job-role catalogs and member assignments.
   - name: Planning
@@ -121,6 +123,10 @@ paths:
     $ref: 'v1/services/scheduling/scheduling-operations.yml#/recurringSchedules/collection'
   "/api/v1/businesses/{businessId}/recurring-schedules/{scheduleId}":
     $ref: 'v1/services/scheduling/scheduling-operations.yml#/recurringSchedules/item'
+  "/api/v1/businesses/{businessId}/schedule-exceptions":
+    $ref: 'v1/services/scheduling/scheduling-operations.yml#/scheduleExceptions/collection'
+  "/api/v1/businesses/{businessId}/schedule-exceptions/{exceptionId}":
+    $ref: 'v1/services/scheduling/scheduling-operations.yml#/scheduleExceptions/item'
   "/api/v1/businesses/{businessId}/job-roles":
     $ref: 'v1/services/scheduling/scheduling-operations.yml#/jobRoles/collection'
   "/api/v1/businesses/{businessId}/job-roles/{jobRoleId}":

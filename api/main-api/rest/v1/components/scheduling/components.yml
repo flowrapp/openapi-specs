@@ -20,6 +20,11 @@ components:
       in: path
       required: true
       schema: {type: integer, format: int64}
+    ScheduleExceptionId:
+      name: exceptionId
+      in: path
+      required: true
+      schema: {type: integer, format: int64}
     Date:
       name: date
       in: path
@@ -257,6 +262,67 @@ components:
           type: string
           format: date-time
       required: [id, version, businessId, validFrom, days, createdAt, updatedAt]
+
+    DailyConfigurationRequestDTO:
+      type: object
+      description: Complete opening intervals, shifts and staffing demand for one calendar day. Nested values have no persistence identity.
+      properties:
+        openingIntervals:
+          type: array
+          items:
+            $ref: '#/components/schemas/OpeningIntervalRequestDTO'
+        shifts:
+          type: array
+          items:
+            $ref: '#/components/schemas/DailyShiftRequestDTO'
+      required: [openingIntervals, shifts]
+
+    DailyConfigurationResponseDTO:
+      type: object
+      properties:
+        openingIntervals:
+          type: array
+          items:
+            $ref: '#/components/schemas/OpeningIntervalResponseDTO'
+        shifts:
+          type: array
+          items:
+            $ref: '#/components/schemas/DailyShiftResponseDTO'
+      required: [openingIntervals, shifts]
+
+    ScheduleExceptionRequestDTO:
+      type: object
+      description: Complete replacement configuration for one business-local calendar date.
+      properties:
+        date:
+          type: string
+          format: date
+          description: Business-local exception date. It must be today or a future date.
+        configuration:
+          $ref: '#/components/schemas/DailyConfigurationRequestDTO'
+      required: [date, configuration]
+
+    ScheduleExceptionResponseDTO:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        businessId:
+          type: integer
+          format: int64
+        date:
+          type: string
+          format: date
+        configuration:
+          $ref: '#/components/schemas/DailyConfigurationResponseDTO'
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required: [id, businessId, date, configuration, createdAt, updatedAt]
 
     CreateBusinessJobRoleRequestDTO:
       type: object
