@@ -77,6 +77,10 @@ components:
         | 1046 | 404 | PLANNING_NOT_FOUND | planning not found |
         | 1047 | 400 | INVALID_SCHEDULED_SHIFT | scheduled shift is invalid |
         | 1048 | 409 | PLANNING_NOT_READY | planning is not ready to publish |
+        | 1049 | 409 | CONCURRENT_MODIFICATION | resource was modified concurrently |
+        | 1050 | 400 | INVALID_RECURRING_SCHEDULE | recurring schedule is invalid |
+        | 1051 | 409 | RECURRING_SCHEDULE_OVERLAPS | recurring schedule overlaps an existing schedule |
+        | 1052 | 404 | RECURRING_SCHEDULE_NOT_FOUND | recurring schedule not found |
       enum:
         - 1000
         - 1001
@@ -127,3 +131,7 @@ components:
         - 1046
         - 1047
         - 1048
+        - 1049
+        - 1050
+        - 1051
+        - 1052
