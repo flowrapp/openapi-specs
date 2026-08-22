@@ -1,0 +1,19 @@
+api/main-api/rest/open-api-rest.yml
+  s_52957bb842b23a::t_2311b159fe0489 44-45,126-129
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.22",
+  "base_commit_sha": "9ead0ca39830a07a83d39654fce7bed487069112",
+  "prompts": {},
+  "sessions": {
+    "s_52957bb842b23a": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "01a02b50-80da-72d4-a957-8902483620f6",
+        "model": "gpt-5.6-luna"
+      },
+      "human_author": "sergiobpa <sergiobpa@ext.inditex.com>"
+    }
+  }
+}
