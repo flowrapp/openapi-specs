@@ -81,6 +81,10 @@ components:
         | 1050 | 400 | INVALID_RECURRING_SCHEDULE | recurring schedule is invalid |
         | 1051 | 409 | RECURRING_SCHEDULE_OVERLAPS | recurring schedule overlaps an existing schedule |
         | 1052 | 404 | RECURRING_SCHEDULE_NOT_FOUND | recurring schedule not found |
+        | 1053 | 400 | INVALID_SCHEDULE_EXCEPTION | schedule exception is invalid |
+        | 1054 | 409 | SCHEDULE_EXCEPTION_ALREADY_EXISTS | schedule exception already exists for date |
+        | 1055 | 409 | SCHEDULE_EXCEPTION_OVERLAPS | schedule exception overlaps an adjacent effective configuration |
+        | 1056 | 404 | SCHEDULE_EXCEPTION_NOT_FOUND | schedule exception not found |
       enum:
         - 1000
         - 1001
@@ -135,3 +139,7 @@ components:
         - 1050
         - 1051
         - 1052
+        - 1053
+        - 1054
+        - 1055
+        - 1056

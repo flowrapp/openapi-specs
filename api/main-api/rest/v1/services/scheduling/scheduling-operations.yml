@@ -103,6 +103,73 @@ recurringSchedules:
         '404': {$ref: '../../components/scheduling/components.yml#/components/responses/NotFound'}
       x-functional-errors: [1006, 1020, 1052]
 
+scheduleExceptions:
+  collection:
+    get:
+      tags: [Schedule Exceptions]
+      operationId: getScheduleExceptions
+      summary: List schedule exceptions for a business
+      description: Returns exceptions whose dates are within the inclusive from and to bounds, ordered by date ascending.
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '../../components/scheduling/components.yml#/components/parameters/BusinessId'
+        - $ref: '../../components/scheduling/components.yml#/components/parameters/From'
+        - $ref: '../../components/scheduling/components.yml#/components/parameters/To'
+      responses:
+        '200':
+          description: Schedule exceptions retrieved
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '../../components/scheduling/components.yml#/components/schemas/ScheduleExceptionResponseDTO'
+        '400': {$ref: '../../components/scheduling/components.yml#/components/responses/BadRequest'}
+        '403': {$ref: '../../components/scheduling/components.yml#/components/responses/Forbidden'}
+        '404': {$ref: '../../components/scheduling/components.yml#/components/responses/NotFound'}
+      x-functional-errors: [1006, 1020, 1025]
+    post:
+      tags: [Schedule Exceptions]
+      operationId: createScheduleException
+      summary: Create a schedule exception
+      description: Creates a complete date-specific replacement for the recurring schedule.
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '../../components/scheduling/components.yml#/components/parameters/BusinessId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '../../components/scheduling/components.yml#/components/schemas/ScheduleExceptionRequestDTO'
+      responses:
+        '201':
+          description: Schedule exception created
+          content:
+            application/json:
+              schema:
+                $ref: '../../components/scheduling/components.yml#/components/schemas/ScheduleExceptionResponseDTO'
+        '400': {$ref: '../../components/scheduling/components.yml#/components/responses/BadRequest'}
+        '403': {$ref: '../../components/scheduling/components.yml#/components/responses/Forbidden'}
+        '404': {$ref: '../../components/scheduling/components.yml#/components/responses/NotFound'}
+        '409': {$ref: '../../components/scheduling/components.yml#/components/responses/Conflict'}
+      x-functional-errors: [1006, 1020, 1034, 1053, 1054, 1055]
+  item:
+    delete:
+      tags: [Schedule Exceptions]
+      operationId: deleteScheduleException
+      summary: Delete a schedule exception by its root ID
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '../../components/scheduling/components.yml#/components/parameters/BusinessId'
+        - $ref: '../../components/scheduling/components.yml#/components/parameters/ScheduleExceptionId'
+      responses:
+        '204': {description: Schedule exception deleted}
+        '403': {$ref: '../../components/scheduling/components.yml#/components/responses/Forbidden'}
+        '404': {$ref: '../../components/scheduling/components.yml#/components/responses/NotFound'}
+        '409': {$ref: '../../components/scheduling/components.yml#/components/responses/Conflict'}
+      x-functional-errors: [1006, 1020, 1055, 1056]
+
 jobRoles:
   collection:
     get:
