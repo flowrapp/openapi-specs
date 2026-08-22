@@ -7,7 +7,7 @@ info:
     This BFF aggregates and shapes data from the Flowrapp main API to serve
     the specific needs of the mobile frontend, providing role-based endpoints
     for workers and managers.
-  version: 0.0.1
+  version: 0.0.37
   contact:
     name: Flowrapp Team
     url: https://flowrapp.github.io
@@ -38,7 +38,8 @@ tags:
   - name: Manager
     description: >
       Manager-facing endpoints for business oversight, worker management,
-      work history reporting, owner-only invitation management, and timesheet export.
+      work history reporting, owner-only invitation management, timesheet export,
+      and owner-only recurring-schedule, exception, job-role, and planning management.
 
 paths:
   # ── System ──────────────────────────────────────────────────────────────
@@ -102,6 +103,22 @@ paths:
     $ref: 'v1/services/manager/manager-operations.yml#/manager/businesses'
   "/api/v1/manager/businesses/{businessId}/workers":
     $ref: 'v1/services/manager/manager-operations.yml#/manager/workers'
+  "/api/v1/manager/businesses/{businessId}/schedule/recurring":
+    $ref: 'v1/services/manager/manager-operations.yml#/manager/recurring-schedule'
+  "/api/v1/manager/businesses/{businessId}/schedule/recurring/{scheduleId}":
+    $ref: 'v1/services/manager/manager-operations.yml#/manager/recurring-schedule-item'
+  "/api/v1/manager/businesses/{businessId}/schedule/exceptions":
+    $ref: 'v1/services/manager/manager-operations.yml#/manager/schedule-exceptions'
+  "/api/v1/manager/businesses/{businessId}/schedule/exceptions/{exceptionId}":
+    $ref: 'v1/services/manager/manager-operations.yml#/manager/schedule-exception-item'
+  "/api/v1/manager/businesses/{businessId}/job-roles":
+    $ref: 'v1/services/manager/manager-operations.yml#/manager/job-roles'
+  "/api/v1/manager/businesses/{businessId}/job-roles/{jobRoleId}":
+    $ref: 'v1/services/manager/manager-operations.yml#/manager/job-role-item'
+  "/api/v1/manager/businesses/{businessId}/schedule":
+    $ref: 'v1/services/manager/manager-operations.yml#/manager/planning'
+  "/api/v1/manager/businesses/{businessId}/schedule/{weekStart}/publish":
+    $ref: 'v1/services/manager/manager-operations.yml#/manager/publish-planning'
   "/api/v1/manager/businesses/{businessId}/history/day":
     $ref: 'v1/services/manager/manager-operations.yml#/manager/history-day'
   "/api/v1/manager/businesses/{businessId}/history/week":

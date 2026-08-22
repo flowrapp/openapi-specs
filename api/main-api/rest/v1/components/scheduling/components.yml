@@ -79,7 +79,6 @@ components:
 
     LocalMinuteTimeDTO:
       type: string
-      format: time
       pattern: '^([01][0-9]|2[0-3]):[0-5][0-9]$'
       description: Local business time with minute precision. An end time before the start time ends on the following day.
       example: "09:00"
@@ -146,6 +145,11 @@ components:
           type: string
           minLength: 1
           maxLength: 100
+        color:
+          type: string
+          pattern: '^#[0-9A-Fa-f]{6}$'
+          description: Hexadecimal display color preserved in planning snapshots.
+          example: "#1A2B3C"
         startTime:
           $ref: '#/components/schemas/LocalMinuteTimeDTO'
         endTime:
@@ -158,13 +162,18 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/RoleDemandRequestDTO'
-      required: [name, startTime, endTime, breakMinutes, demands]
+      required: [name, color, startTime, endTime, breakMinutes, demands]
 
     DailyShiftResponseDTO:
       type: object
       properties:
         name:
           type: string
+        color:
+          type: string
+          pattern: '^#[0-9A-Fa-f]{6}$'
+          description: Hexadecimal display color captured by this shift value.
+          example: "#1A2B3C"
         startTime:
           $ref: '#/components/schemas/LocalMinuteTimeDTO'
         endTime:
@@ -172,11 +181,12 @@ components:
         breakMinutes:
           type: integer
           format: int32
+          minimum: 0
         demands:
           type: array
           items:
             $ref: '#/components/schemas/RoleDemandResponseDTO'
-      required: [name, startTime, endTime, breakMinutes, demands]
+      required: [name, color, startTime, endTime, breakMinutes, demands]
 
     RecurringScheduleDayRequestDTO:
       type: object
@@ -326,6 +336,7 @@ components:
 
     CreateBusinessJobRoleRequestDTO:
       type: object
+      description: Creates an active business job role with client-facing visual metadata.
       properties:
         code:
           type: string
@@ -340,10 +351,21 @@ components:
         description:
           type: [string, "null"]
           maxLength: 500
-      required: [code, name]
+        color:
+          type: string
+          pattern: '^#[0-9A-Fa-f]{6}$'
+          description: Hexadecimal display color. Values without exactly six hexadecimal digits are invalid.
+          example: "#1A2B3C"
+        icon:
+          type: string
+          pattern: '^[a-z0-9]+(?:-[a-z0-9]+)*$'
+          description: Lowercase slug from the open client icon catalog.
+          example: front-of-house
+      required: [code, name, color, icon]
 
     UpdateBusinessJobRoleRequestDTO:
       type: object
+      description: Updates a business job role. Setting active to true reactivates a deactivated role.
       properties:
         name:
           type: string
@@ -352,25 +374,46 @@ components:
         description:
           type: [string, "null"]
           maxLength: 500
+        color:
+          type: string
+          pattern: '^#[0-9A-Fa-f]{6}$'
+          description: Hexadecimal display color. Values without exactly six hexadecimal digits are invalid.
+          example: "#1A2B3C"
+        icon:
+          type: string
+          pattern: '^[a-z0-9]+(?:-[a-z0-9]+)*$'
+          description: Lowercase slug from the open client icon catalog.
+          example: front-of-house
         active:
           type: boolean
-      required: [name, active]
+      required: [name, color, icon, active]
 
     BusinessJobRoleResponseDTO:
       type: object
+      description: Business job role with reversible activation and display metadata.
       properties:
         id:
           type: integer
           format: int64
+          minimum: 1
         businessId:
           type: integer
           format: int64
+          minimum: 1
         code:
           type: string
         name:
           type: string
         description:
           type: [string, "null"]
+        color:
+          type: string
+          pattern: '^#[0-9A-Fa-f]{6}$'
+          example: "#1A2B3C"
+        icon:
+          type: string
+          pattern: '^[a-z0-9]+(?:-[a-z0-9]+)*$'
+          example: front-of-house
         active:
           type: boolean
         createdAt:
@@ -379,7 +422,53 @@ components:
         updatedAt:
           type: string
           format: date-time
-      required: [id, businessId, code, name, active, createdAt, updatedAt]
+      required: [id, businessId, code, name, color, icon, active, createdAt, updatedAt]
+
+    PlanningRequirementShiftDTO:
+      type: object
+      description: Immutable, presentation-safe shift input captured when a planning was created. It contains no solver correlation identifiers.
+      properties:
+        name:
+          type: string
+          minLength: 1
+          description: Shift display name captured in the planning snapshot
+          example: Morning service
+        color:
+          type: string
+          pattern: '^#[0-9A-Fa-f]{6}$'
+          description: Shift display color captured in the planning snapshot
+          example: "#1A2B3C"
+        startTime:
+          $ref: '#/components/schemas/LocalMinuteTimeDTO'
+        endTime:
+          $ref: '#/components/schemas/LocalMinuteTimeDTO'
+        breakMinutes:
+          type: integer
+          format: int32
+          minimum: 0
+          example: 30
+        demands:
+          type: array
+          description: Staffing demand by stable business job-role ID
+          items:
+            $ref: '#/components/schemas/RoleDemandResponseDTO'
+      required: [name, color, startTime, endTime, breakMinutes, demands]
+
+    PlanningRequirementDTO:
+      type: object
+      description: Immutable planning requirements grouped by business-local calendar date.
+      properties:
+        date:
+          type: string
+          format: date
+          description: Business-local calendar date captured by the planning snapshot
+          example: "2025-07-28"
+        shifts:
+          type: array
+          description: Shift requirements captured for this date
+          items:
+            $ref: '#/components/schemas/PlanningRequirementShiftDTO'
+      required: [date, shifts]
 
     PlanningSettingsDTO:
       type: object
@@ -392,7 +481,8 @@ components:
 
     PlanningStatusDTO:
       type: string
-      enum: [DRAFT, SOLVING, READY, PUBLISHED, ARCHIVED]
+      description: Planning lifecycle state. FAILED is terminal and exposes only a sanitized failure reason.
+      enum: [DRAFT, SOLVING, READY, PUBLISHED, FAILED, ARCHIVED]
 
     ScheduledShiftResponseDTO:
       type: object
@@ -412,6 +502,16 @@ components:
         jobRoleId:
           type: integer
           format: int64
+        shiftName:
+          type: string
+          minLength: 1
+          description: Display name captured from the planning requirement
+          example: Morning service
+        shiftColor:
+          type: string
+          pattern: '^#[0-9A-Fa-f]{6}$'
+          description: Display color captured from the planning requirement
+          example: "#1A2B3C"
         startAt:
           type: string
           format: date-time
@@ -428,25 +528,42 @@ components:
         updatedAt:
           type: string
           format: date-time
-      required: [id, planningId, businessId, userId, jobRoleId, startAt, endAt, breakMinutes, createdAt, updatedAt]
+      required: [id, planningId, businessId, userId, jobRoleId, shiftName, shiftColor, startAt, endAt, breakMinutes, createdAt, updatedAt]
 
     PlanningResponseDTO:
       type: object
+      description: Weekly planning with immutable requirements and any solved scheduled shifts.
       properties:
         id:
           type: integer
           format: int64
+          minimum: 1
         businessId:
           type: integer
           format: int64
+          minimum: 1
         weekStart:
           type: string
           format: date
+          description: Monday of the planning week in the business-local calendar
+          example: "2025-07-28"
         weekEnd:
           type: string
           format: date
+          description: Sunday of the planning week in the business-local calendar
+          example: "2025-08-03"
         status:
           $ref: '#/components/schemas/PlanningStatusDTO'
+        failureReason:
+          type: [string, "null"]
+          maxLength: 500
+          description: Sanitized owner-facing reason for FAILED plannings; never a stack trace or raw provider payload.
+          example: null
+        requirements:
+          type: array
+          description: Immutable requirements captured when the planning was created, grouped by date.
+          items:
+            $ref: '#/components/schemas/PlanningRequirementDTO'
         createdAt:
           type: string
           format: date-time
@@ -455,6 +572,102 @@ components:
           format: date-time
         scheduledShifts:
           type: array
+          description: Solved assignments. Empty while the planning has no assignments yet.
           items:
             $ref: '#/components/schemas/ScheduledShiftResponseDTO'
-      required: [id, businessId, weekStart, weekEnd, status, createdAt, scheduledShifts]
+      required: [id, businessId, weekStart, weekEnd, status, failureReason, requirements, createdAt, scheduledShifts]
+      example:
+        id: 500
+        businessId: 101
+        weekStart: "2025-07-28"
+        weekEnd: "2025-08-03"
+        status: SOLVING
+        failureReason: null
+        requirements: []
+        createdAt: "2025-07-27T08:00:00+02:00"
+        scheduledShifts: []
+      x-status-examples:
+        - summary: Solving planning
+          value:
+            id: 500
+            businessId: 101
+            weekStart: "2025-07-28"
+            weekEnd: "2025-08-03"
+            status: SOLVING
+            failureReason: null
+            requirements:
+              - date: "2025-07-28"
+                shifts:
+                  - name: Morning service
+                    color: "#1A2B3C"
+                    startTime: "09:00"
+                    endTime: "17:00"
+                    breakMinutes: 30
+                    demands:
+                      - jobRoleId: 10
+                        minimumEmployees: 1
+                        targetEmployees: 2
+                        maximumEmployees: 3
+            createdAt: "2025-07-27T08:00:00+02:00"
+            publishedAt: null
+            scheduledShifts: []
+        - summary: Ready planning
+          value:
+            id: 500
+            businessId: 101
+            weekStart: "2025-07-28"
+            weekEnd: "2025-08-03"
+            status: READY
+            failureReason: null
+            requirements:
+              - date: "2025-07-28"
+                shifts:
+                  - name: Morning service
+                    color: "#1A2B3C"
+                    startTime: "09:00"
+                    endTime: "17:00"
+                    breakMinutes: 30
+                    demands:
+                      - jobRoleId: 10
+                        minimumEmployees: 1
+                        targetEmployees: 2
+                        maximumEmployees: 3
+            createdAt: "2025-07-27T08:00:00+02:00"
+            publishedAt: null
+            scheduledShifts:
+              - id: 900
+                planningId: 500
+                businessId: 101
+                userId: 1
+                jobRoleId: 10
+                shiftName: Morning service
+                shiftColor: "#1A2B3C"
+                startAt: "2025-07-28T09:00:00+02:00"
+                endAt: "2025-07-28T17:00:00+02:00"
+                breakMinutes: 30
+                createdAt: "2025-07-27T09:00:00+02:00"
+                updatedAt: "2025-07-27T09:00:00+02:00"
+        - summary: Published planning
+          value:
+            id: 500
+            businessId: 101
+            weekStart: "2025-07-28"
+            weekEnd: "2025-08-03"
+            status: PUBLISHED
+            failureReason: null
+            requirements: []
+            createdAt: "2025-07-27T08:00:00+02:00"
+            publishedAt: "2025-07-27T12:00:00+02:00"
+            scheduledShifts: []
+        - summary: Failed planning
+          value:
+            id: 501
+            businessId: 101
+            weekStart: "2025-08-04"
+            weekEnd: "2025-08-10"
+            status: FAILED
+            failureReason: "No feasible assignment was found."
+            requirements: []
+            createdAt: "2025-08-03T08:00:00+02:00"
+            publishedAt: null
+            scheduledShifts: []

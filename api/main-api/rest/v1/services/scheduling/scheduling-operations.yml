@@ -142,6 +142,23 @@ scheduleExceptions:
           application/json:
             schema:
               $ref: '../../components/scheduling/components.yml#/components/schemas/ScheduleExceptionRequestDTO'
+            example:
+              date: "2025-08-15"
+              configuration:
+                openingIntervals:
+                  - startTime: "09:00"
+                    endTime: "17:00"
+                shifts:
+                  - name: Holiday service
+                    color: "#1A2B3C"
+                    startTime: "09:00"
+                    endTime: "17:00"
+                    breakMinutes: 30
+                    demands:
+                      - jobRoleId: 10
+                        minimumEmployees: 1
+                        targetEmployees: 2
+                        maximumEmployees: 3
       responses:
         '201':
           description: Schedule exception created
@@ -149,12 +166,100 @@ scheduleExceptions:
             application/json:
               schema:
                 $ref: '../../components/scheduling/components.yml#/components/schemas/ScheduleExceptionResponseDTO'
+              example:
+                id: 700
+                businessId: 101
+                date: "2025-08-15"
+                configuration:
+                  openingIntervals:
+                    - startTime: "09:00"
+                      endTime: "17:00"
+                  shifts:
+                    - name: Holiday service
+                      color: "#1A2B3C"
+                      startTime: "09:00"
+                      endTime: "17:00"
+                      breakMinutes: 30
+                      demands:
+                        - jobRoleId: 10
+                          minimumEmployees: 1
+                          targetEmployees: 2
+                          maximumEmployees: 3
+                createdAt: "2025-08-01T10:00:00+02:00"
+                updatedAt: "2025-08-01T10:00:00+02:00"
         '400': {$ref: '../../components/scheduling/components.yml#/components/responses/BadRequest'}
         '403': {$ref: '../../components/scheduling/components.yml#/components/responses/Forbidden'}
         '404': {$ref: '../../components/scheduling/components.yml#/components/responses/NotFound'}
         '409': {$ref: '../../components/scheduling/components.yml#/components/responses/Conflict'}
       x-functional-errors: [1006, 1020, 1034, 1053, 1054, 1055]
   item:
+    put:
+      tags: [Schedule Exceptions]
+      operationId: replaceScheduleException
+      summary: Replace a schedule exception configuration
+      description: >
+        Atomically replaces the complete configuration for an existing exception. The stored
+        exception date is immutable and is intentionally not accepted in this request. A failed
+        validation or adjacent-boundary conflict leaves the previous exception unchanged.
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '../../components/scheduling/components.yml#/components/parameters/BusinessId'
+        - $ref: '../../components/scheduling/components.yml#/components/parameters/ScheduleExceptionId'
+      requestBody:
+        required: true
+        description: Configuration only; the exception date remains unchanged.
+        content:
+          application/json:
+            schema:
+              $ref: '../../components/scheduling/components.yml#/components/schemas/DailyConfigurationRequestDTO'
+            example:
+              openingIntervals:
+                - startTime: "10:00"
+                  endTime: "18:00"
+              shifts:
+                - name: Holiday service
+                  color: "#4C9F70"
+                  startTime: "10:00"
+                  endTime: "18:00"
+                  breakMinutes: 30
+                  demands:
+                    - jobRoleId: 10
+                      minimumEmployees: 1
+                      targetEmployees: 2
+                      maximumEmployees: 3
+      responses:
+        '200':
+          description: Schedule exception configuration replaced; the response keeps the original date
+          content:
+            application/json:
+              schema:
+                $ref: '../../components/scheduling/components.yml#/components/schemas/ScheduleExceptionResponseDTO'
+              example:
+                id: 700
+                businessId: 101
+                date: "2025-08-15"
+                configuration:
+                  openingIntervals:
+                    - startTime: "10:00"
+                      endTime: "18:00"
+                  shifts:
+                    - name: Holiday service
+                      color: "#4C9F70"
+                      startTime: "10:00"
+                      endTime: "18:00"
+                      breakMinutes: 30
+                      demands:
+                        - jobRoleId: 10
+                          minimumEmployees: 1
+                          targetEmployees: 2
+                          maximumEmployees: 3
+                createdAt: "2025-08-01T10:00:00+02:00"
+                updatedAt: "2025-08-10T10:00:00+02:00"
+        '400': {$ref: '../../components/scheduling/components.yml#/components/responses/BadRequest'}
+        '403': {$ref: '../../components/scheduling/components.yml#/components/responses/Forbidden'}
+        '404': {$ref: '../../components/scheduling/components.yml#/components/responses/NotFound'}
+        '409': {$ref: '../../components/scheduling/components.yml#/components/responses/Conflict'}
+      x-functional-errors: [1006, 1020, 1053, 1055, 1056]
     delete:
       tags: [Schedule Exceptions]
       operationId: deleteScheduleException
@@ -208,6 +313,12 @@ jobRoles:
           application/json:
             schema:
               $ref: '../../components/scheduling/components.yml#/components/schemas/CreateBusinessJobRoleRequestDTO'
+            example:
+              code: WAITER
+              name: Waiter
+              description: Front of house service
+              color: "#1A2B3C"
+              icon: front-of-house
       responses:
         '201':
           description: Job role created
@@ -235,6 +346,12 @@ jobRoles:
           application/json:
             schema:
               $ref: '../../components/scheduling/components.yml#/components/schemas/UpdateBusinessJobRoleRequestDTO'
+            example:
+              name: Senior waiter
+              description: Shift lead
+              color: "#4C9F70"
+              icon: front-of-house
+              active: true
       responses:
         '200':
           description: Job role updated
@@ -307,6 +424,7 @@ planning:
       tags: [Planning]
       operationId: getPlannings
       summary: List business plannings in a date range
+      description: Returns plannings with the immutable requirements captured at creation time; later schedule edits do not change historical requirements.
       security: [{ bearerAuth: [] }]
       parameters:
         - $ref: '../../components/scheduling/components.yml#/components/parameters/BusinessId'
@@ -330,6 +448,7 @@ planning:
       tags: [Planning]
       operationId: getPlanning
       summary: Get a business planning by week start
+      description: Retrieves the existing planning addressed by its Monday `weekStart`, including immutable snapshot requirements and any scheduled-shift presentation values. It does not regenerate the planning.
       security: [{ bearerAuth: [] }]
       parameters:
         - $ref: '../../components/scheduling/components.yml#/components/parameters/BusinessId'
@@ -341,13 +460,37 @@ planning:
             application/json:
               schema:
                 $ref: '../../components/scheduling/components.yml#/components/schemas/PlanningResponseDTO'
+              example:
+                id: 500
+                businessId: 101
+                weekStart: "2025-07-28"
+                weekEnd: "2025-08-03"
+                status: SOLVING
+                failureReason: null
+                requirements:
+                  - date: "2025-07-28"
+                    shifts:
+                      - name: Morning service
+                        color: "#1A2B3C"
+                        startTime: "09:00"
+                        endTime: "17:00"
+                        breakMinutes: 30
+                        demands:
+                          - jobRoleId: 10
+                            minimumEmployees: 1
+                            targetEmployees: 2
+                            maximumEmployees: 3
+                createdAt: "2025-07-27T08:00:00+02:00"
+                publishedAt: null
+                scheduledShifts: []
         '403': {$ref: '../../components/scheduling/components.yml#/components/responses/Forbidden'}
         '404': {$ref: '../../components/scheduling/components.yml#/components/responses/NotFound'}
       x-functional-errors: [1006, 1020, 1046]
     put:
       tags: [Planning]
       operationId: createPlanning
-      summary: Idempotently create a business planning for a week
+      summary: Create or retrieve a business planning for a week
+      description: Automatic planning generation may create or return the planning addressed by its Monday `weekStart`. This generation operation is not exposed by the BFF manager contract.
       security: [{ bearerAuth: [] }]
       parameters:
         - $ref: '../../components/scheduling/components.yml#/components/parameters/BusinessId'
@@ -368,18 +511,32 @@ planning:
       tags: [Planning]
       operationId: publishPlanning
       summary: Publish a ready business planning
-      description: Idempotently transitions a planning from READY to PUBLISHED. An already published planning is returned unchanged.
+      description: >
+        Idempotently transitions the existing planning addressed by its Monday `weekStart` from
+        READY to PUBLISHED. An already published planning is returned unchanged. If no planning
+        exists for the week, the API returns 404 and creates nothing.
       security: [{ bearerAuth: [] }]
       parameters:
         - $ref: '../../components/scheduling/components.yml#/components/parameters/BusinessId'
         - $ref: '../../components/scheduling/components.yml#/components/parameters/WeekStart'
       responses:
         '200':
-          description: Planning published or already published
+          description: Planning published or already published; immutable requirements and scheduled-shift presentation values are preserved
           content:
             application/json:
               schema:
                 $ref: '../../components/scheduling/components.yml#/components/schemas/PlanningResponseDTO'
+              example:
+                id: 500
+                businessId: 101
+                weekStart: "2025-07-28"
+                weekEnd: "2025-08-03"
+                status: PUBLISHED
+                failureReason: null
+                requirements: []
+                createdAt: "2025-07-27T08:00:00+02:00"
+                publishedAt: "2025-07-27T12:00:00+02:00"
+                scheduledShifts: []
         '403': {$ref: '../../components/scheduling/components.yml#/components/responses/Forbidden'}
         '404': {$ref: '../../components/scheduling/components.yml#/components/responses/NotFound'}
         '409': {$ref: '../../components/scheduling/components.yml#/components/responses/Conflict'}

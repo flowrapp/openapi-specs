@@ -2,7 +2,7 @@ contracts:
   business-user-contracts:
     post:
       summary: Create a user contract
-      description: Creates a contract for a user associated with a business. Only the business owner can manage contracts.
+      description: Creates a contract for a user associated with a business. Date ranges cannot overlap another contract for the same user and business, even when the job roles differ. Only the business owner can manage contracts.
       tags:
         - Contracts
       operationId: createUserContract
@@ -75,7 +75,7 @@ contracts:
               schema:
                 $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
         '409':
-          description: Contract dates overlap with another contract for the user in the business
+          description: Contract dates overlap with another contract for the same user and business, regardless of job role
           content:
             application/problem+json:
               schema:
@@ -85,6 +85,7 @@ contracts:
         - 1006
         - 1015
         - 1020
+        - 1029
 
     get:
       summary: List user contracts in a business
@@ -156,8 +157,11 @@ contracts:
 
   current-business-user-contract:
     get:
-      summary: Get current contracts for a user in a business
-      description: Retrieves every contract effective now. A user may have simultaneous contracts for different job roles.
+      summary: Get the current contract for a user in a business
+      description: >
+        BREAKING CHANGE: Retrieves one contract effective on the business-local current date,
+        or returns 204 when none is effective. Contract periods cannot overlap for the same user
+        and business across different job roles.
       tags:
         - Contracts
       operationId: getCurrentUserContract
@@ -180,22 +184,22 @@ contracts:
             format: int64
       responses:
         '200':
-          description: Current contracts retrieved successfully
+          description: Current contract retrieved successfully
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '../../components/contracts/components.yml#/components/schemas/ContractResponseDTO'
+                $ref: '../../components/contracts/components.yml#/components/schemas/ContractResponseDTO'
               example:
-                - id: 123
-                  businessId: 101
-                  jobRoleId: 10
-                  totalWeekHours: 10.0
-                  startDate: "2025-01-01"
-                  endDate: null
-                  createdAt: "2024-12-20T10:15:00+00:00"
-                  updatedAt: "2024-12-20T10:15:00+00:00"
+                id: 123
+                businessId: 101
+                jobRoleId: 10
+                totalWeekHours: 10.0
+                startDate: "2025-01-01"
+                endDate: null
+                createdAt: "2024-12-20T10:15:00+00:00"
+                updatedAt: "2024-12-20T10:15:00+00:00"
+        '204':
+          description: No contract is effective on the business-local current date
         '401':
           description: Unauthorized
         '403':
@@ -221,7 +225,7 @@ contracts:
   business-user-contract:
     put:
       summary: Update a user contract
-      description: Replaces the dates and weekly hours of a specific contract. Only the business owner can manage contracts.
+      description: Replaces the dates and weekly hours of a specific contract. The replacement cannot overlap any other contract for the same user and business, regardless of job role. Only the business owner can manage contracts.
       tags:
         - Contracts
       operationId: updateUserContract
@@ -292,7 +296,7 @@ contracts:
               schema:
                 $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
         '409':
-          description: Contract dates overlap with another contract for the user in the business
+          description: Contract dates overlap with another contract for the same user and business, regardless of job role
           content:
             application/problem+json:
               schema:
@@ -302,10 +306,11 @@ contracts:
         - 1006
         - 1015
         - 1020
+        - 1029
 
   current-user-contracts:
     get:
-      summary: List the current user's contracts across businesses
+      summary: List the authenticated user's contract history across businesses
       description: Retrieves a paginated slice of all contracts belonging to the authenticated user across every associated business, ordered by start date descending.
       tags:
         - Contracts

@@ -36,7 +36,10 @@ manager:
   workers:
     get:
       summary: Get business workers
-      description: Returns the list of workers for a specific business managed by the authenticated user.
+      description: >
+        Returns business memberships for the authenticated user's business. `totalWorkers` is
+        the number of returned memberships after the optional role filter, including owners and
+        managers when selected.
       tags:
         - Manager
       operationId: getManagerBusinessWorkers
@@ -71,14 +74,31 @@ manager:
                     name: "John Doe"
                     email: "john.doe@example.com"
                     role: "OWNER"
+                    currentContract: null
                   - userId: 2
                     name: "Jane Smith"
                     email: "jane.smith@example.com"
                     role: "MANAGER"
+                    currentContract: null
                   - userId: 3
                     name: "Bob Wilson"
                     email: "bob.wilson@example.com"
                     role: "EMPLOYEE"
+                    currentContract:
+                      id: 123
+                      userId: 3
+                      businessId: 101
+                      jobRoleId: 10
+                      jobRole:
+                        id: 10
+                        code: WAITER
+                        name: Waiter
+                        color: "#1A2B3C"
+                        icon: front-of-house
+                        active: true
+                      totalWeekHours: 40.0
+                      startDate: "2025-01-01"
+                      endDate: null
         '401':
           description: Unauthorized
         '403':
@@ -492,3 +512,1023 @@ manager:
           description: Forbidden - User does not have privileged access to this business
         '404':
           description: Business not found
+
+  recurring-schedule:
+    get:
+      summary: Get the effective recurring schedule
+      description: >
+        Returns the complete recurring schedule effective on `effectiveOn` in the business-local
+        time zone. The date defaults to the current business-local date. Requires an OWNER
+        membership; absence is returned as 404 rather than an invented empty schedule.
+      tags: [Manager]
+      operationId: getManagerEffectiveRecurringSchedule
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: businessId
+          in: path
+          required: true
+          description: ID of the business
+          schema: {type: integer, format: int64, minimum: 1}
+        - name: effectiveOn
+          in: query
+          required: false
+          description: Business-local date on which the schedule must be effective; defaults to today
+          schema:
+            type: string
+            format: date
+            example: "2025-07-28"
+      responses:
+        '200':
+          description: Effective recurring schedule retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '../../components/manager/components.yml#/components/schemas/ManagerRecurringScheduleResponseDTO'
+        '401':
+          description: Authentication is required
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+        '403':
+          description: Authenticated user is not an OWNER of the business
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              example: {status: 403, detail: "1020 - user is not the owner of business"}
+        '404':
+          description: Business or effective recurring schedule not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              example: {status: 404, detail: "1052 - recurring schedule not found"}
+
+    post:
+      summary: Create a recurring schedule
+      description: Creates the first or a new versioned recurring schedule for the business. Requires an OWNER membership.
+      tags: [Manager]
+      operationId: createManagerRecurringSchedule
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: businessId
+          in: path
+          required: true
+          description: ID of the business
+          schema: {type: integer, format: int64, minimum: 1}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '../../components/manager/components.yml#/components/schemas/ManagerRecurringScheduleRequestDTO'
+            example:
+              validFrom: "2025-07-28"
+              validUntil: null
+              days:
+                - dayOfWeek: MONDAY
+                  configuration:
+                    openingIntervals:
+                      - startTime: "09:00"
+                        endTime: "17:00"
+                    shifts:
+                      - name: Morning service
+                        color: "#1A2B3C"
+                        startTime: "09:00"
+                        endTime: "17:00"
+                        breakMinutes: 30
+                        demands:
+                          - jobRoleId: 10
+                            minimumEmployees: 1
+                            targetEmployees: 2
+                            maximumEmployees: 3
+                - dayOfWeek: TUESDAY
+                  configuration: {openingIntervals: [], shifts: []}
+                - dayOfWeek: WEDNESDAY
+                  configuration: {openingIntervals: [], shifts: []}
+                - dayOfWeek: THURSDAY
+                  configuration: {openingIntervals: [], shifts: []}
+                - dayOfWeek: FRIDAY
+                  configuration: {openingIntervals: [], shifts: []}
+                - dayOfWeek: SATURDAY
+                  configuration: {openingIntervals: [], shifts: []}
+                - dayOfWeek: SUNDAY
+                  configuration: {openingIntervals: [], shifts: []}
+      responses:
+        '201':
+          description: Recurring schedule created
+          content:
+            application/json:
+              schema:
+                $ref: '../../components/manager/components.yml#/components/schemas/ManagerRecurringScheduleResponseDTO'
+        '400':
+          description: Invalid recurring-schedule configuration
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              example: {status: 400, detail: "1050 - recurring schedule is invalid"}
+        '401':
+          description: Authentication is required
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+        '403':
+          description: Authenticated user is not an OWNER of the business
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              example: {status: 403, detail: "1020 - user is not the owner of business"}
+        '404':
+          description: Business not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              example: {status: 404, detail: "1006 - business does not exist"}
+        '409':
+          description: Recurring schedule overlaps an existing version
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              example: {status: 409, detail: "1051 - recurring schedule overlaps an existing schedule"}
+
+  recurring-schedule-item:
+    put:
+      summary: Replace a recurring schedule
+      description: >
+        Atomically replaces a complete recurring schedule using the expected root `version`.
+        Requires an OWNER membership and returns a concurrency conflict when the version is stale.
+      tags: [Manager]
+      operationId: replaceManagerRecurringSchedule
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: businessId
+          in: path
+          required: true
+          description: ID of the business
+          schema: {type: integer, format: int64, minimum: 1}
+        - name: scheduleId
+          in: path
+          required: true
+          description: Root ID of the recurring schedule
+          schema: {type: integer, format: int64, minimum: 1}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '../../components/manager/components.yml#/components/schemas/ManagerRecurringScheduleReplacementRequestDTO'
+            example:
+              version: 2
+              validFrom: "2025-07-28"
+              validUntil: null
+              days:
+                - dayOfWeek: MONDAY
+                  configuration:
+                    openingIntervals:
+                      - startTime: "10:00"
+                        endTime: "18:00"
+                    shifts:
+                      - name: Evening service
+                        color: "#4C9F70"
+                        startTime: "10:00"
+                        endTime: "18:00"
+                        breakMinutes: 30
+                        demands:
+                          - jobRoleId: 10
+                            minimumEmployees: 1
+                            targetEmployees: 2
+                            maximumEmployees: 3
+                - dayOfWeek: TUESDAY
+                  configuration: {openingIntervals: [], shifts: []}
+                - dayOfWeek: WEDNESDAY
+                  configuration: {openingIntervals: [], shifts: []}
+                - dayOfWeek: THURSDAY
+                  configuration: {openingIntervals: [], shifts: []}
+                - dayOfWeek: FRIDAY
+                  configuration: {openingIntervals: [], shifts: []}
+                - dayOfWeek: SATURDAY
+                  configuration: {openingIntervals: [], shifts: []}
+                - dayOfWeek: SUNDAY
+                  configuration: {openingIntervals: [], shifts: []}
+      responses:
+        '200':
+          description: Recurring schedule replaced with its next version
+          content:
+            application/json:
+              schema:
+                $ref: '../../components/manager/components.yml#/components/schemas/ManagerRecurringScheduleResponseDTO'
+        '400':
+          description: Invalid recurring-schedule configuration
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              example: {status: 400, detail: "1050 - recurring schedule is invalid"}
+        '401':
+          description: Authentication is required
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+        '403':
+          description: Authenticated user is not an OWNER of the business
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              example: {status: 403, detail: "1020 - user is not the owner of business"}
+        '404':
+          description: Business or recurring schedule not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              example: {status: 404, detail: "1052 - recurring schedule not found"}
+        '409':
+          description: Version or schedule overlap conflict
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              example: {status: 409, detail: "1049 - resource was modified concurrently"}
+
+  job-roles:
+    get:
+      summary: List business job roles
+      description: Returns active job roles by default. `includeInactive=true` includes logically deactivated roles. Requires an OWNER membership.
+      tags: [Manager]
+      operationId: getManagerJobRoles
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: businessId
+          in: path
+          required: true
+          description: ID of the business
+          schema: {type: integer, format: int64, minimum: 1}
+        - name: includeInactive
+          in: query
+          required: false
+          description: Include logically deactivated roles
+          schema: {type: boolean, default: false, example: false}
+      responses:
+        '200':
+          description: Job roles retrieved
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '../../components/manager/components.yml#/components/schemas/ManagerJobRoleResponseDTO'
+        '401':
+          description: Authentication is required
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+        '403':
+          description: Authenticated user is not an OWNER of the business
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              example: {status: 403, detail: "1020 - user is not the owner of business"}
+        '404':
+          description: Business not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              example: {status: 404, detail: "1006 - business does not exist"}
+
+    post:
+      summary: Create a business job role
+      description: Creates an active job role with stable visual metadata. Requires an OWNER membership.
+      tags: [Manager]
+      operationId: createManagerJobRole
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: businessId
+          in: path
+          required: true
+          description: ID of the business
+          schema: {type: integer, format: int64, minimum: 1}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '../../components/manager/components.yml#/components/schemas/ManagerJobRoleRequestDTO'
+            example:
+              code: WAITER
+              name: Waiter
+              description: Front of house service
+              color: "#1A2B3C"
+              icon: front-of-house
+      responses:
+        '201':
+          description: Job role created
+          content:
+            application/json:
+              schema:
+                $ref: '../../components/manager/components.yml#/components/schemas/ManagerJobRoleResponseDTO'
+        '400':
+          description: Invalid job-role visual metadata or request
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              example: {status: 400, detail: "1036 - job roles must be active and belong to the business"}
+        '401':
+          description: Authentication is required
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+        '403':
+          description: Authenticated user is not an OWNER of the business
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              example: {status: 403, detail: "1020 - user is not the owner of business"}
+        '404':
+          description: Business not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              example: {status: 404, detail: "1006 - business does not exist"}
+        '409':
+          description: Job-role code already exists in the business
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              example: {status: 409, detail: "1035 - job role code already exists"}
+
+  job-role-item:
+    put:
+      summary: Update or reactivate a business job role
+      description: Updates job-role metadata. Setting `active` to true reactivates an inactive role without changing its ID.
+      tags: [Manager]
+      operationId: updateManagerJobRole
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: businessId
+          in: path
+          required: true
+          description: ID of the business
+          schema: {type: integer, format: int64, minimum: 1}
+        - name: jobRoleId
+          in: path
+          required: true
+          description: ID of the job role
+          schema: {type: integer, format: int64, minimum: 1}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '../../components/manager/components.yml#/components/schemas/ManagerJobRoleUpdateRequestDTO'
+            example:
+              name: Senior waiter
+              description: Shift lead
+              color: "#4C9F70"
+              icon: front-of-house
+              active: true
+      responses:
+        '200':
+          description: Job role updated or reactivated
+          content:
+            application/json:
+              schema:
+                $ref: '../../components/manager/components.yml#/components/schemas/ManagerJobRoleResponseDTO'
+        '400':
+          description: Invalid job-role visual metadata or request
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              example: {status: 400, detail: "1036 - job roles must be active and belong to the business"}
+        '401':
+          description: Authentication is required
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+        '403':
+          description: Authenticated user is not an OWNER of the business
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              example: {status: 403, detail: "1020 - user is not the owner of business"}
+        '404':
+          description: Business or job role not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              example: {status: 404, detail: "1034 - job role not found"}
+        '409':
+          description: Job-role update conflicts with existing data
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              example: {status: 409, detail: "1035 - job role code already exists"}
+
+    delete:
+      summary: Deactivate a business job role
+      description: >
+        Logically deactivates a job role. The operation is idempotent: an already inactive role
+        remains inactive and historical references are retained.
+      tags: [Manager]
+      operationId: deleteManagerJobRole
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: businessId
+          in: path
+          required: true
+          description: ID of the business
+          schema: {type: integer, format: int64, minimum: 1}
+        - name: jobRoleId
+          in: path
+          required: true
+          description: ID of the job role
+          schema: {type: integer, format: int64, minimum: 1}
+      responses:
+        '204':
+          description: Job role deactivated, or was already inactive
+        '401':
+          description: Authentication is required
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+        '403':
+          description: Authenticated user is not an OWNER of the business
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              example: {status: 403, detail: "1020 - user is not the owner of business"}
+        '404':
+          description: Business or job role not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              example: {status: 404, detail: "1034 - job role not found"}
+
+  planning:
+    get:
+      summary: Get a weekly business planning
+      description: >
+        Returns the existing planning for the requested ISO week. The response shape is stable
+        for DRAFT, SOLVING, READY, PUBLISHED, and FAILED. Requirements come from the immutable
+        planning snapshot; this operation never generates a missing planning. Requires an OWNER
+        membership.
+      tags: [Manager]
+      operationId: getManagerPlanning
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: businessId
+          in: path
+          required: true
+          description: ID of the business
+          schema: {type: integer, format: int64, minimum: 1}
+        - name: week
+          in: query
+          required: true
+          description: ISO week identifier in YYYY-Www format
+          schema:
+            type: string
+            pattern: '^\d{4}-W\d{2}$'
+            example: "2025-W31"
+      responses:
+        '200':
+          description: Weekly planning retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '../../components/manager/components.yml#/components/schemas/ManagerPlanningResponseDTO'
+              examples:
+                draft:
+                  summary: Draft planning
+                  value:
+                    id: 500
+                    businessId: 101
+                    week: "2025-W31"
+                    weekStart: "2025-07-28"
+                    weekEnd: "2025-08-03"
+                    status: DRAFT
+                    failureReason: null
+                    totals: {requiredSeconds: 0, scheduledSeconds: 0, contractedSeconds: 0}
+                    requirements: []
+                    days: []
+                    workers: []
+                    createdAt: "2025-07-27T08:00:00+02:00"
+                    publishedAt: null
+                solving:
+                  summary: Solving planning with empty assignments
+                  value:
+                    id: 500
+                    businessId: 101
+                    week: "2025-W31"
+                    weekStart: "2025-07-28"
+                    weekEnd: "2025-08-03"
+                    status: SOLVING
+                    failureReason: null
+                    totals: {requiredSeconds: 54000, scheduledSeconds: 0, contractedSeconds: 144000}
+                    requirements:
+                      - date: "2025-07-28"
+                        requiredSeconds: 54000
+                        shifts:
+                          - shiftName: Morning service
+                            shiftColor: "#1A2B3C"
+                            startTime: "09:00"
+                            endTime: "17:00"
+                            breakMinutes: 30
+                            demands:
+                              - jobRoleId: 10
+                                minimumEmployees: 1
+                                targetEmployees: 2
+                                maximumEmployees: 3
+                    days:
+                      - date: "2025-07-28"
+                        requiredSeconds: 54000
+                        scheduledSeconds: 0
+                    workers:
+                      - userId: 3
+                        name: Bob Wilson
+                        contractedSeconds: 144000
+                        scheduledSeconds: 0
+                        days:
+                          - date: "2025-07-28"
+                            scheduledSeconds: 0
+                            assignments: []
+                    createdAt: "2025-07-27T08:00:00+02:00"
+                    publishedAt: null
+                ready:
+                  summary: Ready planning with two shifts on one date
+                  value:
+                    id: 500
+                    businessId: 101
+                    week: "2025-W31"
+                    weekStart: "2025-07-28"
+                    weekEnd: "2025-08-03"
+                    status: READY
+                    failureReason: null
+                    totals: {requiredSeconds: 28800, scheduledSeconds: 28800, contractedSeconds: 144000}
+                    requirements:
+                      - date: "2025-07-28"
+                        requiredSeconds: 28800
+                        shifts:
+                          - shiftName: Morning service
+                            shiftColor: "#1A2B3C"
+                            startTime: "09:00"
+                            endTime: "13:00"
+                            breakMinutes: 0
+                            demands:
+                              - jobRoleId: 10
+                                minimumEmployees: 1
+                                targetEmployees: 1
+                                maximumEmployees: 2
+                          - shiftName: Evening service
+                            shiftColor: "#4C9F70"
+                            startTime: "14:00"
+                            endTime: "18:00"
+                            breakMinutes: 0
+                            demands:
+                              - jobRoleId: 10
+                                minimumEmployees: 1
+                                targetEmployees: 1
+                                maximumEmployees: 2
+                    days:
+                      - date: "2025-07-28"
+                        requiredSeconds: 28800
+                        scheduledSeconds: 28800
+                    workers:
+                      - userId: 3
+                        name: Bob Wilson
+                        contractedSeconds: 144000
+                        scheduledSeconds: 28800
+                        days:
+                          - date: "2025-07-28"
+                            scheduledSeconds: 28800
+                            assignments:
+                              - id: 900
+                                jobRoleId: 10
+                                jobRole: {id: 10, code: WAITER, name: Waiter, color: "#1A2B3C", icon: front-of-house, active: true}
+                                shiftName: Morning service
+                                shiftColor: "#1A2B3C"
+                                startAt: "2025-07-28T09:00:00+02:00"
+                                endAt: "2025-07-28T13:00:00+02:00"
+                                breakMinutes: 0
+                                durationSeconds: 14400
+                              - id: 901
+                                jobRoleId: 10
+                                jobRole: {id: 10, code: WAITER, name: Waiter, color: "#1A2B3C", icon: front-of-house, active: true}
+                                shiftName: Evening service
+                                shiftColor: "#4C9F70"
+                                startAt: "2025-07-28T14:00:00+02:00"
+                                endAt: "2025-07-28T18:00:00+02:00"
+                                breakMinutes: 0
+                                durationSeconds: 14400
+                    createdAt: "2025-07-27T08:00:00+02:00"
+                    publishedAt: null
+                published:
+                  summary: Published planning
+                  value:
+                    id: 500
+                    businessId: 101
+                    week: "2025-W31"
+                    weekStart: "2025-07-28"
+                    weekEnd: "2025-08-03"
+                    status: PUBLISHED
+                    failureReason: null
+                    totals: {requiredSeconds: 28800, scheduledSeconds: 28800, contractedSeconds: 144000}
+                    requirements: []
+                    days: []
+                    workers: []
+                    createdAt: "2025-07-27T08:00:00+02:00"
+                    publishedAt: "2025-07-27T12:00:00+02:00"
+                failed:
+                  summary: Failed planning
+                  value:
+                    id: 501
+                    businessId: 101
+                    week: "2025-W32"
+                    weekStart: "2025-08-04"
+                    weekEnd: "2025-08-10"
+                    status: FAILED
+                    failureReason: "No feasible assignment was found."
+                    totals: {requiredSeconds: 54000, scheduledSeconds: 0, contractedSeconds: 144000}
+                    requirements: []
+                    days: []
+                    workers: []
+                    createdAt: "2025-08-03T08:00:00+02:00"
+                    publishedAt: null
+        '401':
+          description: Authentication is required
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+        '403':
+          description: Authenticated user is not an OWNER of the business
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              example: {status: 403, detail: "1020 - user is not the owner of business"}
+        '404':
+          description: Business or planning for the requested week not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              example: {status: 404, detail: "1046 - planning not found"}
+
+  publish-planning:
+    put:
+      summary: Publish a weekly business planning
+      description: >
+        Publishes the existing planning addressed by Monday `weekStart`. Publication is
+        idempotent: publishing an already PUBLISHED planning returns it unchanged. A missing
+        planning is never generated and returns 404; a non-publishable state returns 409.
+        Requires an OWNER membership.
+      tags: [Manager]
+      operationId: publishManagerPlanning
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: businessId
+          in: path
+          required: true
+          description: ID of the business
+          schema: {type: integer, format: int64, minimum: 1}
+        - name: weekStart
+          in: path
+          required: true
+          description: Monday of the planning week in YYYY-MM-DD format
+          schema:
+            type: string
+            format: date
+            example: "2025-07-28"
+      responses:
+        '200':
+          description: Planning published or already published
+          content:
+            application/json:
+              schema:
+                $ref: '../../components/manager/components.yml#/components/schemas/ManagerPlanningResponseDTO'
+              example:
+                id: 500
+                businessId: 101
+                week: "2025-W31"
+                weekStart: "2025-07-28"
+                weekEnd: "2025-08-03"
+                status: PUBLISHED
+                failureReason: null
+                totals: {requiredSeconds: 28800, scheduledSeconds: 28800, contractedSeconds: 144000}
+                requirements: []
+                days: []
+                workers: []
+                createdAt: "2025-07-27T08:00:00+02:00"
+                publishedAt: "2025-07-27T12:00:00+02:00"
+        '401':
+          description: Authentication is required
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+        '403':
+          description: Authenticated user is not an OWNER of the business
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              example: {status: 403, detail: "1020 - user is not the owner of business"}
+        '404':
+          description: Business or planning for weekStart not found; no planning is created
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              example: {status: 404, detail: "1046 - planning not found"}
+        '409':
+          description: Planning is not publishable
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              example: {status: 409, detail: "1048 - planning is not ready to publish"}
+
+  schedule-exceptions:
+    get:
+      summary: List schedule exceptions
+      description: Returns exceptions in the inclusive business-local `from` and `to` date range, ordered by date ascending. Requires an OWNER membership.
+      tags: [Manager]
+      operationId: getManagerScheduleExceptions
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: businessId
+          in: path
+          required: true
+          description: ID of the business
+          schema: {type: integer, format: int64, minimum: 1}
+        - name: from
+          in: query
+          required: true
+          description: Inclusive first date
+          schema: {type: string, format: date, example: "2025-08-01"}
+        - name: to
+          in: query
+          required: true
+          description: Inclusive last date; must not precede from
+          schema: {type: string, format: date, example: "2025-08-31"}
+      responses:
+        '200':
+          description: Schedule exceptions retrieved
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '../../components/manager/components.yml#/components/schemas/ManagerScheduleExceptionResponseDTO'
+        '400':
+          description: Invalid inclusive date range
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              example: {status: 400, detail: "1053 - schedule exception is invalid"}
+        '401':
+          description: Authentication is required
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+        '403':
+          description: Authenticated user is not an OWNER of the business
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              example: {status: 403, detail: "1020 - user is not the owner of business"}
+        '404':
+          description: Business not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              example: {status: 404, detail: "1006 - business does not exist"}
+
+    post:
+      summary: Create a schedule exception
+      description: Creates a complete configuration for one immutable business-local date. Requires an OWNER membership.
+      tags: [Manager]
+      operationId: createManagerScheduleException
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: businessId
+          in: path
+          required: true
+          description: ID of the business
+          schema: {type: integer, format: int64, minimum: 1}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '../../components/manager/components.yml#/components/schemas/ManagerScheduleExceptionRequestDTO'
+            example:
+              date: "2025-08-15"
+              configuration:
+                openingIntervals:
+                  - startTime: "09:00"
+                    endTime: "17:00"
+                shifts:
+                  - name: Holiday service
+                    color: "#1A2B3C"
+                    startTime: "09:00"
+                    endTime: "17:00"
+                    breakMinutes: 30
+                    demands:
+                      - jobRoleId: 10
+                        minimumEmployees: 1
+                        targetEmployees: 2
+                        maximumEmployees: 3
+      responses:
+        '201':
+          description: Schedule exception created
+          content:
+            application/json:
+              schema:
+                $ref: '../../components/manager/components.yml#/components/schemas/ManagerScheduleExceptionResponseDTO'
+        '400':
+          description: Invalid schedule-exception configuration
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              example: {status: 400, detail: "1053 - schedule exception is invalid"}
+        '401':
+          description: Authentication is required
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+        '403':
+          description: Authenticated user is not an OWNER of the business
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              example: {status: 403, detail: "1020 - user is not the owner of business"}
+        '404':
+          description: Business not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              example: {status: 404, detail: "1006 - business does not exist"}
+        '409':
+          description: Exception already exists or overlaps adjacent configuration
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              example: {status: 409, detail: "1054 - schedule exception already exists for date"}
+
+  schedule-exception-item:
+    put:
+      summary: Replace a schedule exception configuration
+      description: >
+        Atomically replaces the complete exception configuration by `exceptionId`. The request
+        has no date field, so the stored date remains immutable. Requires an OWNER membership.
+      tags: [Manager]
+      operationId: replaceManagerScheduleException
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: businessId
+          in: path
+          required: true
+          description: ID of the business
+          schema: {type: integer, format: int64, minimum: 1}
+        - name: exceptionId
+          in: path
+          required: true
+          description: ID of the schedule exception
+          schema: {type: integer, format: int64, minimum: 1}
+      requestBody:
+        required: true
+        description: Configuration only; the stored exception date cannot be changed.
+        content:
+          application/json:
+            schema:
+              $ref: '../../components/manager/components.yml#/components/schemas/ManagerDailyConfigurationDTO'
+            example:
+              openingIntervals:
+                - startTime: "10:00"
+                  endTime: "18:00"
+              shifts:
+                - name: Holiday service
+                  color: "#4C9F70"
+                  startTime: "10:00"
+                  endTime: "18:00"
+                  breakMinutes: 30
+                  demands:
+                    - jobRoleId: 10
+                      minimumEmployees: 1
+                      targetEmployees: 2
+                      maximumEmployees: 3
+      responses:
+        '200':
+          description: Exception configuration replaced with its original date
+          content:
+            application/json:
+              schema:
+                $ref: '../../components/manager/components.yml#/components/schemas/ManagerScheduleExceptionResponseDTO'
+        '400':
+          description: Invalid replacement configuration
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              example: {status: 400, detail: "1053 - schedule exception is invalid"}
+        '401':
+          description: Authentication is required
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+        '403':
+          description: Authenticated user is not an OWNER of the business
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              example: {status: 403, detail: "1020 - user is not the owner of business"}
+        '404':
+          description: Business or exception not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              example: {status: 404, detail: "1056 - schedule exception not found"}
+        '409':
+          description: Replacement conflicts with an adjacent effective configuration
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              example: {status: 409, detail: "1055 - schedule exception overlaps an adjacent effective configuration"}
+
+    delete:
+      summary: Delete a schedule exception
+      description: Deletes a schedule exception by `exceptionId`. Requires an OWNER membership.
+      tags: [Manager]
+      operationId: deleteManagerScheduleException
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: businessId
+          in: path
+          required: true
+          description: ID of the business
+          schema: {type: integer, format: int64, minimum: 1}
+        - name: exceptionId
+          in: path
+          required: true
+          description: ID of the schedule exception
+          schema: {type: integer, format: int64, minimum: 1}
+      responses:
+        '204':
+          description: Schedule exception deleted
+        '401':
+          description: Authentication is required
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+        '403':
+          description: Authenticated user is not an OWNER of the business
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              example: {status: 403, detail: "1020 - user is not the owner of business"}
+        '404':
+          description: Business or exception not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              example: {status: 404, detail: "1056 - schedule exception not found"}
