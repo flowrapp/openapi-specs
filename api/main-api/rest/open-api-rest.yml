@@ -119,7 +119,7 @@ paths:
     $ref: 'v1/services/contracts/contracts-operations.yml#/contracts/current-user-contracts'
   "/api/v1/businesses/{businessId}/recurring-schedules":
     $ref: 'v1/services/scheduling/scheduling-operations.yml#/recurringSchedules/collection'
-  "/api/v1/businesses/{businessId}/recurring-schedules/{validFrom}":
+  "/api/v1/businesses/{businessId}/recurring-schedules/{scheduleId}":
     $ref: 'v1/services/scheduling/scheduling-operations.yml#/recurringSchedules/item'
   "/api/v1/businesses/{businessId}/job-roles":
     $ref: 'v1/services/scheduling/scheduling-operations.yml#/jobRoles/collection'

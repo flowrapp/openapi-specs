@@ -48,11 +48,11 @@ recurringSchedules:
     get:
       tags: [Recurring Schedules]
       operationId: getRecurringSchedule
-      summary: Get a recurring schedule by its start date
+      summary: Get a recurring schedule by its root ID
       security: [{ bearerAuth: [] }]
       parameters:
         - $ref: '../../components/scheduling/components.yml#/components/parameters/BusinessId'
-        - $ref: '../../components/scheduling/components.yml#/components/parameters/ValidFrom'
+        - $ref: '../../components/scheduling/components.yml#/components/parameters/ScheduleId'
       responses:
         '200':
           description: Recurring schedule retrieved
@@ -66,11 +66,11 @@ recurringSchedules:
     put:
       tags: [Recurring Schedules]
       operationId: replaceRecurringSchedule
-      summary: Replace a complete recurring schedule
+      summary: Replace a complete recurring schedule by its root ID
       security: [{ bearerAuth: [] }]
       parameters:
         - $ref: '../../components/scheduling/components.yml#/components/parameters/BusinessId'
-        - $ref: '../../components/scheduling/components.yml#/components/parameters/ValidFrom'
+        - $ref: '../../components/scheduling/components.yml#/components/parameters/ScheduleId'
       requestBody:
         required: true
         content:
@@ -92,11 +92,11 @@ recurringSchedules:
     delete:
       tags: [Recurring Schedules]
       operationId: deleteRecurringSchedule
-      summary: Delete a recurring schedule
+      summary: Delete a recurring schedule by its root ID
       security: [{ bearerAuth: [] }]
       parameters:
         - $ref: '../../components/scheduling/components.yml#/components/parameters/BusinessId'
-        - $ref: '../../components/scheduling/components.yml#/components/parameters/ValidFrom'
+        - $ref: '../../components/scheduling/components.yml#/components/parameters/ScheduleId'
       responses:
         '204': {description: Recurring schedule deleted}
         '403': {$ref: '../../components/scheduling/components.yml#/components/responses/Forbidden'}
