@@ -24,7 +24,7 @@ components:
   schemas:
     ContractRequestDTO:
       type: object
-      description: Contract details supplied when creating or updating a contract
+      description: Contract details supplied when creating or updating a contract. Its date range must not overlap any other contract for the same user and business, regardless of job role.
       properties:
         jobRoleId:
           type: integer
@@ -55,7 +55,7 @@ components:
 
     ContractResponseDTO:
       type: object
-      description: Contract details for a user in a business
+      description: Contract details for a user in a business. Contract periods are mutually exclusive for that user and business across all job roles.
       properties:
         id:
           type: integer

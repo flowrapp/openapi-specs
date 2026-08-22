@@ -20,6 +20,16 @@ components:
         instance:
           type: string
           format: uri
+      required: [status, detail]
+      examples:
+        - status: 400
+          detail: "1053 - schedule exception is invalid"
+        - status: 409
+          detail: "1029 - contract overlaps another contract for the same user and business"
+        - status: 409
+          detail: "1049 - resource was modified concurrently"
+        - status: 404
+          detail: "1056 - schedule exception not found"
 
     FunctionalErrorCode:
       type: integer
@@ -57,7 +67,7 @@ components:
         | 1026 | 400 | PASSWORD_RESET_CODE_INVALID | password reset code is invalid or expired |
         | 1027 | 429 | PASSWORD_RESET_TOO_MANY_ATTEMPTS | too many password reset attempts |
         | 1028 | 403 | CONTRACT_OPERATION_NOT_ENOUGH_PERMISSIONS | User does not have permission to create a contract |
-        | 1029 | 409 | CONTRACT_OVERLAPS | Contract overlaps with existing contract |
+        | 1029 | 409 | CONTRACT_OVERLAPS | contract overlaps another contract for the same user and business |
         | 1030 | 404 | CONTRACT_NOT_FOUND | Contract not found |
         | 1031 | 403 | CONTRACT_IS_NOT_FOR_USER | Contract is not for the current user |
         | 1032 | 400 | INVALID_OPENING_HOURS_CONFIGURATION | opening hours configuration is invalid |

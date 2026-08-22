@@ -1,5 +1,25 @@
 components:
   schemas:
+    ProblemDetail:
+      type: object
+      description: RFC 9457 Problem Details response for a BFF business error
+      properties:
+        type:
+          type: string
+          format: uri
+        title:
+          type: string
+        status:
+          type: integer
+          example: 404
+        detail:
+          type: string
+          example: "1046 - planning not found"
+        instance:
+          type: string
+          format: uri
+      required: [status, detail]
+
     SessionDTO:
       type: object
       description: A single work session (clock-in/clock-out pair)

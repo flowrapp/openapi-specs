@@ -49,7 +49,9 @@ businesses:
   get-business-users:
     get:
       summary: Get users associated within a business
-      description: Retrieves a paginated list of users associated with the specified business. Can be filtered by role.
+      description: >
+        Retrieves a list of business memberships with each user's username, profile, and nullable
+        current contract, including job-role display metadata. Can be filtered by business role.
       tags:
         - Businesses
       operationId: getBusinessUsers
@@ -72,7 +74,7 @@ businesses:
             enum: [OWNER, MANAGER, EMPLOYEE]
       responses:
         '200':
-          description: Users retrieved successfully
+          description: Business memberships with profile and current-contract data retrieved successfully
           content:
             application/json:
               schema:
@@ -82,10 +84,28 @@ businesses:
               example:
                 - userId: 1
                   username: "john.doe"
+                  name: "John Doe"
+                  email: "john.doe@example.com"
                   role: "OWNER"
+                  currentContract:
+                    id: 123
+                    businessId: 101
+                    jobRoleId: 10
+                    jobRole:
+                      id: 10
+                      code: WAITER
+                      name: Waiter
+                      color: "#1A2B3C"
+                      icon: front-of-house
+                    totalWeekHours: 40.0
+                    startDate: "2025-01-01"
+                    endDate: null
                 - userId: 2
                   username: "jane.doe"
+                  name: "Jane Doe"
+                  email: "jane.doe@example.com"
                   role: "MANAGER"
+                  currentContract: null
         '401':
           description: Unauthorized
         '404':

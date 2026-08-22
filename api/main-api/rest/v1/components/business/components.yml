@@ -63,27 +63,112 @@ components:
       required:
         - users
 
+    BusinessUserJobRoleDTO:
+      type: object
+      description: Job-role identity and display metadata embedded in a current contract
+      properties:
+        id:
+          type: integer
+          format: int64
+          minimum: 1
+          description: Unique identifier of the job role
+          example: 10
+        code:
+          type: string
+          description: Stable business code for the job role
+          example: WAITER
+        name:
+          type: string
+          description: Display name of the job role
+          example: Waiter
+        color:
+          type: string
+          pattern: '^#[0-9A-Fa-f]{6}$'
+          description: Hexadecimal display color
+          example: "#1A2B3C"
+        icon:
+          type: string
+          pattern: '^[a-z0-9]+(?:-[a-z0-9]+)*$'
+          description: Lowercase slug from the client icon catalog
+          example: front-of-house
+      required: [id, code, name, color, icon]
+
+    BusinessUserCurrentContractDTO:
+      type: object
+      description: Contract effective for the worker on the business-local current date
+      properties:
+        id:
+          type: integer
+          format: int64
+          minimum: 1
+          description: Unique identifier of the contract
+          example: 123
+        businessId:
+          type: integer
+          format: int64
+          minimum: 1
+          description: Unique identifier of the business
+          example: 101
+        jobRoleId:
+          type: integer
+          format: int64
+          minimum: 1
+          description: Unique identifier of the contracted job role
+          example: 10
+        jobRole:
+          $ref: '#/components/schemas/BusinessUserJobRoleDTO'
+        totalWeekHours:
+          type: number
+          format: double
+          exclusiveMinimum: 0
+          description: Number of contracted hours in a week
+          example: 40.0
+        startDate:
+          type: string
+          format: date
+          description: Inclusive contract start date
+          example: "2025-01-01"
+        endDate:
+          type: [string, "null"]
+          format: date
+          description: Inclusive contract end date, or null for an open-ended contract
+          example: null
+      required: [id, businessId, jobRoleId, jobRole, totalWeekHours, startDate, endDate]
+
     BusinessUserResponseDTO:
       type: object
-      description: User information associated with a business
+      description: User profile and current contract associated with a business
       properties:
         userId:
           type: integer
+          format: int64
+          minimum: 1
           description: Unique identifier for the user
           example: 1
         username:
           type: string
-          description: Username of the user
+          description: Existing username identifier for the user
           example: "john.doe"
+        name:
+          type: string
+          description: Display name of the user
+          example: "John Doe"
+        email:
+          type: string
+          format: email
+          description: Email address of the user
+          example: "john.doe@example.com"
         role:
           type: string
           description: Role of the user in the business
           enum: [OWNER, MANAGER, EMPLOYEE]
           example: "OWNER"
-      required:
-        - userId
-        - username
-        - role
+        currentContract:
+          oneOf:
+            - $ref: '#/components/schemas/BusinessUserCurrentContractDTO'
+            - type: 'null'
+          description: Contract effective on the business-local current date, or null when absent
+      required: [userId, username, name, email, role, currentContract]
 
 
     LocationDTO:
