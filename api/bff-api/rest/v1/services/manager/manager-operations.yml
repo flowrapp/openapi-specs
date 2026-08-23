@@ -906,7 +906,11 @@ manager:
   job-roles:
     get:
       summary: List business job roles
-      description: Returns active job roles by default. `includeInactive=true` includes logically deactivated roles. Requires an OWNER membership.
+      description: >
+        Returns a deterministic slice of job roles. `active=true` returns only active roles,
+        `active=false` returns only inactive roles, and an omitted `active` returns both states.
+        Results are ordered by active state descending, name ascending, and ID ascending. Requires
+        an OWNER membership.
       tags: [Manager]
       operationId: getManagerJobRoles
       security: [{ bearerAuth: [] }]
@@ -916,20 +920,53 @@ manager:
           required: true
           description: ID of the business
           schema: {type: integer, format: int64, minimum: 1}
-        - name: includeInactive
+        - name: active
           in: query
           required: false
-          description: Include logically deactivated roles
-          schema: {type: boolean, default: false, example: false}
+          description: Filter by active state; omit to include both active and inactive roles
+          schema:
+            type: boolean
+            example: true
+        - $ref: '../../components/manager/components.yml#/components/parameters/Page'
+        - $ref: '../../components/manager/components.yml#/components/parameters/Size'
       responses:
         '200':
-          description: Job roles retrieved
+          description: Job-role slice retrieved
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '../../components/manager/components.yml#/components/schemas/ManagerJobRoleResponseDTO'
+                $ref: '../../components/manager/components.yml#/components/schemas/ManagerJobRoleSliceResponseDTO'
+              example:
+                content:
+                  - id: 10
+                    businessId: 101
+                    code: WAITER
+                    name: Waiter
+                    description: Front of house service
+                    color: "#1A2B3C"
+                    icon: front-of-house
+                    active: true
+                    createdAt: "2025-06-01T10:00:00+00:00"
+                    updatedAt: "2025-06-01T10:00:00+00:00"
+                  - id: 11
+                    businessId: 101
+                    code: HOST
+                    name: Waiter
+                    description: Inactive front of house role
+                    color: "#808080"
+                    icon: briefcase
+                    active: false
+                    createdAt: "2025-06-02T10:00:00+00:00"
+                    updatedAt: "2025-06-02T10:00:00+00:00"
+                page: 0
+                size: 20
+                hasNext: false
+        '400':
+          description: Invalid page or size
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
         '401':
           description: Authentication is required
           content:

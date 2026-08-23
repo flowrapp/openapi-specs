@@ -1,4 +1,26 @@
 components:
+  parameters:
+    Page:
+      name: page
+      in: query
+      required: false
+      description: Zero-based slice number
+      schema:
+        type: integer
+        format: int32
+        minimum: 0
+        default: 0
+    Size:
+      name: size
+      in: query
+      required: false
+      description: Number of job roles in the slice
+      schema:
+        type: integer
+        format: int32
+        minimum: 1
+        maximum: 100
+        default: 20
   schemas:
     ManagerBusinessDashboardResponseDTO:
       type: object
@@ -723,6 +745,58 @@ components:
           type: string
           format: date-time
       required: [id, businessId, code, name, color, icon, active, createdAt, updatedAt]
+
+    ManagerJobRoleSliceResponseDTO:
+      type: object
+      description: Slice of manager job roles without a total-count query
+      properties:
+        content:
+          type: array
+          description: Job roles ordered by active state descending, name ascending, and ID ascending
+          items:
+            $ref: '#/components/schemas/ManagerJobRoleResponseDTO'
+        page:
+          type: integer
+          format: int32
+          minimum: 0
+          description: Current page number, zero-based
+          example: 0
+        size:
+          type: integer
+          format: int32
+          minimum: 1
+          description: Requested page size
+          example: 20
+        hasNext:
+          type: boolean
+          description: Whether another slice is available
+          example: true
+      required: [content, page, size, hasNext]
+      example:
+        content:
+          - id: 10
+            businessId: 101
+            code: WAITER
+            name: Waiter
+            description: Front of house service
+            color: "#1A2B3C"
+            icon: front-of-house
+            active: true
+            createdAt: "2025-06-01T10:00:00+00:00"
+            updatedAt: "2025-06-01T10:00:00+00:00"
+          - id: 11
+            businessId: 101
+            code: HOST
+            name: Waiter
+            description: Inactive front of house role
+            color: "#808080"
+            icon: briefcase
+            active: false
+            createdAt: "2025-06-02T10:00:00+00:00"
+            updatedAt: "2025-06-02T10:00:00+00:00"
+        page: 0
+        size: 20
+        hasNext: false
 
     ManagerCurrentContractDTO:
       type: object

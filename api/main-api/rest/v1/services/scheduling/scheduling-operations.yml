@@ -401,22 +401,55 @@ jobRoles:
       tags: [Job Roles]
       operationId: getBusinessJobRoles
       summary: List job roles for a business
+      description: >
+        Returns a deterministic slice of job roles. `active=true` returns only active roles,
+        `active=false` returns only inactive roles, and an omitted `active` returns both states.
+        Results are ordered by active state descending, name ascending, and ID ascending.
       security: [{ bearerAuth: [] }]
       parameters:
         - $ref: '../../components/scheduling/components.yml#/components/parameters/BusinessId'
-        - name: includeInactive
+        - name: active
           in: query
           required: false
-          schema: {type: boolean, default: false}
+          description: Filter by active state; omit to include both active and inactive roles
+          schema:
+            type: boolean
+            example: true
+        - $ref: '../../components/scheduling/components.yml#/components/parameters/Page'
+        - $ref: '../../components/scheduling/components.yml#/components/parameters/Size'
       responses:
         '200':
-          description: Job roles retrieved
+          description: Job-role slice retrieved
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '../../components/scheduling/components.yml#/components/schemas/BusinessJobRoleResponseDTO'
+                $ref: '../../components/scheduling/components.yml#/components/schemas/BusinessJobRoleSliceResponseDTO'
+              example:
+                content:
+                  - id: 10
+                    businessId: 101
+                    code: WAITER
+                    name: Waiter
+                    description: Front of house service
+                    color: "#1A2B3C"
+                    icon: front-of-house
+                    active: true
+                    createdAt: "2025-06-01T10:00:00+00:00"
+                    updatedAt: "2025-06-01T10:00:00+00:00"
+                  - id: 11
+                    businessId: 101
+                    code: HOST
+                    name: Waiter
+                    description: Inactive front of house role
+                    color: "#808080"
+                    icon: briefcase
+                    active: false
+                    createdAt: "2025-06-02T10:00:00+00:00"
+                    updatedAt: "2025-06-02T10:00:00+00:00"
+                page: 0
+                size: 20
+                hasNext: false
+        '400': {$ref: '../../components/scheduling/components.yml#/components/responses/BadRequest'}
         '403': {$ref: '../../components/scheduling/components.yml#/components/responses/Forbidden'}
         '404': {$ref: '../../components/scheduling/components.yml#/components/responses/NotFound'}
       x-functional-errors: [1006, 1020]
