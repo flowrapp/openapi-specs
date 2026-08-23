@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.0.38
+
+### Breaking changes
+
+- Contract updates now accept only the nullable `endDate`; `jobRoleId`, `totalWeekHours`, and `startDate` are immutable after creation.
+- To change contractual hours, job role, or start date, create a new consecutive non-overlapping contract instead of replacing the existing contract.
+
+### Added
+
+- Owner-only business contract range queries over an inclusive maximum-31-day period, including the contracted `userId`.
+- Owner-only effective recurring-schedule lookup and idempotent logical job-role deactivation.
+- Planning-state conflicts prevent end-date updates affecting `SOLVING`, `READY`, `PUBLISHED`, or `ARCHIVED` weeks; `DRAFT` and `FAILED` remain editable.
+- Active state is included in job-role metadata embedded in business-user current contracts.
+
 ## 0.0.37
 
 ### Breaking changes

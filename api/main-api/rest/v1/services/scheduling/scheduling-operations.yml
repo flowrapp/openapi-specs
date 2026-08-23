@@ -44,6 +44,126 @@ recurringSchedules:
         '404': {$ref: '../../components/scheduling/components.yml#/components/responses/NotFound'}
         '409': {$ref: '../../components/scheduling/components.yml#/components/responses/Conflict'}
       x-functional-errors: [1006, 1020, 1050, 1051]
+  effective:
+    get:
+      tags: [Recurring Schedules]
+      operationId: getEffectiveRecurringSchedule
+      summary: Get the recurring schedule effective on a date
+      description: >
+        Returns the complete recurring schedule whose inclusive validity period covers
+        `effectiveOn`. When omitted, `effectiveOn` is resolved as the current date in the
+        business time zone. A valid schedule with empty opening intervals and shifts is still
+        returned as `200`; `404` means that no recurring schedule covers the resolved date.
+        Only the business owner can access this operation.
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '../../components/scheduling/components.yml#/components/parameters/BusinessId'
+        - name: effectiveOn
+          in: query
+          required: false
+          description: Business-local date on which the schedule must be effective; defaults to the current business-local date
+          schema:
+            type: string
+            format: date
+            example: "2025-07-28"
+      responses:
+        '200':
+          description: Complete recurring schedule effective on the requested or defaulted business-local date
+          content:
+            application/json:
+              schema:
+                $ref: '../../components/scheduling/components.yml#/components/schemas/RecurringScheduleResponseDTO'
+              examples:
+                explicitDate:
+                  summary: Schedule effective on an explicit date
+                  value:
+                    id: 200
+                    version: 2
+                    businessId: 101
+                    validFrom: "2025-07-01"
+                    validUntil: null
+                    days:
+                      - dayOfWeek: MONDAY
+                        openingIntervals:
+                          - startTime: "09:00"
+                            endTime: "17:00"
+                        shifts: []
+                      - dayOfWeek: TUESDAY
+                        openingIntervals: []
+                        shifts: []
+                      - dayOfWeek: WEDNESDAY
+                        openingIntervals: []
+                        shifts: []
+                      - dayOfWeek: THURSDAY
+                        openingIntervals: []
+                        shifts: []
+                      - dayOfWeek: FRIDAY
+                        openingIntervals: []
+                        shifts: []
+                      - dayOfWeek: SATURDAY
+                        openingIntervals: []
+                        shifts: []
+                      - dayOfWeek: SUNDAY
+                        openingIntervals: []
+                        shifts: []
+                    createdAt: "2025-06-30T10:00:00+02:00"
+                    updatedAt: "2025-07-01T08:00:00+02:00"
+                omittedDate:
+                  summary: Schedule effective on the current business-local date
+                  value:
+                    id: 200
+                    version: 2
+                    businessId: 101
+                    validFrom: "2025-07-01"
+                    validUntil: null
+                    days:
+                      - dayOfWeek: MONDAY
+                        openingIntervals:
+                          - startTime: "09:00"
+                            endTime: "17:00"
+                        shifts: []
+                      - dayOfWeek: TUESDAY
+                        openingIntervals: []
+                        shifts: []
+                      - dayOfWeek: WEDNESDAY
+                        openingIntervals: []
+                        shifts: []
+                      - dayOfWeek: THURSDAY
+                        openingIntervals: []
+                        shifts: []
+                      - dayOfWeek: FRIDAY
+                        openingIntervals: []
+                        shifts: []
+                      - dayOfWeek: SATURDAY
+                        openingIntervals: []
+                        shifts: []
+                      - dayOfWeek: SUNDAY
+                        openingIntervals: []
+                        shifts: []
+                    createdAt: "2025-06-30T10:00:00+02:00"
+                    updatedAt: "2025-07-01T08:00:00+02:00"
+        '401':
+          description: Unauthorized
+        '403':
+          description: Current user is not the owner of the business
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+              example:
+                status: 403
+                detail: "1020 - user is not the owner of business"
+        '404':
+          description: Business or recurring schedule not found for the resolved date
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+              example:
+                status: 404
+                detail: "1052 - recurring schedule not found"
+      x-functional-errors: [1006, 1020, 1052]
+
   item:
     get:
       tags: [Recurring Schedules]
@@ -335,7 +455,8 @@ jobRoles:
     put:
       tags: [Job Roles]
       operationId: updateBusinessJobRole
-      summary: Update a job role without changing its code
+      summary: Update or reactivate a job role without changing its code
+      description: Updates job-role metadata. Setting `active` to true reactivates the existing role ID. Logical deactivation is exposed by DELETE and never physically removes historical role references.
       security: [{ bearerAuth: [] }]
       parameters:
         - $ref: '../../components/scheduling/components.yml#/components/parameters/BusinessId'
@@ -363,6 +484,24 @@ jobRoles:
         '403': {$ref: '../../components/scheduling/components.yml#/components/responses/Forbidden'}
         '404': {$ref: '../../components/scheduling/components.yml#/components/responses/NotFound'}
         '409': {$ref: '../../components/scheduling/components.yml#/components/responses/Conflict'}
+      x-functional-errors: [1006, 1020, 1034]
+    delete:
+      tags: [Job Roles]
+      operationId: deleteBusinessJobRole
+      summary: Deactivate a business job role
+      description: >
+        Logically deactivates the job role by setting `active` to false. The role is never
+        physically removed, so historical contracts and assignments retain its identity. The
+        operation is idempotent and returns `204` for both an active role and an existing role
+        that is already inactive. Reactivation uses the complete PUT with `active: true`.
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '../../components/scheduling/components.yml#/components/parameters/BusinessId'
+        - $ref: '../../components/scheduling/components.yml#/components/parameters/JobRoleId'
+      responses:
+        '204': {description: "Job role deactivated, or was already inactive"}
+        '403': {$ref: '../../components/scheduling/components.yml#/components/responses/Forbidden'}
+        '404': {$ref: '../../components/scheduling/components.yml#/components/responses/NotFound'}
       x-functional-errors: [1006, 1020, 1034]
 planning:
   settings:
