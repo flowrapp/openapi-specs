@@ -45,6 +45,12 @@ components:
       in: path
       required: true
       schema: {type: string, format: date}
+    PlanningId:
+      name: planningId
+      in: path
+      required: true
+      description: ID of the existing planning
+      schema: {type: integer, format: int64, minimum: 1, example: 500}
   responses:
     BadRequest:
       description: Invalid request or scheduling configuration
