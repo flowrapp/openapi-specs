@@ -1401,10 +1401,10 @@ manager:
     put:
       summary: Publish a weekly business planning
       description: >
-        Publishes the existing planning addressed by Monday `weekStart`. Publication is
-        idempotent: publishing an already PUBLISHED planning returns it unchanged. A missing
-        planning is never generated and returns 404; a non-publishable state returns 409.
-        Requires an OWNER membership.
+        Publishes the existing planning addressed by its `planningId` within the requested
+        business. Publication is idempotent: publishing an already PUBLISHED planning returns it
+        unchanged. A missing or cross-business planning is never generated and returns 404; a
+        non-publishable state returns 409. Requires an OWNER membership.
       tags: [Manager]
       operationId: publishManagerPlanning
       security: [{ bearerAuth: [] }]
@@ -1414,14 +1414,11 @@ manager:
           required: true
           description: ID of the business
           schema: {type: integer, format: int64, minimum: 1}
-        - name: weekStart
+        - name: planningId
           in: path
           required: true
-          description: Monday of the planning week in YYYY-MM-DD format
-          schema:
-            type: string
-            format: date
-            example: "2025-07-28"
+          description: ID of the existing planning
+          schema: {type: integer, format: int64, minimum: 1, example: 500}
       responses:
         '200':
           description: Planning published or already published
@@ -1457,7 +1454,7 @@ manager:
                 $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
               example: {status: 403, detail: "1020 - user is not the owner of business"}
         '404':
-          description: Business or planning for weekStart not found; no planning is created
+          description: Business or planning ID not found in the requested business; no planning is created
           content:
             application/problem+json:
               schema:

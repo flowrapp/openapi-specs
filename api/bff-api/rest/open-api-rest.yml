@@ -119,7 +119,7 @@ paths:
     $ref: 'v1/services/manager/manager-operations.yml#/manager/job-role-item'
   "/api/v1/manager/businesses/{businessId}/schedule":
     $ref: 'v1/services/manager/manager-operations.yml#/manager/planning'
-  "/api/v1/manager/businesses/{businessId}/schedule/{weekStart}/publish":
+  "/api/v1/manager/businesses/{businessId}/schedule/{planningId}/publish":
     $ref: 'v1/services/manager/manager-operations.yml#/manager/publish-planning'
   "/api/v1/manager/businesses/{businessId}/history/day":
     $ref: 'v1/services/manager/manager-operations.yml#/manager/history-day'

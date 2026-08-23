@@ -141,7 +141,7 @@ paths:
     $ref: 'v1/services/scheduling/scheduling-operations.yml#/planning/collection'
   "/api/v1/businesses/{businessId}/plannings/{weekStart}":
     $ref: 'v1/services/scheduling/scheduling-operations.yml#/planning/item'
-  "/api/v1/businesses/{businessId}/plannings/{weekStart}/publish":
+  "/api/v1/businesses/{businessId}/plannings/{planningId}/publish":
     $ref: 'v1/services/scheduling/scheduling-operations.yml#/planning/publish'
   "/api/v1/scheduled-shifts":
     $ref: 'v1/services/scheduling/scheduling-operations.yml#/planning/currentUserScheduledShifts'

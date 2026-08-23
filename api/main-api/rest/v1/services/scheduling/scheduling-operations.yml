@@ -651,13 +651,14 @@ planning:
       operationId: publishPlanning
       summary: Publish a ready business planning
       description: >
-        Idempotently transitions the existing planning addressed by its Monday `weekStart` from
-        READY to PUBLISHED. An already published planning is returned unchanged. If no planning
-        exists for the week, the API returns 404 and creates nothing.
+        Idempotently transitions the existing planning addressed by its stable `planningId` within
+        the route `businessId` from READY to PUBLISHED. An already published planning is returned
+        unchanged. If no planning exists for the ID, or it belongs to another business, the API
+        returns 404 and creates nothing.
       security: [{ bearerAuth: [] }]
       parameters:
         - $ref: '../../components/scheduling/components.yml#/components/parameters/BusinessId'
-        - $ref: '../../components/scheduling/components.yml#/components/parameters/WeekStart'
+        - $ref: '../../components/scheduling/components.yml#/components/parameters/PlanningId'
       responses:
         '200':
           description: Planning published or already published; immutable requirements and scheduled-shift presentation values are preserved
@@ -677,7 +678,13 @@ planning:
                 publishedAt: "2025-07-27T12:00:00+02:00"
                 scheduledShifts: []
         '403': {$ref: '../../components/scheduling/components.yml#/components/responses/Forbidden'}
-        '404': {$ref: '../../components/scheduling/components.yml#/components/responses/NotFound'}
+        '404':
+          description: Planning ID does not exist in the business or belongs to another business; no planning is created
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+              example: {status: 404, detail: "1046 - planning not found"}
         '409': {$ref: '../../components/scheduling/components.yml#/components/responses/Conflict'}
       x-functional-errors: [1006, 1020, 1046, 1048]
   currentUserScheduledShifts:
