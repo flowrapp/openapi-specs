@@ -1,0 +1,24 @@
+api/bff-api/rest/open-api-rest.yml
+  h_a041df4244d543 88-89
+api/bff-api/rest/v1/components/worker/components.yml
+  h_a041df4244d543 263-407
+api/bff-api/rest/v1/services/worker/worker-operations.yml
+  h_a041df4244d543 341-452
+api/main-api/rest/open-api-rest.yml
+  h_a041df4244d543 144-145
+api/main-api/rest/v1/components/scheduling/components.yml
+  h_a041df4244d543 680-802
+api/main-api/rest/v1/services/scheduling/scheduling-operations.yml
+  h_a041df4244d543 710-805
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.22",
+  "base_commit_sha": "425e1625fe5e76a452fcdcf00db574a9572032de",
+  "prompts": {},
+  "humans": {
+    "h_a041df4244d543": {
+      "author": "sergiobpa <sergiobpa@ext.inditex.com>"
+    }
+  }
+}
