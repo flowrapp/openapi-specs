@@ -7,7 +7,7 @@ info:
     This BFF aggregates and shapes data from the Flowrapp main API to serve
     the specific needs of the mobile frontend, providing role-based endpoints
     for workers and managers.
-  version: 0.0.38
+  version: 0.0.39
   contact:
     name: Flowrapp Team
     url: https://flowrapp.github.io
@@ -105,6 +105,8 @@ paths:
     $ref: 'v1/services/manager/manager-operations.yml#/manager/workers'
   "/api/v1/manager/businesses/{businessId}/schedule/recurring":
     $ref: 'v1/services/manager/manager-operations.yml#/manager/recurring-schedule'
+  "/api/v1/manager/businesses/{businessId}/schedule/generation-settings":
+    $ref: 'v1/services/manager/manager-operations.yml#/manager/planning-generation-settings'
   "/api/v1/manager/businesses/{businessId}/schedule/recurring/{scheduleId}":
     $ref: 'v1/services/manager/manager-operations.yml#/manager/recurring-schedule-item'
   "/api/v1/manager/businesses/{businessId}/schedule/exceptions":
