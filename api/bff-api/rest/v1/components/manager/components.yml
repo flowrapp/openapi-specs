@@ -379,6 +379,16 @@ components:
       enum: [MONDAY, TUESDAY, WEDNESDAY, THURSDAY, FRIDAY, SATURDAY, SUNDAY]
       example: MONDAY
 
+    ManagerPlanningGenerationSettingsDTO:
+      type: object
+      description: Business-local settings that control automatic generation of the next weekly planning
+      properties:
+        generationDay:
+          $ref: '#/components/schemas/ManagerDayOfWeekDTO'
+        generationTime:
+          $ref: '#/components/schemas/ManagerLocalMinuteTimeDTO'
+      required: [generationDay, generationTime]
+
     ManagerOpeningIntervalDTO:
       type: object
       properties:

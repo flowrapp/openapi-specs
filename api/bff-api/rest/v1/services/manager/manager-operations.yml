@@ -513,6 +513,151 @@ manager:
         '404':
           description: Business not found
 
+  planning-generation-settings:
+    get:
+      summary: Get planning generation settings
+      description: >
+        Returns the optional business-local weekday and minute at which the next weekly planning
+        is generated automatically. Requires an OWNER membership. Absence is returned as 404.
+      tags: [Manager]
+      operationId: getManagerPlanningGenerationSettings
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: businessId
+          in: path
+          required: true
+          description: ID of the business
+          schema: {type: integer, format: int64, minimum: 1}
+      responses:
+        '200':
+          description: Planning generation settings retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '../../components/manager/components.yml#/components/schemas/ManagerPlanningGenerationSettingsDTO'
+              example:
+                generationDay: MONDAY
+                generationTime: "09:00"
+        '401':
+          description: Authentication is required
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+        '403':
+          description: Authenticated user is not an OWNER of the business
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              example: {status: 403, detail: "1020 - user is not the owner of business"}
+        '404':
+          description: Business or planning generation settings not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              example: {status: 404, detail: "planning generation settings not found"}
+
+    put:
+      summary: Create or replace planning generation settings
+      description: >
+        Creates or completely replaces the business-local weekday and minute used to generate the
+        next weekly planning. Requires an OWNER membership and is idempotent.
+      tags: [Manager]
+      operationId: replaceManagerPlanningGenerationSettings
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: businessId
+          in: path
+          required: true
+          description: ID of the business
+          schema: {type: integer, format: int64, minimum: 1}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '../../components/manager/components.yml#/components/schemas/ManagerPlanningGenerationSettingsDTO'
+            example:
+              generationDay: MONDAY
+              generationTime: "09:00"
+      responses:
+        '200':
+          description: Planning generation settings replaced
+          content:
+            application/json:
+              schema:
+                $ref: '../../components/manager/components.yml#/components/schemas/ManagerPlanningGenerationSettingsDTO'
+              example:
+                generationDay: FRIDAY
+                generationTime: "18:30"
+        '400':
+          description: Invalid planning generation settings
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              example: {status: 400, detail: "1044 - planning settings are invalid"}
+        '401':
+          description: Authentication is required
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+        '403':
+          description: Authenticated user is not an OWNER of the business
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              example: {status: 403, detail: "1020 - user is not the owner of business"}
+        '404':
+          description: Business not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              example: {status: 404, detail: "1006 - business does not exist"}
+
+    delete:
+      summary: Delete planning generation settings
+      description: >
+        Disables automatic planning generation for the business. Requires an OWNER membership and
+        is idempotent: deleting an absent configuration has the same successful result.
+      tags: [Manager]
+      operationId: deleteManagerPlanningGenerationSettings
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: businessId
+          in: path
+          required: true
+          description: ID of the business
+          schema: {type: integer, format: int64, minimum: 1}
+      responses:
+        '204':
+          description: Planning generation settings deleted or already absent
+        '401':
+          description: Authentication is required
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+        '403':
+          description: Authenticated user is not an OWNER of the business
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              example: {status: 403, detail: "1020 - user is not the owner of business"}
+        '404':
+          description: Business not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              example: {status: 404, detail: "1006 - business does not exist"}
+
   recurring-schedule:
     get:
       summary: Get the effective recurring schedule
