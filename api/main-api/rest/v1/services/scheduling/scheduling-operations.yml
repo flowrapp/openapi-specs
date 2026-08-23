@@ -620,11 +620,20 @@ planning:
       tags: [Planning]
       operationId: getPlanning
       summary: Get a business planning by week start
-      description: Retrieves the existing planning addressed by its Monday `weekStart`, including immutable snapshot requirements and any scheduled-shift presentation values. It does not regenerate the planning.
+      description: >
+        Retrieves the existing planning addressed by its Monday `weekStart`, including immutable
+        snapshot requirements and any scheduled-shift presentation values. It does not regenerate
+        the planning. Optional `employeeId` restricts scheduled shifts to that employee while
+        preserving the complete immutable requirements. Optional `jobRoleId` restricts scheduled
+        shifts and requirements to that role, omitting empty requirement shifts. Both filters are
+        combined with AND and affect only the returned read projection; positive identifiers with
+        no matching planning data return `200` with empty filtered collections.
       security: [{ bearerAuth: [] }]
       parameters:
         - $ref: '../../components/scheduling/components.yml#/components/parameters/BusinessId'
         - $ref: '../../components/scheduling/components.yml#/components/parameters/WeekStart'
+        - $ref: '../../components/scheduling/components.yml#/components/parameters/PlanningEmployeeId'
+        - $ref: '../../components/scheduling/components.yml#/components/parameters/PlanningJobRoleId'
       responses:
         '200':
           description: Planning retrieved

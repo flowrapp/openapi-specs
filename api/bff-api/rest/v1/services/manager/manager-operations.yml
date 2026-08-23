@@ -1188,12 +1188,19 @@ manager:
         precision, then round once per worker; planning totals are sums of the daily and worker
         totals. Workers are the union of users with intersecting contracts and users with
         assignments. Names come from business users and role metadata comes from the current job
-        role catalog with inactive roles included. For example, a 22:00-02:00 shift with a
-        30-minute break has 12,600 net seconds and requires 25,200 seconds at target demand 2;
-        an offset assignment for that shift has 12,600 scheduled seconds. A worker with 20-hour
-        and 30-hour consecutive contracts covering three and four calendar days contributes
-        `(20 * 3600 * 3 / 7) + (30 * 3600 * 4 / 7) = 92,571.428...` seconds and is reported as
-        92,571 after one final rounding. Requires an OWNER membership.
+        role catalog with inactive roles included. Optional `employeeId` restricts contracts,
+        assignments, workers, and their scheduled/contracted aggregates to one employee while
+        preserving global requirements and required seconds. Optional `jobRoleId` restricts
+        demands, contracts, assignments, workers, and all recalculated aggregates to one role;
+        both filters are combined with AND. A valid identifier with no matching data returns `200`
+        with an empty filtered projection, preserving global required seconds for an employee-only
+        miss and returning zero required seconds when a job-role filter has no matching demand.
+        For example, a 22:00-02:00 shift with a 30-minute break has 12,600 net seconds and
+        requires 25,200 seconds at target demand 2; an offset assignment for that shift has 12,600
+        scheduled seconds. A worker with 20-hour and 30-hour consecutive contracts covering three
+        and four calendar days contributes `(20 * 3600 * 3 / 7) + (30 * 3600 * 4 / 7) =
+        92,571.428...` seconds and is reported as 92,571 after one final rounding. Requires an
+        OWNER membership.
       tags: [Manager]
       operationId: getManagerPlanning
       security: [{ bearerAuth: [] }]
@@ -1211,6 +1218,16 @@ manager:
             type: string
             pattern: '^\d{4}-W\d{2}$'
             example: "2025-W31"
+        - name: employeeId
+          in: query
+          required: false
+          description: Restrict the planning projection to one employee; positive identifiers with no match return an empty filtered projection
+          schema: {type: integer, format: int64, minimum: 1, example: 3}
+        - name: jobRoleId
+          in: query
+          required: false
+          description: Restrict the planning projection to one job role and its demands; positive identifiers with no match return an empty filtered projection
+          schema: {type: integer, format: int64, minimum: 1, example: 10}
       responses:
         '200':
           description: Weekly planning retrieved

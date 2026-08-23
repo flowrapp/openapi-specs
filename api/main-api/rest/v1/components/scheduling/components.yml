@@ -72,6 +72,18 @@ components:
       required: true
       description: ID of the existing planning
       schema: {type: integer, format: int64, minimum: 1, example: 500}
+    PlanningEmployeeId:
+      name: employeeId
+      in: query
+      required: false
+      description: Restrict scheduled shifts to one employee; positive identifiers with no match return an empty filtered projection
+      schema: {type: integer, format: int64, minimum: 1, example: 1}
+    PlanningJobRoleId:
+      name: jobRoleId
+      in: query
+      required: false
+      description: Restrict scheduled shifts and immutable requirements to one job role; positive identifiers with no match return an empty filtered projection
+      schema: {type: integer, format: int64, minimum: 1, example: 10}
   responses:
     BadRequest:
       description: Invalid request or scheduling configuration
