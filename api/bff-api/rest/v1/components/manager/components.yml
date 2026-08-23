@@ -757,7 +757,10 @@ components:
 
     ManagerPlanningRequirementShiftDTO:
       type: object
-      description: Immutable, presentation-safe shift requirement with no solver correlation IDs
+      description: >
+        Immutable, presentation-safe shift requirement with no solver correlation IDs. Requirement
+        duration uses local wall-clock time: an end time not later than the start time is on the
+        following calendar day, and break minutes are subtracted before staffing demand is applied.
       properties:
         shiftName:
           type: string
@@ -794,7 +797,10 @@ components:
           type: integer
           format: int64
           minimum: 0
-          description: Target staffing demand for this date in net seconds
+          description: >
+            Sum of each shift's net local wall-clock seconds multiplied by each demand's
+            `targetEmployees`. Overnight shifts roll their end into the following calendar day
+            before breaks and demand are applied.
           example: 54000
         shifts:
           type: array
@@ -804,7 +810,10 @@ components:
 
     ManagerPlanningTotalsDTO:
       type: object
-      description: Aggregate planning durations in seconds
+      description: >
+        Aggregate planning durations in seconds. `requiredSeconds` is the sum of daily
+        requirements, `scheduledSeconds` is the sum of daily worker assignments, and
+        `contractedSeconds` is the sum of the rounded worker contracted totals.
       properties:
         requiredSeconds:
           type: integer
@@ -825,7 +834,9 @@ components:
 
     ManagerPlanningAssignmentDTO:
       type: object
-      description: One assigned shift with immutable presentation metadata
+      description: >
+        One assigned shift with immutable presentation metadata. Its net duration is the elapsed
+        duration between the offset-aware `startAt` and `endAt`, minus `breakMinutes`.
       properties:
         id:
           type: integer
@@ -880,6 +891,7 @@ components:
           type: integer
           format: int64
           minimum: 0
+          description: Sum of the net durations of this day's assignments
           example: 27000
         assignments:
           type: array
@@ -890,6 +902,10 @@ components:
 
     ManagerWorkerPlanningDTO:
       type: object
+      description: >
+        Worker included when the user has an intersecting contract or an assignment in the
+        planning. Names come from the business-user projection; assignment role metadata comes
+        from the current job-role catalog queried with inactive roles included.
       properties:
         userId:
           type: integer
@@ -903,12 +919,16 @@ components:
           type: integer
           format: int64
           minimum: 0
-          description: Contracted time applicable to the planning period
+          description: >
+            Contracted time applicable to the planning period. Each intersecting contract
+            contributes `totalWeekHours * 3600 * coveredCalendarDays / 7`; contributions are
+            accumulated at full precision per worker and rounded once to the nearest whole second.
           example: 144000
         scheduledSeconds:
           type: integer
           format: int64
           minimum: 0
+          description: Sum of the worker's daily scheduled seconds
           example: 54000
         days:
           type: array
@@ -937,7 +957,12 @@ components:
 
     ManagerPlanningResponseDTO:
       type: object
-      description: Stable weekly planning response for every asynchronous lifecycle state
+      description: >
+        Stable weekly planning response for DRAFT, SOLVING, READY, PUBLISHED, FAILED, and
+        ARCHIVED. ARCHIVED is a historical read-only state. Requirements use local wall-clock
+        net shift duration multiplied by target staffing demand; assignments use offset elapsed
+        duration minus breaks. Workers are the union of users with intersecting contracts and users
+        with assignments, and planning totals reconcile to their daily and worker totals.
       properties:
         id:
           type: integer
@@ -966,7 +991,8 @@ components:
           example: "2025-08-03"
         status:
           type: string
-          enum: [DRAFT, SOLVING, READY, PUBLISHED, FAILED]
+          description: ARCHIVED is a historical read-only planning state
+          enum: [DRAFT, SOLVING, READY, PUBLISHED, FAILED, ARCHIVED]
           example: SOLVING
         failureReason:
           type: [string, "null"]

@@ -53,6 +53,69 @@ components:
         - startDate
         - endDate
 
+    ContractEndDateUpdateRequestDTO:
+      type: object
+      additionalProperties: false
+      description: End date supplied when updating a contract. All other contract terms are immutable after creation.
+      properties:
+        endDate:
+          type: ["string", "null"]
+          format: date
+          description: Inclusive contract end date, or null to reopen the contract
+          example: "2025-07-31"
+      required: [endDate]
+
+    BusinessContractResponseDTO:
+      type: object
+      description: Contract projection for a business date-range query. Validity is inclusive and periods do not overlap per user and business.
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: Unique identifier for the contract
+          example: 123
+        userId:
+          type: integer
+          format: int64
+          description: Unique identifier of the contracted user
+          example: 1
+        businessId:
+          type: integer
+          format: int64
+          description: Unique identifier of the business associated with the contract
+          example: 101
+        jobRoleId:
+          type: integer
+          format: int64
+          description: Job role associated with the contract
+          example: 10
+        totalWeekHours:
+          type: number
+          format: double
+          description: Number of hours agreed for a working week
+          example: 40.0
+        startDate:
+          type: string
+          format: date
+          description: Inclusive contract start date
+          example: "2025-06-15"
+        endDate:
+          type: ["string", "null"]
+          format: date
+          description: Inclusive contract end date, or null for an open-ended contract
+          example: "2025-07-03"
+        createdAt:
+          type: string
+          format: date-time
+          description: Instant when the contract was created
+          example: "2025-06-01T10:15:00+00:00"
+        updatedAt:
+          type: string
+          format: date-time
+          description: Instant when the contract was last updated
+          example: "2025-06-01T10:15:00+00:00"
+      required: [id, userId, businessId, jobRoleId, totalWeekHours, startDate, endDate, createdAt, updatedAt]
+
     ContractResponseDTO:
       type: object
       description: Contract details for a user in a business. Contract periods are mutually exclusive for that user and business across all job roles.

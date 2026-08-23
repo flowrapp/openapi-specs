@@ -91,7 +91,11 @@ components:
           pattern: '^[a-z0-9]+(?:-[a-z0-9]+)*$'
           description: Lowercase slug from the client icon catalog
           example: front-of-house
-      required: [id, code, name, color, icon]
+        active:
+          type: boolean
+          description: Whether the referenced job role is currently active in the business catalog
+          example: true
+      required: [id, code, name, color, icon, active]
 
     BusinessUserCurrentContractDTO:
       type: object

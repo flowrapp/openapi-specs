@@ -3,7 +3,7 @@ openapi: 3.1.0
 info:
   title: Flowrapp API
   description: REST API for Flowrapp Backend
-  version: 0.0.37
+  version: 0.0.38
   contact:
     name: Flowrapp Team
     url: https://flowrapp.github.io
@@ -111,6 +111,8 @@ paths:
     $ref: 'v1/services/invitations/invitations-operations.yml#/invitations/decline-invitation'
   "/api/v1/invitations/register":
     $ref: 'v1/services/invitations/invitations-operations.yml#/invitations/register-user-from-invitation'
+  "/api/v1/businesses/{businessId}/contracts":
+    $ref: 'v1/services/contracts/contracts-operations.yml#/contracts/business-contracts'
   "/api/v1/businesses/{businessId}/users/{userId}/contracts":
     $ref: 'v1/services/contracts/contracts-operations.yml#/contracts/business-user-contracts'
   "/api/v1/businesses/{businessId}/users/{userId}/contracts/current":
@@ -121,6 +123,8 @@ paths:
     $ref: 'v1/services/contracts/contracts-operations.yml#/contracts/current-user-contracts'
   "/api/v1/businesses/{businessId}/recurring-schedules":
     $ref: 'v1/services/scheduling/scheduling-operations.yml#/recurringSchedules/collection'
+  "/api/v1/businesses/{businessId}/recurring-schedules/effective":
+    $ref: 'v1/services/scheduling/scheduling-operations.yml#/recurringSchedules/effective'
   "/api/v1/businesses/{businessId}/recurring-schedules/{scheduleId}":
     $ref: 'v1/services/scheduling/scheduling-operations.yml#/recurringSchedules/item'
   "/api/v1/businesses/{businessId}/schedule-exceptions":

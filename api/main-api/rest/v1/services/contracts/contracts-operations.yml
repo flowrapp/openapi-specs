@@ -1,4 +1,113 @@
 contracts:
+  business-contracts:
+    get:
+      summary: List business contracts intersecting a date range
+      description: >
+        Retrieves every contract for the business whose inclusive validity period intersects
+        the inclusive business-local `from` and `to` dates. The range must not be reversed and
+        may contain at most 31 calendar dates. A valid range with no matches returns `200 []`.
+        Results are not paginated because the bounded range and non-overlap invariant are sufficient
+        for the business-wide projection. Only the business owner can access this operation.
+      tags:
+        - Contracts
+      operationId: getBusinessContracts
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: businessId
+          in: path
+          required: true
+          description: Unique identifier of the business
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+        - name: from
+          in: query
+          required: true
+          description: Inclusive first business-local date; the range may contain at most 31 calendar dates
+          schema:
+            type: string
+            format: date
+            example: "2025-07-01"
+        - name: to
+          in: query
+          required: true
+          description: Inclusive last business-local date; must not precede from
+          schema:
+            type: string
+            format: date
+            example: "2025-07-31"
+      responses:
+        '200':
+          description: All contracts intersecting the requested range, or an empty collection when none match
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '../../components/contracts/components.yml#/components/schemas/BusinessContractResponseDTO'
+              examples:
+                contractsAtBothBoundaries:
+                  summary: Contracts for multiple users intersecting one range boundary each
+                  value:
+                    - id: 123
+                      userId: 1
+                      businessId: 101
+                      jobRoleId: 10
+                      totalWeekHours: 40.0
+                      startDate: "2025-06-15"
+                      endDate: "2025-07-03"
+                      createdAt: "2025-06-01T10:15:00+00:00"
+                      updatedAt: "2025-06-01T10:15:00+00:00"
+                    - id: 124
+                      userId: 2
+                      businessId: 101
+                      jobRoleId: 11
+                      totalWeekHours: 20.0
+                      startDate: "2025-07-29"
+                      endDate: "2025-08-20"
+                      createdAt: "2025-07-20T10:15:00+00:00"
+                      updatedAt: "2025-07-20T10:15:00+00:00"
+                noMatches:
+                  summary: No contracts intersect the range
+                  value: []
+        '400':
+          description: Contract date range is reversed or contains more than 31 inclusive calendar dates
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+              examples:
+                invalidRange:
+                  value:
+                    status: 400
+                    detail: "1057 - contract date range is invalid"
+        '401':
+          description: Unauthorized
+        '403':
+          description: Current user is not the owner of the business
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+              example:
+                status: 403
+                detail: "1020 - user is not the owner of business"
+        '404':
+          description: Business not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+              example:
+                status: 404
+                detail: "1006 - business does not exist"
+      x-functional-errors:
+        - 1006
+        - 1020
+        - 1057
+
   business-user-contracts:
     post:
       summary: Create a user contract
@@ -224,8 +333,14 @@ contracts:
 
   business-user-contract:
     put:
-      summary: Update a user contract
-      description: Replaces the dates and weekly hours of a specific contract. The replacement cannot overlap any other contract for the same user and business, regardless of job role. Only the business owner can manage contracts.
+      summary: Update a contract end date
+      description: >
+        BREAKING CHANGE: Updates only the nullable `endDate` of a specific contract. The job role,
+        weekly hours, and start date are immutable after creation; changed terms require a new
+        non-overlapping contract. The previous and proposed inclusive contract periods must not
+        intersect a planning in `SOLVING`, `READY`, `PUBLISHED`, or `ARCHIVED`. `DRAFT` and `FAILED`
+        plannings do not by themselves freeze contract validity. Only the business owner can manage
+        contracts.
       tags:
         - Contracts
       operationId: updateUserContract
@@ -255,29 +370,29 @@ contracts:
             format: int64
       requestBody:
         required: true
-        description: Updated contract details
+        description: New contract end date; all other contract terms remain unchanged
         content:
           application/json:
             schema:
-              $ref: '../../components/contracts/components.yml#/components/schemas/ContractRequestDTO'
+              $ref: '../../components/contracts/components.yml#/components/schemas/ContractEndDateUpdateRequestDTO'
             example:
-              jobRoleId: 10
-              totalWeekHours: 35.0
-              startDate: "2025-01-01"
-              endDate: null
+              endDate: "2025-07-31"
       responses:
         '200':
-          description: Contract updated successfully
+          description: Contract updated successfully with only its end date changed
           content:
             application/json:
               schema:
                 $ref: '../../components/contracts/components.yml#/components/schemas/ContractResponseDTO'
         '400':
-          description: Contract dates or weekly hours are invalid
+          description: Contract end date is invalid
           content:
             application/problem+json:
               schema:
                 $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+              example:
+                status: 400
+                detail: "1057 - contract date range is invalid"
         '401':
           description: Unauthorized
         '403':
@@ -296,17 +411,31 @@ contracts:
               schema:
                 $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
         '409':
-          description: Contract dates overlap with another contract for the same user and business, regardless of job role
+          description: >
+            The proposed end date overlaps another contract for the same user and business, or
+            the previous or proposed contract period intersects a planning in SOLVING, READY,
+            PUBLISHED, or ARCHIVED. DRAFT and FAILED plannings do not cause this conflict.
           content:
             application/problem+json:
               schema:
                 $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+              examples:
+                contractOverlap:
+                  value:
+                    status: 409
+                    detail: "1029 - contract overlaps another contract for the same user and business"
+                planningStateConflict:
+                  value:
+                    status: 409
+                    detail: "1058 - contract update is blocked by planning state"
       x-functional-errors:
         - 1000
         - 1006
         - 1015
         - 1020
         - 1029
+        - 1057
+        - 1058
 
   current-user-contracts:
     get:

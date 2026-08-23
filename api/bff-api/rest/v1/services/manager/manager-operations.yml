@@ -875,7 +875,10 @@ manager:
   job-role-item:
     put:
       summary: Update or reactivate a business job role
-      description: Updates job-role metadata. Setting `active` to true reactivates an inactive role without changing its ID.
+      description: >
+        Updates job-role metadata. Setting `active` to true reactivates an inactive role without
+        changing its ID. Deactivation is performed by the logical DELETE operation below; it never
+        physically removes the role or its historical references.
       tags: [Manager]
       operationId: updateManagerJobRole
       security: [{ bearerAuth: [] }]
@@ -947,8 +950,9 @@ manager:
     delete:
       summary: Deactivate a business job role
       description: >
-        Logically deactivates a job role. The operation is idempotent: an already inactive role
-        remains inactive and historical references are retained.
+        Logically deactivates a job role without physically removing it. The operation is
+        idempotent: an already inactive role remains inactive and historical references are
+        retained. Reactivation uses the complete PUT with `active: true`.
       tags: [Manager]
       operationId: deleteManagerJobRole
       security: [{ bearerAuth: [] }]
@@ -992,9 +996,22 @@ manager:
       summary: Get a weekly business planning
       description: >
         Returns the existing planning for the requested ISO week. The response shape is stable
-        for DRAFT, SOLVING, READY, PUBLISHED, and FAILED. Requirements come from the immutable
-        planning snapshot; this operation never generates a missing planning. Requires an OWNER
-        membership.
+        for DRAFT, SOLVING, READY, PUBLISHED, FAILED, and ARCHIVED; ARCHIVED is historical and
+        read-only. Requirements come from the immutable planning snapshot; this operation never
+        generates a missing planning. Required seconds use local wall-clock shift duration: an end
+        time not later than its start rolls into the next calendar day, breaks are subtracted, and
+        the net duration is multiplied by target employee demand. Scheduled seconds use elapsed
+        offset-date-time duration minus breaks. Contracted seconds sum
+        `totalWeekHours * 3600 * coveredCalendarDays / 7` per intersecting contract at full
+        precision, then round once per worker; planning totals are sums of the daily and worker
+        totals. Workers are the union of users with intersecting contracts and users with
+        assignments. Names come from business users and role metadata comes from the current job
+        role catalog with inactive roles included. For example, a 22:00-02:00 shift with a
+        30-minute break has 12,600 net seconds and requires 25,200 seconds at target demand 2;
+        an offset assignment for that shift has 12,600 scheduled seconds. A worker with 20-hour
+        and 30-hour consecutive contracts covering three and four calendar days contributes
+        `(20 * 3600 * 3 / 7) + (30 * 3600 * 4 / 7) = 92,571.428...` seconds and is reported as
+        92,571 after one final rounding. Requires an OWNER membership.
       tags: [Manager]
       operationId: getManagerPlanning
       security: [{ bearerAuth: [] }]
@@ -1037,7 +1054,7 @@ manager:
                     createdAt: "2025-07-27T08:00:00+02:00"
                     publishedAt: null
                 solving:
-                  summary: Solving planning with empty assignments
+                  summary: Solving planning with an overnight requirement and contract/assignment union
                   value:
                     id: 500
                     businessId: 101
@@ -1046,15 +1063,15 @@ manager:
                     weekEnd: "2025-08-03"
                     status: SOLVING
                     failureReason: null
-                    totals: {requiredSeconds: 54000, scheduledSeconds: 0, contractedSeconds: 144000}
+                    totals: {requiredSeconds: 25200, scheduledSeconds: 12600, contractedSeconds: 236571}
                     requirements:
                       - date: "2025-07-28"
-                        requiredSeconds: 54000
+                        requiredSeconds: 25200
                         shifts:
-                          - shiftName: Morning service
+                          - shiftName: Night service
                             shiftColor: "#1A2B3C"
-                            startTime: "09:00"
-                            endTime: "17:00"
+                            startTime: "22:00"
+                            endTime: "02:00"
                             breakMinutes: 30
                             demands:
                               - jobRoleId: 10
@@ -1063,8 +1080,8 @@ manager:
                                 maximumEmployees: 3
                     days:
                       - date: "2025-07-28"
-                        requiredSeconds: 54000
-                        scheduledSeconds: 0
+                        requiredSeconds: 25200
+                        scheduledSeconds: 12600
                     workers:
                       - userId: 3
                         name: Bob Wilson
@@ -1074,6 +1091,28 @@ manager:
                           - date: "2025-07-28"
                             scheduledSeconds: 0
                             assignments: []
+                      - userId: 5
+                        name: Chris Martin
+                        contractedSeconds: 92571
+                        scheduledSeconds: 0
+                        days: []
+                      - userId: 4
+                        name: Alice Brown
+                        contractedSeconds: 0
+                        scheduledSeconds: 12600
+                        days:
+                          - date: "2025-07-28"
+                            scheduledSeconds: 12600
+                            assignments:
+                              - id: 902
+                                jobRoleId: 10
+                                jobRole: {id: 10, code: WAITER, name: Waiter, color: "#1A2B3C", icon: front-of-house, active: false}
+                                shiftName: Night service
+                                shiftColor: "#1A2B3C"
+                                startAt: "2025-07-28T22:00:00+02:00"
+                                endAt: "2025-07-29T02:00:00+02:00"
+                                breakMinutes: 30
+                                durationSeconds: 12600
                     createdAt: "2025-07-27T08:00:00+02:00"
                     publishedAt: null
                 ready:
@@ -1176,6 +1215,22 @@ manager:
                     workers: []
                     createdAt: "2025-08-03T08:00:00+02:00"
                     publishedAt: null
+                archived:
+                  summary: Archived read-only planning
+                  value:
+                    id: 502
+                    businessId: 101
+                    week: "2025-W30"
+                    weekStart: "2025-07-21"
+                    weekEnd: "2025-07-27"
+                    status: ARCHIVED
+                    failureReason: null
+                    totals: {requiredSeconds: 0, scheduledSeconds: 0, contractedSeconds: 0}
+                    requirements: []
+                    days: []
+                    workers: []
+                    createdAt: "2025-07-20T08:00:00+02:00"
+                    publishedAt: "2025-07-20T12:00:00+02:00"
         '401':
           description: Authentication is required
           content:

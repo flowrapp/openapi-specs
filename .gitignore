@@ -16,3 +16,6 @@ _site/
 .DS_Store
 
 .pi-subagents
+
+# openlore analysis artifacts
+.openlore/
