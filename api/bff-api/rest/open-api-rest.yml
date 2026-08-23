@@ -85,6 +85,8 @@ paths:
     $ref: 'v1/services/worker/worker-operations.yml#/worker/businesses'
   "/api/v1/worker/businesses/{businessId}/clock":
     $ref: 'v1/services/worker/worker-operations.yml#/worker/clock-view'
+  "/api/v1/worker/businesses/{businessId}/schedule":
+    $ref: 'v1/services/worker/worker-operations.yml#/worker/team-schedule'
   "/api/v1/worker/businesses/{businessId}/clock-in":
     $ref: 'v1/services/worker/worker-operations.yml#/worker/clock-in'
   "/api/v1/worker/businesses/{businessId}/geofence-events/{eventId}":

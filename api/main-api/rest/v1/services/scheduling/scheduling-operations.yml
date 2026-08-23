@@ -707,3 +707,99 @@ planning:
                   $ref: '../../components/scheduling/components.yml#/components/schemas/ScheduledShiftResponseDTO'
         '400': {$ref: '../../components/scheduling/components.yml#/components/responses/BadRequest'}
       x-functional-errors: [1047]
+
+  teamSchedule:
+    get:
+      tags: [Planning]
+      operationId: getBusinessTeamSchedule
+      summary: Get the member-visible team schedule for a week
+      description: >
+        Returns the assigned shifts from a published planning, or from an archived planning that
+        was previously published. Any authenticated OWNER, MANAGER, or EMPLOYEE membership may
+        read this privacy-safe projection. Missing membership, missing planning, and unpublished
+        planning are deliberately indistinguishable and return 404.
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '../../components/scheduling/components.yml#/components/parameters/BusinessId'
+        - $ref: '../../components/scheduling/components.yml#/components/parameters/WeekStart'
+      responses:
+        '200':
+          description: Published or previously published archived team schedule
+          content:
+            application/json:
+              schema:
+                $ref: '../../components/scheduling/components.yml#/components/schemas/TeamScheduleResponseDTO'
+              examples:
+                published:
+                  summary: Published team schedule with an overnight shift
+                  value:
+                    businessId: 101
+                    week: "2025-W31"
+                    weekStart: "2025-07-28"
+                    weekEnd: "2025-08-03"
+                    days:
+                      - date: "2025-07-28"
+                        shifts:
+                          - id: 900
+                            worker: {id: 3, name: Bob Wilson}
+                            jobRole: {id: 10, code: WAITER, name: Waiter, color: "#1A2B3C", icon: front-of-house}
+                            shiftName: Morning service
+                            shiftColor: "#1A2B3C"
+                            startAt: "2025-07-28T09:00:00+02:00"
+                            endAt: "2025-07-28T17:00:00+02:00"
+                            breakMinutes: 30
+                          - id: 901
+                            worker: {id: 4, name: Alice Brown}
+                            jobRole: {id: 11, code: KITCHEN, name: Kitchen, color: "#4C9F70", icon: kitchen}
+                            shiftName: Night service
+                            shiftColor: "#4C9F70"
+                            startAt: "2025-07-28T22:00:00+02:00"
+                            endAt: "2025-07-29T02:00:00+02:00"
+                            breakMinutes: 30
+                archived:
+                  summary: Previously published archived team schedule
+                  value:
+                    businessId: 101
+                    week: "2025-W30"
+                    weekStart: "2025-07-21"
+                    weekEnd: "2025-07-27"
+                    days:
+                      - date: "2025-07-21"
+                        shifts:
+                          - id: 850
+                            worker: {id: 3, name: Bob Wilson}
+                            jobRole: {id: 10, code: WAITER, name: Waiter, color: "#1A2B3C", icon: front-of-house}
+                            shiftName: Morning service
+                            shiftColor: "#1A2B3C"
+                            startAt: "2025-07-21T09:00:00+02:00"
+                            endAt: "2025-07-21T17:00:00+02:00"
+                            breakMinutes: 30
+                empty:
+                  summary: Published planning with no assigned shifts
+                  value:
+                    businessId: 101
+                    week: "2025-W32"
+                    weekStart: "2025-08-04"
+                    weekEnd: "2025-08-10"
+                    days: []
+        '400':
+          description: weekStart is not the Monday of its ISO week
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+              example: {status: 400, detail: "1045 - planning is invalid"}
+        '404':
+          description: Business membership or member-visible planning not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+              examples:
+                unavailable:
+                  summary: No published planning is available
+                  value: {status: 404, detail: "1046 - planning not found"}
+                nonMember:
+                  summary: Non-member boundary is deliberately non-disclosing
+                  value: {status: 404, detail: "1046 - planning not found"}
+      x-functional-errors: [1045, 1046]
