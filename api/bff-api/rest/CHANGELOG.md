@@ -1,5 +1,25 @@
 # Changelog
 
+## 0.0.44
+
+### Added
+
+- Optional trimmed, case-insensitive partial `name` filtering for manager job-role slices, preserving main API ordering and slice metadata.
+- Distinct duplicate normalized-name (`1059`) and duplicate-code (`1035`) conflict examples for manager job-role writes.
+
+## 0.0.42
+
+### Breaking changes
+
+- The manager job-role collection no longer accepts `includeInactive`; use the optional `active` filter instead (`true` for active roles, `false` for inactive roles, or omit it for both states).
+- The manager job-role collection response changed from a bare array to a slice with `content`, zero-based `page`, requested `size`, and `hasNext`.
+
+### Added
+
+- Optional `page` and `size` query parameters default to `0` and `20`; `page` must be non-negative and `size` must be between `1` and `100`.
+- Manager job-role slices preserve MIG ordering: active state descending, name ascending, and ID ascending, including ID tie-breaking for equal names.
+- Examples document active-only, inactive-only, and unfiltered requests and the slice metadata.
+
 ## 0.0.38
 
 ### Added

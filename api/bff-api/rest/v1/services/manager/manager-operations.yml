@@ -906,7 +906,13 @@ manager:
   job-roles:
     get:
       summary: List business job roles
-      description: Returns active job roles by default. `includeInactive=true` includes logically deactivated roles. Requires an OWNER membership.
+      description: >
+        Returns a deterministic slice of job roles. An optional `name` filter matches a trimmed,
+        case-insensitive partial name using the main API's PostgreSQL `ILIKE` semantics; missing,
+        empty, and blank values are ignored. `active=true` returns only active roles,
+        `active=false` returns only inactive roles, and an omitted `active` returns both states.
+        Name and active filters are applied before results are ordered by active state descending,
+        name ascending, and ID ascending. Requires an OWNER membership.
       tags: [Manager]
       operationId: getManagerJobRoles
       security: [{ bearerAuth: [] }]
@@ -916,20 +922,61 @@ manager:
           required: true
           description: ID of the business
           schema: {type: integer, format: int64, minimum: 1}
-        - name: includeInactive
+        - name: name
           in: query
           required: false
-          description: Include logically deactivated roles
-          schema: {type: boolean, default: false, example: false}
+          description: Trimmed, case-insensitive partial name filter; blank values are ignored
+          schema:
+            type: string
+            maxLength: 100
+            example: cook
+        - name: active
+          in: query
+          required: false
+          description: Filter by active state; omit to include both active and inactive roles
+          schema:
+            type: boolean
+            example: true
+        - $ref: '../../components/manager/components.yml#/components/parameters/Page'
+        - $ref: '../../components/manager/components.yml#/components/parameters/Size'
       responses:
         '200':
-          description: Job roles retrieved
+          description: Job-role slice retrieved
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '../../components/manager/components.yml#/components/schemas/ManagerJobRoleResponseDTO'
+                $ref: '../../components/manager/components.yml#/components/schemas/ManagerJobRoleSliceResponseDTO'
+              example:
+                content:
+                  - id: 10
+                    businessId: 101
+                    code: WAITER
+                    name: Waiter
+                    description: Front of house service
+                    color: "#1A2B3C"
+                    icon: front-of-house
+                    active: true
+                    createdAt: "2025-06-01T10:00:00+00:00"
+                    updatedAt: "2025-06-01T10:00:00+00:00"
+                  - id: 11
+                    businessId: 101
+                    code: HOST
+                    name: Waiter
+                    description: Inactive front of house role
+                    color: "#808080"
+                    icon: briefcase
+                    active: false
+                    createdAt: "2025-06-02T10:00:00+00:00"
+                    updatedAt: "2025-06-02T10:00:00+00:00"
+                page: 0
+                size: 20
+                hasNext: false
+        '400':
+          description: Invalid page or size
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
         '401':
           description: Authentication is required
           content:
@@ -1010,12 +1057,18 @@ manager:
                 $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
               example: {status: 404, detail: "1006 - business does not exist"}
         '409':
-          description: Job-role code already exists in the business
+          description: Job-role code or normalized name already exists in the business
           content:
             application/problem+json:
               schema:
                 $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
-              example: {status: 409, detail: "1035 - job role code already exists"}
+              examples:
+                duplicateCode:
+                  summary: Duplicate job-role code
+                  value: {status: 409, detail: "1035 - job role code already exists"}
+                duplicateName:
+                  summary: Duplicate normalized job-role name
+                  value: {status: 409, detail: "1059 - job role name already exists"}
 
   job-role-item:
     put:
@@ -1085,12 +1138,15 @@ manager:
                 $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
               example: {status: 404, detail: "1034 - job role not found"}
         '409':
-          description: Job-role update conflicts with existing data
+          description: Job-role normalized name already exists in the business
           content:
             application/problem+json:
               schema:
                 $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
-              example: {status: 409, detail: "1035 - job role code already exists"}
+              examples:
+                duplicateName:
+                  summary: Duplicate normalized job-role name
+                  value: {status: 409, detail: "1059 - job role name already exists"}
 
     delete:
       summary: Deactivate a business job role
@@ -1151,12 +1207,19 @@ manager:
         precision, then round once per worker; planning totals are sums of the daily and worker
         totals. Workers are the union of users with intersecting contracts and users with
         assignments. Names come from business users and role metadata comes from the current job
-        role catalog with inactive roles included. For example, a 22:00-02:00 shift with a
-        30-minute break has 12,600 net seconds and requires 25,200 seconds at target demand 2;
-        an offset assignment for that shift has 12,600 scheduled seconds. A worker with 20-hour
-        and 30-hour consecutive contracts covering three and four calendar days contributes
-        `(20 * 3600 * 3 / 7) + (30 * 3600 * 4 / 7) = 92,571.428...` seconds and is reported as
-        92,571 after one final rounding. Requires an OWNER membership.
+        role catalog with inactive roles included. Optional `employeeId` restricts contracts,
+        assignments, workers, and their scheduled/contracted aggregates to one employee while
+        preserving global requirements and required seconds. Optional `jobRoleId` restricts
+        demands, contracts, assignments, workers, and all recalculated aggregates to one role;
+        both filters are combined with AND. A valid identifier with no matching data returns `200`
+        with an empty filtered projection, preserving global required seconds for an employee-only
+        miss and returning zero required seconds when a job-role filter has no matching demand.
+        For example, a 22:00-02:00 shift with a 30-minute break has 12,600 net seconds and
+        requires 25,200 seconds at target demand 2; an offset assignment for that shift has 12,600
+        scheduled seconds. A worker with 20-hour and 30-hour consecutive contracts covering three
+        and four calendar days contributes `(20 * 3600 * 3 / 7) + (30 * 3600 * 4 / 7) =
+        92,571.428...` seconds and is reported as 92,571 after one final rounding. Requires an
+        OWNER membership.
       tags: [Manager]
       operationId: getManagerPlanning
       security: [{ bearerAuth: [] }]
@@ -1174,6 +1237,16 @@ manager:
             type: string
             pattern: '^\d{4}-W\d{2}$'
             example: "2025-W31"
+        - name: employeeId
+          in: query
+          required: false
+          description: Restrict the planning projection to one employee; positive identifiers with no match return an empty filtered projection
+          schema: {type: integer, format: int64, minimum: 1, example: 3}
+        - name: jobRoleId
+          in: query
+          required: false
+          description: Restrict the planning projection to one job role and its demands; positive identifiers with no match return an empty filtered projection
+          schema: {type: integer, format: int64, minimum: 1, example: 10}
       responses:
         '200':
           description: Weekly planning retrieved
