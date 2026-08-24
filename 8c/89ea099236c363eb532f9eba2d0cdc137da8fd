@@ -1,0 +1,26 @@
+api/bff-api/rest/CHANGELOG.md
+  h_a041df4244d543 3-9
+api/bff-api/rest/open-api-rest.yml
+  h_a041df4244d543 10
+api/bff-api/rest/v1/services/manager/manager-operations.yml
+  h_a041df4244d543 910-912,914-915,925-932,1060,1065-1071,1141,1146-1149
+api/main-api/rest/CHANGELOG.md
+  h_a041df4244d543 3-9
+api/main-api/rest/open-api-rest.yml
+  h_a041df4244d543 6
+api/main-api/rest/v1/components/common/error-components.yml
+  h_a041df4244d543 104,165
+api/main-api/rest/v1/services/scheduling/scheduling-operations.yml
+  h_a041df4244d543 405-409,413-420,496,530
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.22",
+  "base_commit_sha": "8c89ea099236c363eb532f9eba2d0cdc137da8fd",
+  "prompts": {},
+  "humans": {
+    "h_a041df4244d543": {
+      "author": "sergiobpa <sergiobpa@ext.inditex.com>"
+    }
+  }
+}
