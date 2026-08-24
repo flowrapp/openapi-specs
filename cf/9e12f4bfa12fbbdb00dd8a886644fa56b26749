@@ -1,0 +1,19 @@
+api/scheduling_solver/openapi.json
+  s_36aff6e2723307::t_5e30c23564894a 359,525,1452-1497,1503,1510-1511,1519-1526,1791,2071,2078,2110,2175,2179,2181,2184,2210,2331-2346,2350
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.22",
+  "base_commit_sha": "cf9e12f4bfa12fbbdb00dd8a886644fa56b26749",
+  "prompts": {},
+  "sessions": {
+    "s_36aff6e2723307": {
+      "agent_id": {
+        "tool": "pi",
+        "id": "01a033bb-d39c-7849-9dad-98c193fc75ba",
+        "model": "gpt-5.6-luna"
+      },
+      "human_author": "sergiobpa <sergiobpa@ext.inditex.com>"
+    }
+  }
+}
