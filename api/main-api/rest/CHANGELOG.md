@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.0.47
+
+### Added
+
+- Optional trimmed, case-insensitive literal substring search across business-user name, username, or email, combinable with the role filter.
+- Business-user results are ordered by name without regard to case, then user ID ascending.
+
 ## 0.0.44
 
 ### Added

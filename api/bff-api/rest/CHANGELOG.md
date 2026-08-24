@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.0.47
+
+### Added
+
+- Optional trimmed, case-insensitive literal substring search across worker name, username, or email, combinable with the role filter.
+- Worker ordering follows the Main API's name-then-user-ID ordering, and `totalWorkers` counts the returned memberships.
+
 ## 0.0.44
 
 ### Added

@@ -38,8 +38,11 @@ manager:
       summary: Get business workers
       description: >
         Returns business memberships for the authenticated user's business. `totalWorkers` is
-        the number of returned memberships after the optional role filter, including owners and
-        managers when selected.
+        the number of returned memberships after the optional role and search filters, including
+        owners and managers when selected. Search is a case-insensitive literal substring of the
+        worker's name, username, or email; surrounding whitespace is trimmed, blank values disable
+        search, and role and search are combined with AND. Results preserve name-then-user-ID
+        ordering from the main API.
       tags:
         - Manager
       operationId: getManagerBusinessWorkers
@@ -60,6 +63,17 @@ manager:
           schema:
             type: string
             enum: [OWNER, MANAGER, EMPLOYEE]
+        - name: search
+          in: query
+          required: false
+          description: >
+            Optional case-insensitive literal substring matched against the worker's name, username,
+            or email. Surrounding whitespace is trimmed; empty or whitespace-only values are
+            treated as absent. Percent and underscore are matched literally. Combined with role
+            using AND; the identity fields are combined using OR. Ordering from the main API is
+            preserved: name ignoring case, then user ID ascending.
+          schema:
+            type: string
       responses:
         '200':
           description: Workers list retrieved successfully

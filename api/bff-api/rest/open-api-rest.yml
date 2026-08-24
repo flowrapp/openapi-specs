@@ -7,7 +7,7 @@ info:
     This BFF aggregates and shapes data from the Flowrapp main API to serve
     the specific needs of the mobile frontend, providing role-based endpoints
     for workers and managers.
-  version: 0.0.46
+  version: 0.0.47
   contact:
     name: Flowrapp Team
     url: https://flowrapp.github.io

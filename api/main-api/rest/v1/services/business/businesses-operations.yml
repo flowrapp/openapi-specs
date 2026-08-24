@@ -62,7 +62,10 @@ businesses:
       summary: Get users associated within a business
       description: >
         Retrieves a list of business memberships with each user's username, profile, and nullable
-        current contract, including job-role display metadata. Can be filtered by business role.
+        current contract, including job-role display metadata. Can be filtered by business role and
+        by a case-insensitive literal substring of the user's name, username, or email. Surrounding
+        whitespace is trimmed, blank values disable search, and role and search are combined with
+        AND. Results are ordered by worker name without regard to case, then user ID ascending.
       tags:
         - Businesses
       operationId: getBusinessUsers
@@ -83,6 +86,17 @@ businesses:
           schema:
             type: string
             enum: [OWNER, MANAGER, EMPLOYEE]
+        - name: search
+          in: query
+          required: false
+          description: >
+            Optional case-insensitive literal substring matched against the user's name, username,
+            or email. Surrounding whitespace is trimmed; empty or whitespace-only values are
+            treated as absent. Percent and underscore are matched literally. Combined with role
+            using AND; the identity fields are combined using OR. Results are ordered by name,
+            ignoring case, then user ID ascending.
+          schema:
+            type: string
       responses:
         '200':
           description: Business memberships with profile and current-contract data retrieved successfully
