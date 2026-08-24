@@ -1,0 +1,14 @@
+api/main-api/rest/open-api-rest.yml
+  h_a041df4244d543 6
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.22",
+  "base_commit_sha": "efcae00815e56ab86d6470891ce11a90cd3936b4",
+  "prompts": {},
+  "humans": {
+    "h_a041df4244d543": {
+      "author": "sergiobpa <sergiobpa@ext.inditex.com>"
+    }
+  }
+}
