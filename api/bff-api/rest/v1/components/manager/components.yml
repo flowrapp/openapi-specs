@@ -446,6 +446,48 @@ components:
           example: 3
       required: [jobRoleId, minimumEmployees, targetEmployees, maximumEmployees]
 
+    ManagerPlanningRoleDemandDTO:
+      type: object
+      description: Immutable planning demand with derived coverage from valid scheduled assignments.
+      properties:
+        jobRoleId:
+          type: integer
+          format: int64
+          minimum: 1
+          description: Stable business job-role identifier
+          example: 10
+        minimumEmployees:
+          type: integer
+          format: int32
+          minimum: 0
+          example: 1
+        targetEmployees:
+          type: integer
+          format: int32
+          minimum: 0
+          example: 2
+        maximumEmployees:
+          type: integer
+          format: int32
+          minimum: 1
+          example: 3
+        assignedEmployees:
+          type: integer
+          format: int32
+          minimum: 0
+          description: Number of valid scheduled assignments for this demand.
+        minimumDeficit:
+          type: integer
+          format: int32
+          minimum: 0
+          description: Missing employees below the minimum, never negative.
+        targetDeficit:
+          type: integer
+          format: int32
+          minimum: 0
+          description: Missing employees below the target, never negative.
+      required: [jobRoleId, minimumEmployees, targetEmployees, maximumEmployees, assignedEmployees, minimumDeficit, targetDeficit]
+
     ManagerDailyShiftDTO:
       type: object
       properties:
@@ -865,8 +907,9 @@ components:
           example: 30
         demands:
           type: array
+          description: Staffing demands with derived planning coverage.
           items:
-            $ref: '#/components/schemas/ManagerRoleDemandDTO'
+            $ref: '#/components/schemas/ManagerPlanningRoleDemandDTO'
       required: [shiftName, shiftColor, startTime, endTime, breakMinutes, demands]
 
     ManagerPlanningRequirementDTO:
@@ -1106,4 +1149,7 @@ components:
           type: [string, "null"]
           format: date-time
           example: null
-      required: [id, businessId, week, weekStart, weekEnd, status, failureReason, totals, requirements, days, workers, createdAt, publishedAt]
+        hasCoverageWarnings:
+          type: boolean
+          description: True when any immutable demand remains below its minimum staffing level.
+      required: [id, businessId, week, weekStart, weekEnd, status, failureReason, totals, requirements, days, workers, createdAt, publishedAt, hasCoverageWarnings]

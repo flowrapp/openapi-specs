@@ -1285,6 +1285,7 @@ manager:
                     workers: []
                     createdAt: "2025-07-27T08:00:00+02:00"
                     publishedAt: null
+                    hasCoverageWarnings: false
                 solving:
                   summary: Solving planning with an overnight requirement and contract/assignment union
                   value:
@@ -1310,6 +1311,9 @@ manager:
                                 minimumEmployees: 1
                                 targetEmployees: 2
                                 maximumEmployees: 3
+                                assignedEmployees: 1
+                                minimumDeficit: 0
+                                targetDeficit: 1
                     days:
                       - date: "2025-07-28"
                         requiredSeconds: 25200
@@ -1347,6 +1351,7 @@ manager:
                                 durationSeconds: 12600
                     createdAt: "2025-07-27T08:00:00+02:00"
                     publishedAt: null
+                    hasCoverageWarnings: false
                 ready:
                   summary: Ready planning with two shifts on one date
                   value:
@@ -1372,6 +1377,9 @@ manager:
                                 minimumEmployees: 1
                                 targetEmployees: 1
                                 maximumEmployees: 2
+                                assignedEmployees: 1
+                                minimumDeficit: 0
+                                targetDeficit: 0
                           - shiftName: Evening service
                             shiftColor: "#4C9F70"
                             startTime: "14:00"
@@ -1382,6 +1390,9 @@ manager:
                                 minimumEmployees: 1
                                 targetEmployees: 1
                                 maximumEmployees: 2
+                                assignedEmployees: 1
+                                minimumDeficit: 0
+                                targetDeficit: 0
                     days:
                       - date: "2025-07-28"
                         requiredSeconds: 28800
@@ -1415,6 +1426,7 @@ manager:
                                 durationSeconds: 14400
                     createdAt: "2025-07-27T08:00:00+02:00"
                     publishedAt: null
+                    hasCoverageWarnings: false
                 published:
                   summary: Published planning
                   value:
@@ -1431,6 +1443,7 @@ manager:
                     workers: []
                     createdAt: "2025-07-27T08:00:00+02:00"
                     publishedAt: "2025-07-27T12:00:00+02:00"
+                    hasCoverageWarnings: false
                 failed:
                   summary: Failed planning
                   value:
@@ -1447,6 +1460,7 @@ manager:
                     workers: []
                     createdAt: "2025-08-03T08:00:00+02:00"
                     publishedAt: null
+                    hasCoverageWarnings: false
                 archived:
                   summary: Archived read-only planning
                   value:
@@ -1463,6 +1477,7 @@ manager:
                     workers: []
                     createdAt: "2025-07-20T08:00:00+02:00"
                     publishedAt: "2025-07-20T12:00:00+02:00"
+                    hasCoverageWarnings: false
         '401':
           description: Authentication is required
           content:
@@ -1527,6 +1542,7 @@ manager:
                 workers: []
                 createdAt: "2025-07-27T08:00:00+02:00"
                 publishedAt: "2025-07-27T12:00:00+02:00"
+                hasCoverageWarnings: false
         '401':
           description: Authentication is required
           content:

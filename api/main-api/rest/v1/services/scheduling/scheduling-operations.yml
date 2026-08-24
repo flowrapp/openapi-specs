@@ -671,9 +671,13 @@ planning:
                             minimumEmployees: 1
                             targetEmployees: 2
                             maximumEmployees: 3
+                            assignedEmployees: 0
+                            minimumDeficit: 1
+                            targetDeficit: 2
                 createdAt: "2025-07-27T08:00:00+02:00"
                 publishedAt: null
                 scheduledShifts: []
+                hasCoverageWarnings: true
         '403': {$ref: '../../components/scheduling/components.yml#/components/responses/Forbidden'}
         '404': {$ref: '../../components/scheduling/components.yml#/components/responses/NotFound'}
       x-functional-errors: [1006, 1020, 1046]
@@ -729,6 +733,7 @@ planning:
                 createdAt: "2025-07-27T08:00:00+02:00"
                 publishedAt: "2025-07-27T12:00:00+02:00"
                 scheduledShifts: []
+                hasCoverageWarnings: false
         '403': {$ref: '../../components/scheduling/components.yml#/components/responses/Forbidden'}
         '404':
           description: Planning ID does not exist in the business or belongs to another business; no planning is created
