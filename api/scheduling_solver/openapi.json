@@ -356,7 +356,7 @@
             "content" : {
               "application/json" : {
                 "schema" : {
-                  "$ref" : "#/components/schemas/ModelResponseHardMediumSoftScoreSchedulingOutputEmptyModelInputMetricsEmptyModelOutputMetrics"
+                  "$ref" : "#/components/schemas/ModelResponseBendableScoreSchedulingOutputEmptyModelInputMetricsEmptyModelOutputMetrics"
                 }
               }
             }
@@ -522,7 +522,7 @@
             "content" : {
               "application/json" : {
                 "schema" : {
-                  "$ref" : "#/components/schemas/ModelResponseHardMediumSoftScoreSchedulingOutputEmptyModelInputMetricsEmptyModelOutputMetrics"
+                  "$ref" : "#/components/schemas/ModelResponseBendableScoreSchedulingOutputEmptyModelInputMetricsEmptyModelOutputMetrics"
                 }
               }
             }
@@ -1449,34 +1449,80 @@
           }
         }
       },
-      "DatasetSelector" : {
-        "enum" : [ "UNSOLVED", "SOLVED" ],
-        "type" : "string"
+      "AssignmentOutput" : {
+        "required" : [ "assignmentId", "demandId", "workerId" ],
+        "type" : "object",
+        "properties" : {
+          "assignmentId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "demandId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "workerId" : {
+            "format" : "int64",
+            "type" : "integer",
+            "nullable" : true
+          }
+        }
       },
-      "DayOfWeek" : {
-        "enum" : [ "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY", "SUNDAY" ],
-        "type" : "string"
-      },
-      "DemandInput" : {
-        "required" : [ "id", "dayOfWeek", "jobRoleId", "startTime", "endTime", "minimumEmployees", "targetEmployees", "maximumEmployees" ],
+      "ContractPeriod" : {
+        "required" : [ "id", "jobRoleId", "totalWeekHours", "from" ],
         "type" : "object",
         "properties" : {
           "id" : {
             "format" : "int64",
             "type" : "integer"
           },
-          "dayOfWeek" : {
-            "$ref" : "#/components/schemas/DayOfWeek"
-          },
           "jobRoleId" : {
             "format" : "int64",
             "type" : "integer"
+          },
+          "totalWeekHours" : {
+            "format" : "double",
+            "type" : "number"
+          },
+          "from" : {
+            "$ref" : "#/components/schemas/LocalDate"
+          },
+          "to" : {
+            "allOf" : [ {
+              "$ref" : "#/components/schemas/LocalDate"
+            } ],
+            "nullable" : true
+          }
+        }
+      },
+      "DatasetSelector" : {
+        "enum" : [ "UNSOLVED", "SOLVED" ],
+        "type" : "string"
+      },
+      "DemandInput" : {
+        "required" : [ "id", "date", "startTime", "endTime", "breakMinutes", "jobRoleId", "minimumEmployees", "targetEmployees", "maximumEmployees" ],
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "date" : {
+            "$ref" : "#/components/schemas/LocalDate"
           },
           "startTime" : {
             "$ref" : "#/components/schemas/LocalTime"
           },
           "endTime" : {
             "$ref" : "#/components/schemas/LocalTime"
+          },
+          "breakMinutes" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "jobRoleId" : {
+            "format" : "int64",
+            "type" : "integer"
           },
           "minimumEmployees" : {
             "format" : "int32",
@@ -1496,37 +1542,6 @@
         "format" : "duration",
         "type" : "string",
         "example" : "P1D"
-      },
-      "Employee" : {
-        "required" : [ "id", "jobRoleId", "totalWeekHours", "from", "to" ],
-        "type" : "object",
-        "properties" : {
-          "id" : {
-            "format" : "int64",
-            "type" : "integer"
-          },
-          "jobRoleId" : {
-            "format" : "int64",
-            "type" : "integer"
-          },
-          "totalWeekHours" : {
-            "format" : "double",
-            "type" : "number"
-          },
-          "active" : {
-            "type" : "boolean"
-          },
-          "from" : {
-            "allOf" : [ {
-              "$ref" : "#/components/schemas/LocalDate"
-            } ]
-          },
-          "to" : {
-            "allOf" : [ {
-              "$ref" : "#/components/schemas/LocalDate"
-            } ]
-          }
-        }
       },
       "EmptyModelInputMetrics" : {
         "type" : "object"
@@ -1773,7 +1788,7 @@
           }
         }
       },
-      "MetadataHardMediumSoftScore" : {
+      "MetadataBendableScore" : {
         "type" : "object",
         "properties" : {
           "id" : {
@@ -2053,14 +2068,14 @@
         },
         "additionalProperties" : false
       },
-      "ModelResponseHardMediumSoftScoreSchedulingOutputEmptyModelInputMetricsEmptyModelOutputMetrics" : {
+      "ModelResponseBendableScoreSchedulingOutputEmptyModelInputMetricsEmptyModelOutputMetrics" : {
         "type" : "object",
         "properties" : {
           "metadata" : {
             "description" : "The model dataset metadata.",
             "type" : "object",
             "allOf" : [ {
-              "$ref" : "#/components/schemas/MetadataHardMediumSoftScore"
+              "$ref" : "#/components/schemas/MetadataBendableScore"
             } ],
             "nullable" : true
           },
@@ -2092,7 +2107,7 @@
             "description" : "The model run metadata. Deprecated in favor of \"metadata\"",
             "type" : "object",
             "allOf" : [ {
-              "$ref" : "#/components/schemas/MetadataHardMediumSoftScore"
+              "$ref" : "#/components/schemas/MetadataBendableScore"
             } ],
             "readOnly" : true,
             "nullable" : true,
@@ -2104,21 +2119,6 @@
         "format" : "date-time",
         "type" : "string",
         "example" : "2022-03-10T12:15:50-04:00"
-      },
-      "OpeningInterval" : {
-        "required" : [ "dayOfWeek", "startTime", "endTime" ],
-        "type" : "object",
-        "properties" : {
-          "dayOfWeek" : {
-            "$ref" : "#/components/schemas/DayOfWeek"
-          },
-          "startTime" : {
-            "$ref" : "#/components/schemas/LocalTime"
-          },
-          "endTime" : {
-            "$ref" : "#/components/schemas/LocalTime"
-          }
-        }
       },
       "OperationOnPost" : {
         "enum" : [ "NONE", "SOLVE" ],
@@ -2172,30 +2172,22 @@
         "additionalProperties" : false
       },
       "SchedulingInput" : {
+        "required" : [ "weekStart" ],
         "type" : "object",
         "properties" : {
           "weekStart" : {
-            "allOf" : [ {
-              "$ref" : "#/components/schemas/LocalDate"
-            } ],
-            "nullable" : true
+            "$ref" : "#/components/schemas/LocalDate"
           },
-          "employees" : {
+          "workers" : {
             "type" : "array",
             "items" : {
-              "$ref" : "#/components/schemas/Employee"
+              "$ref" : "#/components/schemas/Worker"
             }
           },
           "demands" : {
             "type" : "array",
             "items" : {
               "$ref" : "#/components/schemas/DemandInput"
-            }
-          },
-          "openingHours" : {
-            "type" : "array",
-            "items" : {
-              "$ref" : "#/components/schemas/OpeningInterval"
             }
           }
         }
@@ -2212,28 +2204,10 @@
             } ],
             "nullable" : true
           },
-          "employees" : {
-            "type" : "array",
-            "items" : {
-              "$ref" : "#/components/schemas/Employee"
-            }
-          },
-          "demands" : {
-            "type" : "array",
-            "items" : {
-              "$ref" : "#/components/schemas/ShiftDemand"
-            }
-          },
-          "openingHours" : {
-            "type" : "array",
-            "items" : {
-              "$ref" : "#/components/schemas/OpeningInterval"
-            }
-          },
           "assignments" : {
             "type" : "array",
             "items" : {
-              "$ref" : "#/components/schemas/ShiftAssignment"
+              "$ref" : "#/components/schemas/AssignmentOutput"
             }
           }
         }
@@ -2251,62 +2225,6 @@
           }
         },
         "additionalProperties" : false
-      },
-      "ShiftAssignment" : {
-        "type" : "object",
-        "properties" : {
-          "id" : {
-            "format" : "int64",
-            "type" : "integer"
-          },
-          "demand" : {
-            "$ref" : "#/components/schemas/ShiftDemand"
-          },
-          "employee" : {
-            "allOf" : [ {
-              "$ref" : "#/components/schemas/Employee"
-            } ],
-            "nullable" : true
-          }
-        }
-      },
-      "ShiftDemand" : {
-        "required" : [ "id", "dayOfWeek", "jobRoleId", "startTime", "endTime", "minimumEmployees", "targetEmployees", "maximumEmployees" ],
-        "type" : "object",
-        "properties" : {
-          "id" : {
-            "format" : "int64",
-            "type" : "integer"
-          },
-          "dayOfWeek" : {
-            "$ref" : "#/components/schemas/DayOfWeek"
-          },
-          "jobRoleId" : {
-            "format" : "int64",
-            "type" : "integer"
-          },
-          "startTime" : {
-            "$ref" : "#/components/schemas/LocalTime"
-          },
-          "endTime" : {
-            "$ref" : "#/components/schemas/LocalTime"
-          },
-          "minimumEmployees" : {
-            "format" : "int32",
-            "type" : "integer"
-          },
-          "targetEmployees" : {
-            "format" : "int32",
-            "type" : "integer"
-          },
-          "maximumEmployees" : {
-            "format" : "int32",
-            "type" : "integer"
-          },
-          "withinOpeningHours" : {
-            "type" : "boolean"
-          }
-        }
       },
       "SolverTerminationConfig" : {
         "type" : "object",
@@ -2410,6 +2328,22 @@
       "ValidationStatus" : {
         "enum" : [ "VALIDATION_NOT_SUPPORTED", "OK", "WARNINGS", "ERRORS" ],
         "type" : "string"
+      },
+      "Worker" : {
+        "required" : [ "id" ],
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "contractPeriods" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/ContractPeriod"
+            }
+          }
+        }
       }
     }
   }

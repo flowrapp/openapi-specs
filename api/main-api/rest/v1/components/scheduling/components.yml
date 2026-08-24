@@ -177,6 +177,39 @@ components:
           format: int32
       required: [jobRoleId, minimumEmployees, targetEmployees, maximumEmployees]
 
+    PlanningRoleDemandResponseDTO:
+      type: object
+      description: Immutable planning demand with derived coverage from valid scheduled assignments.
+      properties:
+        jobRoleId:
+          type: integer
+          format: int64
+        minimumEmployees:
+          type: integer
+          format: int32
+        targetEmployees:
+          type: integer
+          format: int32
+        maximumEmployees:
+          type: integer
+          format: int32
+        assignedEmployees:
+          type: integer
+          format: int32
+          minimum: 0
+          description: Number of valid scheduled assignments for this demand.
+        minimumDeficit:
+          type: integer
+          format: int32
+          minimum: 0
+          description: Missing employees below the minimum, never negative.
+        targetDeficit:
+          type: integer
+          format: int32
+          minimum: 0
+          description: Missing employees below the target, never negative.
+      required: [jobRoleId, minimumEmployees, targetEmployees, maximumEmployees, assignedEmployees, minimumDeficit, targetDeficit]
+
     DailyShiftRequestDTO:
       type: object
       properties:
@@ -540,9 +573,9 @@ components:
           example: 30
         demands:
           type: array
-          description: Staffing demand by stable business job-role ID
+          description: Staffing demand by stable business job-role ID with derived planning coverage.
           items:
-            $ref: '#/components/schemas/RoleDemandResponseDTO'
+            $ref: '#/components/schemas/PlanningRoleDemandResponseDTO'
       required: [name, color, startTime, endTime, breakMinutes, demands]
 
     PlanningRequirementDTO:
@@ -666,7 +699,10 @@ components:
           description: Solved assignments. Empty while the planning has no assignments yet.
           items:
             $ref: '#/components/schemas/ScheduledShiftResponseDTO'
-      required: [id, businessId, weekStart, weekEnd, status, failureReason, requirements, createdAt, scheduledShifts]
+        hasCoverageWarnings:
+          type: boolean
+          description: True when any immutable demand remains below its minimum staffing level.
+      required: [id, businessId, weekStart, weekEnd, status, failureReason, requirements, createdAt, scheduledShifts, hasCoverageWarnings]
       example:
         id: 500
         businessId: 101
@@ -677,6 +713,7 @@ components:
         requirements: []
         createdAt: "2025-07-27T08:00:00+02:00"
         scheduledShifts: []
+        hasCoverageWarnings: false
       x-status-examples:
         - summary: Solving planning
           value:
@@ -699,9 +736,13 @@ components:
                         minimumEmployees: 1
                         targetEmployees: 2
                         maximumEmployees: 3
+                        assignedEmployees: 0
+                        minimumDeficit: 1
+                        targetDeficit: 2
             createdAt: "2025-07-27T08:00:00+02:00"
             publishedAt: null
             scheduledShifts: []
+            hasCoverageWarnings: true
         - summary: Ready planning
           value:
             id: 500
@@ -723,6 +764,9 @@ components:
                         minimumEmployees: 1
                         targetEmployees: 2
                         maximumEmployees: 3
+                        assignedEmployees: 1
+                        minimumDeficit: 0
+                        targetDeficit: 1
             createdAt: "2025-07-27T08:00:00+02:00"
             publishedAt: null
             scheduledShifts:
@@ -750,6 +794,7 @@ components:
             createdAt: "2025-07-27T08:00:00+02:00"
             publishedAt: "2025-07-27T12:00:00+02:00"
             scheduledShifts: []
+            hasCoverageWarnings: false
         - summary: Failed planning
           value:
             id: 501
@@ -762,6 +807,7 @@ components:
             createdAt: "2025-08-03T08:00:00+02:00"
             publishedAt: null
             scheduledShifts: []
+            hasCoverageWarnings: false
 
     TeamScheduleResponseDTO:
       type: object
