@@ -1,0 +1,14 @@
+api/main-api/rest/v1/services/business/businesses-operations.yml
+  h_a041df4244d543 5-9,16-22
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.22",
+  "base_commit_sha": "19befe5fb414778fa57a9cf9188750e30a37d170",
+  "prompts": {},
+  "humans": {
+    "h_a041df4244d543": {
+      "author": "sergiobpa <sergiobpa@ext.inditex.com>"
+    }
+  }
+}
