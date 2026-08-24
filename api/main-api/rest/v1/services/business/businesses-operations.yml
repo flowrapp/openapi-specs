@@ -2,13 +2,24 @@ businesses:
   get-businesses:
     get:
       summary: Get user businesses with roles
-      description: Retrieves a comprehensive list of all businesses that are associated with the currently authenticated user, including the role of the current user in each business.
+      description: >
+        Retrieves a comprehensive list of all businesses that are associated with the currently authenticated user, including the role of the current user in each business.
+        When provided, search filters by a case-insensitive substring of the business name only;
+        surrounding whitespace is ignored, blank values return all memberships, and `%` and `_`
+        are treated as literal characters.
       tags:
         - Businesses
       operationId: getUserBusinesses
       security:
         - basicAuth: []
         - bearerAuth: []
+      parameters:
+        - name: search
+          in: query
+          required: false
+          description: Optional case-insensitive substring to search within the business name.
+          schema:
+            type: string
       responses:
         '200':
           description: Businesses retrieved successfully
