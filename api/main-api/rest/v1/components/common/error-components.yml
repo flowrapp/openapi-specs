@@ -101,6 +101,7 @@ components:
         | 1056 | 404 | SCHEDULE_EXCEPTION_NOT_FOUND | schedule exception not found |
         | 1057 | 400 | INVALID_CONTRACT_RANGE | contract date range is invalid |
         | 1058 | 409 | CONTRACT_UPDATE_BLOCKED_BY_PLANNING | contract update is blocked by planning state |
+        | 1059 | 409 | JOB_ROLE_NAME_ALREADY_EXISTS | job role name already exists |
       enum:
         - 1000
         - 1001
@@ -161,3 +162,4 @@ components:
         - 1056
         - 1057
         - 1058
+        - 1059

@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.0.44
+
+### Added
+
+- Optional trimmed, case-insensitive partial `name` filtering for business job-role slices, combined with `active` and pagination before deterministic ordering.
+- Normalized job-role name uniqueness errors are documented separately from duplicate code conflicts (`1059`).
+
 ## 0.0.42
 
 ### Breaking changes

@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.0.44
+
+### Added
+
+- Optional trimmed, case-insensitive partial `name` filtering for manager job-role slices, preserving main API ordering and slice metadata.
+- Distinct duplicate normalized-name (`1059`) and duplicate-code (`1035`) conflict examples for manager job-role writes.
+
 ## 0.0.42
 
 ### Breaking changes

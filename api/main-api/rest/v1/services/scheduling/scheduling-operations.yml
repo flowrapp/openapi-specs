@@ -402,12 +402,22 @@ jobRoles:
       operationId: getBusinessJobRoles
       summary: List job roles for a business
       description: >
-        Returns a deterministic slice of job roles. `active=true` returns only active roles,
-        `active=false` returns only inactive roles, and an omitted `active` returns both states.
-        Results are ordered by active state descending, name ascending, and ID ascending.
+        Returns a deterministic slice of job roles. An optional `name` filter matches a trimmed,
+        case-insensitive partial name using PostgreSQL `ILIKE`; missing, empty, and blank values
+        are ignored. `active=true` returns only active roles, `active=false` returns only inactive
+        roles, and an omitted `active` returns both states. Name and active filters are applied
+        before results are ordered by active state descending, name ascending, and ID ascending.
       security: [{ bearerAuth: [] }]
       parameters:
         - $ref: '../../components/scheduling/components.yml#/components/parameters/BusinessId'
+        - name: name
+          in: query
+          required: false
+          description: Trimmed, case-insensitive partial name filter; blank values are ignored
+          schema:
+            type: string
+            maxLength: 100
+            example: cook
         - name: active
           in: query
           required: false
@@ -483,7 +493,7 @@ jobRoles:
         '403': {$ref: '../../components/scheduling/components.yml#/components/responses/Forbidden'}
         '404': {$ref: '../../components/scheduling/components.yml#/components/responses/NotFound'}
         '409': {$ref: '../../components/scheduling/components.yml#/components/responses/Conflict'}
-      x-functional-errors: [1006, 1020, 1035]
+      x-functional-errors: [1006, 1020, 1035, 1059]
   item:
     put:
       tags: [Job Roles]
@@ -517,7 +527,7 @@ jobRoles:
         '403': {$ref: '../../components/scheduling/components.yml#/components/responses/Forbidden'}
         '404': {$ref: '../../components/scheduling/components.yml#/components/responses/NotFound'}
         '409': {$ref: '../../components/scheduling/components.yml#/components/responses/Conflict'}
-      x-functional-errors: [1006, 1020, 1034]
+      x-functional-errors: [1006, 1020, 1034, 1059]
     delete:
       tags: [Job Roles]
       operationId: deleteBusinessJobRole

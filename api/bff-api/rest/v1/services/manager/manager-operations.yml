@@ -907,10 +907,12 @@ manager:
     get:
       summary: List business job roles
       description: >
-        Returns a deterministic slice of job roles. `active=true` returns only active roles,
+        Returns a deterministic slice of job roles. An optional `name` filter matches a trimmed,
+        case-insensitive partial name using the main API's PostgreSQL `ILIKE` semantics; missing,
+        empty, and blank values are ignored. `active=true` returns only active roles,
         `active=false` returns only inactive roles, and an omitted `active` returns both states.
-        Results are ordered by active state descending, name ascending, and ID ascending. Requires
-        an OWNER membership.
+        Name and active filters are applied before results are ordered by active state descending,
+        name ascending, and ID ascending. Requires an OWNER membership.
       tags: [Manager]
       operationId: getManagerJobRoles
       security: [{ bearerAuth: [] }]
@@ -920,6 +922,14 @@ manager:
           required: true
           description: ID of the business
           schema: {type: integer, format: int64, minimum: 1}
+        - name: name
+          in: query
+          required: false
+          description: Trimmed, case-insensitive partial name filter; blank values are ignored
+          schema:
+            type: string
+            maxLength: 100
+            example: cook
         - name: active
           in: query
           required: false
@@ -1047,12 +1057,18 @@ manager:
                 $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
               example: {status: 404, detail: "1006 - business does not exist"}
         '409':
-          description: Job-role code already exists in the business
+          description: Job-role code or normalized name already exists in the business
           content:
             application/problem+json:
               schema:
                 $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
-              example: {status: 409, detail: "1035 - job role code already exists"}
+              examples:
+                duplicateCode:
+                  summary: Duplicate job-role code
+                  value: {status: 409, detail: "1035 - job role code already exists"}
+                duplicateName:
+                  summary: Duplicate normalized job-role name
+                  value: {status: 409, detail: "1059 - job role name already exists"}
 
   job-role-item:
     put:
@@ -1122,12 +1138,15 @@ manager:
                 $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
               example: {status: 404, detail: "1034 - job role not found"}
         '409':
-          description: Job-role update conflicts with existing data
+          description: Job-role normalized name already exists in the business
           content:
             application/problem+json:
               schema:
                 $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
-              example: {status: 409, detail: "1035 - job role code already exists"}
+              examples:
+                duplicateName:
+                  summary: Duplicate normalized job-role name
+                  value: {status: 409, detail: "1059 - job role name already exists"}
 
     delete:
       summary: Deactivate a business job role
