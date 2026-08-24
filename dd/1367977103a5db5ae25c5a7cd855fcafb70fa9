@@ -1,0 +1,24 @@
+api/bff-api/rest/CHANGELOG.md
+  h_a041df4244d543 3-9
+api/bff-api/rest/open-api-rest.yml
+  h_a041df4244d543 10
+api/bff-api/rest/v1/services/manager/manager-operations.yml
+  h_a041df4244d543 41-45,66-76
+api/main-api/rest/CHANGELOG.md
+  h_a041df4244d543 3-9
+api/main-api/rest/open-api-rest.yml
+  h_a041df4244d543 6
+api/main-api/rest/v1/services/business/businesses-operations.yml
+  h_a041df4244d543 65-68,89-99
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.22",
+  "base_commit_sha": "dd1367977103a5db5ae25c5a7cd855fcafb70fa9",
+  "prompts": {},
+  "humans": {
+    "h_a041df4244d543": {
+      "author": "sergiobpa <sergiobpa@ext.inditex.com>"
+    }
+  }
+}
