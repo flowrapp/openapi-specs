@@ -4,12 +4,22 @@ worker:
       summary: Get worker's businesses
       description: >
         Returns the list of businesses the authenticated worker belongs to, including full
-        business details and the worker's role in each business.
+        business details and the worker's role in each business. When provided, search is
+        forwarded as a case-insensitive substring filter on the business name; surrounding
+        whitespace is ignored, blank values return all memberships, and `%` and `_` are
+        treated as literal characters.
       tags:
         - Worker
       operationId: getWorkerBusinesses
       security:
         - bearerAuth: []
+      parameters:
+        - name: search
+          in: query
+          required: false
+          description: Optional case-insensitive substring to search within the business name.
+          schema:
+            type: string
       responses:
         '200':
           description: Businesses retrieved successfully
