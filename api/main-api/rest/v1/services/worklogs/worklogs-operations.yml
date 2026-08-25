@@ -31,6 +31,12 @@ worklogs:
             application/json:
               schema:
                 $ref: '../../components/worklogs/components.yml#/components/schemas/WorkLogResponseDTO'
+        '400':
+          description: Clock-in timestamp or note is invalid
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
         '401':
           description: Unauthorized
         '404':
@@ -45,8 +51,17 @@ worklogs:
                   value:
                     status: 404
                     detail: "1006 - business does not exist"
+        '409':
+          description: An open worklog already exists or the idempotency identifier conflicts with a previous command
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
       x-functional-errors:
         - 1006
+        - 1025
+        - 1063
+        - 1064
 
   clock-out:
     put:
@@ -119,7 +134,7 @@ worklogs:
                     status: 403
                     detail: "1018 - worklog already closed"
         '404':
-          description: Worklog not found
+          description: Worklog not found or is not available through the route business
           content:
             application/problem+json:
               schema:
@@ -130,8 +145,13 @@ worklogs:
                   value:
                     status: 404
                     detail: "1017 - worklog not found"
+                WORKLOG_BUSINESS_MISMATCH:
+                  summary: "1065 - worklog is not available through this business"
+                  value:
+                    status: 404
+                    detail: "1065 - worklog is not available through this business"
         '409':
-          description: Worklog overlaps with an existing worklog
+          description: Worklog overlaps with an existing worklog, the idempotency identifier conflicts, or the row was modified concurrently
           content:
             application/problem+json:
               schema:
@@ -148,6 +168,9 @@ worklogs:
         - 1019
         - 1022
         - 1025
+        - 1049
+        - 1064
+        - 1065
 
   filtered-worklogs:
     get:
@@ -199,6 +222,16 @@ worklogs:
             type: integer
             format: int64
             example: 123
+        - name: reviewStatus
+          in: query
+          required: false
+          description: One or more review states to include. Repeating the parameter adds another state.
+          style: form
+          explode: true
+          schema:
+            type: array
+            items:
+              $ref: '../../components/worklogs/components.yml#/components/schemas/WorklogReviewStatusDTO'
       responses:
         '200':
           description: Worklogs retrieved successfully
@@ -281,6 +314,16 @@ worklogs:
             type: integer
             format: int64
             example: 123
+        - name: reviewStatus
+          in: query
+          required: false
+          description: One or more review states to include. Repeating the parameter adds another state.
+          style: form
+          explode: true
+          schema:
+            type: array
+            items:
+              $ref: '../../components/worklogs/components.yml#/components/schemas/WorklogReviewStatusDTO'
       responses:
         '200':
           description: Worklogs retrieved successfully
@@ -434,3 +477,430 @@ worklogs:
         - 1019
         - 1022
         - 1025
+
+  worker-correction:
+    put:
+      summary: Correct own worklog
+      description: >
+        Submits a correction to a closed worklog owned by the authenticated worker. A non-blank
+        reason is required and a successful correction enters PENDING_REVIEW until management
+        confirms it. The worker may change either punch or the current note.
+      tags:
+        - Worklogs
+      operationId: correctOwnWorklog
+      security:
+        - basicAuth: []
+        - bearerAuth: []
+      parameters:
+        - name: worklogId
+          in: path
+          required: true
+          description: ID of the worklog to correct
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        description: Corrected worklog values and mandatory reason
+        content:
+          application/json:
+            schema:
+              $ref: '../../components/worklogs/components.yml#/components/schemas/WorklogCorrectionRequestDTO'
+      responses:
+        '200':
+          description: Worklog correction accepted for review
+          content:
+            application/json:
+              schema:
+                $ref: '../../components/worklogs/components.yml#/components/schemas/WorkLogResponseDTO'
+        '400':
+          description: Correction or reason is invalid
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+        '401':
+          description: Unauthorized
+        '403':
+          description: The authenticated worker does not own the worklog
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+        '404':
+          description: Worklog not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+        '409':
+          description: Correction overlaps another worklog or the worklog was modified concurrently
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+      x-functional-errors:
+        - 1017
+        - 1019
+        - 1022
+        - 1025
+        - 1049
+        - 1068
+
+  worker-confirmation:
+    post:
+      summary: Confirm own worklog
+      description: >
+        Confirms an automatically closed or otherwise pending worklog owned by the authenticated
+        worker without changing its data. Confirmation requires no reason and makes the worklog
+        reportable.
+      tags:
+        - Worklogs
+      operationId: confirmWorklog
+      security:
+        - basicAuth: []
+        - bearerAuth: []
+      parameters:
+        - name: worklogId
+          in: path
+          required: true
+          description: ID of the worklog to confirm
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Worklog confirmed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '../../components/worklogs/components.yml#/components/schemas/WorkLogResponseDTO'
+        '401':
+          description: Unauthorized
+        '403':
+          description: The authenticated worker does not own the worklog
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+        '404':
+          description: Worklog not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+        '409':
+          description: The worklog cannot transition to confirmed
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+      x-functional-errors:
+        - 1017
+        - 1019
+        - 1067
+
+  management-correction:
+    put:
+      summary: Correct a business worklog
+      description: >
+        Allows an owner or manager of the route business to correct a worker worklog. A non-blank
+        reason is required. Successful management corrections are approved immediately; changed
+        punch origins become ADMIN while unchanged origins are preserved.
+      tags:
+        - Worklogs
+      operationId: correctBusinessWorklog
+      security:
+        - basicAuth: []
+        - bearerAuth: []
+      parameters:
+        - name: businessId
+          in: path
+          required: true
+          description: ID of the business
+          schema:
+            type: integer
+            format: int64
+        - name: worklogId
+          in: path
+          required: true
+          description: ID of the worklog to correct
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        description: Corrected worklog values and mandatory reason
+        content:
+          application/json:
+            schema:
+              $ref: '../../components/worklogs/components.yml#/components/schemas/WorklogCorrectionRequestDTO'
+      responses:
+        '200':
+          description: Worklog corrected and approved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '../../components/worklogs/components.yml#/components/schemas/WorkLogResponseDTO'
+        '400':
+          description: Correction or reason is invalid
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+        '401':
+          description: Unauthorized
+        '403':
+          description: The authenticated user is not an owner or manager of the business
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+        '404':
+          description: Business or worklog not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+        '409':
+          description: Correction overlaps another worklog or the worklog was modified concurrently
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+      x-functional-errors:
+        - 1006
+        - 1017
+        - 1022
+        - 1049
+        - 1068
+
+  approval:
+    post:
+      summary: Approve a business worklog
+      description: Allows an owner or manager of the business to approve a pending or confirmed worklog without changing its data.
+      tags:
+        - Worklogs
+      operationId: approveWorklog
+      security:
+        - basicAuth: []
+        - bearerAuth: []
+      parameters:
+        - name: businessId
+          in: path
+          required: true
+          description: ID of the business
+          schema:
+            type: integer
+            format: int64
+        - name: worklogId
+          in: path
+          required: true
+          description: ID of the worklog to approve
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Worklog approved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '../../components/worklogs/components.yml#/components/schemas/WorkLogResponseDTO'
+        '401':
+          description: Unauthorized
+        '403':
+          description: The authenticated user is not an owner or manager of the business
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+        '404':
+          description: Business or worklog not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+        '409':
+          description: The worklog cannot transition to approved
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+      x-functional-errors:
+        - 1006
+        - 1017
+        - 1067
+
+  rejection:
+    post:
+      summary: Reject a business worklog
+      description: Allows an owner or manager of the business to reject a worklog. A non-blank reason is required and the worklog remains retained for audit.
+      tags:
+        - Worklogs
+      operationId: rejectWorklog
+      security:
+        - basicAuth: []
+        - bearerAuth: []
+      parameters:
+        - name: businessId
+          in: path
+          required: true
+          description: ID of the business
+          schema:
+            type: integer
+            format: int64
+        - name: worklogId
+          in: path
+          required: true
+          description: ID of the worklog to reject
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        description: Mandatory rejection reason
+        content:
+          application/json:
+            schema:
+              $ref: '../../components/worklogs/components.yml#/components/schemas/WorklogRejectionRequestDTO'
+      responses:
+        '200':
+          description: Worklog rejected successfully
+          content:
+            application/json:
+              schema:
+                $ref: '../../components/worklogs/components.yml#/components/schemas/WorkLogResponseDTO'
+        '400':
+          description: Rejection reason is invalid
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+        '401':
+          description: Unauthorized
+        '403':
+          description: The authenticated user is not an owner or manager of the business
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+        '404':
+          description: Business or worklog not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+        '409':
+          description: The worklog cannot transition to rejected
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+      x-functional-errors:
+        - 1006
+        - 1017
+        - 1067
+        - 1068
+
+  history:
+    get:
+      summary: Get worklog audit history
+      description: Returns immutable audit entries for a worklog in chronological order. The worker owning the worklog and owners or managers of its business may access this history.
+      tags:
+        - Worklogs
+      operationId: getWorklogHistory
+      security:
+        - basicAuth: []
+        - bearerAuth: []
+      parameters:
+        - name: worklogId
+          in: path
+          required: true
+          description: ID of the worklog whose history is requested
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Worklog audit history in chronological order
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '../../components/worklogs/components.yml#/components/schemas/WorklogAuditEntryDTO'
+        '401':
+          description: Unauthorized
+        '403':
+          description: The authenticated user is not authorized to view this worklog
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+        '404':
+          description: Worklog not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+      x-functional-errors:
+        - 1017
+        - 1019
+
+  settings:
+    put:
+      summary: Update business worklog settings
+      description: Updates the owner-only long-open threshold for a business. The value must be greater than zero and less than the global 24-hour automatic-closure threshold.
+      tags:
+        - Worklogs
+      operationId: updateBusinessWorklogSettings
+      security:
+        - basicAuth: []
+        - bearerAuth: []
+      parameters:
+        - name: businessId
+          in: path
+          required: true
+          description: ID of the business
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        description: New business worklog settings
+        content:
+          application/json:
+            schema:
+              $ref: '../../components/worklogs/components.yml#/components/schemas/WorklogSettingsUpdateRequestDTO'
+      responses:
+        '200':
+          description: Business worklog settings updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '../../components/worklogs/components.yml#/components/schemas/WorklogSettingsResponseDTO'
+        '400':
+          description: Long-open threshold is invalid
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+        '401':
+          description: Unauthorized
+        '403':
+          description: Current user is not the owner of the business
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+        '404':
+          description: Business not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+      x-functional-errors:
+        - 1006
+        - 1020
+        - 1066

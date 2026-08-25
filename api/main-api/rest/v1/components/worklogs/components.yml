@@ -2,27 +2,50 @@ components:
   schemas:
     ClockInRequestDTO:
       type: object
-      description: Request object for clocking in
+      description: Request object for clocking in. `idempotencyId` is optional during the compatibility release.
+      additionalProperties: false
       properties:
         clockIn:
           type: string
           format: date-time
           description: Timestamp for clock-in (optional, server uses current time if omitted)
           example: "2025-07-29T08:30:00+00:00"
+        idempotencyId:
+          type: string
+          format: uuid
+          description: Optional client-generated command identifier reused when retrying the same clock-in.
+          example: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+        note:
+          type: ['string', 'null']
+          maxLength: 500
+          description: Optional current note for the worklog.
+          example: "Opening shift"
 
     ClockOutRequestDTO:
       type: object
-      description: Request object for clocking out
+      description: Request object for clocking out. `idempotencyId` is optional during the compatibility release.
+      additionalProperties: false
       properties:
         clockOut:
           type: string
           format: date-time
           description: Timestamp for clock-out (optional, server uses current time if omitted)
           example: "2025-07-29T17:30:00+00:00"
+        idempotencyId:
+          type: string
+          format: uuid
+          description: Optional client-generated command identifier reused when retrying the same clock-out.
+          example: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+        note:
+          type: ['string', 'null']
+          maxLength: 500
+          description: Optional current note for the worklog.
+          example: "Closing shift"
 
     WorkLogUpdateRequestDTO:
       type: object
       description: Request object for updating a worklog with clock-in and clock-out times
+      additionalProperties: false
       properties:
         clockIn:
           type: string
@@ -34,6 +57,201 @@ components:
           format: date-time
           description: Timestamp for clock-out
           example: "2025-07-29T17:30:00+00:00"
+        note:
+          type: ['string', 'null']
+          maxLength: 500
+          description: Optional current note for the worklog.
+          example: "Corrected after a missed punch"
+
+    WorklogCorrectionRequestDTO:
+      type: object
+      description: Worker or management correction. At least one worklog field must change.
+      additionalProperties: false
+      properties:
+        clockIn:
+          type: string
+          format: date-time
+          description: Replacement clock-in timestamp.
+          example: "2025-07-29T08:30:00+00:00"
+        clockOut:
+          type: ['string', 'null']
+          format: date-time
+          description: Replacement clock-out timestamp; null keeps or clears the current value according to the command semantics.
+          example: "2025-07-29T17:30:00+00:00"
+        note:
+          type: ['string', 'null']
+          maxLength: 500
+          description: Replacement current note; null clears the note.
+          example: "Missed clock-in corrected"
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 500
+          description: Non-blank plain-text reason for the correction.
+          example: "The worker forgot to clock in before opening the store."
+      required:
+        - reason
+
+    WorklogRejectionRequestDTO:
+      type: object
+      description: Reason for rejecting a worklog under review.
+      additionalProperties: false
+      properties:
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 500
+          description: Non-blank plain-text reason for the rejection.
+          example: "The submitted interval does not match the shift."
+      required:
+        - reason
+
+    WorklogSettingsUpdateRequestDTO:
+      type: object
+      description: Owner-only business worklog settings.
+      additionalProperties: false
+      properties:
+        longOpenAfterMinutes:
+          type: integer
+          format: int32
+          exclusiveMinimum: 0
+          exclusiveMaximum: 1440
+          description: Minutes after which an open worklog requires review.
+          example: 720
+      required:
+        - longOpenAfterMinutes
+
+    WorklogSettingsResponseDTO:
+      type: object
+      description: Effective worklog settings for a business.
+      properties:
+        businessId:
+          type: integer
+          format: int64
+          minimum: 1
+          description: Unique identifier of the business.
+          example: 101
+        longOpenAfterMinutes:
+          type: integer
+          format: int32
+          description: Minutes after which an open worklog requires review.
+          example: 720
+      required:
+        - businessId
+        - longOpenAfterMinutes
+
+    WorklogOriginDTO:
+      type: string
+      description: Origin of a recorded punch. UNKNOWN is used only for migrated historical data.
+      enum: [MANUAL, GEOFENCE, QR, AUTOMATIC, ADMIN, UNKNOWN]
+      example: MANUAL
+
+    WorklogReviewStatusDTO:
+      type: string
+      description: Current review state of the worklog.
+      enum: [CONFIRMED, PENDING_REVIEW, APPROVED, REJECTED]
+      example: CONFIRMED
+
+    WorklogAuditActorTypeDTO:
+      type: string
+      description: Actor category that produced an audit event.
+      enum: [USER, SYSTEM]
+      example: USER
+
+    WorklogAuditSnapshotDTO:
+      type: object
+      description: Scalar worklog state captured before or after an audited mutation.
+      properties:
+        worklogId:
+          type: integer
+          format: int64
+        version:
+          type: integer
+          format: int64
+        userId:
+          type: integer
+          format: int64
+        businessId:
+          type: integer
+          format: int64
+        clockIn:
+          type: string
+          format: date-time
+        clockOut:
+          type: ['string', 'null']
+          format: date-time
+        clockInOrigin:
+          $ref: '#/components/schemas/WorklogOriginDTO'
+        clockOutOrigin:
+          oneOf:
+            - $ref: '#/components/schemas/WorklogOriginDTO'
+            - type: 'null'
+        reviewStatus:
+          $ref: '#/components/schemas/WorklogReviewStatusDTO'
+        note:
+          type: ['string', 'null']
+          maxLength: 500
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - worklogId
+        - version
+        - userId
+        - businessId
+        - clockIn
+        - clockInOrigin
+        - reviewStatus
+        - createdAt
+        - updatedAt
+
+    WorklogAuditEntryDTO:
+      type: object
+      description: One immutable worklog audit event.
+      properties:
+        eventId:
+          type: string
+          format: uuid
+        action:
+          type: string
+          example: CLOCK_IN
+        occurredAt:
+          type: string
+          format: date-time
+        actorType:
+          oneOf:
+            - $ref: '#/components/schemas/WorklogAuditActorTypeDTO'
+            - type: 'null'
+        actorId:
+          type: ['integer', 'null']
+          format: int64
+        actorRole:
+          type: ['string', 'null']
+          enum: [OWNER, MANAGER, EMPLOYEE, null]
+        reason:
+          type: ['string', 'null']
+          maxLength: 500
+        before:
+          oneOf:
+            - $ref: '#/components/schemas/WorklogAuditSnapshotDTO'
+            - type: 'null'
+        after:
+          oneOf:
+            - $ref: '#/components/schemas/WorklogAuditSnapshotDTO'
+            - type: 'null'
+      required:
+        - eventId
+        - action
+        - occurredAt
+        - actorType
+        - actorId
+        - actorRole
+        - reason
+        - before
+        - after
 
     WorkLogResponseDTO:
       type: object
@@ -49,6 +267,11 @@ components:
           format: int64
           description: Identifier of the user who created the worklog
           example: 1
+        businessId:
+          type: integer
+          format: int64
+          description: Identifier of the business where the worklog was recorded
+          example: 101
         clockIn:
           type: string
           format: date-time
@@ -59,7 +282,40 @@ components:
           format: date-time
           description: Timestamp when the user clocked out (null if not clocked out yet)
           example: "2025-07-29T17:30:00+00:00"
+        clockInOrigin:
+          $ref: '#/components/schemas/WorklogOriginDTO'
+        clockOutOrigin:
+          oneOf:
+            - $ref: '#/components/schemas/WorklogOriginDTO'
+            - type: 'null'
+        reviewStatus:
+          $ref: '#/components/schemas/WorklogReviewStatusDTO'
+        note:
+          type: ['string', 'null']
+          maxLength: 500
+          description: Current worklog note, if any.
+        version:
+          type: integer
+          format: int64
+          description: Optimistic-lock version of the worklog.
+          example: 0
+        createdAt:
+          type: string
+          format: date-time
+          description: Server time when the worklog was created.
+          example: "2025-07-29T06:30:00+00:00"
+        updatedAt:
+          type: string
+          format: date-time
+          description: Server time when the worklog was last updated.
+          example: "2025-07-29T15:30:00+00:00"
       required:
         - id
         - userId
+        - businessId
         - clockIn
+        - clockInOrigin
+        - reviewStatus
+        - version
+        - createdAt
+        - updatedAt

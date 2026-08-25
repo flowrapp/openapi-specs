@@ -40,6 +40,13 @@ components:
           description: Role of the current authenticated user in the business
           enum: [OWNER, MANAGER, EMPLOYEE]
           example: "OWNER"
+        longOpenAfterMinutes:
+          type: integer
+          format: int32
+          minimum: 1
+          maximum: 1439
+          description: Minutes after which an open worklog requires review for this business.
+          example: 720
       required:
         - id
         - name
@@ -50,6 +57,7 @@ components:
         - country
         - location
         - userRole
+        - longOpenAfterMinutes
 
     BusinessUsersResponseDTO:
       type: object

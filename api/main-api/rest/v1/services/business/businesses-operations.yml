@@ -42,6 +42,7 @@ businesses:
                       longitude: 50.5
                       area: 5.3
                     userRole: "OWNER"
+                    longOpenAfterMinutes: 720
                   - id: 102
                     name: "Tea Corner"
                     zone: "Europe/Madrid"
@@ -54,6 +55,7 @@ businesses:
                       longitude: 51.2
                       area: 3.2
                     userRole: "MANAGER"
+                    longOpenAfterMinutes: 720
         '401':
           description: Unauthorized
 
