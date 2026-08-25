@@ -3,7 +3,7 @@ openapi: 3.1.0
 info:
   title: Flowrapp API
   description: REST API for Flowrapp Backend
-  version: 0.0.50
+  version: 0.0.51
   contact:
     name: Flowrapp Team
     url: https://flowrapp.github.io
@@ -91,6 +91,20 @@ paths:
     $ref: 'v1/services/worklogs/worklogs-operations.yml#/worklogs/get-worklogs'
   "/api/v1/worklogs/{worklogId}":
     $ref: 'v1/services/worklogs/worklogs-operations.yml#/worklogs/get-modify-worklog'
+  "/api/v1/worklogs/{worklogId}/correction":
+    $ref: 'v1/services/worklogs/worklogs-operations.yml#/worklogs/worker-correction'
+  "/api/v1/worklogs/{worklogId}/confirm":
+    $ref: 'v1/services/worklogs/worklogs-operations.yml#/worklogs/worker-confirmation'
+  "/api/v1/worklogs/{worklogId}/history":
+    $ref: 'v1/services/worklogs/worklogs-operations.yml#/worklogs/history'
+  "/api/v1/businesses/{businessId}/worklogs/{worklogId}/correction":
+    $ref: 'v1/services/worklogs/worklogs-operations.yml#/worklogs/management-correction'
+  "/api/v1/businesses/{businessId}/worklogs/{worklogId}/approve":
+    $ref: 'v1/services/worklogs/worklogs-operations.yml#/worklogs/approval'
+  "/api/v1/businesses/{businessId}/worklogs/{worklogId}/reject":
+    $ref: 'v1/services/worklogs/worklogs-operations.yml#/worklogs/rejection'
+  "/api/v1/businesses/{businessId}/worklog-settings":
+    $ref: 'v1/services/worklogs/worklogs-operations.yml#/worklogs/settings'
   "/api/v1/businesses/{businessId}/timesheets/weekly-hours":
     $ref: 'v1/services/timesheet/timesheet-operations.yml#/timesheet/weekly-hours'
   "/api/v1/timesheets/weekly-hours":

@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.0.51
+
+### Added
+
+- Optional client-generated `idempotencyId` and current worklog notes on clock-in and clock-out requests.
+- Worklog punch origins, review states, optimistic version, business identity, and server timestamps in responses.
+- Worker correction and confirmation, management correction/approval/rejection, review-state filtering, audit history, and owner worklog settings operations.
+- Worklog audit snapshot and actor representations.
+
+### Compatibility
+
+- `idempotencyId` remains optional for this compatibility release; the following contract release will require it for clock-in and clock-out.
+
 ## 0.0.50
 
 ### Breaking changes
