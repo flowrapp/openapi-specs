@@ -19,7 +19,7 @@ components:
       name: size
       in: query
       required: false
-      description: Number of job roles in the slice
+      description: Number of resources in the slice
       schema:
         type: integer
         format: int32
@@ -36,6 +36,11 @@ components:
       in: path
       required: true
       schema: {type: integer, format: int64}
+    ShiftId:
+      name: shiftId
+      in: path
+      required: true
+      schema: {type: integer, format: int64, minimum: 1}
     ScheduleId:
       name: scheduleId
       in: path
@@ -210,18 +215,130 @@ components:
           description: Missing employees below the target, never negative.
       required: [jobRoleId, minimumEmployees, targetEmployees, maximumEmployees, assignedEmployees, minimumDeficit, targetDeficit]
 
-    DailyShiftRequestDTO:
+    CreateBusinessShiftRequestDTO:
       type: object
+      description: Creates an active business Shift. The name is trimmed before normalized uniqueness is checked.
       properties:
         name:
           type: string
           minLength: 1
           maxLength: 100
+          example: Morning service
         color:
           type: string
           pattern: '^#[0-9A-Fa-f]{6}$'
-          description: Hexadecimal display color preserved in planning snapshots.
+          description: Six-digit hexadecimal display color.
           example: "#1A2B3C"
+      required: [name, color]
+
+    UpdateBusinessShiftRequestDTO:
+      type: object
+      description: Updates a business Shift. Setting active to true reactivates it; DELETE performs logical deactivation.
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+          example: Morning service
+        color:
+          type: string
+          pattern: '^#[0-9A-Fa-f]{6}$'
+          description: Six-digit hexadecimal display color.
+          example: "#4C9F70"
+        active:
+          type: boolean
+          example: true
+      required: [name, color, active]
+
+    BusinessShiftResponseDTO:
+      type: object
+      description: Business-owned Shift identity and current presentation.
+      properties:
+        id:
+          type: integer
+          format: int64
+          minimum: 1
+          example: 20
+        businessId:
+          type: integer
+          format: int64
+          minimum: 1
+          example: 101
+        name:
+          type: string
+          minLength: 1
+          example: Morning service
+        color:
+          type: string
+          pattern: '^#[0-9A-Fa-f]{6}$'
+          example: "#1A2B3C"
+        active:
+          type: boolean
+          example: true
+        createdAt:
+          type: string
+          format: date-time
+          example: "2025-06-01T10:00:00+00:00"
+        updatedAt:
+          type: string
+          format: date-time
+          example: "2025-06-01T10:00:00+00:00"
+      required: [id, businessId, name, color, active, createdAt, updatedAt]
+
+    BusinessShiftSliceResponseDTO:
+      type: object
+      description: Deterministic slice of business Shifts without a total-count query.
+      properties:
+        content:
+          type: array
+          description: Shifts ordered by active state descending, name ascending, and ID ascending.
+          items:
+            $ref: '#/components/schemas/BusinessShiftResponseDTO'
+        page:
+          type: integer
+          format: int32
+          minimum: 0
+          example: 0
+        size:
+          type: integer
+          format: int32
+          minimum: 1
+          maximum: 100
+          example: 20
+        hasNext:
+          type: boolean
+          example: true
+      required: [content, page, size, hasNext]
+      example:
+        content:
+          - id: 20
+            businessId: 101
+            name: Morning service
+            color: "#1A2B3C"
+            active: true
+            createdAt: "2025-06-01T10:00:00+00:00"
+            updatedAt: "2025-06-01T10:00:00+00:00"
+          - id: 21
+            businessId: 101
+            name: Legacy service
+            color: "#808080"
+            active: false
+            createdAt: "2025-06-02T10:00:00+00:00"
+            updatedAt: "2025-06-02T10:00:00+00:00"
+        page: 0
+        size: 20
+        hasNext: false
+
+    DailyShiftRequestDTO:
+      type: object
+      description: Day-specific occurrence values referencing an independently managed business Shift.
+      properties:
+        shiftId:
+          type: integer
+          format: int64
+          minimum: 1
+          description: Business Shift referenced by this occurrence.
+          example: 20
         startTime:
           $ref: '#/components/schemas/LocalMinuteTimeDTO'
         endTime:
@@ -234,18 +351,17 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/RoleDemandRequestDTO'
-      required: [name, color, startTime, endTime, breakMinutes, demands]
+      required: [shiftId, startTime, endTime, breakMinutes, demands]
 
     DailyShiftResponseDTO:
       type: object
+      description: Day-specific occurrence values with its business Shift reference. Shift presentation is resolved by the BFF.
       properties:
-        name:
-          type: string
-        color:
-          type: string
-          pattern: '^#[0-9A-Fa-f]{6}$'
-          description: Hexadecimal display color captured by this shift value.
-          example: "#1A2B3C"
+        shiftId:
+          type: integer
+          format: int64
+          minimum: 1
+          example: 20
         startTime:
           $ref: '#/components/schemas/LocalMinuteTimeDTO'
         endTime:
@@ -258,7 +374,7 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/RoleDemandResponseDTO'
-      required: [name, color, startTime, endTime, breakMinutes, demands]
+      required: [shiftId, startTime, endTime, breakMinutes, demands]
 
     RecurringScheduleDayRequestDTO:
       type: object
@@ -552,6 +668,12 @@ components:
       type: object
       description: Immutable, presentation-safe shift input captured when a planning was created. It contains no solver correlation identifiers.
       properties:
+        shiftId:
+          type: integer
+          format: int64
+          minimum: 1
+          description: Business Shift identity captured in the planning snapshot
+          example: 20
         name:
           type: string
           minLength: 1
@@ -576,7 +698,7 @@ components:
           description: Staffing demand by stable business job-role ID with derived planning coverage.
           items:
             $ref: '#/components/schemas/PlanningRoleDemandResponseDTO'
-      required: [name, color, startTime, endTime, breakMinutes, demands]
+      required: [shiftId, name, color, startTime, endTime, breakMinutes, demands]
 
     PlanningRequirementDTO:
       type: object
@@ -626,6 +748,12 @@ components:
         jobRoleId:
           type: integer
           format: int64
+        shiftId:
+          type: integer
+          format: int64
+          minimum: 1
+          description: Business Shift identity captured from the planning requirement
+          example: 20
         shiftName:
           type: string
           minLength: 1
@@ -652,7 +780,7 @@ components:
         updatedAt:
           type: string
           format: date-time
-      required: [id, planningId, businessId, userId, jobRoleId, shiftName, shiftColor, startAt, endAt, breakMinutes, createdAt, updatedAt]
+      required: [id, planningId, businessId, userId, jobRoleId, shiftId, shiftName, shiftColor, startAt, endAt, breakMinutes, createdAt, updatedAt]
 
     PlanningResponseDTO:
       type: object
@@ -726,7 +854,8 @@ components:
             requirements:
               - date: "2025-07-28"
                 shifts:
-                  - name: Morning service
+                  - shiftId: 20
+                    name: Morning service
                     color: "#1A2B3C"
                     startTime: "09:00"
                     endTime: "17:00"
@@ -754,7 +883,8 @@ components:
             requirements:
               - date: "2025-07-28"
                 shifts:
-                  - name: Morning service
+                  - shiftId: 20
+                    name: Morning service
                     color: "#1A2B3C"
                     startTime: "09:00"
                     endTime: "17:00"
@@ -775,6 +905,7 @@ components:
                 businessId: 101
                 userId: 1
                 jobRoleId: 10
+                shiftId: 20
                 shiftName: Morning service
                 shiftColor: "#1A2B3C"
                 startAt: "2025-07-28T09:00:00+02:00"
@@ -868,6 +999,12 @@ components:
           $ref: '#/components/schemas/TeamScheduleWorkerDTO'
         jobRole:
           $ref: '#/components/schemas/TeamScheduleJobRoleDTO'
+        shiftId:
+          type: integer
+          format: int64
+          minimum: 1
+          description: Business Shift identity captured in the immutable planning snapshot
+          example: 20
         shiftName:
           type: string
           minLength: 1
@@ -891,7 +1028,7 @@ components:
           format: int32
           minimum: 0
           example: 30
-      required: [id, worker, jobRole, shiftName, shiftColor, startAt, endAt, breakMinutes]
+      required: [id, worker, jobRole, shiftId, shiftName, shiftColor, startAt, endAt, breakMinutes]
 
     TeamScheduleWorkerDTO:
       type: object

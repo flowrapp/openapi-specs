@@ -1,3 +1,123 @@
+shifts:
+  collection:
+    get:
+      tags: [Shifts]
+      operationId: getBusinessShifts
+      summary: List business Shifts
+      description: >
+        Returns a deterministic slice of the business-owned Shift catalog. The optional `name`
+        filter is trimmed and matched case-insensitively as a partial value; blank values are
+        ignored. The optional `active` filter selects active or archived resources. Results are
+        ordered by active state descending, name ascending, and ID ascending. Only the business
+        owner may access this operation.
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '../../components/scheduling/components.yml#/components/parameters/BusinessId'
+        - name: name
+          in: query
+          required: false
+          description: Trimmed, case-insensitive partial name filter; blank values are ignored.
+          schema:
+            type: string
+            maxLength: 100
+            example: service
+        - name: active
+          in: query
+          required: false
+          description: Filter by active state; omit to include active and archived Shifts.
+          schema:
+            type: boolean
+            example: true
+        - $ref: '../../components/scheduling/components.yml#/components/parameters/Page'
+        - $ref: '../../components/scheduling/components.yml#/components/parameters/Size'
+      responses:
+        '200':
+          description: Business Shift slice retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '../../components/scheduling/components.yml#/components/schemas/BusinessShiftSliceResponseDTO'
+        '400': {$ref: '../../components/scheduling/components.yml#/components/responses/BadRequest'}
+        '403': {$ref: '../../components/scheduling/components.yml#/components/responses/Forbidden'}
+        '404': {$ref: '../../components/scheduling/components.yml#/components/responses/NotFound'}
+      x-functional-errors: [1006, 1020, 1061]
+    post:
+      tags: [Shifts]
+      operationId: createBusinessShift
+      summary: Create a business Shift
+      description: Creates an active business Shift with a unique normalized name. Only the business owner may access this operation.
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '../../components/scheduling/components.yml#/components/parameters/BusinessId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '../../components/scheduling/components.yml#/components/schemas/CreateBusinessShiftRequestDTO'
+            example:
+              name: Morning service
+              color: "#1A2B3C"
+      responses:
+        '201':
+          description: Business Shift created
+          content:
+            application/json:
+              schema:
+                $ref: '../../components/scheduling/components.yml#/components/schemas/BusinessShiftResponseDTO'
+        '400': {$ref: '../../components/scheduling/components.yml#/components/responses/BadRequest'}
+        '403': {$ref: '../../components/scheduling/components.yml#/components/responses/Forbidden'}
+        '404': {$ref: '../../components/scheduling/components.yml#/components/responses/NotFound'}
+        '409': {$ref: '../../components/scheduling/components.yml#/components/responses/Conflict'}
+      x-functional-errors: [1006, 1020, 1060, 1062]
+  item:
+    put:
+      tags: [Shifts]
+      operationId: updateBusinessShift
+      summary: Update or reactivate a business Shift
+      description: Updates a Shift without changing its identity. Setting `active` to true reactivates an archived Shift.
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '../../components/scheduling/components.yml#/components/parameters/BusinessId'
+        - $ref: '../../components/scheduling/components.yml#/components/parameters/ShiftId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '../../components/scheduling/components.yml#/components/schemas/UpdateBusinessShiftRequestDTO'
+            example:
+              name: Morning service
+              color: "#4C9F70"
+              active: true
+      responses:
+        '200':
+          description: Business Shift updated or reactivated
+          content:
+            application/json:
+              schema:
+                $ref: '../../components/scheduling/components.yml#/components/schemas/BusinessShiftResponseDTO'
+        '400': {$ref: '../../components/scheduling/components.yml#/components/responses/BadRequest'}
+        '403': {$ref: '../../components/scheduling/components.yml#/components/responses/Forbidden'}
+        '404': {$ref: '../../components/scheduling/components.yml#/components/responses/NotFound'}
+        '409': {$ref: '../../components/scheduling/components.yml#/components/responses/Conflict'}
+      x-functional-errors: [1006, 1020, 1060, 1061, 1062]
+    delete:
+      tags: [Shifts]
+      operationId: deleteBusinessShift
+      summary: Deactivate a business Shift
+      description: Idempotently deactivates a business Shift while preserving its identity and historical references.
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '../../components/scheduling/components.yml#/components/parameters/BusinessId'
+        - $ref: '../../components/scheduling/components.yml#/components/parameters/ShiftId'
+      responses:
+        '204':
+          description: Business Shift deactivated, or was already inactive
+        '403': {$ref: '../../components/scheduling/components.yml#/components/responses/Forbidden'}
+        '404': {$ref: '../../components/scheduling/components.yml#/components/responses/NotFound'}
+      x-functional-errors: [1006, 1020, 1061]
+
 recurringSchedules:
   collection:
     get:
@@ -75,7 +195,7 @@ recurringSchedules:
                 $ref: '../../components/scheduling/components.yml#/components/schemas/RecurringScheduleResponseDTO'
               examples:
                 explicitDate:
-                  summary: Schedule effective on an explicit date
+                  summary: Schedule effective on an explicit date with repeated and archived references
                   value:
                     id: 200
                     version: 2
@@ -87,10 +207,25 @@ recurringSchedules:
                         openingIntervals:
                           - startTime: "09:00"
                             endTime: "17:00"
-                        shifts: []
+                        shifts:
+                          - shiftId: 20
+                            startTime: "09:00"
+                            endTime: "12:00"
+                            breakMinutes: 0
+                            demands: []
+                          - shiftId: 20
+                            startTime: "13:00"
+                            endTime: "17:00"
+                            breakMinutes: 0
+                            demands: []
                       - dayOfWeek: TUESDAY
                         openingIntervals: []
-                        shifts: []
+                        shifts:
+                          - shiftId: 21
+                            startTime: "09:00"
+                            endTime: "17:00"
+                            breakMinutes: 30
+                            demands: []
                       - dayOfWeek: WEDNESDAY
                         openingIntervals: []
                         shifts: []
@@ -269,16 +404,16 @@ scheduleExceptions:
                   - startTime: "09:00"
                     endTime: "17:00"
                 shifts:
-                  - name: Holiday service
-                    color: "#1A2B3C"
+                  - shiftId: 20
                     startTime: "09:00"
+                    endTime: "12:00"
+                    breakMinutes: 0
+                    demands: []
+                  - shiftId: 20
+                    startTime: "13:00"
                     endTime: "17:00"
-                    breakMinutes: 30
-                    demands:
-                      - jobRoleId: 10
-                        minimumEmployees: 1
-                        targetEmployees: 2
-                        maximumEmployees: 3
+                    breakMinutes: 0
+                    demands: []
       responses:
         '201':
           description: Schedule exception created
@@ -295,16 +430,16 @@ scheduleExceptions:
                     - startTime: "09:00"
                       endTime: "17:00"
                   shifts:
-                    - name: Holiday service
-                      color: "#1A2B3C"
+                    - shiftId: 20
                       startTime: "09:00"
+                      endTime: "12:00"
+                      breakMinutes: 0
+                      demands: []
+                    - shiftId: 20
+                      startTime: "13:00"
                       endTime: "17:00"
-                      breakMinutes: 30
-                      demands:
-                        - jobRoleId: 10
-                          minimumEmployees: 1
-                          targetEmployees: 2
-                          maximumEmployees: 3
+                      breakMinutes: 0
+                      demands: []
                 createdAt: "2025-08-01T10:00:00+02:00"
                 updatedAt: "2025-08-01T10:00:00+02:00"
         '400': {$ref: '../../components/scheduling/components.yml#/components/responses/BadRequest'}
@@ -337,8 +472,7 @@ scheduleExceptions:
                 - startTime: "10:00"
                   endTime: "18:00"
               shifts:
-                - name: Holiday service
-                  color: "#4C9F70"
+                - shiftId: 20
                   startTime: "10:00"
                   endTime: "18:00"
                   breakMinutes: 30
@@ -363,8 +497,7 @@ scheduleExceptions:
                     - startTime: "10:00"
                       endTime: "18:00"
                   shifts:
-                    - name: Holiday service
-                      color: "#4C9F70"
+                    - shiftId: 20
                       startTime: "10:00"
                       endTime: "18:00"
                       breakMinutes: 30
@@ -661,7 +794,8 @@ planning:
                 requirements:
                   - date: "2025-07-28"
                     shifts:
-                      - name: Morning service
+                      - shiftId: 20
+                        name: Morning service
                         color: "#1A2B3C"
                         startTime: "09:00"
                         endTime: "17:00"
@@ -800,6 +934,7 @@ planning:
                           - id: 900
                             worker: {id: 3, name: Bob Wilson}
                             jobRole: {id: 10, code: WAITER, name: Waiter, color: "#1A2B3C", icon: front-of-house}
+                            shiftId: 20
                             shiftName: Morning service
                             shiftColor: "#1A2B3C"
                             startAt: "2025-07-28T09:00:00+02:00"
@@ -808,6 +943,7 @@ planning:
                           - id: 901
                             worker: {id: 4, name: Alice Brown}
                             jobRole: {id: 11, code: KITCHEN, name: Kitchen, color: "#4C9F70", icon: kitchen}
+                            shiftId: 21
                             shiftName: Night service
                             shiftColor: "#4C9F70"
                             startAt: "2025-07-28T22:00:00+02:00"
@@ -826,6 +962,7 @@ planning:
                           - id: 850
                             worker: {id: 3, name: Bob Wilson}
                             jobRole: {id: 10, code: WAITER, name: Waiter, color: "#1A2B3C", icon: front-of-house}
+                            shiftId: 20
                             shiftName: Morning service
                             shiftColor: "#1A2B3C"
                             startAt: "2025-07-21T09:00:00+02:00"

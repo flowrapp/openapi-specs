@@ -488,8 +488,9 @@ components:
           description: Missing employees below the target, never negative.
       required: [jobRoleId, minimumEmployees, targetEmployees, maximumEmployees, assignedEmployees, minimumDeficit, targetDeficit]
 
-    ManagerDailyShiftDTO:
+    ManagerShiftCreateRequestDTO:
       type: object
+      description: Creates an active business Shift. The name is trimmed before normalized uniqueness is checked.
       properties:
         name:
           type: string
@@ -499,8 +500,116 @@ components:
         color:
           type: string
           pattern: '^#[0-9A-Fa-f]{6}$'
-          description: Required six-digit hexadecimal display color
+          description: Six-digit hexadecimal display color.
           example: "#1A2B3C"
+      required: [name, color]
+
+    ManagerShiftUpdateRequestDTO:
+      type: object
+      description: Updates a business Shift. Setting active to true reactivates it.
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+          example: Morning service
+        color:
+          type: string
+          pattern: '^#[0-9A-Fa-f]{6}$'
+          example: "#4C9F70"
+        active:
+          type: boolean
+          example: true
+      required: [name, color, active]
+
+    ManagerShiftResponseDTO:
+      type: object
+      description: Current business-owned Shift identity and presentation.
+      properties:
+        id:
+          type: integer
+          format: int64
+          minimum: 1
+          example: 20
+        businessId:
+          type: integer
+          format: int64
+          minimum: 1
+          example: 101
+        name:
+          type: string
+          minLength: 1
+          example: Morning service
+        color:
+          type: string
+          pattern: '^#[0-9A-Fa-f]{6}$'
+          example: "#1A2B3C"
+        active:
+          type: boolean
+          example: true
+        createdAt:
+          type: string
+          format: date-time
+          example: "2025-06-01T10:00:00+00:00"
+        updatedAt:
+          type: string
+          format: date-time
+          example: "2025-06-01T10:00:00+00:00"
+      required: [id, businessId, name, color, active, createdAt, updatedAt]
+
+    ManagerShiftSliceResponseDTO:
+      type: object
+      description: Deterministic slice of current and archived business Shifts.
+      properties:
+        content:
+          type: array
+          description: Shifts ordered by active state descending, name ascending, and ID ascending.
+          items:
+            $ref: '#/components/schemas/ManagerShiftResponseDTO'
+        page:
+          type: integer
+          format: int32
+          minimum: 0
+          example: 0
+        size:
+          type: integer
+          format: int32
+          minimum: 1
+          maximum: 100
+          example: 20
+        hasNext:
+          type: boolean
+          example: false
+      required: [content, page, size, hasNext]
+      example:
+        content:
+          - id: 20
+            businessId: 101
+            name: Morning service
+            color: "#1A2B3C"
+            active: true
+            createdAt: "2025-06-01T10:00:00+00:00"
+            updatedAt: "2025-06-01T10:00:00+00:00"
+          - id: 21
+            businessId: 101
+            name: Legacy service
+            color: "#808080"
+            active: false
+            createdAt: "2025-06-02T10:00:00+00:00"
+            updatedAt: "2025-06-02T10:00:00+00:00"
+        page: 0
+        size: 20
+        hasNext: false
+
+    ManagerDailyShiftRequestDTO:
+      type: object
+      description: Day-specific occurrence values referencing a business Shift.
+      properties:
+        shiftId:
+          type: integer
+          format: int64
+          minimum: 1
+          example: 20
         startTime:
           $ref: '#/components/schemas/ManagerLocalMinuteTimeDTO'
         endTime:
@@ -514,11 +623,59 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ManagerRoleDemandDTO'
-      required: [name, color, startTime, endTime, breakMinutes, demands]
+      required: [shiftId, startTime, endTime, breakMinutes, demands]
+
+    ManagerDailyShiftDTO:
+      type: object
+      description: Day-specific occurrence values enriched with the current Shift resource.
+      properties:
+        shift:
+          $ref: '#/components/schemas/ManagerShiftResponseDTO'
+        startTime:
+          $ref: '#/components/schemas/ManagerLocalMinuteTimeDTO'
+        endTime:
+          $ref: '#/components/schemas/ManagerLocalMinuteTimeDTO'
+        breakMinutes:
+          type: integer
+          format: int32
+          minimum: 0
+          example: 30
+        demands:
+          type: array
+          items:
+            $ref: '#/components/schemas/ManagerRoleDemandDTO'
+      required: [shift, startTime, endTime, breakMinutes, demands]
+      example:
+        shift:
+          id: 21
+          businessId: 101
+          name: Legacy service
+          color: "#808080"
+          active: false
+          createdAt: "2025-06-02T10:00:00+00:00"
+          updatedAt: "2025-06-02T10:00:00+00:00"
+        startTime: "09:00"
+        endTime: "17:00"
+        breakMinutes: 30
+        demands: []
+
+    ManagerDailyConfigurationRequestDTO:
+      type: object
+      description: Complete opening intervals and Shift references for one business-local calendar day.
+      properties:
+        openingIntervals:
+          type: array
+          items:
+            $ref: '#/components/schemas/ManagerOpeningIntervalDTO'
+        shifts:
+          type: array
+          items:
+            $ref: '#/components/schemas/ManagerDailyShiftRequestDTO'
+      required: [openingIntervals, shifts]
 
     ManagerDailyConfigurationDTO:
       type: object
-      description: Complete opening intervals and shifts for one business-local calendar day
+      description: Complete opening intervals and enriched current Shifts for one business-local calendar day.
       properties:
         openingIntervals:
           type: array
@@ -530,8 +687,18 @@ components:
             $ref: '#/components/schemas/ManagerDailyShiftDTO'
       required: [openingIntervals, shifts]
 
+    ManagerRecurringScheduleDayRequestDTO:
+      type: object
+      properties:
+        dayOfWeek:
+          $ref: '#/components/schemas/ManagerDayOfWeekDTO'
+        configuration:
+          $ref: '#/components/schemas/ManagerDailyConfigurationRequestDTO'
+      required: [dayOfWeek, configuration]
+
     ManagerRecurringScheduleDayDTO:
       type: object
+      description: Recurring day with occurrence values and current Shift resources.
       properties:
         dayOfWeek:
           $ref: '#/components/schemas/ManagerDayOfWeekDTO'
@@ -557,7 +724,7 @@ components:
           minItems: 7
           maxItems: 7
           items:
-            $ref: '#/components/schemas/ManagerRecurringScheduleDayDTO'
+            $ref: '#/components/schemas/ManagerRecurringScheduleDayRequestDTO'
       required: [validFrom, days]
 
     ManagerRecurringScheduleReplacementRequestDTO:
@@ -583,7 +750,7 @@ components:
           minItems: 7
           maxItems: 7
           items:
-            $ref: '#/components/schemas/ManagerRecurringScheduleDayDTO'
+            $ref: '#/components/schemas/ManagerRecurringScheduleDayRequestDTO'
       required: [version, validFrom, days]
 
     ManagerRecurringScheduleResponseDTO:
@@ -637,7 +804,7 @@ components:
           format: date
           example: "2025-08-15"
         configuration:
-          $ref: '#/components/schemas/ManagerDailyConfigurationDTO'
+          $ref: '#/components/schemas/ManagerDailyConfigurationRequestDTO'
       required: [date, configuration]
 
     ManagerScheduleExceptionResponseDTO:
@@ -888,6 +1055,12 @@ components:
         duration uses local wall-clock time: an end time not later than the start time is on the
         following calendar day, and break minutes are subtracted before staffing demand is applied.
       properties:
+        shiftId:
+          type: integer
+          format: int64
+          minimum: 1
+          description: Business Shift identity captured in the planning snapshot
+          example: 20
         shiftName:
           type: string
           minLength: 1
@@ -910,7 +1083,7 @@ components:
           description: Staffing demands with derived planning coverage.
           items:
             $ref: '#/components/schemas/ManagerPlanningRoleDemandDTO'
-      required: [shiftName, shiftColor, startTime, endTime, breakMinutes, demands]
+      required: [shiftId, shiftName, shiftColor, startTime, endTime, breakMinutes, demands]
 
     ManagerPlanningRequirementDTO:
       type: object
@@ -977,6 +1150,12 @@ components:
           example: 10
         jobRole:
           $ref: '#/components/schemas/ManagerJobRoleSummaryDTO'
+        shiftId:
+          type: integer
+          format: int64
+          minimum: 1
+          description: Business Shift identity captured in the planning snapshot
+          example: 20
         shiftName:
           type: string
           minLength: 1
@@ -1004,7 +1183,7 @@ components:
           minimum: 0
           description: Net assigned duration after subtracting breaks
           example: 27000
-      required: [id, jobRoleId, jobRole, shiftName, shiftColor, startAt, endAt, breakMinutes, durationSeconds]
+      required: [id, jobRoleId, jobRole, shiftId, shiftName, shiftColor, startAt, endAt, breakMinutes, durationSeconds]
 
     ManagerWorkerDayDTO:
       type: object

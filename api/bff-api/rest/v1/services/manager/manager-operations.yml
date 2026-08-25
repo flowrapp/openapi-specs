@@ -752,16 +752,16 @@ manager:
                       - startTime: "09:00"
                         endTime: "17:00"
                     shifts:
-                      - name: Morning service
-                        color: "#1A2B3C"
+                      - shiftId: 20
                         startTime: "09:00"
+                        endTime: "12:00"
+                        breakMinutes: 0
+                        demands: []
+                      - shiftId: 20
+                        startTime: "13:00"
                         endTime: "17:00"
-                        breakMinutes: 30
-                        demands:
-                          - jobRoleId: 10
-                            minimumEmployees: 1
-                            targetEmployees: 2
-                            maximumEmployees: 3
+                        breakMinutes: 0
+                        demands: []
                 - dayOfWeek: TUESDAY
                   configuration: {openingIntervals: [], shifts: []}
                 - dayOfWeek: WEDNESDAY
@@ -853,8 +853,7 @@ manager:
                       - startTime: "10:00"
                         endTime: "18:00"
                     shifts:
-                      - name: Evening service
-                        color: "#4C9F70"
+                      - shiftId: 21
                         startTime: "10:00"
                         endTime: "18:00"
                         breakMinutes: 30
@@ -916,6 +915,241 @@ manager:
               schema:
                 $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
               example: {status: 409, detail: "1049 - resource was modified concurrently"}
+
+  shifts:
+    get:
+      summary: List business Shifts
+      description: >
+        Returns the deterministic current and archived Shift catalog for the requested business.
+        `name` is a trimmed, case-insensitive partial filter; blank values are ignored. Results
+        are ordered by active state descending, name ascending, and ID ascending. Requires an
+        OWNER membership.
+      tags: [Manager]
+      operationId: getManagerShifts
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: businessId
+          in: path
+          required: true
+          schema: {type: integer, format: int64, minimum: 1}
+        - name: name
+          in: query
+          required: false
+          description: Trimmed, case-insensitive partial Shift-name filter; blank values are ignored.
+          schema:
+            type: string
+            maxLength: 100
+            example: service
+        - name: active
+          in: query
+          required: false
+          description: Filter by active state; omit to include active and archived Shifts.
+          schema:
+            type: boolean
+            example: true
+        - $ref: '../../components/manager/components.yml#/components/parameters/Page'
+        - $ref: '../../components/manager/components.yml#/components/parameters/Size'
+      responses:
+        '200':
+          description: Business Shift slice retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '../../components/manager/components.yml#/components/schemas/ManagerShiftSliceResponseDTO'
+        '400':
+          description: Invalid page or size
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+        '401':
+          description: Authentication is required
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+        '403':
+          description: Authenticated user is not an OWNER of the business
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              example: {status: 403, detail: "1020 - user is not the owner of business"}
+        '404':
+          description: Business not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              example: {status: 404, detail: "1006 - business does not exist"}
+
+    post:
+      summary: Create a business Shift
+      description: Creates an active business Shift with a unique normalized name. Requires an OWNER membership.
+      tags: [Manager]
+      operationId: createManagerShift
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: businessId
+          in: path
+          required: true
+          schema: {type: integer, format: int64, minimum: 1}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '../../components/manager/components.yml#/components/schemas/ManagerShiftCreateRequestDTO'
+            example:
+              name: Morning service
+              color: "#1A2B3C"
+      responses:
+        '201':
+          description: Business Shift created
+          content:
+            application/json:
+              schema:
+                $ref: '../../components/manager/components.yml#/components/schemas/ManagerShiftResponseDTO'
+        '400':
+          description: Invalid Shift values
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              example: {status: 400, detail: "1060 - shift is invalid"}
+        '401':
+          description: Authentication is required
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+        '403':
+          description: Authenticated user is not an OWNER of the business
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              example: {status: 403, detail: "1020 - user is not the owner of business"}
+        '404':
+          description: Business not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              example: {status: 404, detail: "1006 - business does not exist"}
+        '409':
+          description: Main API rejected a duplicate normalized Shift name
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              example: {status: 409, detail: "1062 - shift name already exists"}
+
+  shift-item:
+    put:
+      summary: Update or reactivate a business Shift
+      description: Updates Shift presentation without changing its identity. Setting active to true reactivates an archived Shift.
+      tags: [Manager]
+      operationId: updateManagerShift
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: businessId
+          in: path
+          required: true
+          schema: {type: integer, format: int64, minimum: 1}
+        - name: shiftId
+          in: path
+          required: true
+          schema: {type: integer, format: int64, minimum: 1}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '../../components/manager/components.yml#/components/schemas/ManagerShiftUpdateRequestDTO'
+            example:
+              name: Morning service
+              color: "#4C9F70"
+              active: true
+      responses:
+        '200':
+          description: Business Shift updated or reactivated
+          content:
+            application/json:
+              schema:
+                $ref: '../../components/manager/components.yml#/components/schemas/ManagerShiftResponseDTO'
+        '400':
+          description: Invalid Shift values
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              example: {status: 400, detail: "1060 - shift is invalid"}
+        '401':
+          description: Authentication is required
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+        '403':
+          description: Authenticated user is not an OWNER of the business
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              example: {status: 403, detail: "1020 - user is not the owner of business"}
+        '404':
+          description: Business or Shift not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              example: {status: 404, detail: "1061 - shift not found"}
+        '409':
+          description: Main API rejected a duplicate normalized Shift name
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              example: {status: 409, detail: "1062 - shift name already exists"}
+    delete:
+      summary: Deactivate a business Shift
+      description: Idempotently deactivates a Shift while preserving its identity and historical references. Requires an OWNER membership.
+      tags: [Manager]
+      operationId: deleteManagerShift
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: businessId
+          in: path
+          required: true
+          schema: {type: integer, format: int64, minimum: 1}
+        - name: shiftId
+          in: path
+          required: true
+          schema: {type: integer, format: int64, minimum: 1}
+      responses:
+        '204':
+          description: Business Shift deactivated, or was already inactive
+        '401':
+          description: Authentication is required
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+        '403':
+          description: Authenticated user is not an OWNER of the business
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              example: {status: 403, detail: "1020 - user is not the owner of business"}
+        '404':
+          description: Business or Shift not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              example: {status: 404, detail: "1061 - shift not found"}
 
   job-roles:
     get:
@@ -1301,7 +1535,8 @@ manager:
                       - date: "2025-07-28"
                         requiredSeconds: 25200
                         shifts:
-                          - shiftName: Night service
+                          - shiftId: 21
+                            shiftName: Night service
                             shiftColor: "#1A2B3C"
                             startTime: "22:00"
                             endTime: "02:00"
@@ -1343,6 +1578,7 @@ manager:
                               - id: 902
                                 jobRoleId: 10
                                 jobRole: {id: 10, code: WAITER, name: Waiter, color: "#1A2B3C", icon: front-of-house, active: false}
+                                shiftId: 21
                                 shiftName: Night service
                                 shiftColor: "#1A2B3C"
                                 startAt: "2025-07-28T22:00:00+02:00"
@@ -1367,7 +1603,8 @@ manager:
                       - date: "2025-07-28"
                         requiredSeconds: 28800
                         shifts:
-                          - shiftName: Morning service
+                          - shiftId: 20
+                            shiftName: Morning service
                             shiftColor: "#1A2B3C"
                             startTime: "09:00"
                             endTime: "13:00"
@@ -1380,7 +1617,8 @@ manager:
                                 assignedEmployees: 1
                                 minimumDeficit: 0
                                 targetDeficit: 0
-                          - shiftName: Evening service
+                          - shiftId: 21
+                            shiftName: Evening service
                             shiftColor: "#4C9F70"
                             startTime: "14:00"
                             endTime: "18:00"
@@ -1409,6 +1647,7 @@ manager:
                               - id: 900
                                 jobRoleId: 10
                                 jobRole: {id: 10, code: WAITER, name: Waiter, color: "#1A2B3C", icon: front-of-house, active: true}
+                                shiftId: 20
                                 shiftName: Morning service
                                 shiftColor: "#1A2B3C"
                                 startAt: "2025-07-28T09:00:00+02:00"
@@ -1418,6 +1657,7 @@ manager:
                               - id: 901
                                 jobRoleId: 10
                                 jobRole: {id: 10, code: WAITER, name: Waiter, color: "#1A2B3C", icon: front-of-house, active: true}
+                                shiftId: 21
                                 shiftName: Evening service
                                 shiftColor: "#4C9F70"
                                 startAt: "2025-07-28T14:00:00+02:00"
@@ -1656,16 +1896,16 @@ manager:
                   - startTime: "09:00"
                     endTime: "17:00"
                 shifts:
-                  - name: Holiday service
-                    color: "#1A2B3C"
+                  - shiftId: 20
                     startTime: "09:00"
+                    endTime: "12:00"
+                    breakMinutes: 0
+                    demands: []
+                  - shiftId: 20
+                    startTime: "13:00"
                     endTime: "17:00"
-                    breakMinutes: 30
-                    demands:
-                      - jobRoleId: 10
-                        minimumEmployees: 1
-                        targetEmployees: 2
-                        maximumEmployees: 3
+                    breakMinutes: 0
+                    demands: []
       responses:
         '201':
           description: Schedule exception created
@@ -1734,14 +1974,13 @@ manager:
         content:
           application/json:
             schema:
-              $ref: '../../components/manager/components.yml#/components/schemas/ManagerDailyConfigurationDTO'
+              $ref: '../../components/manager/components.yml#/components/schemas/ManagerDailyConfigurationRequestDTO'
             example:
               openingIntervals:
                 - startTime: "10:00"
                   endTime: "18:00"
               shifts:
-                - name: Holiday service
-                  color: "#4C9F70"
+                - shiftId: 20
                   startTime: "10:00"
                   endTime: "18:00"
                   breakMinutes: 30
