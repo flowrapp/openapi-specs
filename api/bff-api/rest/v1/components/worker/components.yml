@@ -327,6 +327,12 @@ components:
           $ref: '#/components/schemas/WorkerTeamScheduleWorkerDTO'
         jobRole:
           $ref: '#/components/schemas/WorkerTeamScheduleJobRoleDTO'
+        shiftId:
+          type: integer
+          format: int64
+          minimum: 1
+          description: Business Shift identity captured in the immutable planning snapshot
+          example: 20
         shiftName:
           type: string
           minLength: 1
@@ -354,6 +360,7 @@ components:
         - id
         - worker
         - jobRole
+        - shiftId
         - shiftName
         - shiftColor
         - startAt

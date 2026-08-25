@@ -3,7 +3,7 @@ openapi: 3.1.0
 info:
   title: Flowrapp API
   description: REST API for Flowrapp Backend
-  version: 0.0.47
+  version: 0.0.49
   contact:
     name: Flowrapp Team
     url: https://flowrapp.github.io
@@ -45,6 +45,8 @@ tags:
     description: Date-specific replacements for recurring opening hours, shifts and staffing demand.
   - name: Job Roles
     description: Business job-role catalogs and member assignments.
+  - name: Shifts
+    description: Business-owned shift identity and presentation catalogs.
   - name: Planning
     description: Weekly business plannings and scheduled shifts.
 
@@ -135,6 +137,10 @@ paths:
     $ref: 'v1/services/scheduling/scheduling-operations.yml#/jobRoles/collection'
   "/api/v1/businesses/{businessId}/job-roles/{jobRoleId}":
     $ref: 'v1/services/scheduling/scheduling-operations.yml#/jobRoles/item'
+  "/api/v1/businesses/{businessId}/shifts":
+    $ref: 'v1/services/scheduling/scheduling-operations.yml#/shifts/collection'
+  "/api/v1/businesses/{businessId}/shifts/{shiftId}":
+    $ref: 'v1/services/scheduling/scheduling-operations.yml#/shifts/item'
   "/api/v1/businesses/{businessId}/planning-settings":
     $ref: 'v1/services/scheduling/scheduling-operations.yml#/planning/settings'
   "/api/v1/businesses/{businessId}/plannings":

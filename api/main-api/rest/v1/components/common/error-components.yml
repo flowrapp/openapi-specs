@@ -34,6 +34,10 @@ components:
           detail: "1057 - contract date range is invalid"
         - status: 409
           detail: "1058 - contract update is blocked by planning state"
+        - status: 409
+          detail: "1062 - shift name already exists"
+        - status: 404
+          detail: "1061 - shift not found"
 
     FunctionalErrorCode:
       type: integer
@@ -102,6 +106,9 @@ components:
         | 1057 | 400 | INVALID_CONTRACT_RANGE | contract date range is invalid |
         | 1058 | 409 | CONTRACT_UPDATE_BLOCKED_BY_PLANNING | contract update is blocked by planning state |
         | 1059 | 409 | JOB_ROLE_NAME_ALREADY_EXISTS | job role name already exists |
+        | 1060 | 400 | INVALID_SHIFT | shift is invalid |
+        | 1061 | 404 | SHIFT_NOT_FOUND | shift not found |
+        | 1062 | 409 | SHIFT_NAME_ALREADY_EXISTS | shift name already exists |
       enum:
         - 1000
         - 1001
@@ -163,3 +170,6 @@ components:
         - 1057
         - 1058
         - 1059
+        - 1060
+        - 1061
+        - 1062

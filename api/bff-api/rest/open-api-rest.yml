@@ -7,7 +7,7 @@ info:
     This BFF aggregates and shapes data from the Flowrapp main API to serve
     the specific needs of the mobile frontend, providing role-based endpoints
     for workers and managers.
-  version: 0.0.47
+  version: 0.0.49
   contact:
     name: Flowrapp Team
     url: https://flowrapp.github.io
@@ -39,7 +39,7 @@ tags:
     description: >
       Manager-facing endpoints for business oversight, worker management,
       work history reporting, owner-only invitation management, timesheet export,
-      and owner-only recurring-schedule, exception, job-role, and planning management.
+      and owner-only Shift, recurring-schedule, exception, job-role, and planning management.
 
 paths:
   # ── System ──────────────────────────────────────────────────────────────
@@ -119,6 +119,10 @@ paths:
     $ref: 'v1/services/manager/manager-operations.yml#/manager/job-roles'
   "/api/v1/manager/businesses/{businessId}/job-roles/{jobRoleId}":
     $ref: 'v1/services/manager/manager-operations.yml#/manager/job-role-item'
+  "/api/v1/manager/businesses/{businessId}/shifts":
+    $ref: 'v1/services/manager/manager-operations.yml#/manager/shifts'
+  "/api/v1/manager/businesses/{businessId}/shifts/{shiftId}":
+    $ref: 'v1/services/manager/manager-operations.yml#/manager/shift-item'
   "/api/v1/manager/businesses/{businessId}/schedule":
     $ref: 'v1/services/manager/manager-operations.yml#/manager/planning'
   "/api/v1/manager/businesses/{businessId}/schedule/{planningId}/publish":

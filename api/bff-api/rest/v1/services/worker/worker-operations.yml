@@ -395,6 +395,7 @@ worker:
                           - id: 900
                             worker: {id: 3, name: Bob Wilson}
                             jobRole: {id: 10, code: WAITER, name: Waiter, color: "#1A2B3C", icon: front-of-house}
+                            shiftId: 20
                             shiftName: Morning service
                             shiftColor: "#1A2B3C"
                             startAt: "2025-07-28T09:00:00+02:00"
@@ -403,6 +404,7 @@ worker:
                           - id: 901
                             worker: {id: 4, name: Alice Brown}
                             jobRole: {id: 11, code: KITCHEN, name: Kitchen, color: "#4C9F70", icon: kitchen}
+                            shiftId: 21
                             shiftName: Night service
                             shiftColor: "#4C9F70"
                             startAt: "2025-07-28T22:00:00+02:00"
@@ -421,6 +423,7 @@ worker:
                           - id: 850
                             worker: {id: 3, name: Bob Wilson}
                             jobRole: {id: 10, code: WAITER, name: Waiter, color: "#1A2B3C", icon: front-of-house}
+                            shiftId: 20
                             shiftName: Morning service
                             shiftColor: "#1A2B3C"
                             startAt: "2025-07-21T09:00:00+02:00"
