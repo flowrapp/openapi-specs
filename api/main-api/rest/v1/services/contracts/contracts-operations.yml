@@ -338,7 +338,7 @@ contracts:
         BREAKING CHANGE: Updates only the nullable `endDate` of a specific contract. The job role,
         weekly hours, and start date are immutable after creation; changed terms require a new
         non-overlapping contract. The previous and proposed inclusive contract periods must not
-        intersect a planning in `SOLVING`, `READY`, `PUBLISHED`, or `ARCHIVED`. `DRAFT` and `FAILED`
+        intersect a planning in `SOLVING`, `DRAFT`, `PUBLISHED`, or `ARCHIVED`. `CREATED` and `FAILED`
         plannings do not by themselves freeze contract validity. Only the business owner can manage
         contracts.
       tags:
@@ -413,8 +413,8 @@ contracts:
         '409':
           description: >
             The proposed end date overlaps another contract for the same user and business, or
-            the previous or proposed contract period intersects a planning in SOLVING, READY,
-            PUBLISHED, or ARCHIVED. DRAFT and FAILED plannings do not cause this conflict.
+            the previous or proposed contract period intersects a planning in SOLVING, DRAFT,
+            PUBLISHED, or ARCHIVED. CREATED and FAILED plannings do not cause this conflict.
           content:
             application/problem+json:
               schema:

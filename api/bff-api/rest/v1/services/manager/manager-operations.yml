@@ -1445,7 +1445,7 @@ manager:
       summary: Get a weekly business planning
       description: >
         Returns the existing planning for the requested ISO week. The response shape is stable
-        for DRAFT, SOLVING, READY, PUBLISHED, FAILED, and ARCHIVED; ARCHIVED is historical and
+        for CREATED, SOLVING, DRAFT, PUBLISHED, ARCHIVED, and FAILED; ARCHIVED is historical and
         read-only. Requirements come from the immutable planning snapshot; this operation never
         generates a missing planning. Required seconds use local wall-clock shift duration: an end
         time not later than its start rolls into the next calendar day, breaks are subtracted, and
@@ -1503,15 +1503,15 @@ manager:
               schema:
                 $ref: '../../components/manager/components.yml#/components/schemas/ManagerPlanningResponseDTO'
               examples:
-                draft:
-                  summary: Draft planning
+                created:
+                  summary: Created planning awaiting solver submission
                   value:
                     id: 500
                     businessId: 101
                     week: "2025-W31"
                     weekStart: "2025-07-28"
                     weekEnd: "2025-08-03"
-                    status: DRAFT
+                    status: CREATED
                     failureReason: null
                     totals: {requiredSeconds: 0, scheduledSeconds: 0, contractedSeconds: 0}
                     requirements: []
@@ -1588,15 +1588,15 @@ manager:
                     createdAt: "2025-07-27T08:00:00+02:00"
                     publishedAt: null
                     hasCoverageWarnings: false
-                ready:
-                  summary: Ready planning with two shifts on one date
+                draft:
+                  summary: Draft planning with two shifts on one date
                   value:
                     id: 500
                     businessId: 101
                     week: "2025-W31"
                     weekStart: "2025-07-28"
                     weekEnd: "2025-08-03"
-                    status: READY
+                    status: DRAFT
                     failureReason: null
                     totals: {requiredSeconds: 28800, scheduledSeconds: 28800, contractedSeconds: 144000}
                     requirements:
@@ -1744,9 +1744,10 @@ manager:
       summary: Publish a weekly business planning
       description: >
         Publishes the existing planning addressed by its `planningId` within the requested
-        business. Publication is idempotent: publishing an already PUBLISHED planning returns it
-        unchanged. A missing or cross-business planning is never generated and returns 404; a
-        non-publishable state returns 409. Requires an OWNER membership.
+        business. Publication accepts only a solved, reviewable DRAFT planning and is idempotent:
+        publishing an already PUBLISHED planning returns it unchanged. A missing or cross-business
+        planning is never generated and returns 404; a non-publishable state returns 409. Requires
+        an OWNER membership.
       tags: [Manager]
       operationId: publishManagerPlanning
       security: [{ bearerAuth: [] }]

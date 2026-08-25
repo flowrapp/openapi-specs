@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.0.50
+
+### Breaking changes
+
+- Manager planning status vocabulary is now `CREATED`, `SOLVING`, `DRAFT`, `PUBLISHED`, `ARCHIVED`, and `FAILED`.
+- The semantic mapping is old `DRAFT` (created and awaiting solver submission) to `CREATED`, and old `READY` (solved and awaiting publication) to `DRAFT`.
+- `DRAFT` is solved and reviewable but unpublished; `ARCHIVED` is previously published, read-only history.
+
 ## 0.0.47
 
 ### Added

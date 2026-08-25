@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.0.50
+
+### Breaking changes
+
+- Planning status vocabulary is now `CREATED`, `SOLVING`, `DRAFT`, `PUBLISHED`, `ARCHIVED`, and `FAILED`.
+- The semantic mapping is old `DRAFT` (created and awaiting solver submission) to `CREATED`, and old `READY` (solved and awaiting publication) to `DRAFT`.
+- Planning publication now accepts the solved, reviewable `DRAFT` state; published history is automatically represented as `ARCHIVED` after its business-local week ends.
+
 ## 0.0.47
 
 ### Added

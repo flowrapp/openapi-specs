@@ -1264,8 +1264,9 @@ components:
     ManagerPlanningResponseDTO:
       type: object
       description: >
-        Stable weekly planning response for DRAFT, SOLVING, READY, PUBLISHED, FAILED, and
-        ARCHIVED. ARCHIVED is a historical read-only state. Requirements use local wall-clock
+        Stable weekly planning response for CREATED, SOLVING, DRAFT, PUBLISHED, ARCHIVED, and
+        FAILED. DRAFT is solved and reviewable but unpublished; ARCHIVED is historical and
+        read-only. Requirements use local wall-clock
         net shift duration multiplied by target staffing demand; assignments use offset elapsed
         duration minus breaks. Workers are the union of users with intersecting contracts and users
         with assignments, and planning totals reconcile to their daily and worker totals.
@@ -1297,8 +1298,8 @@ components:
           example: "2025-08-03"
         status:
           type: string
-          description: ARCHIVED is a historical read-only planning state
-          enum: [DRAFT, SOLVING, READY, PUBLISHED, FAILED, ARCHIVED]
+          description: CREATED is awaiting solver submission; DRAFT is solved and reviewable but unpublished; ARCHIVED is historical and read-only
+          enum: [CREATED, SOLVING, DRAFT, PUBLISHED, ARCHIVED, FAILED]
           example: SOLVING
         failureReason:
           type: [string, "null"]
