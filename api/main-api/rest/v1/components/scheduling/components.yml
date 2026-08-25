@@ -727,8 +727,11 @@ components:
 
     PlanningStatusDTO:
       type: string
-      description: Planning lifecycle state. FAILED is terminal and exposes only a sanitized failure reason.
-      enum: [DRAFT, SOLVING, READY, PUBLISHED, FAILED, ARCHIVED]
+      description: >
+        Planning lifecycle state: CREATED, SOLVING, DRAFT, PUBLISHED, ARCHIVED, or terminal FAILED.
+        DRAFT is solved and reviewable but unpublished; ARCHIVED is previously published history.
+        FAILED exposes only a sanitized failure reason.
+      enum: [CREATED, SOLVING, DRAFT, PUBLISHED, ARCHIVED, FAILED]
 
     ScheduledShiftResponseDTO:
       type: object
@@ -872,13 +875,13 @@ components:
             publishedAt: null
             scheduledShifts: []
             hasCoverageWarnings: true
-        - summary: Ready planning
+        - summary: Draft planning
           value:
             id: 500
             businessId: 101
             weekStart: "2025-07-28"
             weekEnd: "2025-08-03"
-            status: READY
+            status: DRAFT
             failureReason: null
             requirements:
               - date: "2025-07-28"

@@ -839,10 +839,10 @@ planning:
     post:
       tags: [Planning]
       operationId: publishPlanning
-      summary: Publish a ready business planning
+      summary: Publish a draft business planning
       description: >
-        Idempotently transitions the existing planning addressed by its stable `planningId` within
-        the route `businessId` from READY to PUBLISHED. An already published planning is returned
+        Idempotently transitions the existing solved, reviewable planning addressed by its stable
+        `planningId` within the route `businessId` from DRAFT to PUBLISHED. An already published planning is returned
         unchanged. If no planning exists for the ID, or it belongs to another business, the API
         returns 404 and creates nothing.
       security: [{ bearerAuth: [] }]
