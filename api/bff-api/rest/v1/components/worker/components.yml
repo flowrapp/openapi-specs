@@ -100,8 +100,10 @@ components:
         idempotencyId:
           type: string
           format: uuid
-          description: Optional client-generated command identifier reused when retrying the same clock-in.
+          description: Client-generated command identifier reused when retrying the same clock-in.
           example: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+      required:
+        - idempotencyId
 
     ClockOutRequestDTO:
       type: object
@@ -115,8 +117,10 @@ components:
         idempotencyId:
           type: string
           format: uuid
-          description: Optional client-generated command identifier reused when retrying the same clock-out.
+          description: Client-generated command identifier reused when retrying the same clock-out.
           example: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+      required:
+        - idempotencyId
 
     GeofenceEventRequestDTO:
       type: object

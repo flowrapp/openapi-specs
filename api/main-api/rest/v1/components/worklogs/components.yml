@@ -2,7 +2,7 @@ components:
   schemas:
     ClockInRequestDTO:
       type: object
-      description: Request object for clocking in. `idempotencyId` is optional during the compatibility release.
+      description: Request object for clocking in. `idempotencyId` is required.
       additionalProperties: false
       properties:
         clockIn:
@@ -13,17 +13,19 @@ components:
         idempotencyId:
           type: string
           format: uuid
-          description: Optional client-generated command identifier reused when retrying the same clock-in.
+          description: Client-generated command identifier reused when retrying the same clock-in.
           example: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
         note:
           type: ['string', 'null']
           maxLength: 500
           description: Optional current note for the worklog.
           example: "Opening shift"
+      required:
+        - idempotencyId
 
     ClockOutRequestDTO:
       type: object
-      description: Request object for clocking out. `idempotencyId` is optional during the compatibility release.
+      description: Request object for clocking out. `idempotencyId` is required.
       additionalProperties: false
       properties:
         clockOut:
@@ -34,13 +36,15 @@ components:
         idempotencyId:
           type: string
           format: uuid
-          description: Optional client-generated command identifier reused when retrying the same clock-out.
+          description: Client-generated command identifier reused when retrying the same clock-out.
           example: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
         note:
           type: ['string', 'null']
           maxLength: 500
           description: Optional current note for the worklog.
           example: "Closing shift"
+      required:
+        - idempotencyId
 
     WorkLogUpdateRequestDTO:
       type: object
