@@ -3,7 +3,7 @@ openapi: 3.1.0
 info:
   title: Flowrapp API
   description: REST API for Flowrapp Backend
-  version: 0.0.51
+  version: 0.0.52
   contact:
     name: Flowrapp Team
     url: https://flowrapp.github.io

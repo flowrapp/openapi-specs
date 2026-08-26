@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.0.52
+
+### Compatibility
+
+- The Main API contract is unchanged from v0.0.51; the tag also carries the BFF worker retry field.
+
 ## 0.0.51
 
 ### Added

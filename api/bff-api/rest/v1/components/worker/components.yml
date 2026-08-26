@@ -97,6 +97,11 @@ components:
           format: date-time
           description: Optional clock-in timestamp. Server uses current time if omitted.
           example: "2025-07-29T08:30:00+02:00"
+        idempotencyId:
+          type: string
+          format: uuid
+          description: Optional client-generated command identifier reused when retrying the same clock-in.
+          example: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
 
     ClockOutRequestDTO:
       type: object
@@ -107,6 +112,11 @@ components:
           format: date-time
           description: Optional clock-out timestamp. Server uses current time if omitted.
           example: "2025-07-29T17:30:00+02:00"
+        idempotencyId:
+          type: string
+          format: uuid
+          description: Optional client-generated command identifier reused when retrying the same clock-out.
+          example: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
 
     GeofenceEventRequestDTO:
       type: object

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.0.52
+
+### Added
+
+- Optional client-generated `idempotencyId` on worker clock-in and clock-out requests so mobile retries reuse the same command identifier.
+
 ## 0.0.50
 
 ### Breaking changes
