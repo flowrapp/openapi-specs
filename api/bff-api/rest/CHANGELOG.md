@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.0.53
+
+### Breaking changes
+
+- `idempotencyId` is now required on worker clock-in and clock-out requests.
+
 ## 0.0.52
 
 ### Added
