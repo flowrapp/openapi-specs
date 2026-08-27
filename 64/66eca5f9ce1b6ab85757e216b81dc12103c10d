@@ -1,0 +1,22 @@
+api/main-api/rest/CHANGELOG.md
+  h_a041df4244d543 3-13
+api/main-api/rest/open-api-rest.yml
+  h_a041df4244d543 6,88-91,100-103,110-113
+api/main-api/rest/v1/components/common/error-components.yml
+  h_a041df4244d543 118-122,193-197
+api/main-api/rest/v1/components/worklogs/components.yml
+  h_a041df4244d543 3-176,423-430,441-442,500-506,517-518
+api/main-api/rest/v1/services/worklogs/worklogs-operations.yml
+  h_a041df4244d543 907-1371
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.22",
+  "base_commit_sha": "6466eca5f9ce1b6ab85757e216b81dc12103c10d",
+  "prompts": {},
+  "humans": {
+    "h_a041df4244d543": {
+      "author": "sergiobpa <sergiobpa@ext.inditex.com>"
+    }
+  }
+}
