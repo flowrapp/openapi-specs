@@ -904,3 +904,468 @@ worklogs:
         - 1006
         - 1020
         - 1066
+
+  start-break:
+    post:
+      summary: Start an explicit worklog break
+      description: Starts a break for the authenticated worker's open worklog. The worklog must be working and the command is idempotent.
+      tags:
+        - Worklogs
+      operationId: startWorklogBreak
+      security:
+        - basicAuth: []
+        - bearerAuth: []
+      parameters:
+        - name: businessId
+          in: path
+          required: true
+          description: ID of the business
+          schema:
+            type: integer
+            format: int64
+        - name: worklogId
+          in: path
+          required: true
+          description: ID of the open worklog
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        description: Idempotent break-start command
+        content:
+          application/json:
+            schema:
+              $ref: '../../components/worklogs/components.yml#/components/schemas/StartWorklogBreakRequestDTO'
+      responses:
+        '200':
+          description: Break started successfully
+          content:
+            application/json:
+              schema:
+                $ref: '../../components/worklogs/components.yml#/components/schemas/WorklogBreakDTO'
+        '400':
+          description: Break start timestamp is invalid
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+        '401':
+          description: Unauthorized
+        '403':
+          description: The authenticated user does not own the worklog or the worklog is closed
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+        '404':
+          description: Worklog not found or is not available through the route business
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+        '409':
+          description: The worklog already has an open break, the idempotency identifier conflicts, or the worklog was modified concurrently
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+      x-functional-errors:
+        - 1017
+        - 1018
+        - 1019
+        - 1049
+        - 1065
+        - 1070
+        - 1072
+        - 1073
+
+  end-break:
+    put:
+      summary: End an explicit worklog break
+      description: Ends the authenticated worker's currently open break. The command is idempotent and the end instant may be supplied by the client.
+      tags:
+        - Worklogs
+      operationId: endWorklogBreak
+      security:
+        - basicAuth: []
+        - bearerAuth: []
+      parameters:
+        - name: businessId
+          in: path
+          required: true
+          description: ID of the business
+          schema:
+            type: integer
+            format: int64
+        - name: worklogId
+          in: path
+          required: true
+          description: ID of the open worklog
+          schema:
+            type: integer
+            format: int64
+        - name: breakId
+          in: path
+          required: true
+          description: ID of the break to end
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        description: Idempotent break-end command
+        content:
+          application/json:
+            schema:
+              $ref: '../../components/worklogs/components.yml#/components/schemas/EndWorklogBreakRequestDTO'
+      responses:
+        '200':
+          description: Break ended successfully
+          content:
+            application/json:
+              schema:
+                $ref: '../../components/worklogs/components.yml#/components/schemas/WorklogBreakDTO'
+        '400':
+          description: Break end timestamp is invalid
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+        '401':
+          description: Unauthorized
+        '403':
+          description: The authenticated user does not own the worklog or the worklog is closed
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+        '404':
+          description: Worklog or break not found, or the break is not available through the route business
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+        '409':
+          description: There is no open break, the idempotency identifier conflicts, or the worklog was modified concurrently
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+      x-functional-errors:
+        - 1017
+        - 1018
+        - 1019
+        - 1049
+        - 1065
+        - 1069
+        - 1071
+        - 1072
+        - 1073
+
+  worker-break-correction:
+    put:
+      summary: Correct an own worklog break
+      description: Corrects a completed break in a closed worklog owned by the authenticated worker. A non-blank reason is required and the worklog enters PENDING_REVIEW.
+      tags:
+        - Worklogs
+      operationId: correctOwnWorklogBreak
+      security:
+        - basicAuth: []
+        - bearerAuth: []
+      parameters:
+        - name: worklogId
+          in: path
+          required: true
+          description: ID of the worklog
+          schema:
+            type: integer
+            format: int64
+        - name: breakId
+          in: path
+          required: true
+          description: ID of the break to correct
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        description: Replacement break interval and mandatory reason
+        content:
+          application/json:
+            schema:
+              $ref: '../../components/worklogs/components.yml#/components/schemas/WorklogBreakCorrectionRequestDTO'
+      responses:
+        '200':
+          description: Break correction accepted for review
+          content:
+            application/json:
+              schema:
+                $ref: '../../components/worklogs/components.yml#/components/schemas/WorklogBreakDTO'
+        '400':
+          description: Break interval or reason is invalid
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+        '401':
+          description: Unauthorized
+        '403':
+          description: The authenticated worker does not own the worklog
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+        '404':
+          description: Worklog or break not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+        '409':
+          description: The correction overlaps another break or the resource was modified concurrently
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+      x-functional-errors:
+        - 1017
+        - 1019
+        - 1049
+        - 1068
+        - 1069
+        - 1073
+
+  worker-break-void:
+    post:
+      summary: Void an own worklog break
+      description: Voids a completed break in a closed worklog owned by the authenticated worker. A non-blank reason is required and the worklog enters PENDING_REVIEW.
+      tags:
+        - Worklogs
+      operationId: voidOwnWorklogBreak
+      security:
+        - basicAuth: []
+        - bearerAuth: []
+      parameters:
+        - name: worklogId
+          in: path
+          required: true
+          description: ID of the worklog
+          schema:
+            type: integer
+            format: int64
+        - name: breakId
+          in: path
+          required: true
+          description: ID of the break to void
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        description: Mandatory reason for voiding the break
+        content:
+          application/json:
+            schema:
+              $ref: '../../components/worklogs/components.yml#/components/schemas/WorklogBreakVoidRequestDTO'
+      responses:
+        '200':
+          description: Break void accepted for review
+          content:
+            application/json:
+              schema:
+                $ref: '../../components/worklogs/components.yml#/components/schemas/WorklogBreakDTO'
+        '400':
+          description: Break state or reason is invalid
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+        '401':
+          description: Unauthorized
+        '403':
+          description: The authenticated worker does not own the worklog
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+        '404':
+          description: Worklog or break not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+        '409':
+          description: The resource was modified concurrently
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+      x-functional-errors:
+        - 1017
+        - 1019
+        - 1049
+        - 1068
+        - 1069
+        - 1073
+
+  management-break-correction:
+    put:
+      summary: Correct a business worklog break
+      description: Corrects a completed break in a closed worklog for an owner or manager of the route business. A non-blank reason is required and the worklog remains APPROVED.
+      tags:
+        - Worklogs
+      operationId: correctBusinessWorklogBreak
+      security:
+        - basicAuth: []
+        - bearerAuth: []
+      parameters:
+        - name: businessId
+          in: path
+          required: true
+          description: ID of the business
+          schema:
+            type: integer
+            format: int64
+        - name: worklogId
+          in: path
+          required: true
+          description: ID of the worklog
+          schema:
+            type: integer
+            format: int64
+        - name: breakId
+          in: path
+          required: true
+          description: ID of the break to correct
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        description: Replacement break interval and mandatory reason
+        content:
+          application/json:
+            schema:
+              $ref: '../../components/worklogs/components.yml#/components/schemas/WorklogBreakCorrectionRequestDTO'
+      responses:
+        '200':
+          description: Break correction approved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '../../components/worklogs/components.yml#/components/schemas/WorklogBreakDTO'
+        '400':
+          description: Break interval or reason is invalid
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+        '401':
+          description: Unauthorized
+        '403':
+          description: The authenticated user is not an owner or manager of the business
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+        '404':
+          description: Business, worklog, or break not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+        '409':
+          description: The correction overlaps another break or the resource was modified concurrently
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+      x-functional-errors:
+        - 1006
+        - 1017
+        - 1020
+        - 1049
+        - 1068
+        - 1069
+        - 1073
+
+  management-break-void:
+    post:
+      summary: Void a business worklog break
+      description: Voids a completed break in a closed worklog for an owner or manager of the route business. A non-blank reason is required and the worklog remains APPROVED.
+      tags:
+        - Worklogs
+      operationId: voidBusinessWorklogBreak
+      security:
+        - basicAuth: []
+        - bearerAuth: []
+      parameters:
+        - name: businessId
+          in: path
+          required: true
+          description: ID of the business
+          schema:
+            type: integer
+            format: int64
+        - name: worklogId
+          in: path
+          required: true
+          description: ID of the worklog
+          schema:
+            type: integer
+            format: int64
+        - name: breakId
+          in: path
+          required: true
+          description: ID of the break to void
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        description: Mandatory reason for voiding the break
+        content:
+          application/json:
+            schema:
+              $ref: '../../components/worklogs/components.yml#/components/schemas/WorklogBreakVoidRequestDTO'
+      responses:
+        '200':
+          description: Break void approved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '../../components/worklogs/components.yml#/components/schemas/WorklogBreakDTO'
+        '400':
+          description: Break state or reason is invalid
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+        '401':
+          description: Unauthorized
+        '403':
+          description: The authenticated user is not an owner or manager of the business
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+        '404':
+          description: Business, worklog, or break not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+        '409':
+          description: The resource was modified concurrently
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+      x-functional-errors:
+        - 1006
+        - 1020
+        - 1049
+        - 1068
+        - 1069
+        - 1073
