@@ -1,5 +1,179 @@
 components:
   schemas:
+    WorklogBreakStatusDTO:
+      type: string
+      description: Current effectiveness of a worklog break. VOIDED breaks remain queryable but do not deduct worked time.
+      enum: [EFFECTIVE, VOIDED]
+      example: EFFECTIVE
+
+    WorklogOperationalStateDTO:
+      type: string
+      description: Derived operational state of a worklog. This value is read-only and cannot be submitted by clients.
+      enum: [WORKING, ON_BREAK, CLOSED]
+      example: WORKING
+
+    WorklogBreakDTO:
+      type: object
+      description: Explicit break interval belonging to a worklog.
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: Unique identifier for the break.
+          example: 456
+        worklogId:
+          type: integer
+          format: int64
+          description: Identifier of the parent worklog.
+          example: 123
+        startedAt:
+          type: string
+          format: date-time
+          description: Effective break-start timestamp.
+          example: "2025-07-29T12:00:00+00:00"
+        endedAt:
+          type: ['string', 'null']
+          format: date-time
+          description: Effective break-end timestamp, or null while the break is open.
+          example: "2025-07-29T12:30:00+00:00"
+        status:
+          $ref: '#/components/schemas/WorklogBreakStatusDTO'
+        version:
+          type: integer
+          format: int64
+          description: Optimistic-lock version of the break.
+          example: 0
+        createdAt:
+          type: string
+          format: date-time
+          description: Server time when the break was created.
+          example: "2025-07-29T12:00:01+00:00"
+        updatedAt:
+          type: string
+          format: date-time
+          description: Server time when the break was last changed.
+          example: "2025-07-29T12:30:01+00:00"
+      required:
+        - id
+        - worklogId
+        - startedAt
+        - status
+        - version
+        - createdAt
+        - updatedAt
+
+    StartWorklogBreakRequestDTO:
+      type: object
+      description: Idempotent request to start an explicit break. The server clock is used when startedAt is omitted.
+      additionalProperties: false
+      properties:
+        idempotencyId:
+          type: string
+          format: uuid
+          description: Client-generated command identifier reused when retrying the same break start.
+          example: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+        startedAt:
+          type: string
+          format: date-time
+          description: Observed break-start timestamp; omitted to use the server clock.
+          example: "2025-07-29T12:00:00+00:00"
+      required:
+        - idempotencyId
+
+    EndWorklogBreakRequestDTO:
+      type: object
+      description: Idempotent request to end an explicit break. The server clock is used when endedAt is omitted.
+      additionalProperties: false
+      properties:
+        idempotencyId:
+          type: string
+          format: uuid
+          description: Client-generated command identifier reused when retrying the same break end.
+          example: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+        endedAt:
+          type: string
+          format: date-time
+          description: Observed break-end timestamp; omitted to use the server clock.
+          example: "2025-07-29T12:30:00+00:00"
+      required:
+        - idempotencyId
+
+    WorklogBreakCorrectionRequestDTO:
+      type: object
+      description: Replacement interval and mandatory reason for correcting a completed break.
+      additionalProperties: false
+      properties:
+        startedAt:
+          type: string
+          format: date-time
+          description: Replacement break-start timestamp.
+          example: "2025-07-29T11:55:00+00:00"
+        endedAt:
+          type: string
+          format: date-time
+          description: Replacement break-end timestamp.
+          example: "2025-07-29T12:25:00+00:00"
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 500
+          description: Non-blank plain-text reason for the correction.
+          example: "The break started five minutes earlier than recorded."
+      required:
+        - startedAt
+        - endedAt
+        - reason
+
+    WorklogBreakVoidRequestDTO:
+      type: object
+      description: Mandatory reason for voiding a completed break without deleting its history.
+      additionalProperties: false
+      properties:
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 500
+          description: Non-blank plain-text reason for voiding the break.
+          example: "The break was recorded accidentally."
+      required:
+        - reason
+
+    WorklogBreakAuditSnapshotDTO:
+      type: object
+      description: Scalar break state captured before or after an audited mutation.
+      properties:
+        breakId:
+          type: integer
+          format: int64
+        worklogId:
+          type: integer
+          format: int64
+        version:
+          type: integer
+          format: int64
+        startedAt:
+          type: string
+          format: date-time
+        endedAt:
+          type: ['string', 'null']
+          format: date-time
+        status:
+          $ref: '#/components/schemas/WorklogBreakStatusDTO'
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - breakId
+        - worklogId
+        - version
+        - startedAt
+        - status
+        - createdAt
+        - updatedAt
+
     ClockInRequestDTO:
       type: object
       description: Request object for clocking in. `idempotencyId` is required.
@@ -246,6 +420,14 @@ components:
           oneOf:
             - $ref: '#/components/schemas/WorklogAuditSnapshotDTO'
             - type: 'null'
+        breakBefore:
+          oneOf:
+            - $ref: '#/components/schemas/WorklogBreakAuditSnapshotDTO'
+            - type: 'null'
+        breakAfter:
+          oneOf:
+            - $ref: '#/components/schemas/WorklogBreakAuditSnapshotDTO'
+            - type: 'null'
       required:
         - eventId
         - action
@@ -256,6 +438,8 @@ components:
         - reason
         - before
         - after
+        - breakBefore
+        - breakAfter
 
     WorkLogResponseDTO:
       type: object
@@ -313,6 +497,13 @@ components:
           format: date-time
           description: Server time when the worklog was last updated.
           example: "2025-07-29T15:30:00+00:00"
+        breaks:
+          type: array
+          description: Current break children in creation order, including effective and voided breaks.
+          items:
+            $ref: '#/components/schemas/WorklogBreakDTO'
+        operationalState:
+          $ref: '#/components/schemas/WorklogOperationalStateDTO'
       required:
         - id
         - userId
@@ -323,3 +514,5 @@ components:
         - version
         - createdAt
         - updatedAt
+        - breaks
+        - operationalState

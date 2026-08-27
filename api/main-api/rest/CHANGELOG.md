@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.0.54
+
+### Added
+
+- Explicit worklog break start, end, correction, void, operational-state, and audit-history representations.
+- Required idempotency identifiers for worker break start and end commands.
+
+### Breaking changes
+
+- Worklog reporting now represents net worked time after effective completed breaks are deducted.
+
 ## 0.0.53
 
 ### Breaking changes

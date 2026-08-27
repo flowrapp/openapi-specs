@@ -115,6 +115,11 @@ components:
         | 1066 | 400 | INVALID_LONG_OPEN_THRESHOLD | long-open threshold must be greater than zero and less than 24 hours |
         | 1067 | 409 | INVALID_WORKLOG_REVIEW_TRANSITION | worklog review transition is not allowed |
         | 1068 | 400 | WORKLOG_CORRECTION_REASON_REQUIRED | worklog correction requires a non-blank reason |
+        | 1069 | 404 | WORKLOG_BREAK_NOT_FOUND | worklog break not found |
+        | 1070 | 409 | WORKLOG_BREAK_ALREADY_OPEN | worklog already has an open break |
+        | 1071 | 409 | WORKLOG_BREAK_NOT_OPEN | worklog has no open break |
+        | 1072 | 409 | WORKLOG_BREAK_IDEMPOTENCY_CONFLICT | break idempotency identifier was reused with different command content |
+        | 1073 | 400 | WORKLOG_BREAK_NOT_VALID | worklog break interval is not valid |
       enum:
         - 1000
         - 1001
@@ -185,3 +190,8 @@ components:
         - 1066
         - 1067
         - 1068
+        - 1069
+        - 1070
+        - 1071
+        - 1072
+        - 1073
