@@ -133,13 +133,55 @@ components:
           required: [kind, candidateShifts]
 
     AttendanceMatchDTO:
-      oneOf:
-        - $ref: '#/components/schemas/AttendanceMatchNotApplicableDTO'
-        - $ref: '#/components/schemas/AttendanceMatchMatchedDTO'
-        - $ref: '#/components/schemas/AttendanceMatchUnscheduledDTO'
-        - $ref: '#/components/schemas/AttendanceMatchAmbiguousDTO'
-      discriminator:
-        propertyName: kind
+      type: object
+      description: Wire representation of one sealed AttendanceMatch variant. The kind discriminator determines which variant payload is populated.
+      properties:
+        id:
+          type: integer
+          format: int64
+          minimum: 1
+          example: 700
+        worklogId:
+          type: integer
+          format: int64
+          minimum: 1
+          example: 123
+        businessId:
+          type: integer
+          format: int64
+          minimum: 1
+          example: 101
+        userId:
+          type: integer
+          format: int64
+          minimum: 1
+          example: 3
+        kind:
+          $ref: '#/components/schemas/AttendanceMatchKindDTO'
+        origin:
+          $ref: '#/components/schemas/AttendanceMatchOriginDTO'
+        scheduledShift:
+          oneOf:
+            - $ref: '../scheduling/components.yml#/components/schemas/ScheduledShiftResponseDTO'
+            - type: 'null'
+        candidateShifts:
+          type: array
+          description: Retained candidates for an AMBIGUOUS match; empty for other kinds.
+          items:
+            $ref: '../scheduling/components.yml#/components/schemas/ScheduledShiftResponseDTO'
+        reconciliation:
+          $ref: '#/components/schemas/AttendanceReconciliationDTO'
+        version:
+          type: integer
+          format: int64
+          minimum: 0
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required: [id, worklogId, businessId, userId, kind, origin, scheduledShift, candidateShifts, reconciliation, version, createdAt, updatedAt]
 
     ClockInResultDTO:
       type: object
