@@ -105,6 +105,20 @@ components:
       required:
         - idempotencyId
 
+    ClockInResultDTO:
+      type: object
+      description: Result of a successful clock-in, including the durable attendance-match identity.
+      properties:
+        worklog:
+          $ref: '../common/components.yml#/components/schemas/SessionDTO'
+        attendanceMatchId:
+          type: integer
+          format: int64
+          minimum: 1
+          description: Independently identified attendance match created for the session.
+          example: 700
+      required: [worklog, attendanceMatchId]
+
     ClockOutRequestDTO:
       type: object
       description: Request to clock out (end a work session)

@@ -1,0 +1,399 @@
+attendance:
+  worker-match-detail:
+    get:
+      summary: Get an attendance match
+      description: Returns the authenticated worker's attendance match, its associated shift when matched, retained candidates when ambiguous, and reconciliation readiness.
+      tags: [Attendance]
+      operationId: getAttendanceMatch
+      security:
+        - basicAuth: []
+        - bearerAuth: []
+      parameters:
+        - name: attendanceMatchId
+          in: path
+          required: true
+          description: Independent attendance-match identifier returned by clock-in.
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+      responses:
+        '200':
+          description: Attendance match retrieved successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '../../../open-api-rest.yml#/components/schemas/AttendanceMatch'
+        '401':
+          description: Unauthorized.
+        '404':
+          description: Match not found or not owned by the authenticated worker.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+              examples:
+                ATTENDANCE_MATCH_NOT_FOUND:
+                  value: {status: 404, detail: '1074 - attendance match not found'}
+      x-functional-errors: [1074]
+
+  daily:
+    get:
+      summary: Get daily attendance
+      description: Returns one business-local date with summary totals, ordered shift attendances, and unmatched unscheduled or ambiguous worklogs.
+      tags: [Attendance]
+      operationId: getDailyAttendance
+      security:
+        - basicAuth: []
+        - bearerAuth: []
+      parameters:
+        - name: businessId
+          in: path
+          required: true
+          description: Business whose attendance is requested.
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+        - name: date
+          in: query
+          required: true
+          description: Business-local calendar date in YYYY-MM-DD format.
+          schema:
+            type: string
+            format: date
+            example: '2025-07-29'
+      responses:
+        '200':
+          description: Daily attendance retrieved successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '../../../open-api-rest.yml#/components/schemas/DailyAttendance'
+        '401':
+          description: Unauthorized.
+        '403':
+          description: The authenticated user is not an owner or manager of the business.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+              example: {status: 403, detail: '1020 - user is not the owner of business'}
+        '404':
+          description: Business not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+              example: {status: 404, detail: '1006 - business does not exist'}
+      x-functional-errors: [1006, 1020]
+
+  tolerance:
+    put:
+      summary: Update business attendance tolerance
+      description: Updates the owner-configurable tolerance used by attendance deviation and no-show calculations. Existing affected matches are queued for reconciliation.
+      tags: [Attendance]
+      operationId: updateAttendanceTolerance
+      security:
+        - basicAuth: []
+        - bearerAuth: []
+      parameters:
+        - name: businessId
+          in: path
+          required: true
+          description: Business whose attendance tolerance is changed.
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+      requestBody:
+        required: true
+        description: Replacement attendance tolerance.
+        content:
+          application/json:
+            schema:
+              $ref: '../../../open-api-rest.yml#/components/schemas/AttendanceToleranceUpdateRequest'
+      responses:
+        '200':
+          description: Attendance tolerance updated successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '../../../open-api-rest.yml#/components/schemas/AttendanceTolerance'
+        '400':
+          description: Attendance tolerance is invalid.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+              example: {status: 400, detail: '1077 - attendance tolerance is invalid'}
+        '401':
+          description: Unauthorized.
+        '403':
+          description: The authenticated user is not the owner of the business.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+              example: {status: 403, detail: '1020 - user is not the owner of business'}
+        '404':
+          description: Business not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+              example: {status: 404, detail: '1006 - business does not exist'}
+      x-functional-errors: [1006, 1020, 1077]
+
+  match-resolution:
+    post:
+      summary: Resolve an attendance match
+      description: Assigns an ambiguous match to one valid retained or plausible shift, or declares it unplanned. A non-blank reason is required.
+      tags: [Attendance]
+      operationId: resolveAttendanceMatch
+      security:
+        - basicAuth: []
+        - bearerAuth: []
+      parameters:
+        - name: businessId
+          in: path
+          required: true
+          description: Route business for authorization and consistency validation.
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+        - name: attendanceMatchId
+          in: path
+          required: true
+          description: Match to resolve.
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+      requestBody:
+        required: true
+        description: Structural resolution and mandatory reason.
+        content:
+          application/json:
+            schema:
+              $ref: '../../../open-api-rest.yml#/components/schemas/AttendanceMatchResolutionRequest'
+            examples:
+              assign:
+                value: {action: ASSIGN_SHIFT, scheduledShiftId: 900, reason: 'The worker covered the morning service.'}
+              unplanned:
+                value: {action: DECLARE_UNPLANNED, scheduledShiftId: null, reason: 'Emergency cover approved by the owner.'}
+      responses:
+        '200':
+          description: Attendance match resolved successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '../../../open-api-rest.yml#/components/schemas/AttendanceMatch'
+        '400':
+          description: Resolution or reason is invalid.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+              examples:
+                REASON_REQUIRED:
+                  value: {status: 400, detail: '1078 - attendance resolution requires a non-blank reason'}
+                INVALID_RESOLUTION:
+                  value: {status: 400, detail: '1084 - attendance resolution is not allowed for the current state'}
+        '401':
+          description: Unauthorized.
+        '403':
+          description: The authenticated user is not an owner or manager of the business.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+        '404':
+          description: Business, match, or selected shift not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+        '409':
+          description: Match was modified concurrently.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+              example: {status: 409, detail: '1049 - resource was modified concurrently'}
+      x-functional-errors: [1006, 1049, 1074, 1075, 1076, 1078, 1084]
+
+  unplanned-acceptance:
+    post:
+      summary: Accept unscheduled attendance
+      description: Accepts an UNSCHEDULED_WORK incident with a mandatory reason and approves its eligible non-rejected worklog.
+      tags: [Attendance]
+      operationId: acceptUnplannedAttendance
+      security:
+        - basicAuth: []
+        - bearerAuth: []
+      parameters:
+        - name: businessId
+          in: path
+          required: true
+          schema: {type: integer, format: int64, minimum: 1}
+        - name: attendanceMatchId
+          in: path
+          required: true
+          schema: {type: integer, format: int64, minimum: 1}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '../../../open-api-rest.yml#/components/schemas/UnscheduledAttendanceAcceptanceRequest'
+      responses:
+        '200':
+          description: Unscheduled attendance accepted.
+          content:
+            application/json:
+              schema:
+                $ref: '../../../open-api-rest.yml#/components/schemas/AttendanceMatch'
+        '400':
+          description: Acceptance or reason is invalid.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+        '401':
+          description: Unauthorized.
+        '403':
+          description: The authenticated user is not an owner or manager of the business.
+        '404':
+          description: Business or match not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+        '409':
+          description: Match or worklog cannot be accepted in its current state.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+      x-functional-errors: [1006, 1049, 1067, 1074, 1078, 1084]
+
+  no-show-acknowledgment:
+    post:
+      summary: Acknowledge a no-show
+      description: Resolves the shift-scoped NO_SHOW incident with a mandatory reason and does not create a worklog.
+      tags: [Attendance]
+      operationId: acknowledgeNoShow
+      security:
+        - basicAuth: []
+        - bearerAuth: []
+      parameters:
+        - name: businessId
+          in: path
+          required: true
+          schema: {type: integer, format: int64, minimum: 1}
+        - name: scheduledShiftId
+          in: path
+          required: true
+          schema: {type: integer, format: int64, minimum: 1}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '../../../open-api-rest.yml#/components/schemas/NoShowAcknowledgementRequest'
+      responses:
+        '200':
+          description: No-show acknowledged.
+          content:
+            application/json:
+              schema:
+                $ref: '../../../open-api-rest.yml#/components/schemas/AttendanceIncident'
+        '400':
+          description: Acknowledgement reason is invalid.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+        '401':
+          description: Unauthorized.
+        '403':
+          description: The authenticated user is not an owner or manager of the business.
+        '404':
+          description: Business, shift, or no-show incident not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+      x-functional-errors: [1006, 1076, 1078, 1085]
+
+  shift-approval:
+    post:
+      summary: Approve shift attendance
+      description: Approves one completed ShiftAttendance using an opaque expected revision. Approval is atomic and rejects stale or unreconciled attendance.
+      tags: [Attendance]
+      operationId: approveShiftAttendance
+      security:
+        - basicAuth: []
+        - bearerAuth: []
+      parameters:
+        - name: businessId
+          in: path
+          required: true
+          schema: {type: integer, format: int64, minimum: 1}
+        - name: scheduledShiftId
+          in: path
+          required: true
+          schema: {type: integer, format: int64, minimum: 1}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '../../../open-api-rest.yml#/components/schemas/ShiftAttendanceApprovalRequest'
+      responses:
+        '200':
+          description: Shift attendance approved successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '../../../open-api-rest.yml#/components/schemas/ShiftAttendance'
+        '400':
+          description: Approval request is invalid.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+        '401':
+          description: Unauthorized.
+        '403':
+          description: The authenticated user is not an owner or manager of the business.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+        '404':
+          description: Business or scheduled shift not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+        '409':
+          description: Approval is stale, pending reconciliation, unfinished, open, or structurally unresolved.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+              examples:
+                REVISION_CONFLICT:
+                  value: {status: 409, detail: '1079 - attendance changed since it was read'}
+                PENDING:
+                  value: {status: 409, detail: '1080 - attendance reconciliation is still pending'}
+                NOT_FINISHED:
+                  value: {status: 409, detail: '1081 - scheduled shift is not finished'}
+                OPEN_WORKLOGS:
+                  value: {status: 409, detail: '1082 - attendance has an open worklog or break'}
+                STRUCTURAL:
+                  value: {status: 409, detail: '1083 - attendance has unresolved structural incidents'}
+      x-functional-errors: [1006, 1049, 1076, 1079, 1080, 1081, 1082, 1083]
