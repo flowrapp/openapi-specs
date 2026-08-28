@@ -120,6 +120,18 @@ components:
         | 1071 | 409 | WORKLOG_BREAK_NOT_OPEN | worklog has no open break |
         | 1072 | 409 | WORKLOG_BREAK_IDEMPOTENCY_CONFLICT | break idempotency identifier was reused with different command content |
         | 1073 | 400 | WORKLOG_BREAK_NOT_VALID | worklog break interval is not valid |
+        | 1074 | 404 | ATTENDANCE_MATCH_NOT_FOUND | attendance match not found |
+        | 1075 | 400 | INVALID_ATTENDANCE_MATCH | attendance match is invalid |
+        | 1076 | 404 | ATTENDANCE_SHIFT_NOT_FOUND | scheduled shift not found |
+        | 1077 | 400 | INVALID_ATTENDANCE_TOLERANCE | attendance tolerance is invalid |
+        | 1078 | 400 | ATTENDANCE_REASON_REQUIRED | attendance resolution requires a non-blank reason |
+        | 1079 | 409 | ATTENDANCE_REVISION_CONFLICT | attendance changed since it was read |
+        | 1080 | 409 | ATTENDANCE_RECONCILIATION_PENDING | attendance reconciliation is still pending |
+        | 1081 | 409 | ATTENDANCE_SHIFT_NOT_FINISHED | scheduled shift is not finished |
+        | 1082 | 409 | ATTENDANCE_OPEN_WORKLOGS | attendance has an open worklog or break |
+        | 1083 | 409 | ATTENDANCE_STRUCTURAL_INCIDENTS | attendance has unresolved structural incidents |
+        | 1084 | 409 | ATTENDANCE_INVALID_RESOLUTION | attendance resolution is not allowed for the current state |
+        | 1085 | 404 | ATTENDANCE_INCIDENT_NOT_FOUND | attendance incident not found |
       enum:
         - 1000
         - 1001
@@ -195,3 +207,15 @@ components:
         - 1071
         - 1072
         - 1073
+        - 1074
+        - 1075
+        - 1076
+        - 1077
+        - 1078
+        - 1079
+        - 1080
+        - 1081
+        - 1082
+        - 1083
+        - 1084
+        - 1085

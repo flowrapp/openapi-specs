@@ -30,7 +30,7 @@ worklogs:
           content:
             application/json:
               schema:
-                $ref: '../../components/worklogs/components.yml#/components/schemas/WorkLogResponseDTO'
+                $ref: '../../../open-api-rest.yml#/components/schemas/ClockInResult'
         '400':
           description: Clock-in timestamp or note is invalid
           content:

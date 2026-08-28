@@ -3,7 +3,7 @@ openapi: 3.1.0
 info:
   title: Flowrapp API
   description: REST API for Flowrapp Backend
-  version: 0.0.54
+  version: 0.0.55
   contact:
     name: Flowrapp Team
     url: https://flowrapp.github.io
@@ -49,6 +49,8 @@ tags:
     description: Business-owned shift identity and presentation catalogs.
   - name: Planning
     description: Weekly business plannings and scheduled shifts.
+  - name: Attendance
+    description: Daily reconciliation between published shifts and recorded worklogs.
 
 paths:
   "/api/v1/ping":
@@ -179,9 +181,91 @@ paths:
     $ref: 'v1/services/scheduling/scheduling-operations.yml#/planning/publish'
   "/api/v1/scheduled-shifts":
     $ref: 'v1/services/scheduling/scheduling-operations.yml#/planning/currentUserScheduledShifts'
-
+  "/api/v1/attendance-matches/{attendanceMatchId}":
+    $ref: 'v1/services/attendance/attendance-operations.yml#/attendance/worker-match-detail'
+  "/api/v1/businesses/{businessId}/attendance":
+    $ref: 'v1/services/attendance/attendance-operations.yml#/attendance/daily'
+  "/api/v1/businesses/{businessId}/attendance-tolerance":
+    $ref: 'v1/services/attendance/attendance-operations.yml#/attendance/tolerance'
+  "/api/v1/businesses/{businessId}/attendance-matches/{attendanceMatchId}/resolution":
+    $ref: 'v1/services/attendance/attendance-operations.yml#/attendance/match-resolution'
+  "/api/v1/businesses/{businessId}/attendance-matches/{attendanceMatchId}/accept-unplanned":
+    $ref: 'v1/services/attendance/attendance-operations.yml#/attendance/unplanned-acceptance'
+  "/api/v1/businesses/{businessId}/scheduled-shifts/{scheduledShiftId}/no-show/acknowledge":
+    $ref: 'v1/services/attendance/attendance-operations.yml#/attendance/no-show-acknowledgment'
+  "/api/v1/businesses/{businessId}/scheduled-shifts/{scheduledShiftId}/attendance/approve":
+    $ref: 'v1/services/attendance/attendance-operations.yml#/attendance/shift-approval'
 
 components:
+  schemas:
+    AttendanceMatch:
+      $ref: 'v1/components/attendance/components.yml#/components/schemas/AttendanceMatchDTO'
+    AttendanceMatchNotApplicable:
+      $ref: 'v1/components/attendance/components.yml#/components/schemas/AttendanceMatchNotApplicableDTO'
+    AttendanceMatchMatched:
+      $ref: 'v1/components/attendance/components.yml#/components/schemas/AttendanceMatchMatchedDTO'
+    AttendanceMatchUnscheduled:
+      $ref: 'v1/components/attendance/components.yml#/components/schemas/AttendanceMatchUnscheduledDTO'
+    AttendanceMatchAmbiguous:
+      $ref: 'v1/components/attendance/components.yml#/components/schemas/AttendanceMatchAmbiguousDTO'
+    ClockInResult:
+      $ref: 'v1/components/attendance/components.yml#/components/schemas/ClockInResultDTO'
+    AttendanceIncidentType:
+      $ref: 'v1/components/attendance/components.yml#/components/schemas/AttendanceIncidentTypeDTO'
+    AttendanceIncidentScope:
+      $ref: 'v1/components/attendance/components.yml#/components/schemas/AttendanceIncidentScopeDTO'
+    IncidentResolution:
+      $ref: 'v1/components/attendance/components.yml#/components/schemas/IncidentResolutionDTO'
+    IncidentLifecycle:
+      $ref: 'v1/components/attendance/components.yml#/components/schemas/IncidentLifecycleDTO'
+    AttendanceIncidentEvidence:
+      $ref: 'v1/components/attendance/components.yml#/components/schemas/AttendanceIncidentEvidenceDTO'
+    AttendanceMetrics:
+      $ref: 'v1/components/attendance/components.yml#/components/schemas/AttendanceMetricsDTO'
+    ShiftAttendanceLifecycle:
+      $ref: 'v1/components/attendance/components.yml#/components/schemas/ShiftAttendanceLifecycleDTO'
+    ShiftAttendanceCoverage:
+      $ref: 'v1/components/attendance/components.yml#/components/schemas/ShiftAttendanceCoverageDTO'
+    ShiftAttendanceReview:
+      $ref: 'v1/components/attendance/components.yml#/components/schemas/ShiftAttendanceReviewDTO'
+    ShiftAttendanceAlert:
+      $ref: 'v1/components/attendance/components.yml#/components/schemas/ShiftAttendanceAlertDTO'
+    AttendanceWorker:
+      $ref: 'v1/components/attendance/components.yml#/components/schemas/AttendanceWorkerDTO'
+    UnmatchedAttendance:
+      $ref: 'v1/components/attendance/components.yml#/components/schemas/UnmatchedAttendanceDTO'
+    DailyAttendanceSummary:
+      $ref: 'v1/components/attendance/components.yml#/components/schemas/DailyAttendanceSummaryDTO'
+    AttendanceMatchKind:
+      $ref: 'v1/components/attendance/components.yml#/components/schemas/AttendanceMatchKindDTO'
+    AttendanceMatchOrigin:
+      $ref: 'v1/components/attendance/components.yml#/components/schemas/AttendanceMatchOriginDTO'
+    ReconciliationState:
+      $ref: 'v1/components/attendance/components.yml#/components/schemas/ReconciliationStateDTO'
+    AttendanceReconciliation:
+      $ref: 'v1/components/attendance/components.yml#/components/schemas/AttendanceReconciliationDTO'
+    AttendanceMatchBase:
+      $ref: 'v1/components/attendance/components.yml#/components/schemas/AttendanceMatchBaseDTO'
+    AttendanceRevisionConflict:
+      $ref: 'v1/components/attendance/components.yml#/components/schemas/AttendanceRevisionConflictDTO'
+    AttendanceIncident:
+      $ref: 'v1/components/attendance/components.yml#/components/schemas/AttendanceIncidentDTO'
+    DailyAttendance:
+      $ref: 'v1/components/attendance/components.yml#/components/schemas/DailyAttendanceDTO'
+    AttendanceTolerance:
+      $ref: 'v1/components/attendance/components.yml#/components/schemas/AttendanceToleranceDTO'
+    AttendanceToleranceUpdateRequest:
+      $ref: 'v1/components/attendance/components.yml#/components/schemas/AttendanceToleranceUpdateRequestDTO'
+    AttendanceMatchResolutionRequest:
+      $ref: 'v1/components/attendance/components.yml#/components/schemas/AttendanceMatchResolutionRequestDTO'
+    UnscheduledAttendanceAcceptanceRequest:
+      $ref: 'v1/components/attendance/components.yml#/components/schemas/UnscheduledAttendanceAcceptanceRequestDTO'
+    NoShowAcknowledgementRequest:
+      $ref: 'v1/components/attendance/components.yml#/components/schemas/NoShowAcknowledgementRequestDTO'
+    ShiftAttendanceApprovalRequest:
+      $ref: 'v1/components/attendance/components.yml#/components/schemas/ShiftAttendanceApprovalRequestDTO'
+    ShiftAttendance:
+      $ref: 'v1/components/attendance/components.yml#/components/schemas/ShiftAttendanceDTO'
   securitySchemes:
     basicAuth:
       type: http

@@ -47,6 +47,13 @@ components:
           maximum: 1439
           description: Minutes after which an open worklog requires review for this business.
           example: 720
+        attendanceToleranceMinutes:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 1440
+          description: Minutes tolerated for attendance deviations in this business.
+          example: 5
       required:
         - id
         - name
@@ -58,6 +65,7 @@ components:
         - location
         - userRole
         - longOpenAfterMinutes
+        - attendanceToleranceMinutes
 
     BusinessUsersResponseDTO:
       type: object

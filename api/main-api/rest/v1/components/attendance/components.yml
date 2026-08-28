@@ -1,0 +1,577 @@
+components:
+  schemas:
+    AttendanceMatchKindDTO:
+      type: string
+      description: Current structural result of matching one worklog to published scheduling.
+      enum: [NOT_APPLICABLE, MATCHED, UNSCHEDULED, AMBIGUOUS]
+      example: MATCHED
+
+    AttendanceMatchOriginDTO:
+      type: string
+      description: Origin of the current attendance-match decision.
+      enum: [AUTOMATIC, MANAGEMENT]
+      example: AUTOMATIC
+
+    ReconciliationStateDTO:
+      type: string
+      description: Whether asynchronous attendance incident reconciliation has caught up with current source data.
+      enum: [PENDING, READY]
+      example: READY
+
+    AttendanceReconciliationDTO:
+      type: object
+      description: Current reconciliation watermark for an attendance match.
+      properties:
+        state:
+          $ref: '#/components/schemas/ReconciliationStateDTO'
+        sourceRevision:
+          type: [string, 'null']
+          minLength: 1
+          description: Opaque SHA-256 source revision when state is READY, otherwise null.
+          example: 4f8f1f6f3a1d5f2e7c9e5c0b6f2a8a7f6d4e1c9b8a7f6e5d4c3b2a1908171615
+        reconciledAt:
+          type: [string, 'null']
+          format: date-time
+          description: Time when this source revision was reconciled, otherwise null.
+          example: '2025-07-29T17:31:00+02:00'
+      required: [state, sourceRevision, reconciledAt]
+
+    AttendanceMatchBaseDTO:
+      type: object
+      description: Fields common to every attendance-match variant.
+      properties:
+        id:
+          type: integer
+          format: int64
+          minimum: 1
+          example: 700
+        worklogId:
+          type: integer
+          format: int64
+          minimum: 1
+          example: 123
+        businessId:
+          type: integer
+          format: int64
+          minimum: 1
+          example: 101
+        userId:
+          type: integer
+          format: int64
+          minimum: 1
+          example: 3
+        origin:
+          $ref: '#/components/schemas/AttendanceMatchOriginDTO'
+        reconciliation:
+          $ref: '#/components/schemas/AttendanceReconciliationDTO'
+        version:
+          type: integer
+          format: int64
+          minimum: 0
+          description: Optimistic-lock version of the current match.
+          example: 0
+        createdAt:
+          type: string
+          format: date-time
+          example: '2025-07-29T08:30:01+02:00'
+        updatedAt:
+          type: string
+          format: date-time
+          example: '2025-07-29T08:30:01+02:00'
+      required: [id, worklogId, businessId, userId, origin, reconciliation, version, createdAt, updatedAt]
+
+    AttendanceMatchNotApplicableDTO:
+      allOf:
+        - $ref: '#/components/schemas/AttendanceMatchBaseDTO'
+        - type: object
+          properties:
+            kind:
+              type: string
+              enum: [NOT_APPLICABLE]
+              example: NOT_APPLICABLE
+          required: [kind]
+
+    AttendanceMatchMatchedDTO:
+      allOf:
+        - $ref: '#/components/schemas/AttendanceMatchBaseDTO'
+        - type: object
+          properties:
+            kind:
+              type: string
+              enum: [MATCHED]
+              example: MATCHED
+            scheduledShift:
+              $ref: '../scheduling/components.yml#/components/schemas/ScheduledShiftResponseDTO'
+          required: [kind, scheduledShift]
+
+    AttendanceMatchUnscheduledDTO:
+      allOf:
+        - $ref: '#/components/schemas/AttendanceMatchBaseDTO'
+        - type: object
+          properties:
+            kind:
+              type: string
+              enum: [UNSCHEDULED]
+              example: UNSCHEDULED
+          required: [kind]
+
+    AttendanceMatchAmbiguousDTO:
+      allOf:
+        - $ref: '#/components/schemas/AttendanceMatchBaseDTO'
+        - type: object
+          properties:
+            kind:
+              type: string
+              enum: [AMBIGUOUS]
+              example: AMBIGUOUS
+            candidateShifts:
+              type: array
+              minItems: 2
+              description: Every plausible published shift observed by the matcher. Candidates remain after resolution.
+              items:
+                $ref: '../scheduling/components.yml#/components/schemas/ScheduledShiftResponseDTO'
+          required: [kind, candidateShifts]
+
+    AttendanceMatchDTO:
+      oneOf:
+        - $ref: '#/components/schemas/AttendanceMatchNotApplicableDTO'
+        - $ref: '#/components/schemas/AttendanceMatchMatchedDTO'
+        - $ref: '#/components/schemas/AttendanceMatchUnscheduledDTO'
+        - $ref: '#/components/schemas/AttendanceMatchAmbiguousDTO'
+      discriminator:
+        propertyName: kind
+
+    ClockInResultDTO:
+      type: object
+      description: Result of a successful clock-in, including the durable attendance-match identity.
+      properties:
+        worklog:
+          $ref: '../worklogs/components.yml#/components/schemas/WorkLogResponseDTO'
+        attendanceMatchId:
+          type: integer
+          format: int64
+          minimum: 1
+          description: Independently identified attendance match created for the worklog.
+          example: 700
+      required: [worklog, attendanceMatchId]
+
+    AttendanceIncidentTypeDTO:
+      type: string
+      description: Type of attendance deviation or structural incident.
+      enum: [EARLY_ENTRY, LATE_ENTRY, EARLY_EXIT, LATE_EXIT, UNEXPLAINED_GAP, UNSCHEDULED_WORK, AMBIGUOUS_MATCH, NO_SHOW]
+      example: LATE_ENTRY
+
+    AttendanceIncidentScopeDTO:
+      type: string
+      description: Aggregate scope that owns an attendance incident.
+      enum: [MATCH, SHIFT]
+      example: MATCH
+
+    IncidentResolutionDTO:
+      type: string
+      description: Terminal resolution of an attendance incident.
+      enum: [ACCEPTED, CORRECTED, REASSIGNED, WORKLOG_REJECTED, ACKNOWLEDGED, NO_LONGER_APPLICABLE]
+      example: ACCEPTED
+
+    IncidentLifecycleDTO:
+      type: string
+      description: Current incident lifecycle.
+      enum: [OPEN, RESOLVED]
+      example: OPEN
+
+    AttendanceIncidentEvidenceDTO:
+      type: object
+      description: Typed evidence captured for the current incident occurrence.
+      properties:
+        type:
+          $ref: '#/components/schemas/AttendanceIncidentTypeDTO'
+        measuredSeconds:
+          type: [integer, 'null']
+          format: int64
+          minimum: 0
+          description: Measured deviation for temporal incidents; null for structural and no-show incidents.
+          example: 900
+        toleranceSeconds:
+          type: [integer, 'null']
+          format: int64
+          minimum: 0
+          description: Effective business tolerance for temporal incidents; null otherwise.
+          example: 300
+        candidateShiftIds:
+          type: array
+          description: Retained plausible shift IDs for an ambiguous match, empty otherwise.
+          items:
+            type: integer
+            format: int64
+            minimum: 1
+      required: [type, measuredSeconds, toleranceSeconds, candidateShiftIds]
+
+    AttendanceIncidentDTO:
+      type: object
+      description: Auditable current or resolved attendance incident.
+      properties:
+        id:
+          type: integer
+          format: int64
+          minimum: 1
+          example: 880
+        scope:
+          $ref: '#/components/schemas/AttendanceIncidentScopeDTO'
+        attendanceMatchId:
+          type: [integer, 'null']
+          format: int64
+          minimum: 1
+          description: Match scope identifier; null for shift-scoped incidents.
+          example: 700
+        scheduledShiftId:
+          type: [integer, 'null']
+          format: int64
+          minimum: 1
+          description: Shift scope identifier; null for match-scoped incidents.
+          example: 900
+        evidence:
+          $ref: '#/components/schemas/AttendanceIncidentEvidenceDTO'
+        lifecycle:
+          $ref: '#/components/schemas/IncidentLifecycleDTO'
+        resolution:
+          oneOf:
+            - $ref: '#/components/schemas/IncidentResolutionDTO'
+            - type: 'null'
+        resolvedBy:
+          type: [integer, 'null']
+          format: int64
+          minimum: 1
+        resolvedAt:
+          type: [string, 'null']
+          format: date-time
+        reason:
+          type: [string, 'null']
+          maxLength: 500
+        version:
+          type: integer
+          format: int64
+          minimum: 0
+          example: 1
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required: [id, scope, attendanceMatchId, scheduledShiftId, evidence, lifecycle, resolution, resolvedBy, resolvedAt, reason, version, createdAt, updatedAt]
+
+    AttendanceMetricsDTO:
+      type: object
+      description: Calculated seconds for one scheduled shift. Values are derived from current source truth.
+      properties:
+        plannedSeconds:
+          type: integer
+          format: int64
+          minimum: 0
+          example: 27000
+        recordedWorkedSeconds:
+          type: integer
+          format: int64
+          minimum: 0
+          example: 28800
+        reportableWorkedSeconds:
+          type: integer
+          format: int64
+          minimum: 0
+          example: 27900
+        breakSeconds:
+          type: integer
+          format: int64
+          minimum: 0
+          example: 1800
+        entryDeviationSeconds:
+          type: integer
+          format: int64
+          description: Signed deviation of earliest clock-in from shift start; positive means late.
+          example: 600
+        exitDeviationSeconds:
+          type: integer
+          format: int64
+          description: Signed deviation of latest clock-out from shift end; positive means late.
+          example: -300
+        unexplainedGapSeconds:
+          type: integer
+          format: int64
+          minimum: 0
+          example: 0
+        outsideScheduleSeconds:
+          type: integer
+          format: int64
+          minimum: 0
+          example: 900
+        excessWorkedSeconds:
+          type: integer
+          format: int64
+          minimum: 0
+          example: 1800
+      required: [plannedSeconds, recordedWorkedSeconds, reportableWorkedSeconds, breakSeconds, entryDeviationSeconds, exitDeviationSeconds, unexplainedGapSeconds, outsideScheduleSeconds, excessWorkedSeconds]
+
+    ShiftAttendanceLifecycleDTO:
+      type: string
+      description: Derived lifecycle based on current time, shift interval, and worklogs.
+      enum: [UPCOMING, EXPECTED, IN_PROGRESS, INTERRUPTED, FINISHED]
+      example: FINISHED
+
+    ShiftAttendanceCoverageDTO:
+      type: string
+      description: Derived coverage state for a scheduled shift.
+      enum: [UNCOVERED, POTENTIALLY_COVERED, COVERED]
+      example: COVERED
+
+    ShiftAttendanceReviewDTO:
+      type: string
+      description: Derived management review state.
+      enum: [NOT_READY, PENDING, CONFIRMED, APPROVED]
+      example: PENDING
+
+    ShiftAttendanceAlertDTO:
+      type: string
+      description: Alert derived for the daily view without a duplicate incident row.
+      enum: [MISSING_CLOCK_IN, LONG_OPEN]
+      example: MISSING_CLOCK_IN
+
+    AttendanceWorkerDTO:
+      type: object
+      description: Minimal worker identity shown in management attendance views.
+      properties:
+        id:
+          type: integer
+          format: int64
+          minimum: 1
+          example: 3
+        name:
+          type: string
+          example: Bob Wilson
+      required: [id, name]
+
+    ShiftAttendanceDTO:
+      type: object
+      description: On-demand reconciliation of one scheduled shift and its current worklogs.
+      properties:
+        scheduledShift:
+          $ref: '../scheduling/components.yml#/components/schemas/ScheduledShiftResponseDTO'
+        worker:
+          $ref: '#/components/schemas/AttendanceWorkerDTO'
+        metrics:
+          $ref: '#/components/schemas/AttendanceMetricsDTO'
+        lifecycle:
+          $ref: '#/components/schemas/ShiftAttendanceLifecycleDTO'
+        coverage:
+          $ref: '#/components/schemas/ShiftAttendanceCoverageDTO'
+        review:
+          $ref: '#/components/schemas/ShiftAttendanceReviewDTO'
+        reconciliation:
+          $ref: '#/components/schemas/AttendanceReconciliationDTO'
+        alerts:
+          type: array
+          items:
+            $ref: '#/components/schemas/ShiftAttendanceAlertDTO'
+        matches:
+          type: array
+          items:
+            $ref: '#/components/schemas/AttendanceMatchDTO'
+        incidents:
+          type: array
+          items:
+            $ref: '#/components/schemas/AttendanceIncidentDTO'
+        revision:
+          type: string
+          minLength: 1
+          description: Opaque approval revision calculated from current approval-relevant sources.
+          example: 4f8f1f6f3a1d5f2e7c9e5c0b6f2a8a7f6d4e1c9b8a7f6e5d4c3b2a1908171615
+      required: [scheduledShift, worker, metrics, lifecycle, coverage, review, reconciliation, alerts, matches, incidents, revision]
+
+    UnmatchedAttendanceDTO:
+      type: object
+      description: Attendance with an UNSCHEDULED or AMBIGUOUS match that is not currently assigned to a shift.
+      properties:
+        match:
+          $ref: '#/components/schemas/AttendanceMatchDTO'
+        worklog:
+          $ref: '../worklogs/components.yml#/components/schemas/WorkLogResponseDTO'
+        incidents:
+          type: array
+          items:
+            $ref: '#/components/schemas/AttendanceIncidentDTO'
+      required: [match, worklog, incidents]
+
+    DailyAttendanceSummaryDTO:
+      type: object
+      description: Summary totals for a business-local attendance date.
+      properties:
+        shiftCount:
+          type: integer
+          format: int32
+          minimum: 0
+        coveredShiftCount:
+          type: integer
+          format: int32
+          minimum: 0
+        potentiallyCoveredShiftCount:
+          type: integer
+          format: int32
+          minimum: 0
+        uncoveredShiftCount:
+          type: integer
+          format: int32
+          minimum: 0
+        unmatchedAttendanceCount:
+          type: integer
+          format: int32
+          minimum: 0
+        pendingReconciliationCount:
+          type: integer
+          format: int32
+          minimum: 0
+        openIncidentCount:
+          type: integer
+          format: int32
+          minimum: 0
+        recordedWorkedSeconds:
+          type: integer
+          format: int64
+          minimum: 0
+        reportableWorkedSeconds:
+          type: integer
+          format: int64
+          minimum: 0
+      required: [shiftCount, coveredShiftCount, potentiallyCoveredShiftCount, uncoveredShiftCount, unmatchedAttendanceCount, pendingReconciliationCount, openIncidentCount, recordedWorkedSeconds, reportableWorkedSeconds]
+
+    DailyAttendanceDTO:
+      type: object
+      description: Complete management attendance view for one business-local calendar date.
+      properties:
+        businessId:
+          type: integer
+          format: int64
+          minimum: 1
+        date:
+          type: string
+          format: date
+          description: Business-local calendar date.
+        summary:
+          $ref: '#/components/schemas/DailyAttendanceSummaryDTO'
+        shiftAttendances:
+          type: array
+          description: Shift attendances ordered by shift start and then worker.
+          items:
+            $ref: '#/components/schemas/ShiftAttendanceDTO'
+        unmatchedAttendances:
+          type: array
+          items:
+            $ref: '#/components/schemas/UnmatchedAttendanceDTO'
+        reconciliation:
+          type: string
+          enum: [READY, PENDING]
+          description: PENDING when any included attendance match is pending reconciliation.
+      required: [businessId, date, summary, shiftAttendances, unmatchedAttendances, reconciliation]
+
+    AttendanceToleranceDTO:
+      type: object
+      description: Owner-configurable business attendance tolerance.
+      properties:
+        businessId:
+          type: integer
+          format: int64
+          minimum: 1
+        toleranceMinutes:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 1440
+          example: 5
+      required: [businessId, toleranceMinutes]
+
+    AttendanceToleranceUpdateRequestDTO:
+      type: object
+      description: Replacement business attendance tolerance.
+      additionalProperties: false
+      properties:
+        toleranceMinutes:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 1440
+          example: 10
+      required: [toleranceMinutes]
+
+    AttendanceMatchResolutionRequestDTO:
+      type: object
+      description: Management resolution of an ambiguous or unplanned match. A non-blank reason is mandatory.
+      additionalProperties: false
+      properties:
+        action:
+          type: string
+          enum: [ASSIGN_SHIFT, DECLARE_UNPLANNED]
+          example: ASSIGN_SHIFT
+        scheduledShiftId:
+          type: [integer, 'null']
+          format: int64
+          minimum: 1
+          description: Required for ASSIGN_SHIFT and null for DECLARE_UNPLANNED.
+          example: 900
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 500
+          description: Non-blank explanation for the structural resolution.
+          example: The worker covered the morning service.
+      required: [action, scheduledShiftId, reason]
+
+    UnscheduledAttendanceAcceptanceRequestDTO:
+      type: object
+      description: Mandatory reason for accepting an unscheduled worklog as approved unplanned work.
+      additionalProperties: false
+      properties:
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 500
+          example: Emergency cover approved by the owner.
+      required: [reason]
+
+    NoShowAcknowledgementRequestDTO:
+      type: object
+      description: Mandatory reason for acknowledging a shift no-show without creating a worklog.
+      additionalProperties: false
+      properties:
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 500
+          example: Worker reported absence by phone.
+      required: [reason]
+
+    ShiftAttendanceApprovalRequestDTO:
+      type: object
+      description: Revision-safe approval command for one completed ShiftAttendance.
+      additionalProperties: false
+      properties:
+        expectedRevision:
+          type: string
+          minLength: 1
+          description: Revision returned by the latest daily attendance read.
+          example: 4f8f1f6f3a1d5f2e7c9e5c0b6f2a8a7f6d4e1c9b8a7f6e5d4c3b2a1908171615
+        reason:
+          type: [string, 'null']
+          maxLength: 500
+          description: Optional explanation recorded with accepted temporal incidents.
+          example: Approved after confirming the closing handover.
+      required: [expectedRevision]
+
+    AttendanceRevisionConflictDTO:
+      type: object
+      description: Current revision returned when approval loses an optimistic concurrency race.
+      properties:
+        currentRevision:
+          type: string
+          minLength: 1
+        code:
+          type: string
+          enum: [ATTENDANCE_REVISION_CONFLICT]
+      required: [currentRevision, code]

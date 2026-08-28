@@ -43,6 +43,7 @@ businesses:
                       area: 5.3
                     userRole: "OWNER"
                     longOpenAfterMinutes: 720
+                    attendanceToleranceMinutes: 5
                   - id: 102
                     name: "Tea Corner"
                     zone: "Europe/Madrid"
@@ -56,6 +57,7 @@ businesses:
                       area: 3.2
                     userRole: "MANAGER"
                     longOpenAfterMinutes: 720
+                    attendanceToleranceMinutes: 5
         '401':
           description: Unauthorized
 
