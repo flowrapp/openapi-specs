@@ -1,0 +1,32 @@
+api/bff-api/rest/open-api-rest.yml
+  h_a041df4244d543 10
+api/bff-api/rest/v1/components/worker/components.yml
+  h_a041df4244d543 108-121
+api/bff-api/rest/v1/services/worker/worker-operations.yml
+  h_a041df4244d543 122,130
+api/main-api/rest/open-api-rest.yml
+  h_a041df4244d543 6,52-53,184-197,200-268
+api/main-api/rest/v1/components/attendance/components.yml
+  h_a041df4244d543 1-577
+api/main-api/rest/v1/components/business/components.yml
+  h_a041df4244d543 50-56,68
+api/main-api/rest/v1/components/common/error-components.yml
+  h_a041df4244d543 123-134,210-221
+api/main-api/rest/v1/services/attendance/attendance-operations.yml
+  h_a041df4244d543 1-399
+api/main-api/rest/v1/services/business/businesses-operations.yml
+  h_a041df4244d543 46,60
+api/main-api/rest/v1/services/worklogs/worklogs-operations.yml
+  h_a041df4244d543 33
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.22",
+  "base_commit_sha": "3878aa3aa1deea40b6898f0dbeccac821bd35b92",
+  "prompts": {},
+  "humans": {
+    "h_a041df4244d543": {
+      "author": "sergiobpa <sergiobpa@ext.inditex.com>"
+    }
+  }
+}
