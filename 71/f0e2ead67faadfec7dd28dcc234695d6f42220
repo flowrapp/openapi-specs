@@ -1,0 +1,16 @@
+api/main-api/rest/open-api-rest.yml
+  h_a041df4244d543 6,288,290,292,294,296,298,300,302
+api/main-api/rest/v1/components/attendance/components.yml
+  h_a041df4244d543 744,750,757,763,776,782,795,801,814,820,833,839,852,858,871,877,893-900,904-911
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.22",
+  "base_commit_sha": "71f0e2ead67faadfec7dd28dcc234695d6f42220",
+  "prompts": {},
+  "humans": {
+    "h_a041df4244d543": {
+      "author": "sergiobpa <sergiobpa@ext.inditex.com>"
+    }
+  }
+}
