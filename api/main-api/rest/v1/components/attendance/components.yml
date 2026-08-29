@@ -741,26 +741,26 @@ components:
       description: Stable discriminator for a weekly closure blocker.
       enum: [PERIOD_NOT_FINISHED, RECONCILIATION_PENDING, OPEN_WORKLOGS, OPEN_BREAKS, UNDECIDED_WORKLOGS, UNRESOLVED_INCIDENTS, AMBIGUOUS_ATTENDANCE, UNCOVERED_SHIFTS]
 
-    WeeklyAttendancePeriodNotFinishedBlockerDTO:
+    WeeklyAttendancePeriodNotFinishedBlocker:
       type: object
       description: The Business-local Monday-to-Monday period has not ended yet.
       properties:
         type:
           type: string
-          enum: [PERIOD_NOT_FINISHED]
+          pattern: '^PERIOD_NOT_FINISHED$'
         periodEndsAt:
           type: string
           format: date-time
           description: Exclusive end instant of the period in the Business zone.
       required: [type, periodEndsAt]
 
-    WeeklyAttendancePeriodReconciliationPendingBlockerDTO:
+    WeeklyAttendancePeriodReconciliationPendingBlocker:
       type: object
       description: Attendance matches whose reconciliation watermark is not ready.
       properties:
         type:
           type: string
-          enum: [RECONCILIATION_PENDING]
+          pattern: '^RECONCILIATION_PENDING$'
         attendanceMatchIds:
           type: array
           minItems: 1
@@ -773,13 +773,13 @@ components:
             minimum: 1
       required: [type, attendanceMatchIds]
 
-    WeeklyAttendancePeriodOpenWorklogsBlockerDTO:
+    WeeklyAttendancePeriodOpenWorklogsBlocker:
       type: object
       description: Worklogs that have no clock-out yet.
       properties:
         type:
           type: string
-          enum: [OPEN_WORKLOGS]
+          pattern: '^OPEN_WORKLOGS$'
         worklogIds:
           type: array
           minItems: 1
@@ -792,13 +792,13 @@ components:
             minimum: 1
       required: [type, worklogIds]
 
-    WeeklyAttendancePeriodOpenBreaksBlockerDTO:
+    WeeklyAttendancePeriodOpenBreaksBlocker:
       type: object
       description: Breaks that have no end yet.
       properties:
         type:
           type: string
-          enum: [OPEN_BREAKS]
+          pattern: '^OPEN_BREAKS$'
         breakIds:
           type: array
           minItems: 1
@@ -811,13 +811,13 @@ components:
             minimum: 1
       required: [type, breakIds]
 
-    WeeklyAttendancePeriodUndecidedWorklogsBlockerDTO:
+    WeeklyAttendancePeriodUndecidedWorklogsBlocker:
       type: object
       description: Closed worklogs whose review state is neither APPROVED nor REJECTED.
       properties:
         type:
           type: string
-          enum: [UNDECIDED_WORKLOGS]
+          pattern: '^UNDECIDED_WORKLOGS$'
         worklogIds:
           type: array
           minItems: 1
@@ -830,13 +830,13 @@ components:
             minimum: 1
       required: [type, worklogIds]
 
-    WeeklyAttendancePeriodUnresolvedIncidentsBlockerDTO:
+    WeeklyAttendancePeriodUnresolvedIncidentsBlocker:
       type: object
       description: Attendance incidents that remain open.
       properties:
         type:
           type: string
-          enum: [UNRESOLVED_INCIDENTS]
+          pattern: '^UNRESOLVED_INCIDENTS$'
         incidentIds:
           type: array
           minItems: 1
@@ -849,13 +849,13 @@ components:
             minimum: 1
       required: [type, incidentIds]
 
-    WeeklyAttendancePeriodAmbiguousAttendanceBlockerDTO:
+    WeeklyAttendancePeriodAmbiguousAttendanceBlocker:
       type: object
       description: Attendance matches that still have unresolved candidate ambiguity.
       properties:
         type:
           type: string
-          enum: [AMBIGUOUS_ATTENDANCE]
+          pattern: '^AMBIGUOUS_ATTENDANCE$'
         attendanceMatchIds:
           type: array
           minItems: 1
@@ -868,13 +868,13 @@ components:
             minimum: 1
       required: [type, attendanceMatchIds]
 
-    WeeklyAttendancePeriodUncoveredShiftsBlockerDTO:
+    WeeklyAttendancePeriodUncoveredShiftsBlocker:
       type: object
       description: Ended scheduled shifts with no match or potential covering attendance.
       properties:
         type:
           type: string
-          enum: [UNCOVERED_SHIFTS]
+          pattern: '^UNCOVERED_SHIFTS$'
         scheduledShiftIds:
           type: array
           minItems: 1
@@ -890,25 +890,25 @@ components:
     WeeklyAttendancePeriodBlockerDTO:
       description: Typed closure blocker. Identifier collections are returned in canonical ascending order.
       oneOf:
-        - $ref: '#/components/schemas/WeeklyAttendancePeriodNotFinishedBlockerDTO'
-        - $ref: '#/components/schemas/WeeklyAttendancePeriodReconciliationPendingBlockerDTO'
-        - $ref: '#/components/schemas/WeeklyAttendancePeriodOpenWorklogsBlockerDTO'
-        - $ref: '#/components/schemas/WeeklyAttendancePeriodOpenBreaksBlockerDTO'
-        - $ref: '#/components/schemas/WeeklyAttendancePeriodUndecidedWorklogsBlockerDTO'
-        - $ref: '#/components/schemas/WeeklyAttendancePeriodUnresolvedIncidentsBlockerDTO'
-        - $ref: '#/components/schemas/WeeklyAttendancePeriodAmbiguousAttendanceBlockerDTO'
-        - $ref: '#/components/schemas/WeeklyAttendancePeriodUncoveredShiftsBlockerDTO'
+        - $ref: '#/components/schemas/WeeklyAttendancePeriodNotFinishedBlocker'
+        - $ref: '#/components/schemas/WeeklyAttendancePeriodReconciliationPendingBlocker'
+        - $ref: '#/components/schemas/WeeklyAttendancePeriodOpenWorklogsBlocker'
+        - $ref: '#/components/schemas/WeeklyAttendancePeriodOpenBreaksBlocker'
+        - $ref: '#/components/schemas/WeeklyAttendancePeriodUndecidedWorklogsBlocker'
+        - $ref: '#/components/schemas/WeeklyAttendancePeriodUnresolvedIncidentsBlocker'
+        - $ref: '#/components/schemas/WeeklyAttendancePeriodAmbiguousAttendanceBlocker'
+        - $ref: '#/components/schemas/WeeklyAttendancePeriodUncoveredShiftsBlocker'
       discriminator:
         propertyName: type
         mapping:
-          PERIOD_NOT_FINISHED: '#/components/schemas/WeeklyAttendancePeriodNotFinishedBlockerDTO'
-          RECONCILIATION_PENDING: '#/components/schemas/WeeklyAttendancePeriodReconciliationPendingBlockerDTO'
-          OPEN_WORKLOGS: '#/components/schemas/WeeklyAttendancePeriodOpenWorklogsBlockerDTO'
-          OPEN_BREAKS: '#/components/schemas/WeeklyAttendancePeriodOpenBreaksBlockerDTO'
-          UNDECIDED_WORKLOGS: '#/components/schemas/WeeklyAttendancePeriodUndecidedWorklogsBlockerDTO'
-          UNRESOLVED_INCIDENTS: '#/components/schemas/WeeklyAttendancePeriodUnresolvedIncidentsBlockerDTO'
-          AMBIGUOUS_ATTENDANCE: '#/components/schemas/WeeklyAttendancePeriodAmbiguousAttendanceBlockerDTO'
-          UNCOVERED_SHIFTS: '#/components/schemas/WeeklyAttendancePeriodUncoveredShiftsBlockerDTO'
+          PERIOD_NOT_FINISHED: '#/components/schemas/WeeklyAttendancePeriodNotFinishedBlocker'
+          RECONCILIATION_PENDING: '#/components/schemas/WeeklyAttendancePeriodReconciliationPendingBlocker'
+          OPEN_WORKLOGS: '#/components/schemas/WeeklyAttendancePeriodOpenWorklogsBlocker'
+          OPEN_BREAKS: '#/components/schemas/WeeklyAttendancePeriodOpenBreaksBlocker'
+          UNDECIDED_WORKLOGS: '#/components/schemas/WeeklyAttendancePeriodUndecidedWorklogsBlocker'
+          UNRESOLVED_INCIDENTS: '#/components/schemas/WeeklyAttendancePeriodUnresolvedIncidentsBlocker'
+          AMBIGUOUS_ATTENDANCE: '#/components/schemas/WeeklyAttendancePeriodAmbiguousAttendanceBlocker'
+          UNCOVERED_SHIFTS: '#/components/schemas/WeeklyAttendancePeriodUncoveredShiftsBlocker'
 
     WeeklyAttendancePeriodDTO:
       type: object

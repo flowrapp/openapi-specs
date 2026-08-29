@@ -3,7 +3,7 @@ openapi: 3.1.0
 info:
   title: Flowrapp API
   description: REST API for Flowrapp Backend
-  version: 0.0.57
+  version: 0.0.58
   contact:
     name: Flowrapp Team
     url: https://flowrapp.github.io
@@ -285,21 +285,21 @@ components:
     WeeklyAttendancePeriodBlockerType:
       $ref: 'v1/components/attendance/components.yml#/components/schemas/WeeklyAttendancePeriodBlockerTypeDTO'
     WeeklyAttendancePeriodNotFinishedBlocker:
-      $ref: 'v1/components/attendance/components.yml#/components/schemas/WeeklyAttendancePeriodNotFinishedBlockerDTO'
+      $ref: 'v1/components/attendance/components.yml#/components/schemas/WeeklyAttendancePeriodNotFinishedBlocker'
     WeeklyAttendancePeriodReconciliationPendingBlocker:
-      $ref: 'v1/components/attendance/components.yml#/components/schemas/WeeklyAttendancePeriodReconciliationPendingBlockerDTO'
+      $ref: 'v1/components/attendance/components.yml#/components/schemas/WeeklyAttendancePeriodReconciliationPendingBlocker'
     WeeklyAttendancePeriodOpenWorklogsBlocker:
-      $ref: 'v1/components/attendance/components.yml#/components/schemas/WeeklyAttendancePeriodOpenWorklogsBlockerDTO'
+      $ref: 'v1/components/attendance/components.yml#/components/schemas/WeeklyAttendancePeriodOpenWorklogsBlocker'
     WeeklyAttendancePeriodOpenBreaksBlocker:
-      $ref: 'v1/components/attendance/components.yml#/components/schemas/WeeklyAttendancePeriodOpenBreaksBlockerDTO'
+      $ref: 'v1/components/attendance/components.yml#/components/schemas/WeeklyAttendancePeriodOpenBreaksBlocker'
     WeeklyAttendancePeriodUndecidedWorklogsBlocker:
-      $ref: 'v1/components/attendance/components.yml#/components/schemas/WeeklyAttendancePeriodUndecidedWorklogsBlockerDTO'
+      $ref: 'v1/components/attendance/components.yml#/components/schemas/WeeklyAttendancePeriodUndecidedWorklogsBlocker'
     WeeklyAttendancePeriodUnresolvedIncidentsBlocker:
-      $ref: 'v1/components/attendance/components.yml#/components/schemas/WeeklyAttendancePeriodUnresolvedIncidentsBlockerDTO'
+      $ref: 'v1/components/attendance/components.yml#/components/schemas/WeeklyAttendancePeriodUnresolvedIncidentsBlocker'
     WeeklyAttendancePeriodAmbiguousAttendanceBlocker:
-      $ref: 'v1/components/attendance/components.yml#/components/schemas/WeeklyAttendancePeriodAmbiguousAttendanceBlockerDTO'
+      $ref: 'v1/components/attendance/components.yml#/components/schemas/WeeklyAttendancePeriodAmbiguousAttendanceBlocker'
     WeeklyAttendancePeriodUncoveredShiftsBlocker:
-      $ref: 'v1/components/attendance/components.yml#/components/schemas/WeeklyAttendancePeriodUncoveredShiftsBlockerDTO'
+      $ref: 'v1/components/attendance/components.yml#/components/schemas/WeeklyAttendancePeriodUncoveredShiftsBlocker'
     WeeklyAttendancePeriodBlocker:
       $ref: 'v1/components/attendance/components.yml#/components/schemas/WeeklyAttendancePeriodBlockerDTO'
     WeeklyAttendancePeriod:
