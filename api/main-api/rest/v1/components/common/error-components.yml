@@ -132,6 +132,13 @@ components:
         | 1083 | 409 | ATTENDANCE_STRUCTURAL_INCIDENTS | attendance has unresolved structural incidents |
         | 1084 | 409 | ATTENDANCE_INVALID_RESOLUTION | attendance resolution is not allowed for the current state |
         | 1085 | 404 | ATTENDANCE_INCIDENT_NOT_FOUND | attendance incident not found |
+        | 1086 | 409 | ATTENDANCE_PERIOD_CLOSED | attendance period is closed |
+        | 1087 | 409 | ATTENDANCE_PERIOD_REVISION_CONFLICT | attendance period changed since it was read |
+        | 1088 | 409 | ATTENDANCE_PERIOD_NOT_FINISHED | attendance period is not finished |
+        | 1089 | 409 | ATTENDANCE_PERIOD_NOT_CLOSABLE | attendance period contains unresolved attendance |
+        | 1090 | 409 | ATTENDANCE_PERIOD_NOT_CLOSED | attendance period is not closed |
+        | 1091 | 400 | INVALID_ATTENDANCE_PERIOD_WEEK | attendance period week must start on Monday |
+        | 1092 | 400 | ATTENDANCE_PERIOD_REOPEN_REASON_REQUIRED | attendance period reopen reason is required |
       enum:
         - 1000
         - 1001
@@ -219,3 +226,10 @@ components:
         - 1083
         - 1084
         - 1085
+        - 1086
+        - 1087
+        - 1088
+        - 1089
+        - 1090
+        - 1091
+        - 1092

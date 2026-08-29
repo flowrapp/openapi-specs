@@ -3,7 +3,7 @@ openapi: 3.1.0
 info:
   title: Flowrapp API
   description: REST API for Flowrapp Backend
-  version: 0.0.56
+  version: 0.0.57
   contact:
     name: Flowrapp Team
     url: https://flowrapp.github.io
@@ -195,6 +195,14 @@ paths:
     $ref: 'v1/services/attendance/attendance-operations.yml#/attendance/no-show-acknowledgment'
   "/api/v1/businesses/{businessId}/scheduled-shifts/{scheduledShiftId}/attendance/approve":
     $ref: 'v1/services/attendance/attendance-operations.yml#/attendance/shift-approval'
+  "/api/v1/businesses/{businessId}/attendance-periods/{weekStart}":
+    $ref: 'v1/services/attendance/attendance-operations.yml#/attendance/weekly-period'
+  "/api/v1/businesses/{businessId}/attendance-periods/{weekStart}/bulk-approve":
+    $ref: 'v1/services/attendance/attendance-operations.yml#/attendance/weekly-bulk-approval'
+  "/api/v1/businesses/{businessId}/attendance-periods/{weekStart}/close":
+    $ref: 'v1/services/attendance/attendance-operations.yml#/attendance/weekly-close'
+  "/api/v1/businesses/{businessId}/attendance-periods/{weekStart}/reopen":
+    $ref: 'v1/services/attendance/attendance-operations.yml#/attendance/weekly-reopen'
 
 components:
   schemas:
@@ -266,6 +274,46 @@ components:
       $ref: 'v1/components/attendance/components.yml#/components/schemas/ShiftAttendanceApprovalRequestDTO'
     ShiftAttendance:
       $ref: 'v1/components/attendance/components.yml#/components/schemas/ShiftAttendanceDTO'
+    WeeklyAttendancePeriodState:
+      $ref: 'v1/components/attendance/components.yml#/components/schemas/WeeklyAttendancePeriodStateDTO'
+    WeeklyAttendancePeriodTransitionAction:
+      $ref: 'v1/components/attendance/components.yml#/components/schemas/WeeklyAttendancePeriodTransitionActionDTO'
+    WeeklyAttendancePeriodSummary:
+      $ref: 'v1/components/attendance/components.yml#/components/schemas/WeeklyAttendancePeriodSummaryDTO'
+    WeeklyAttendancePeriodTransitionMetadata:
+      $ref: 'v1/components/attendance/components.yml#/components/schemas/WeeklyAttendancePeriodTransitionMetadataDTO'
+    WeeklyAttendancePeriodBlockerType:
+      $ref: 'v1/components/attendance/components.yml#/components/schemas/WeeklyAttendancePeriodBlockerTypeDTO'
+    WeeklyAttendancePeriodNotFinishedBlocker:
+      $ref: 'v1/components/attendance/components.yml#/components/schemas/WeeklyAttendancePeriodNotFinishedBlockerDTO'
+    WeeklyAttendancePeriodReconciliationPendingBlocker:
+      $ref: 'v1/components/attendance/components.yml#/components/schemas/WeeklyAttendancePeriodReconciliationPendingBlockerDTO'
+    WeeklyAttendancePeriodOpenWorklogsBlocker:
+      $ref: 'v1/components/attendance/components.yml#/components/schemas/WeeklyAttendancePeriodOpenWorklogsBlockerDTO'
+    WeeklyAttendancePeriodOpenBreaksBlocker:
+      $ref: 'v1/components/attendance/components.yml#/components/schemas/WeeklyAttendancePeriodOpenBreaksBlockerDTO'
+    WeeklyAttendancePeriodUndecidedWorklogsBlocker:
+      $ref: 'v1/components/attendance/components.yml#/components/schemas/WeeklyAttendancePeriodUndecidedWorklogsBlockerDTO'
+    WeeklyAttendancePeriodUnresolvedIncidentsBlocker:
+      $ref: 'v1/components/attendance/components.yml#/components/schemas/WeeklyAttendancePeriodUnresolvedIncidentsBlockerDTO'
+    WeeklyAttendancePeriodAmbiguousAttendanceBlocker:
+      $ref: 'v1/components/attendance/components.yml#/components/schemas/WeeklyAttendancePeriodAmbiguousAttendanceBlockerDTO'
+    WeeklyAttendancePeriodUncoveredShiftsBlocker:
+      $ref: 'v1/components/attendance/components.yml#/components/schemas/WeeklyAttendancePeriodUncoveredShiftsBlockerDTO'
+    WeeklyAttendancePeriodBlocker:
+      $ref: 'v1/components/attendance/components.yml#/components/schemas/WeeklyAttendancePeriodBlockerDTO'
+    WeeklyAttendancePeriod:
+      $ref: 'v1/components/attendance/components.yml#/components/schemas/WeeklyAttendancePeriodDTO'
+    WeeklyAttendancePeriodApprovalSelection:
+      $ref: 'v1/components/attendance/components.yml#/components/schemas/WeeklyAttendancePeriodApprovalSelectionDTO'
+    WeeklyAttendancePeriodBulkApprovalRequest:
+      $ref: 'v1/components/attendance/components.yml#/components/schemas/WeeklyAttendancePeriodBulkApprovalRequestDTO'
+    WeeklyAttendancePeriodBulkApprovalResult:
+      $ref: 'v1/components/attendance/components.yml#/components/schemas/WeeklyAttendancePeriodBulkApprovalResultDTO'
+    CloseWeeklyAttendancePeriodRequest:
+      $ref: 'v1/components/attendance/components.yml#/components/schemas/CloseWeeklyAttendancePeriodRequestDTO'
+    ReopenWeeklyAttendancePeriodRequest:
+      $ref: 'v1/components/attendance/components.yml#/components/schemas/ReopenWeeklyAttendancePeriodRequestDTO'
   securitySchemes:
     basicAuth:
       type: http

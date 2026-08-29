@@ -397,3 +397,348 @@ attendance:
                 STRUCTURAL:
                   value: {status: 409, detail: '1083 - attendance has unresolved structural incidents'}
       x-functional-errors: [1006, 1049, 1076, 1079, 1080, 1081, 1082, 1083]
+
+  weekly-period:
+    get:
+      summary: Get a weekly attendance period
+      description: >
+        Returns the compact management projection for the Monday-to-following-Monday attendance
+        period in the Business time zone. A period without a successful close is returned as OPEN
+        and does not require a persisted period row. Only owners and managers may access attendance
+        for the business.
+      tags: [Attendance]
+      operationId: getWeeklyAttendancePeriod
+      security:
+        - basicAuth: []
+        - bearerAuth: []
+      parameters:
+        - name: businessId
+          in: path
+          required: true
+          description: Business whose weekly attendance period is requested.
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+        - name: weekStart
+          in: path
+          required: true
+          description: Monday at the start of the requested Business-local attendance period.
+          schema:
+            type: string
+            format: date
+            example: '2025-07-28'
+      responses:
+        '200':
+          description: Weekly attendance period retrieved successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '../../../open-api-rest.yml#/components/schemas/WeeklyAttendancePeriod'
+              example:
+                businessId: 101
+                weekStart: '2025-07-28'
+                weekEnd: '2025-08-04'
+                state: OPEN
+                revision: 4f8f1f6f3a1d5f2e7c9e5c0b6f2a8a7f6d4e1c9b8a7f6e5d4c3b2a1908171615
+                effectiveToleranceMinutes: 5
+                frozenToleranceMinutes: null
+                closable: false
+                summary:
+                  scheduledShiftCount: 1
+                  resolvedShiftCount: 0
+                  coveredShiftCount: 1
+                  potentiallyCoveredShiftCount: 0
+                  uncoveredShiftCount: 0
+                  attendanceMatchCount: 1
+                  ambiguousAttendanceCount: 0
+                  pendingReconciliationCount: 0
+                  worklogCount: 1
+                  openWorklogCount: 0
+                  openBreakCount: 0
+                  undecidedWorklogCount: 1
+                  approvedWorklogCount: 0
+                  rejectedWorklogCount: 0
+                  openIncidentCount: 0
+                  recordedWorkedSeconds: 27900
+                  reportableWorkedSeconds: 27000
+                blockers:
+                  - type: UNDECIDED_WORKLOGS
+                    worklogIds: [123]
+                transitionMetadata: null
+        '400':
+          description: weekStart is not a Monday.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+              example: {status: 400, detail: '1091 - attendance period week must start on Monday'}
+        '401':
+          description: Unauthorized.
+        '403':
+          description: The authenticated user is not an owner or manager of the business.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+              example: {status: 403, detail: '1020 - user is not the owner of business'}
+        '404':
+          description: Business not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+              example: {status: 404, detail: '1006 - business does not exist'}
+      x-functional-errors: [1006, 1020, 1091]
+
+  weekly-bulk-approval:
+    post:
+      summary: Bulk approve selected weekly attendance
+      description: >
+        Atomically approves a non-empty selection of ShiftAttendances from the requested Business
+        week. Every selection carries the latest expected ShiftAttendance revision. If any item is
+        stale or ineligible, no selected attendance is changed.
+      tags: [Attendance]
+      operationId: bulkApproveWeeklyAttendance
+      security:
+        - basicAuth: []
+        - bearerAuth: []
+      parameters:
+        - name: businessId
+          in: path
+          required: true
+          description: Business owning the selected attendance.
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+        - name: weekStart
+          in: path
+          required: true
+          description: Monday at the start of the requested Business-local attendance period.
+          schema:
+            type: string
+            format: date
+            example: '2025-07-28'
+      requestBody:
+        required: true
+        description: Non-empty selected attendance revisions from one Business-local week.
+        content:
+          application/json:
+            schema:
+              $ref: '../../../open-api-rest.yml#/components/schemas/WeeklyAttendancePeriodBulkApprovalRequest'
+            example:
+              selections:
+                - scheduledShiftId: 900
+                  expectedRevision: 4f8f1f6f3a1d5f2e7c9e5c0b6f2a8a7f6d4e1c9b8a7f6e5d4c3b2a1908171615
+      responses:
+        '200':
+          description: Selected attendance approved atomically.
+          content:
+            application/json:
+              schema:
+                $ref: '../../../open-api-rest.yml#/components/schemas/WeeklyAttendancePeriodBulkApprovalResult'
+              example:
+                businessId: 101
+                weekStart: '2025-07-28'
+                approvedScheduledShiftIds: [900]
+                revision: 0c6f1f6f3a1d5f2e7c9e5c0b6f2a8a7f6d4e1c9b8a7f6e5d4c3b2a1908171615
+        '400':
+          description: The selection is empty, malformed, duplicated, or has an invalid week start.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+        '401':
+          description: Unauthorized.
+        '403':
+          description: The authenticated user is not an owner or manager of the business.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+        '404':
+          description: Business or selected scheduled shift not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+        '409':
+          description: >
+            The period is closed, a selected revision is stale, or one selected attendance is
+            unfinished, unreconciled, open, or structurally unresolved. The complete command is rejected.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+              examples:
+                closed:
+                  value: {status: 409, detail: '1086 - attendance period is closed'}
+                stale:
+                  value: {status: 409, detail: '1087 - attendance period changed since it was read'}
+                notClosable:
+                  value: {status: 409, detail: '1089 - attendance period contains unresolved attendance'}
+      x-functional-errors: [1006, 1020, 1049, 1076, 1079, 1080, 1081, 1082, 1083, 1084, 1086, 1087, 1089, 1091]
+
+  weekly-close:
+    post:
+      summary: Close a weekly attendance period
+      description: >
+        Closes a completed Business-local week when its current revision matches `expectedRevision`
+        and every attendance source is fully reconciled and resolved. Closure persists the effective
+        tolerance and does not approve attendance or create no-show incidents.
+      tags: [Attendance]
+      operationId: closeWeeklyAttendancePeriod
+      security:
+        - basicAuth: []
+        - bearerAuth: []
+      parameters:
+        - name: businessId
+          in: path
+          required: true
+          description: Business whose weekly attendance period is closed.
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+        - name: weekStart
+          in: path
+          required: true
+          description: Monday at the start of the requested Business-local attendance period.
+          schema:
+            type: string
+            format: date
+            example: '2025-07-28'
+      requestBody:
+        required: true
+        description: Current weekly source revision.
+        content:
+          application/json:
+            schema:
+              $ref: '../../../open-api-rest.yml#/components/schemas/CloseWeeklyAttendancePeriodRequest'
+            example:
+              expectedRevision: 4f8f1f6f3a1d5f2e7c9e5c0b6f2a8a7f6d4e1c9b8a7f6e5d4c3b2a1908171615
+      responses:
+        '200':
+          description: Weekly attendance period closed successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '../../../open-api-rest.yml#/components/schemas/WeeklyAttendancePeriod'
+        '400':
+          description: weekStart or close request is invalid.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+        '401':
+          description: Unauthorized.
+        '403':
+          description: The authenticated user is not an owner or manager of the business.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+        '404':
+          description: Business not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+        '409':
+          description: >
+            The period is already closed, the revision is stale, the period is unfinished, or
+            readiness has blockers. The period remains unchanged.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+              examples:
+                stale:
+                  value: {status: 409, detail: '1087 - attendance period changed since it was read'}
+                unfinished:
+                  value: {status: 409, detail: '1088 - attendance period is not finished'}
+                blocked:
+                  value: {status: 409, detail: '1089 - attendance period contains unresolved attendance'}
+                closed:
+                  value: {status: 409, detail: '1086 - attendance period is closed'}
+      x-functional-errors: [1006, 1020, 1086, 1087, 1088, 1089, 1091]
+
+  weekly-reopen:
+    post:
+      summary: Reopen a weekly attendance period
+      description: >
+        Reopens a currently closed weekly attendance period. Only the Business owner may reopen a
+        period, and the reason must be non-blank and at most 500 characters. Existing attendance
+        decisions and incident resolutions are preserved.
+      tags: [Attendance]
+      operationId: reopenWeeklyAttendancePeriod
+      security:
+        - basicAuth: []
+        - bearerAuth: []
+      parameters:
+        - name: businessId
+          in: path
+          required: true
+          description: Business whose weekly attendance period is reopened.
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+        - name: weekStart
+          in: path
+          required: true
+          description: Monday at the start of the requested Business-local attendance period.
+          schema:
+            type: string
+            format: date
+            example: '2025-07-28'
+      requestBody:
+        required: true
+        description: Mandatory reason for reopening.
+        content:
+          application/json:
+            schema:
+              $ref: '../../../open-api-rest.yml#/components/schemas/ReopenWeeklyAttendancePeriodRequest'
+            example:
+              reason: Corrected a worklog after payroll review.
+      responses:
+        '200':
+          description: Weekly attendance period reopened successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '../../../open-api-rest.yml#/components/schemas/WeeklyAttendancePeriod'
+        '400':
+          description: The reopen reason is blank, too long, or the week is invalid.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+              example: {status: 400, detail: '1092 - attendance period reopen reason is required'}
+        '401':
+          description: Unauthorized.
+        '403':
+          description: The authenticated user is not the owner of the business.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+        '404':
+          description: Business or weekly attendance period not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+        '409':
+          description: The period is already open or was modified concurrently.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+              examples:
+                open:
+                  value: {status: 409, detail: '1090 - attendance period is not closed'}
+                concurrent:
+                  value: {status: 409, detail: '1049 - resource was modified concurrently'}
+      x-functional-errors: [1006, 1020, 1049, 1090, 1091, 1092]

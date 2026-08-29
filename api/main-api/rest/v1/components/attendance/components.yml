@@ -617,3 +617,426 @@ components:
           type: string
           enum: [ATTENDANCE_REVISION_CONFLICT]
       required: [currentRevision, code]
+
+    WeeklyAttendancePeriodStateDTO:
+      type: string
+      description: Current lifecycle state of a weekly attendance period.
+      enum: [OPEN, CLOSED]
+      example: OPEN
+
+    WeeklyAttendancePeriodTransitionActionDTO:
+      type: string
+      description: Last successful state transition represented by the current period projection.
+      enum: [CLOSE, REOPEN]
+      example: CLOSE
+
+    WeeklyAttendancePeriodSummaryDTO:
+      type: object
+      description: Compact counts and worked-time totals derived from the current weekly attendance sources.
+      properties:
+        scheduledShiftCount:
+          type: integer
+          format: int32
+          minimum: 0
+        resolvedShiftCount:
+          type: integer
+          format: int32
+          minimum: 0
+        coveredShiftCount:
+          type: integer
+          format: int32
+          minimum: 0
+        potentiallyCoveredShiftCount:
+          type: integer
+          format: int32
+          minimum: 0
+        uncoveredShiftCount:
+          type: integer
+          format: int32
+          minimum: 0
+        attendanceMatchCount:
+          type: integer
+          format: int32
+          minimum: 0
+        ambiguousAttendanceCount:
+          type: integer
+          format: int32
+          minimum: 0
+        pendingReconciliationCount:
+          type: integer
+          format: int32
+          minimum: 0
+        worklogCount:
+          type: integer
+          format: int32
+          minimum: 0
+        openWorklogCount:
+          type: integer
+          format: int32
+          minimum: 0
+        openBreakCount:
+          type: integer
+          format: int32
+          minimum: 0
+        undecidedWorklogCount:
+          type: integer
+          format: int32
+          minimum: 0
+        approvedWorklogCount:
+          type: integer
+          format: int32
+          minimum: 0
+        rejectedWorklogCount:
+          type: integer
+          format: int32
+          minimum: 0
+        openIncidentCount:
+          type: integer
+          format: int32
+          minimum: 0
+        recordedWorkedSeconds:
+          type: integer
+          format: int64
+          minimum: 0
+        reportableWorkedSeconds:
+          type: integer
+          format: int64
+          minimum: 0
+      required: [scheduledShiftCount, resolvedShiftCount, coveredShiftCount, potentiallyCoveredShiftCount, uncoveredShiftCount, attendanceMatchCount, ambiguousAttendanceCount, pendingReconciliationCount, worklogCount, openWorklogCount, openBreakCount, undecidedWorklogCount, approvedWorklogCount, rejectedWorklogCount, openIncidentCount, recordedWorkedSeconds, reportableWorkedSeconds]
+
+    WeeklyAttendancePeriodTransitionMetadataDTO:
+      type: object
+      description: Metadata for the latest successful close or reopen transition. Null when the period has never been persisted.
+      properties:
+        action:
+          $ref: '#/components/schemas/WeeklyAttendancePeriodTransitionActionDTO'
+        actorId:
+          type: integer
+          format: int64
+          minimum: 1
+        occurredAt:
+          type: string
+          format: date-time
+        reason:
+          type: [string, 'null']
+          maxLength: 500
+        beforeState:
+          $ref: '#/components/schemas/WeeklyAttendancePeriodStateDTO'
+        afterState:
+          $ref: '#/components/schemas/WeeklyAttendancePeriodStateDTO'
+        sourceRevision:
+          type: string
+          minLength: 1
+          description: Weekly source revision observed for the transition.
+        frozenToleranceMinutes:
+          type: [integer, 'null']
+          format: int32
+          minimum: 0
+          maximum: 1440
+          description: Tolerance frozen by a close transition; null for a reopen transition.
+      required: [action, actorId, occurredAt, reason, beforeState, afterState, sourceRevision, frozenToleranceMinutes]
+
+    WeeklyAttendancePeriodBlockerTypeDTO:
+      type: string
+      description: Stable discriminator for a weekly closure blocker.
+      enum: [PERIOD_NOT_FINISHED, RECONCILIATION_PENDING, OPEN_WORKLOGS, OPEN_BREAKS, UNDECIDED_WORKLOGS, UNRESOLVED_INCIDENTS, AMBIGUOUS_ATTENDANCE, UNCOVERED_SHIFTS]
+
+    WeeklyAttendancePeriodNotFinishedBlockerDTO:
+      type: object
+      description: The Business-local Monday-to-Monday period has not ended yet.
+      properties:
+        type:
+          type: string
+          enum: [PERIOD_NOT_FINISHED]
+        periodEndsAt:
+          type: string
+          format: date-time
+          description: Exclusive end instant of the period in the Business zone.
+      required: [type, periodEndsAt]
+
+    WeeklyAttendancePeriodReconciliationPendingBlockerDTO:
+      type: object
+      description: Attendance matches whose reconciliation watermark is not ready.
+      properties:
+        type:
+          type: string
+          enum: [RECONCILIATION_PENDING]
+        attendanceMatchIds:
+          type: array
+          minItems: 1
+          uniqueItems: true
+          description: Canonically ascending attendance-match identifiers.
+          x-canonical-order: ascending
+          items:
+            type: integer
+            format: int64
+            minimum: 1
+      required: [type, attendanceMatchIds]
+
+    WeeklyAttendancePeriodOpenWorklogsBlockerDTO:
+      type: object
+      description: Worklogs that have no clock-out yet.
+      properties:
+        type:
+          type: string
+          enum: [OPEN_WORKLOGS]
+        worklogIds:
+          type: array
+          minItems: 1
+          uniqueItems: true
+          description: Canonically ascending worklog identifiers.
+          x-canonical-order: ascending
+          items:
+            type: integer
+            format: int64
+            minimum: 1
+      required: [type, worklogIds]
+
+    WeeklyAttendancePeriodOpenBreaksBlockerDTO:
+      type: object
+      description: Breaks that have no end yet.
+      properties:
+        type:
+          type: string
+          enum: [OPEN_BREAKS]
+        breakIds:
+          type: array
+          minItems: 1
+          uniqueItems: true
+          description: Canonically ascending break identifiers.
+          x-canonical-order: ascending
+          items:
+            type: integer
+            format: int64
+            minimum: 1
+      required: [type, breakIds]
+
+    WeeklyAttendancePeriodUndecidedWorklogsBlockerDTO:
+      type: object
+      description: Closed worklogs whose review state is neither APPROVED nor REJECTED.
+      properties:
+        type:
+          type: string
+          enum: [UNDECIDED_WORKLOGS]
+        worklogIds:
+          type: array
+          minItems: 1
+          uniqueItems: true
+          description: Canonically ascending worklog identifiers.
+          x-canonical-order: ascending
+          items:
+            type: integer
+            format: int64
+            minimum: 1
+      required: [type, worklogIds]
+
+    WeeklyAttendancePeriodUnresolvedIncidentsBlockerDTO:
+      type: object
+      description: Attendance incidents that remain open.
+      properties:
+        type:
+          type: string
+          enum: [UNRESOLVED_INCIDENTS]
+        incidentIds:
+          type: array
+          minItems: 1
+          uniqueItems: true
+          description: Canonically ascending incident identifiers.
+          x-canonical-order: ascending
+          items:
+            type: integer
+            format: int64
+            minimum: 1
+      required: [type, incidentIds]
+
+    WeeklyAttendancePeriodAmbiguousAttendanceBlockerDTO:
+      type: object
+      description: Attendance matches that still have unresolved candidate ambiguity.
+      properties:
+        type:
+          type: string
+          enum: [AMBIGUOUS_ATTENDANCE]
+        attendanceMatchIds:
+          type: array
+          minItems: 1
+          uniqueItems: true
+          description: Canonically ascending attendance-match identifiers.
+          x-canonical-order: ascending
+          items:
+            type: integer
+            format: int64
+            minimum: 1
+      required: [type, attendanceMatchIds]
+
+    WeeklyAttendancePeriodUncoveredShiftsBlockerDTO:
+      type: object
+      description: Ended scheduled shifts with no match or potential covering attendance.
+      properties:
+        type:
+          type: string
+          enum: [UNCOVERED_SHIFTS]
+        scheduledShiftIds:
+          type: array
+          minItems: 1
+          uniqueItems: true
+          description: Canonically ascending scheduled-shift identifiers.
+          x-canonical-order: ascending
+          items:
+            type: integer
+            format: int64
+            minimum: 1
+      required: [type, scheduledShiftIds]
+
+    WeeklyAttendancePeriodBlockerDTO:
+      description: Typed closure blocker. Identifier collections are returned in canonical ascending order.
+      oneOf:
+        - $ref: '#/components/schemas/WeeklyAttendancePeriodNotFinishedBlockerDTO'
+        - $ref: '#/components/schemas/WeeklyAttendancePeriodReconciliationPendingBlockerDTO'
+        - $ref: '#/components/schemas/WeeklyAttendancePeriodOpenWorklogsBlockerDTO'
+        - $ref: '#/components/schemas/WeeklyAttendancePeriodOpenBreaksBlockerDTO'
+        - $ref: '#/components/schemas/WeeklyAttendancePeriodUndecidedWorklogsBlockerDTO'
+        - $ref: '#/components/schemas/WeeklyAttendancePeriodUnresolvedIncidentsBlockerDTO'
+        - $ref: '#/components/schemas/WeeklyAttendancePeriodAmbiguousAttendanceBlockerDTO'
+        - $ref: '#/components/schemas/WeeklyAttendancePeriodUncoveredShiftsBlockerDTO'
+      discriminator:
+        propertyName: type
+        mapping:
+          PERIOD_NOT_FINISHED: '#/components/schemas/WeeklyAttendancePeriodNotFinishedBlockerDTO'
+          RECONCILIATION_PENDING: '#/components/schemas/WeeklyAttendancePeriodReconciliationPendingBlockerDTO'
+          OPEN_WORKLOGS: '#/components/schemas/WeeklyAttendancePeriodOpenWorklogsBlockerDTO'
+          OPEN_BREAKS: '#/components/schemas/WeeklyAttendancePeriodOpenBreaksBlockerDTO'
+          UNDECIDED_WORKLOGS: '#/components/schemas/WeeklyAttendancePeriodUndecidedWorklogsBlockerDTO'
+          UNRESOLVED_INCIDENTS: '#/components/schemas/WeeklyAttendancePeriodUnresolvedIncidentsBlockerDTO'
+          AMBIGUOUS_ATTENDANCE: '#/components/schemas/WeeklyAttendancePeriodAmbiguousAttendanceBlockerDTO'
+          UNCOVERED_SHIFTS: '#/components/schemas/WeeklyAttendancePeriodUncoveredShiftsBlockerDTO'
+
+    WeeklyAttendancePeriodDTO:
+      type: object
+      description: Compact Business-local weekly attendance projection. Missing persistence is represented as OPEN.
+      properties:
+        businessId:
+          type: integer
+          format: int64
+          minimum: 1
+        weekStart:
+          type: string
+          format: date
+          description: Monday at the start of the Business-local attendance period.
+        weekEnd:
+          type: string
+          format: date
+          description: Exclusive following Monday at the end of the Business-local attendance period.
+        state:
+          $ref: '#/components/schemas/WeeklyAttendancePeriodStateDTO'
+        revision:
+          type: string
+          minLength: 1
+          description: Opaque revision of the current attendance and planning sources.
+        effectiveToleranceMinutes:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 1440
+          description: Tolerance used to calculate this projection; frozen when state is CLOSED.
+        frozenToleranceMinutes:
+          type: [integer, 'null']
+          format: int32
+          minimum: 0
+          maximum: 1440
+          description: Tolerance captured at close, or null while OPEN.
+        closable:
+          type: boolean
+          description: True only when the period is completed and has no closure blockers.
+        summary:
+          $ref: '#/components/schemas/WeeklyAttendancePeriodSummaryDTO'
+        blockers:
+          type: array
+          description: All current closure blockers, in stable blocker-type order.
+          items:
+            $ref: '#/components/schemas/WeeklyAttendancePeriodBlockerDTO'
+        transitionMetadata:
+          oneOf:
+            - $ref: '#/components/schemas/WeeklyAttendancePeriodTransitionMetadataDTO'
+            - type: 'null'
+      required: [businessId, weekStart, weekEnd, state, revision, effectiveToleranceMinutes, frozenToleranceMinutes, closable, summary, blockers, transitionMetadata]
+
+    WeeklyAttendancePeriodApprovalSelectionDTO:
+      type: object
+      description: One revision-safe ShiftAttendance selected for atomic approval.
+      additionalProperties: false
+      properties:
+        scheduledShiftId:
+          type: integer
+          format: int64
+          minimum: 1
+        expectedRevision:
+          type: string
+          minLength: 1
+          description: Opaque ShiftAttendance revision from the latest attendance read.
+      required: [scheduledShiftId, expectedRevision]
+
+    WeeklyAttendancePeriodBulkApprovalRequestDTO:
+      type: object
+      description: Non-empty selection of ShiftAttendances from one Business-local week.
+      additionalProperties: false
+      properties:
+        selections:
+          type: array
+          minItems: 1
+          maxItems: 100
+          uniqueItems: true
+          description: Stable selection order; duplicate scheduled shifts are invalid.
+          items:
+            $ref: '#/components/schemas/WeeklyAttendancePeriodApprovalSelectionDTO'
+      required: [selections]
+
+    WeeklyAttendancePeriodBulkApprovalResultDTO:
+      type: object
+      description: Result of one atomic selected approval command.
+      properties:
+        businessId:
+          type: integer
+          format: int64
+          minimum: 1
+        weekStart:
+          type: string
+          format: date
+        approvedScheduledShiftIds:
+          type: array
+          minItems: 1
+          uniqueItems: true
+          description: Scheduled shifts approved by this command, in request order.
+          items:
+            type: integer
+            format: int64
+            minimum: 1
+        revision:
+          type: string
+          minLength: 1
+          description: Weekly attendance revision after the successful approval.
+      required: [businessId, weekStart, approvedScheduledShiftIds, revision]
+
+    CloseWeeklyAttendancePeriodRequestDTO:
+      type: object
+      description: Revision-safe close command for one completed weekly attendance period.
+      additionalProperties: false
+      properties:
+        expectedRevision:
+          type: string
+          minLength: 1
+          description: Weekly revision returned by the latest period read.
+      required: [expectedRevision]
+
+    ReopenWeeklyAttendancePeriodRequestDTO:
+      type: object
+      description: Owner-only command to reopen a closed period.
+      additionalProperties: false
+      properties:
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 500
+          pattern: '.*\S.*'
+          description: Non-blank explanation for reopening the period.
+          example: Corrected a worklog after payroll review.
+      required: [reason]
