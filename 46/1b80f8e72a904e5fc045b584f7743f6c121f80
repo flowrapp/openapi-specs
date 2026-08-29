@@ -1,0 +1,20 @@
+api/main-api/rest/open-api-rest.yml
+  h_a041df4244d543 6,198-205,277-316
+api/main-api/rest/v1/components/attendance/components.yml
+  h_a041df4244d543 620-1042
+api/main-api/rest/v1/components/common/error-components.yml
+  h_a041df4244d543 135-141,229-235
+api/main-api/rest/v1/services/attendance/attendance-operations.yml
+  h_a041df4244d543 400-744
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.22",
+  "base_commit_sha": "461b80f8e72a904e5fc045b584f7743f6c121f80",
+  "prompts": {},
+  "humans": {
+    "h_a041df4244d543": {
+      "author": "sergiobpa <sergiobpa@ext.inditex.com>"
+    }
+  }
+}
