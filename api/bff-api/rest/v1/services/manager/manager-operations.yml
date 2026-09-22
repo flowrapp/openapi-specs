@@ -33,6 +33,134 @@ manager:
         '401':
           description: Unauthorized
 
+  business-profile:
+    put:
+      summary: Update manager business profile
+      description: >
+        Replaces the editable profile fields of a business. Only the authenticated business owner
+        may update the tax identifier, name, address, town, city, country, and postal code.
+      tags:
+        - Manager
+      operationId: updateManagerBusinessProfile
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: businessId
+          in: path
+          required: true
+          description: ID of the business
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+      requestBody:
+        required: true
+        description: Complete replacement of the editable business profile
+        content:
+          application/json:
+            schema:
+              $ref: '../../components/manager/components.yml#/components/schemas/ManagerBusinessProfileUpdateRequestDTO'
+            example:
+              nif: B12345678
+              name: Coffee Time
+              address: C/Sin nombre 453
+              town: Barbate
+              city: Cádiz
+              country: España
+              postalCode: '11160'
+      responses:
+        '204':
+          description: Business profile updated successfully
+        '400':
+          description: Business profile values are invalid
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              example: {status: 400, detail: "1093 - business profile is invalid"}
+        '401':
+          description: Authentication is required
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+        '403':
+          description: Authenticated user is not an OWNER of the business
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              example: {status: 403, detail: "1020 - user is not the owner of business"}
+        '404':
+          description: Business not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              example: {status: 404, detail: "1006 - business does not exist"}
+
+  business-geofence:
+    put:
+      summary: Update manager business geofence
+      description: >
+        Replaces the business geofence center and radius. Only the authenticated business owner
+        may update the latitude, longitude, and area.
+      tags:
+        - Manager
+      operationId: updateManagerBusinessGeofence
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: businessId
+          in: path
+          required: true
+          description: ID of the business
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+      requestBody:
+        required: true
+        description: Complete replacement of the business geofence
+        content:
+          application/json:
+            schema:
+              $ref: '../../components/common/components.yml#/components/schemas/LocationDTO'
+            example:
+              latitude: 36.19
+              longitude: -5.99
+              area: 50.0
+      responses:
+        '204':
+          description: Business geofence updated successfully
+        '400':
+          description: Geofence values are invalid
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              example: {status: 400, detail: "1094 - business geofence is invalid"}
+        '401':
+          description: Authentication is required
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+        '403':
+          description: Authenticated user is not an OWNER of the business
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              example: {status: 403, detail: "1020 - user is not the owner of business"}
+        '404':
+          description: Business not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              example: {status: 404, detail: "1006 - business does not exist"}
+
   workers:
     get:
       summary: Get business workers

@@ -33,6 +33,10 @@ components:
           type: string
           description: Country of the business
           example: "España"
+        postalCode:
+          type: string
+          description: Postal code of the business
+          example: "11160"
         location:
           $ref: '../common/components.yml#/components/schemas/LocationDTO'
         userRole:
@@ -48,6 +52,7 @@ components:
         - town
         - city
         - country
+        - postalCode
         - location
         - userRole
 
