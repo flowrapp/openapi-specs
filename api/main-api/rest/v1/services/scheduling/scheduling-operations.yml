@@ -758,6 +758,45 @@ planning:
         '403': {$ref: '../../components/scheduling/components.yml#/components/responses/Forbidden'}
         '404': {$ref: '../../components/scheduling/components.yml#/components/responses/NotFound'}
       x-functional-errors: [1006, 1020, 1045]
+    post:
+      tags: [Planning]
+      operationId: createDraftPlanning
+      summary: Create an empty draft planning
+      description: >
+        Creates an empty manually editable planning for the requested Monday `weekStart`. The
+        planning starts in `DRAFT` and has no automatic-solver requirements. Only one planning
+        may exist for a business and week; automatic generation is an internal operation and is
+        not exposed through this endpoint.
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '../../components/scheduling/components.yml#/components/parameters/BusinessId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '../../components/scheduling/components.yml#/components/schemas/CreateDraftPlanningRequestDTO'
+            example:
+              weekStart: "2026-10-05"
+      responses:
+        '201':
+          description: Empty draft planning created
+          headers:
+            Location:
+              description: Canonical weekly planning resource.
+              schema:
+                type: string
+                format: uri-reference
+                example: "/api/v1/businesses/101/plannings/2026-10-05"
+          content:
+            application/json:
+              schema:
+                $ref: '../../components/scheduling/components.yml#/components/schemas/PlanningResponseDTO'
+        '400': {$ref: '../../components/scheduling/components.yml#/components/responses/BadRequest'}
+        '403': {$ref: '../../components/scheduling/components.yml#/components/responses/Forbidden'}
+        '404': {$ref: '../../components/scheduling/components.yml#/components/responses/NotFound'}
+        '409': {$ref: '../../components/scheduling/components.yml#/components/responses/Conflict'}
+      x-functional-errors: [1006, 1020, 1045, 1095]
   item:
     get:
       tags: [Planning]
@@ -815,18 +854,39 @@ planning:
         '403': {$ref: '../../components/scheduling/components.yml#/components/responses/Forbidden'}
         '404': {$ref: '../../components/scheduling/components.yml#/components/responses/NotFound'}
       x-functional-errors: [1006, 1020, 1046]
+  scheduledShifts:
     put:
       tags: [Planning]
-      operationId: createPlanning
-      summary: Create or retrieve a business planning for a week
-      description: Automatic planning generation may create or return the planning addressed by its Monday `weekStart`. This generation operation is not exposed by the BFF manager contract.
+      operationId: replacePlanningScheduledShifts
+      summary: Replace all scheduled shifts in a draft planning
+      description: >
+        Atomically replaces the complete scheduled-shift collection of the planning addressed by
+        `planningId`. This operation accepts only `DRAFT` plannings. The request `version` must
+        match the version returned by the latest planning read; a stale version returns a
+        concurrent-modification conflict. Shift display name and color are captured by the server
+        from the referenced business Shift and are not client input.
       security: [{ bearerAuth: [] }]
       parameters:
         - $ref: '../../components/scheduling/components.yml#/components/parameters/BusinessId'
-        - $ref: '../../components/scheduling/components.yml#/components/parameters/WeekStart'
+        - $ref: '../../components/scheduling/components.yml#/components/parameters/PlanningId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '../../components/scheduling/components.yml#/components/schemas/ReplacePlanningScheduledShiftsRequestDTO'
+            example:
+              version: 3
+              scheduledShifts:
+                - userId: 42
+                  jobRoleId: 7
+                  shiftId: 20
+                  startAt: "2026-10-05T09:00:00+02:00"
+                  endAt: "2026-10-05T17:00:00+02:00"
+                  breakMinutes: 30
       responses:
         '200':
-          description: Planning created or retrieved if it already exists
+          description: Draft planning scheduled shifts replaced
           content:
             application/json:
               schema:
@@ -834,14 +894,15 @@ planning:
         '400': {$ref: '../../components/scheduling/components.yml#/components/responses/BadRequest'}
         '403': {$ref: '../../components/scheduling/components.yml#/components/responses/Forbidden'}
         '404': {$ref: '../../components/scheduling/components.yml#/components/responses/NotFound'}
-      x-functional-errors: [1006, 1020, 1032, 1034, 1039, 1041, 1044, 1045, 1047]
+        '409': {$ref: '../../components/scheduling/components.yml#/components/responses/Conflict'}
+      x-functional-errors: [1006, 1020, 1034, 1045, 1046, 1047, 1049, 1096]
   publish:
     post:
       tags: [Planning]
       operationId: publishPlanning
       summary: Publish a draft business planning
       description: >
-        Idempotently transitions the existing solved, reviewable planning addressed by its stable
+        Idempotently transitions the existing draft planning addressed by its stable
         `planningId` within the route `businessId` from DRAFT to PUBLISHED. An already published planning is returned
         unchanged. If no planning exists for the ID, or it belongs to another business, the API
         returns 404 and creates nothing.
@@ -883,10 +944,20 @@ planning:
       tags: [Planning]
       operationId: getCurrentUserScheduledShifts
       summary: List the current user's shifts from published plannings
+      description: >
+        Returns only shifts assigned to the authenticated user from published plannings. `from`
+        and `to` delimit the requested date range. Optional `businessId`, `jobRoleId`,
+        `shiftId`, and `planningId` filters are combined with AND and affect only the returned
+        collection; syntactically valid identifiers that match no visible shift return `200` with
+        an empty collection.
       security: [{ bearerAuth: [] }]
       parameters:
         - $ref: '../../components/scheduling/components.yml#/components/parameters/From'
         - $ref: '../../components/scheduling/components.yml#/components/parameters/To'
+        - $ref: '../../components/scheduling/components.yml#/components/parameters/CurrentUserScheduledShiftBusinessId'
+        - $ref: '../../components/scheduling/components.yml#/components/parameters/CurrentUserScheduledShiftJobRoleId'
+        - $ref: '../../components/scheduling/components.yml#/components/parameters/CurrentUserScheduledShiftShiftId'
+        - $ref: '../../components/scheduling/components.yml#/components/parameters/CurrentUserScheduledShiftPlanningId'
       responses:
         '200':
           description: Published scheduled shifts retrieved

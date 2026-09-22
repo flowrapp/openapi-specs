@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.0.60
+
+### Added
+
+- `GET /api/v1/scheduled-shifts` now supports optional `businessId`, `jobRoleId`, `shiftId`, and `planningId` filters, combined with the required time range.
+
+## 0.0.59
+
+### Added
+
+- `POST /api/v1/businesses/{businessId}/plannings` creates an empty manual `DRAFT` planning for a requested week.
+- `PUT /api/v1/businesses/{businessId}/plannings/{planningId}/scheduled-shifts` atomically replaces all assignments in a `DRAFT` planning with optimistic version control.
+
+### Breaking changes
+
+- Removed `PUT /api/v1/businesses/{businessId}/plannings/{weekStart}`. Automatic planning generation is no longer a public Main API operation.
+
 ## 0.0.54
 
 ### Added

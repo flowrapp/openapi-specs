@@ -89,6 +89,30 @@ components:
       required: false
       description: Restrict scheduled shifts and immutable requirements to one job role; positive identifiers with no match return an empty filtered projection
       schema: {type: integer, format: int64, minimum: 1, example: 10}
+    CurrentUserScheduledShiftBusinessId:
+      name: businessId
+      in: query
+      required: false
+      description: Restrict the current user's published shifts to one business; a positive identifier with no matching shift returns an empty collection.
+      schema: {type: integer, format: int64, minimum: 1, example: 101}
+    CurrentUserScheduledShiftJobRoleId:
+      name: jobRoleId
+      in: query
+      required: false
+      description: Restrict the current user's published shifts to one job role; a positive identifier with no matching shift returns an empty collection.
+      schema: {type: integer, format: int64, minimum: 1, example: 10}
+    CurrentUserScheduledShiftShiftId:
+      name: shiftId
+      in: query
+      required: false
+      description: Restrict the current user's published shifts to one business Shift; a positive identifier with no matching shift returns an empty collection.
+      schema: {type: integer, format: int64, minimum: 1, example: 20}
+    CurrentUserScheduledShiftPlanningId:
+      name: planningId
+      in: query
+      required: false
+      description: Restrict the current user's published shifts to one planning; a positive identifier with no matching shift returns an empty collection.
+      schema: {type: integer, format: int64, minimum: 1, example: 500}
   responses:
     BadRequest:
       description: Invalid request or scheduling configuration
@@ -729,7 +753,8 @@ components:
       type: string
       description: >
         Planning lifecycle state: CREATED, SOLVING, DRAFT, PUBLISHED, ARCHIVED, or terminal FAILED.
-        DRAFT is solved and reviewable but unpublished; ARCHIVED is previously published history.
+        DRAFT is editable and unpublished; it may be created manually or result from automatic solving.
+        ARCHIVED is previously published history.
         FAILED exposes only a sanitized failure reason.
       enum: [CREATED, SOLVING, DRAFT, PUBLISHED, ARCHIVED, FAILED]
 
@@ -785,14 +810,81 @@ components:
           format: date-time
       required: [id, planningId, businessId, userId, jobRoleId, shiftId, shiftName, shiftColor, startAt, endAt, breakMinutes, createdAt, updatedAt]
 
+    CreateDraftPlanningRequestDTO:
+      type: object
+      description: Creates an empty manually editable planning for one business-local ISO week.
+      properties:
+        weekStart:
+          type: string
+          format: date
+          description: Monday of the planning week in the business-local calendar.
+          example: "2026-10-05"
+      required: [weekStart]
+
+    ScheduledShiftRequestDTO:
+      type: object
+      description: One manual assignment. Presentation metadata is resolved and captured by the server from shiftId.
+      properties:
+        userId:
+          type: integer
+          format: int64
+          minimum: 1
+          example: 42
+        jobRoleId:
+          type: integer
+          format: int64
+          minimum: 1
+          example: 7
+        shiftId:
+          type: integer
+          format: int64
+          minimum: 1
+          example: 20
+        startAt:
+          type: string
+          format: date-time
+          example: "2026-10-05T09:00:00+02:00"
+        endAt:
+          type: string
+          format: date-time
+          example: "2026-10-05T17:00:00+02:00"
+        breakMinutes:
+          type: integer
+          format: int32
+          minimum: 0
+          example: 30
+      required: [userId, jobRoleId, shiftId, startAt, endAt, breakMinutes]
+
+    ReplacePlanningScheduledShiftsRequestDTO:
+      type: object
+      description: Complete replacement of the scheduled shifts in an editable draft planning.
+      properties:
+        version:
+          type: integer
+          format: int64
+          minimum: 0
+          description: Version obtained from the latest planning response.
+          example: 3
+        scheduledShifts:
+          type: array
+          description: Complete replacement collection; an empty array removes all draft shifts.
+          items:
+            $ref: '#/components/schemas/ScheduledShiftRequestDTO'
+      required: [version, scheduledShifts]
+
     PlanningResponseDTO:
       type: object
-      description: Weekly planning with immutable requirements and any solved scheduled shifts.
+      description: Weekly planning with manual scheduled shifts and, when automatically generated, immutable solver requirements.
       properties:
         id:
           type: integer
           format: int64
           minimum: 1
+        version:
+          type: integer
+          format: int64
+          minimum: 0
+          description: Aggregate version required when replacing draft scheduled shifts.
         businessId:
           type: integer
           format: int64
@@ -816,7 +908,7 @@ components:
           example: null
         requirements:
           type: array
-          description: Immutable requirements captured when the planning was created, grouped by date.
+          description: Immutable requirements captured only for automatically generated plannings; empty for manually created drafts.
           items:
             $ref: '#/components/schemas/PlanningRequirementDTO'
         createdAt:
@@ -827,13 +919,13 @@ components:
           format: date-time
         scheduledShifts:
           type: array
-          description: Solved assignments. Empty while the planning has no assignments yet.
+          description: Persisted manual or solver-generated assignments. Empty when the planning has no assignments yet.
           items:
             $ref: '#/components/schemas/ScheduledShiftResponseDTO'
         hasCoverageWarnings:
           type: boolean
           description: True when any immutable demand remains below its minimum staffing level.
-      required: [id, businessId, weekStart, weekEnd, status, failureReason, requirements, createdAt, scheduledShifts, hasCoverageWarnings]
+      required: [id, version, businessId, weekStart, weekEnd, status, failureReason, requirements, createdAt, scheduledShifts, hasCoverageWarnings]
       example:
         id: 500
         businessId: 101
