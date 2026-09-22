@@ -1,0 +1,20 @@
+api/bff-api/rest/v1/components/worker/components.yml
+  h_a041df4244d543 12-16,54
+api/bff-api/rest/v1/services/worker/worker-operations.yml
+  h_a041df4244d543 34
+api/main-api/rest/v1/components/business/components.yml
+  h_a041df4244d543 54-58,110
+api/main-api/rest/v1/services/business/businesses-operations.yml
+  h_a041df4244d543 168,184
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "c477fa6bc1c4da384bdd821708e2992819493308",
+  "prompts": {},
+  "humans": {
+    "h_a041df4244d543": {
+      "author": "sergiobpa <sergiobpa@ext.inditex.com>"
+    }
+  }
+}
