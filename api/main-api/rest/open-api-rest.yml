@@ -79,6 +79,10 @@ paths:
     $ref: 'v1/services/admin/admin-operations.yml#/admin/register'
   "/api/v1/businesses":
     $ref: 'v1/services/business/businesses-operations.yml#/businesses/get-businesses'
+  "/api/v1/businesses/{businessId}":
+    $ref: 'v1/services/business/businesses-operations.yml#/businesses/update-business-profile'
+  "/api/v1/businesses/{businessId}/geofence":
+    $ref: 'v1/services/business/businesses-operations.yml#/businesses/update-business-geofence'
   "/api/v1/businesses/{businessId}/users":
     $ref: 'v1/services/business/businesses-operations.yml#/businesses/get-business-users'
   "/api/v1/businesses/{businessId}/geofence-events/{eventId}":

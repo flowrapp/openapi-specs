@@ -103,6 +103,10 @@ paths:
   # ── Manager ─────────────────────────────────────────────────────────────
   "/api/v1/manager/businesses":
     $ref: 'v1/services/manager/manager-operations.yml#/manager/businesses'
+  "/api/v1/manager/businesses/{businessId}":
+    $ref: 'v1/services/manager/manager-operations.yml#/manager/business-profile'
+  "/api/v1/manager/businesses/{businessId}/geofence":
+    $ref: 'v1/services/manager/manager-operations.yml#/manager/business-geofence'
   "/api/v1/manager/businesses/{businessId}/workers":
     $ref: 'v1/services/manager/manager-operations.yml#/manager/workers'
   "/api/v1/manager/businesses/{businessId}/schedule/recurring":

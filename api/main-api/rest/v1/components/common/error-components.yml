@@ -139,6 +139,8 @@ components:
         | 1090 | 409 | ATTENDANCE_PERIOD_NOT_CLOSED | attendance period is not closed |
         | 1091 | 400 | INVALID_ATTENDANCE_PERIOD_WEEK | attendance period week must start on Monday |
         | 1092 | 400 | ATTENDANCE_PERIOD_REOPEN_REASON_REQUIRED | attendance period reopen reason is required |
+        | 1093 | 400 | INVALID_BUSINESS_PROFILE | business profile is invalid |
+        | 1094 | 400 | INVALID_BUSINESS_GEOFENCE | business geofence is invalid |
       enum:
         - 1000
         - 1001
@@ -233,3 +235,5 @@ components:
         - 1090
         - 1091
         - 1092
+        - 1093
+        - 1094

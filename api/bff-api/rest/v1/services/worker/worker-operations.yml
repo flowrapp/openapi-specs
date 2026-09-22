@@ -37,6 +37,7 @@ worker:
                   town: "Barbate"
                   city: "Cádiz"
                   country: "España"
+                  postalCode: "11160"
                   location:
                     latitude: 36.19
                     longitude: -5.99

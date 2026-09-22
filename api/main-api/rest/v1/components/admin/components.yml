@@ -25,6 +25,7 @@ components:
               town: Barbate
               city: Cádiz
               country: España
+              postalCode: '11160'
               location:
                 latitude: 30.5
                 longitude: 50.5
@@ -36,6 +37,7 @@ components:
               town: Barbate
               city: Cádiz
               country: España
+              postalCode: '11160'
               location:
                 latitude: 35.2
                 longitude: 45.7
@@ -72,6 +74,11 @@ components:
           type: string
           description: Country of the business
           example: España
+        postalCode:
+          type: string
+          minLength: 1
+          description: Postal code of the business
+          example: '11160'
         location:
           $ref: '#/components/schemas/LocationDTO'
         zone:
@@ -86,25 +93,31 @@ components:
         - town
         - city
         - country
+        - postalCode
         - zone
     LocationDTO:
       type: object
-      description: Geographic location information
+      description: Business geofence center and radius in meters
       properties:
         latitude:
           type: number
           format: double
+          minimum: -90
+          maximum: 90
           description: Latitude coordinate
           example: 30.5
         longitude:
           type: number
           format: double
+          minimum: -180
+          maximum: 180
           description: Longitude coordinate
           example: 50.5
         area:
           type: number
           format: double
-          description: Area size in square units
+          exclusiveMinimum: 0
+          description: Geofence radius in meters
           example: 5.3
       required:
         - latitude
