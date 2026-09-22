@@ -165,6 +165,7 @@ businesses:
                   $ref: '../../components/business/components.yml#/components/schemas/BusinessResponseDTO'
                 example:
                   - id: 101
+                    nif: "B12345678"
                     name: "Coffee Time"
                     zone: "Europe/Madrid"
                     address: "C/ sin nombre 43"
@@ -180,6 +181,7 @@ businesses:
                     longOpenAfterMinutes: 720
                     attendanceToleranceMinutes: 5
                   - id: 102
+                    nif: "B87654321"
                     name: "Tea Corner"
                     zone: "Europe/Madrid"
                     address: "C/ sin nombre 43"

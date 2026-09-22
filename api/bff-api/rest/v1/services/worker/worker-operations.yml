@@ -31,6 +31,7 @@ worker:
                   $ref: '../../components/worker/components.yml#/components/schemas/WorkerBusinessResponseDTO'
               example:
                 - id: 101
+                  nif: "B12345678"
                   name: "Coffee Time"
                   zone: "Europe/Madrid"
                   address: "C/ Gran Vía 43"

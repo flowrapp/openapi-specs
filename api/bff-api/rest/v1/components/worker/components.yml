@@ -9,6 +9,11 @@ components:
           format: int64
           description: Unique identifier for the business
           example: 101
+        nif:
+          type: string
+          minLength: 1
+          description: Tax identification number for the business
+          example: B12345678
         name:
           type: string
           description: Name of the business
@@ -46,6 +51,7 @@ components:
           example: "EMPLOYEE"
       required:
         - id
+        - nif
         - name
         - zone
         - address
