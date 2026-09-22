@@ -1,0 +1,22 @@
+api/main-api/rest/CHANGELOG.md
+  h_a041df4244d543 3-19
+api/main-api/rest/open-api-rest.yml
+  h_a041df4244d543 6,182-183
+api/main-api/rest/v1/components/common/error-components.yml
+  h_a041df4244d543 144-145,242-243
+api/main-api/rest/v1/components/scheduling/components.yml
+  h_a041df4244d543 92-115,756-757,813-874,877,883-887,911,922,928
+api/main-api/rest/v1/services/scheduling/scheduling-operations.yml
+  h_a041df4244d543 761-799,857,860-867,871-886,889,897-898,905,947-952,957-960
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "cf86e19ccaa679c4037d770396e8bca4cf725aba",
+  "prompts": {},
+  "humans": {
+    "h_a041df4244d543": {
+      "author": "sergiobpa <sergiobpa@ext.inditex.com>"
+    }
+  }
+}
