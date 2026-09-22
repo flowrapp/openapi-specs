@@ -22,6 +22,48 @@ components:
         maximum: 100
         default: 20
   schemas:
+    ManagerBusinessProfileUpdateRequestDTO:
+      type: object
+      description: Complete replacement of the editable business profile fields
+      additionalProperties: false
+      properties:
+        nif:
+          type: string
+          minLength: 1
+          description: Tax identification number for the business
+          example: B12345678
+        name:
+          type: string
+          minLength: 1
+          description: Name of the business
+          example: Coffee Time
+        address:
+          type: string
+          minLength: 1
+          description: Address of the business
+          example: C/Sin nombre 453
+        town:
+          type: string
+          minLength: 1
+          description: Town of the business
+          example: Barbate
+        city:
+          type: string
+          minLength: 1
+          description: City of the business
+          example: Cádiz
+        country:
+          type: string
+          minLength: 1
+          description: Country of the business
+          example: España
+        postalCode:
+          type: string
+          minLength: 1
+          description: Postal code of the business
+          example: '11160'
+      required: [nif, name, address, town, city, country, postalCode]
+
     ManagerBusinessDashboardResponseDTO:
       type: object
       description: Manager dashboard with aggregate business statistics
