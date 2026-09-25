@@ -89,12 +89,6 @@ components:
       required: false
       description: Restrict scheduled shifts and immutable requirements to one job role; positive identifiers with no match return an empty filtered projection
       schema: {type: integer, format: int64, minimum: 1, example: 10}
-    CurrentUserScheduledShiftBusinessId:
-      name: businessId
-      in: query
-      required: false
-      description: Restrict the current user's published shifts to one business; a positive identifier with no matching shift returns an empty collection.
-      schema: {type: integer, format: int64, minimum: 1, example: 101}
     CurrentUserScheduledShiftJobRoleId:
       name: jobRoleId
       in: query

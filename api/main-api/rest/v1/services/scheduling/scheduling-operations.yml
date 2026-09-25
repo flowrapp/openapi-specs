@@ -943,18 +943,18 @@ planning:
     get:
       tags: [Planning]
       operationId: getCurrentUserScheduledShifts
-      summary: List the current user's shifts from published plannings
+      summary: List the current user's shifts for a business
       description: >
-        Returns only shifts assigned to the authenticated user from published plannings. `from`
-        and `to` delimit the requested date range. Optional `businessId`, `jobRoleId`,
+        Returns only shifts assigned to the authenticated user from published plannings in the
+        route business. `from` and `to` delimit the requested date range. Optional `jobRoleId`,
         `shiftId`, and `planningId` filters are combined with AND and affect only the returned
         collection; syntactically valid identifiers that match no visible shift return `200` with
         an empty collection.
       security: [{ bearerAuth: [] }]
       parameters:
+        - $ref: '../../components/scheduling/components.yml#/components/parameters/BusinessId'
         - $ref: '../../components/scheduling/components.yml#/components/parameters/From'
         - $ref: '../../components/scheduling/components.yml#/components/parameters/To'
-        - $ref: '../../components/scheduling/components.yml#/components/parameters/CurrentUserScheduledShiftBusinessId'
         - $ref: '../../components/scheduling/components.yml#/components/parameters/CurrentUserScheduledShiftJobRoleId'
         - $ref: '../../components/scheduling/components.yml#/components/parameters/CurrentUserScheduledShiftShiftId'
         - $ref: '../../components/scheduling/components.yml#/components/parameters/CurrentUserScheduledShiftPlanningId'

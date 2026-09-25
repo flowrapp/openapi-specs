@@ -3,7 +3,7 @@ openapi: 3.1.0
 info:
   title: Flowrapp API
   description: REST API for Flowrapp Backend
-  version: 0.0.60
+  version: 0.0.61
   contact:
     name: Flowrapp Team
     url: https://flowrapp.github.io
@@ -185,7 +185,7 @@ paths:
     $ref: 'v1/services/scheduling/scheduling-operations.yml#/planning/teamSchedule'
   "/api/v1/businesses/{businessId}/plannings/{planningId}/publish":
     $ref: 'v1/services/scheduling/scheduling-operations.yml#/planning/publish'
-  "/api/v1/scheduled-shifts":
+  "/api/v1/businesses/{businessId}/scheduled-shifts":
     $ref: 'v1/services/scheduling/scheduling-operations.yml#/planning/currentUserScheduledShifts'
   "/api/v1/attendance-matches/{attendanceMatchId}":
     $ref: 'v1/services/attendance/attendance-operations.yml#/attendance/worker-match-detail'
