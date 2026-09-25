@@ -1303,12 +1303,75 @@ components:
           example: 54000
       required: [date, requiredSeconds, scheduledSeconds]
 
+    ManagerCreateDraftPlanningRequestDTO:
+      type: object
+      description: Create an empty manual planning for one business-local ISO week.
+      properties:
+        weekStart:
+          type: string
+          format: date
+          description: Monday of the requested week.
+          example: "2026-10-05"
+      required: [weekStart]
+
+    ManagerScheduledShiftRequestDTO:
+      type: object
+      description: Manual assignment; shift name and color are captured from the business Shift.
+      properties:
+        userId:
+          type: integer
+          format: int64
+          minimum: 1
+          example: 42
+        jobRoleId:
+          type: integer
+          format: int64
+          minimum: 1
+          example: 7
+        shiftId:
+          type: integer
+          format: int64
+          minimum: 1
+          example: 20
+        startAt:
+          type: string
+          format: date-time
+          example: "2026-10-05T09:00:00+02:00"
+        endAt:
+          type: string
+          format: date-time
+          example: "2026-10-05T17:00:00+02:00"
+        breakMinutes:
+          type: integer
+          format: int32
+          minimum: 0
+          example: 30
+      required: [userId, jobRoleId, shiftId, startAt, endAt, breakMinutes]
+
+    ManagerReplacePlanningScheduledShiftsRequestDTO:
+      type: object
+      description: Complete replacement of a DRAFT planning's assignments.
+      properties:
+        version:
+          type: integer
+          format: int64
+          minimum: 0
+          description: Version from the latest manager planning response.
+          example: 3
+        scheduledShifts:
+          type: array
+          description: Complete collection; an empty array removes every assignment.
+          items:
+            $ref: '#/components/schemas/ManagerScheduledShiftRequestDTO'
+      required: [version, scheduledShifts]
+
     ManagerPlanningResponseDTO:
       type: object
       description: >
         Stable weekly planning response for CREATED, SOLVING, DRAFT, PUBLISHED, ARCHIVED, and
-        FAILED. DRAFT is solved and reviewable but unpublished; ARCHIVED is historical and
-        read-only. Requirements use local wall-clock
+        FAILED. DRAFT is editable and unpublished, whether created manually or by the solver;
+        manually created drafts have no requirements. ARCHIVED is historical and read-only.
+        Requirements use local wall-clock
         net shift duration multiplied by target staffing demand; assignments use offset elapsed
         duration minus breaks. Workers are the union of users with intersecting contracts and users
         with assignments, and planning totals reconcile to their daily and worker totals.
@@ -1318,6 +1381,12 @@ components:
           format: int64
           minimum: 1
           example: 500
+        version:
+          type: integer
+          format: int64
+          minimum: 0
+          description: Aggregate version required to replace draft assignments.
+          example: 3
         businessId:
           type: integer
           format: int64
@@ -1340,7 +1409,7 @@ components:
           example: "2025-08-03"
         status:
           type: string
-          description: CREATED is awaiting solver submission; DRAFT is solved and reviewable but unpublished; ARCHIVED is historical and read-only
+          description: CREATED is awaiting solver submission; DRAFT is editable and unpublished; ARCHIVED is historical and read-only
           enum: [CREATED, SOLVING, DRAFT, PUBLISHED, ARCHIVED, FAILED]
           example: SOLVING
         failureReason:
@@ -1374,4 +1443,4 @@ components:
         hasCoverageWarnings:
           type: boolean
           description: True when any immutable demand remains below its minimum staffing level.
-      required: [id, businessId, week, weekStart, weekEnd, status, failureReason, totals, requirements, days, workers, createdAt, publishedAt, hasCoverageWarnings]
+      required: [id, version, businessId, week, weekStart, weekEnd, status, failureReason, totals, requirements, days, workers, createdAt, publishedAt, hasCoverageWarnings]

@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.0.55
+
+### Added
+
+- `POST /api/v1/manager/businesses/{businessId}/schedule` creates an empty manual DRAFT planning for a Monday `weekStart`.
+- `PUT /api/v1/manager/businesses/{businessId}/schedule/{planningId}/scheduled-shifts` atomically replaces all assignments in a DRAFT planning using its `version`; an empty array clears them.
+- Manager planning responses include `version` for optimistic concurrency and support manual drafts without solver requirements.
+
 ## 0.0.53
 
 ### Breaking changes

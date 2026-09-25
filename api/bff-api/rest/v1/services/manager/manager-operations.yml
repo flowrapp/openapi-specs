@@ -1573,9 +1573,10 @@ manager:
       summary: Get a weekly business planning
       description: >
         Returns the existing planning for the requested ISO week. The response shape is stable
-        for CREATED, SOLVING, DRAFT, PUBLISHED, ARCHIVED, and FAILED; ARCHIVED is historical and
-        read-only. Requirements come from the immutable planning snapshot; this operation never
-        generates a missing planning. Required seconds use local wall-clock shift duration: an end
+        for CREATED, SOLVING, DRAFT, PUBLISHED, ARCHIVED, and FAILED; DRAFT is editable whether
+        created manually or by the solver, and ARCHIVED is historical and read-only. Manually
+        created drafts have no requirements. This operation never generates a missing planning.
+        Required seconds use local wall-clock shift duration: an end
         time not later than its start rolls into the next calendar day, breaks are subtracted, and
         the net duration is multiplied by target employee demand. Scheduled seconds use elapsed
         offset-date-time duration minus breaks. Contracted seconds sum
@@ -1635,6 +1636,7 @@ manager:
                   summary: Created planning awaiting solver submission
                   value:
                     id: 500
+                    version: 0
                     businessId: 101
                     week: "2025-W31"
                     weekStart: "2025-07-28"
@@ -1652,6 +1654,7 @@ manager:
                   summary: Solving planning with an overnight requirement and contract/assignment union
                   value:
                     id: 500
+                    version: 1
                     businessId: 101
                     week: "2025-W31"
                     weekStart: "2025-07-28"
@@ -1720,6 +1723,7 @@ manager:
                   summary: Draft planning with two shifts on one date
                   value:
                     id: 500
+                    version: 3
                     businessId: 101
                     week: "2025-W31"
                     weekStart: "2025-07-28"
@@ -1799,6 +1803,7 @@ manager:
                   summary: Published planning
                   value:
                     id: 500
+                    version: 4
                     businessId: 101
                     week: "2025-W31"
                     weekStart: "2025-07-28"
@@ -1816,6 +1821,7 @@ manager:
                   summary: Failed planning
                   value:
                     id: 501
+                    version: 2
                     businessId: 101
                     week: "2025-W32"
                     weekStart: "2025-08-04"
@@ -1833,6 +1839,7 @@ manager:
                   summary: Archived read-only planning
                   value:
                     id: 502
+                    version: 5
                     businessId: 101
                     week: "2025-W30"
                     weekStart: "2025-07-21"
@@ -1867,12 +1874,229 @@ manager:
                 $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
               example: {status: 404, detail: "1046 - planning not found"}
 
+    post:
+      summary: Create an empty draft weekly planning
+      description: >
+        Creates a manual DRAFT planning for the Monday `weekStart` with no solver requirements or
+        assignments. Only one planning may exist for a business and week. Returns the manager
+        planning projection, including the version needed to edit it. Requires an OWNER membership.
+      tags: [Manager]
+      operationId: createManagerDraftPlanning
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: businessId
+          in: path
+          required: true
+          description: ID of the business
+          schema: {type: integer, format: int64, minimum: 1}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '../../components/manager/components.yml#/components/schemas/ManagerCreateDraftPlanningRequestDTO'
+            example: {weekStart: "2026-10-05"}
+      responses:
+        '201':
+          description: Empty draft planning created
+          headers:
+            Location:
+              description: BFF weekly planning resource
+              schema:
+                type: string
+                format: uri-reference
+                example: "/api/v1/manager/businesses/101/schedule?week=2026-W41"
+          content:
+            application/json:
+              schema:
+                $ref: '../../components/manager/components.yml#/components/schemas/ManagerPlanningResponseDTO'
+              example:
+                id: 500
+                version: 0
+                businessId: 101
+                week: "2026-W41"
+                weekStart: "2026-10-05"
+                weekEnd: "2026-10-11"
+                status: DRAFT
+                failureReason: null
+                totals: {requiredSeconds: 0, scheduledSeconds: 0, contractedSeconds: 0}
+                requirements: []
+                days: []
+                workers: []
+                createdAt: "2026-10-04T08:00:00+02:00"
+                publishedAt: null
+                hasCoverageWarnings: false
+        '400':
+          description: Invalid week start (must be a Monday)
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              example: {status: 400, detail: "1045 - planning is invalid"}
+        '401':
+          description: Authentication is required
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+        '403':
+          description: Authenticated user is not an OWNER of the business
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              example: {status: 403, detail: "1020 - user is not the owner of business"}
+        '404':
+          description: Business not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              example: {status: 404, detail: "1006 - business does not exist"}
+        '409':
+          description: A planning already exists for this business and week
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              example: {status: 409, detail: "1095 - a planning already exists for this business and week"}
+
+  planning-scheduled-shifts:
+    put:
+      summary: Replace all shifts in a draft weekly planning
+      description: >
+        Atomically replaces every assignment in the existing DRAFT planning addressed by
+        `planningId`. Send `version` from the latest manager planning response; a stale
+        version returns 409 without replacing any shifts. An empty array clears the planning.
+        Shift name and color come from the referenced business Shift, not the request. Returns the
+        updated manager planning projection with a new version and recalculated aggregates.
+        Requires an OWNER membership.
+      tags: [Manager]
+      operationId: replaceManagerPlanningScheduledShifts
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: businessId
+          in: path
+          required: true
+          description: ID of the business
+          schema: {type: integer, format: int64, minimum: 1}
+        - name: planningId
+          in: path
+          required: true
+          description: ID of the existing planning
+          schema: {type: integer, format: int64, minimum: 1, example: 500}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '../../components/manager/components.yml#/components/schemas/ManagerReplacePlanningScheduledShiftsRequestDTO'
+            example:
+              version: 3
+              scheduledShifts:
+                - userId: 42
+                  jobRoleId: 7
+                  shiftId: 20
+                  startAt: "2026-10-05T09:00:00+02:00"
+                  endAt: "2026-10-05T17:00:00+02:00"
+                  breakMinutes: 30
+      responses:
+        '200':
+          description: Draft planning assignments replaced
+          content:
+            application/json:
+              schema:
+                $ref: '../../components/manager/components.yml#/components/schemas/ManagerPlanningResponseDTO'
+              example:
+                id: 500
+                version: 4
+                businessId: 101
+                week: "2026-W41"
+                weekStart: "2026-10-05"
+                weekEnd: "2026-10-11"
+                status: DRAFT
+                failureReason: null
+                totals: {requiredSeconds: 0, scheduledSeconds: 27000, contractedSeconds: 0}
+                requirements: []
+                days:
+                  - {date: "2026-10-05", requiredSeconds: 0, scheduledSeconds: 27000}
+                workers:
+                  - userId: 42
+                    name: Alex Rivera
+                    contractedSeconds: 0
+                    scheduledSeconds: 27000
+                    days:
+                      - date: "2026-10-05"
+                        scheduledSeconds: 27000
+                        assignments:
+                          - id: 900
+                            jobRoleId: 7
+                            jobRole: {id: 7, code: WAITER, name: Waiter, color: "#1A2B3C", icon: front-of-house, active: true}
+                            shiftId: 20
+                            shiftName: Morning service
+                            shiftColor: "#1A2B3C"
+                            startAt: "2026-10-05T09:00:00+02:00"
+                            endAt: "2026-10-05T17:00:00+02:00"
+                            breakMinutes: 30
+                            durationSeconds: 27000
+                createdAt: "2026-10-04T08:00:00+02:00"
+                publishedAt: null
+                hasCoverageWarnings: false
+        '400':
+          description: Invalid planning or scheduled shift
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              examples:
+                invalidPlanning:
+                  value: {status: 400, detail: "1045 - planning is invalid"}
+                invalidShift:
+                  value: {status: 400, detail: "1047 - scheduled shift is invalid"}
+        '401':
+          description: Authentication is required
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+        '403':
+          description: Authenticated user is not an OWNER of the business
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              example: {status: 403, detail: "1020 - user is not the owner of business"}
+        '404':
+          description: Business, planning or referenced job role not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              examples:
+                businessNotFound:
+                  value: {status: 404, detail: "1006 - business does not exist"}
+                planningNotFound:
+                  value: {status: 404, detail: "1046 - planning not found"}
+                jobRoleNotFound:
+                  value: {status: 404, detail: "1034 - job role not found"}
+        '409':
+          description: Planning is not editable or has been modified concurrently
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              examples:
+                notEditable:
+                  value: {status: 409, detail: "1096 - planning scheduled shifts can only be replaced while the planning is in DRAFT"}
+                staleVersion:
+                  value: {status: 409, detail: "1049 - resource was modified concurrently"}
+
   publish-planning:
     put:
       summary: Publish a weekly business planning
       description: >
         Publishes the existing planning addressed by its `planningId` within the requested
-        business. Publication accepts only a solved, reviewable DRAFT planning and is idempotent:
+        business. Publication accepts a DRAFT planning, manual or solver-generated, and is idempotent:
         publishing an already PUBLISHED planning returns it unchanged. A missing or cross-business
         planning is never generated and returns 404; a non-publishable state returns 409. Requires
         an OWNER membership.
@@ -1899,6 +2123,7 @@ manager:
                 $ref: '../../components/manager/components.yml#/components/schemas/ManagerPlanningResponseDTO'
               example:
                 id: 500
+                version: 4
                 businessId: 101
                 week: "2025-W31"
                 weekStart: "2025-07-28"

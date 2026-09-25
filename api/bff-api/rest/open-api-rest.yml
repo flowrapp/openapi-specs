@@ -7,7 +7,7 @@ info:
     This BFF aggregates and shapes data from the Flowrapp main API to serve
     the specific needs of the mobile frontend, providing role-based endpoints
     for workers and managers.
-  version: 0.0.54
+  version: 0.0.55
   contact:
     name: Flowrapp Team
     url: https://flowrapp.github.io
@@ -129,6 +129,8 @@ paths:
     $ref: 'v1/services/manager/manager-operations.yml#/manager/shift-item'
   "/api/v1/manager/businesses/{businessId}/schedule":
     $ref: 'v1/services/manager/manager-operations.yml#/manager/planning'
+  "/api/v1/manager/businesses/{businessId}/schedule/{planningId}/scheduled-shifts":
+    $ref: 'v1/services/manager/manager-operations.yml#/manager/planning-scheduled-shifts'
   "/api/v1/manager/businesses/{businessId}/schedule/{planningId}/publish":
     $ref: 'v1/services/manager/manager-operations.yml#/manager/publish-planning'
   "/api/v1/manager/businesses/{businessId}/history/day":
