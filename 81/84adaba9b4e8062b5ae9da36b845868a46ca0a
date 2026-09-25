@@ -1,0 +1,21 @@
+api/bff-api/rest/CHANGELOG.md
+  s_8ec6ed9be156cd::t_8c54941fc21dbe 3-10
+api/bff-api/rest/open-api-rest.yml
+  s_8ec6ed9be156cd::t_adab66cbbc9769 10,132-133
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "8184adaba9b4e8062b5ae9da36b845868a46ca0a",
+  "prompts": {},
+  "sessions": {
+    "s_8ec6ed9be156cd": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_f269e2bffffeUPC1ehD06kwP6x",
+        "model": "gpt-6-sol"
+      },
+      "human_author": "sergiobpa <sergiobpa@ext.inditex.com>"
+    }
+  }
+}
