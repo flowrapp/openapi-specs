@@ -1,0 +1,16 @@
+api/main-api/rest/open-api-rest.yml
+  h_a041df4244d543 6,188
+api/main-api/rest/v1/services/scheduling/scheduling-operations.yml
+  h_a041df4244d543 946,948-949,955
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "1cb0222854165b8e369fe4462fa003a872fbf99f",
+  "prompts": {},
+  "humans": {
+    "h_a041df4244d543": {
+      "author": "sergiobpa <sergiobpa@ext.inditex.com>"
+    }
+  }
+}
