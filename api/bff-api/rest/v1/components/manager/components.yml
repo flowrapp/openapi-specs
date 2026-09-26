@@ -372,6 +372,33 @@ components:
           description: Updated clock-out timestamp (null to clear)
           example: "2025-07-29T17:30:00+02:00"
 
+    InvitationContractDTO:
+      type: object
+      description: Contract proposed for the invitee when accepting the invitation
+      properties:
+        jobRoleId:
+          type: integer
+          format: int64
+          description: Active job role contracted within the business
+          example: 10
+        totalWeekHours:
+          type: number
+          format: double
+          exclusiveMinimum: 0
+          description: Number of hours agreed for a working week
+          example: 40.0
+        startDate:
+          type: string
+          format: date
+          description: Date from which the contract is effective
+          example: "2025-01-01"
+        endDate:
+          type: [string, 'null']
+          format: date
+          description: Date until which the contract is effective, or null for an open-ended contract
+          example: null
+      required: [jobRoleId, totalWeekHours, startDate, endDate]
+
     InvitationRequestDTO:
       type: object
       description: Request to invite a user to join a business
@@ -386,6 +413,11 @@ components:
           description: Role to assign to the invitee
           enum: [OWNER, MANAGER, EMPLOYEE]
           example: "OWNER"
+        contract:
+          oneOf:
+            - $ref: '#/components/schemas/InvitationContractDTO'
+            - type: 'null'
+          description: Optional contract proposal. When absent, acceptance creates a 40-hour GENERAL job contract.
       required:
         - email
         - role
@@ -409,6 +441,11 @@ components:
           description: Role assigned to the invitee
           enum: [OWNER, MANAGER, EMPLOYEE]
           example: "EMPLOYEE"
+        contract:
+          oneOf:
+            - $ref: '#/components/schemas/InvitationContractDTO'
+            - type: 'null'
+          description: Proposed contract, or null when the default GENERAL contract will be created on acceptance
         status:
           type: string
           description: Current status of the invitation
@@ -428,6 +465,7 @@ components:
         - id
         - email
         - role
+        - contract
         - status
         - createdAt
         - expiresAt

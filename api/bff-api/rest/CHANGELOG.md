@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.0.56
+
+### Added
+
+- Manager invitations accept an optional proposed `contract` (job role, weekly hours, and start/end dates) and include it in invitation responses. When omitted, acceptance creates the default 40-hour GENERAL contract.
+
 ## 0.0.55
 
 ### Added

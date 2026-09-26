@@ -424,7 +424,9 @@ manager:
     post:
       summary: Create a business invitation
       description: >
-        Creates a new invitation for a person to join a business with a specified role.
+        Creates a new invitation for a person to join a business with a specified role
+        and an optional proposed contract. Without a contract, acceptance creates a
+        40-hour GENERAL job contract.
         Requires an OWNER membership in the business. An email will be sent to the invitee.
         Pass-through to the main API.
       tags:
@@ -448,8 +450,13 @@ manager:
             schema:
               $ref: '../../components/manager/components.yml#/components/schemas/InvitationRequestDTO'
             example:
-              email: "newowner@example.com"
-              role: "OWNER"
+              email: "newworker@example.com"
+              role: "EMPLOYEE"
+              contract:
+                jobRoleId: 10
+                totalWeekHours: 30.0
+                startDate: "2026-10-01"
+                endDate: null
       responses:
         '201':
           description: Invitation created successfully
@@ -457,6 +464,18 @@ manager:
             application/json:
               schema:
                 $ref: '../../components/manager/components.yml#/components/schemas/InvitationResponseDTO'
+              example:
+                id: 123
+                email: "newworker@example.com"
+                role: "EMPLOYEE"
+                contract:
+                  jobRoleId: 10
+                  totalWeekHours: 30.0
+                  startDate: "2026-10-01"
+                  endDate: null
+                status: "PENDING"
+                createdAt: "2026-09-26T14:30:00+00:00"
+                expiresAt: "2026-10-03T14:30:00+00:00"
         '400':
           description: Invalid request
         '401':
