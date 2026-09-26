@@ -5,12 +5,24 @@ manager:
       description: >
         Returns the manager's business dashboard with aggregate statistics. Includes the total
         number of businesses, total workers across all businesses, and a summary of each
-        business with its worker count.
+        business with its worker count. When businessId is provided, it must identify a business
+        managed by the authenticated user; the response also includes its home view. All home
+        dates and hourly samples use the business's IANA time zone.
       tags:
         - Manager
       operationId: getManagerBusinessDashboard
       security:
         - bearerAuth: []
+      parameters:
+        - name: businessId
+          in: query
+          required: false
+          description: Managed business to include in the home view; omit to retrieve only the business list and aggregate counts.
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+          example: 1
       responses:
         '200':
           description: Dashboard retrieved successfully
@@ -18,20 +30,99 @@ manager:
             application/json:
               schema:
                 $ref: '../../components/manager/components.yml#/components/schemas/ManagerBusinessDashboardResponseDTO'
-              example:
-                totalBusinesses: 2
-                totalWorkers: 17
-                businesses:
-                  - id: 1
-                    name: "Downtown Office"
-                    city: "New York"
-                    workerCount: 12
-                  - id: 2
-                    name: "Uptown Branch"
-                    city: "New York"
-                    workerCount: 5
+              examples:
+                withoutBusinessId:
+                  summary: Dashboard without a selected business
+                  value:
+                    totalBusinesses: 2
+                    totalWorkers: 17
+                    businesses:
+                      - {id: 1, name: "Downtown Office", city: "New York", workerCount: 12}
+                      - {id: 2, name: "Uptown Branch", city: "New York", workerCount: 5}
+                withBusinessId:
+                  summary: Dashboard with home for a managed business
+                  value:
+                    totalBusinesses: 2
+                    totalWorkers: 17
+                    businesses:
+                      - {id: 1, name: "Downtown Office", city: "New York", workerCount: 12}
+                      - {id: 2, name: "Uptown Branch", city: "New York", workerCount: 5}
+                    home:
+                      businessId: 1
+                      zone: America/New_York
+                      date: '2026-09-24'
+                      asOf: '2026-09-24T10:30:00-04:00'
+                      workingNow:
+                        count: 2
+                        workers:
+                          - {userId: 11, name: "Alex Morgan", clockIn: '2026-09-24T08:30:00-04:00'}
+                          - {userId: 12, name: "Jordan Lee", clockIn: '2026-09-24T09:00:00-04:00'}
+                      attendanceToday:
+                        count: 3
+                        workers:
+                          - {userId: 13, name: "Sam Rivera", firstClockIn: '2026-09-24T06:00:00-04:00', lastClockOut: '2026-09-24T08:00:00-04:00', totalSeconds: 7200}
+                          - {userId: 11, name: "Alex Morgan", firstClockIn: '2026-09-24T08:30:00-04:00', lastClockOut: null, totalSeconds: 7200}
+                          - {userId: 12, name: "Jordan Lee", firstClockIn: '2026-09-24T09:00:00-04:00', lastClockOut: null, totalSeconds: 5400}
+                      teamHours:
+                        week: 2026-W39
+                        totalSeconds: 99000
+                        days:
+                          - {date: '2026-09-21', totalSeconds: 28800}
+                          - {date: '2026-09-22', totalSeconds: 32400}
+                          - {date: '2026-09-23', totalSeconds: 18000}
+                          - {date: '2026-09-24', totalSeconds: 19800}
+                          - {date: '2026-09-25', totalSeconds: 0}
+                          - {date: '2026-09-26', totalSeconds: 0}
+                          - {date: '2026-09-27', totalSeconds: 0}
+                      presence:
+                        - {at: '2026-09-24T00:00:00-04:00', workerCount: 0}
+                        - {at: '2026-09-24T01:00:00-04:00', workerCount: 0}
+                        - {at: '2026-09-24T02:00:00-04:00', workerCount: 0}
+                        - {at: '2026-09-24T03:00:00-04:00', workerCount: 0}
+                        - {at: '2026-09-24T04:00:00-04:00', workerCount: 0}
+                        - {at: '2026-09-24T05:00:00-04:00', workerCount: 0}
+                        - {at: '2026-09-24T06:00:00-04:00', workerCount: 1}
+                        - {at: '2026-09-24T07:00:00-04:00', workerCount: 1}
+                        - {at: '2026-09-24T08:00:00-04:00', workerCount: 0}
+                        - {at: '2026-09-24T09:00:00-04:00', workerCount: 2}
+                        - {at: '2026-09-24T10:00:00-04:00', workerCount: 2}
+                        - {at: '2026-09-24T11:00:00-04:00', workerCount: 0}
+                        - {at: '2026-09-24T12:00:00-04:00', workerCount: 0}
+                        - {at: '2026-09-24T13:00:00-04:00', workerCount: 0}
+                        - {at: '2026-09-24T14:00:00-04:00', workerCount: 0}
+                        - {at: '2026-09-24T15:00:00-04:00', workerCount: 0}
+                        - {at: '2026-09-24T16:00:00-04:00', workerCount: 0}
+                        - {at: '2026-09-24T17:00:00-04:00', workerCount: 0}
+                        - {at: '2026-09-24T18:00:00-04:00', workerCount: 0}
+                        - {at: '2026-09-24T19:00:00-04:00', workerCount: 0}
+                        - {at: '2026-09-24T20:00:00-04:00', workerCount: 0}
+                        - {at: '2026-09-24T21:00:00-04:00', workerCount: 0}
+                        - {at: '2026-09-24T22:00:00-04:00', workerCount: 0}
+                        - {at: '2026-09-24T23:00:00-04:00', workerCount: 0}
+        '400':
+          description: Invalid businessId
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
         '401':
           description: Unauthorized
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+        '403':
+          description: User does not manage the requested business
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+        '404':
+          description: Requested business not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
 
   business-profile:
     put:

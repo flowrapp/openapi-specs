@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.0.57
+
+### Added
+
+- `GET /api/v1/manager/businesses` accepts an optional `businessId` and, for a managed business, includes `home` with sorted working-now and today's attendance rows, seven daily team-hour totals in seconds, and a business-local hourly presence series.
+
 ## 0.0.56
 
 ### Added
