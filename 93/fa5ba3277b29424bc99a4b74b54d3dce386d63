@@ -1,0 +1,20 @@
+api/bff-api/rest/v1/components/worker/components.yml
+  h_a041df4244d543 183,193-194,199
+api/bff-api/rest/v1/services/worker/worker-operations.yml
+  h_a041df4244d543 174-177
+api/main-api/rest/v1/components/geofenceEvents/components.yml
+  h_a041df4244d543 5,15-16,21
+api/main-api/rest/v1/services/geofenceEvents/geofence-events-operations.yml
+  h_a041df4244d543 38-41
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "93fa5ba3277b29424bc99a4b74b54d3dce386d63",
+  "prompts": {},
+  "humans": {
+    "h_a041df4244d543": {
+      "author": "sergiobpa <sergiobpa@ext.inditex.com>"
+    }
+  }
+}
