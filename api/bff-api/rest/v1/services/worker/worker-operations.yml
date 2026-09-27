@@ -109,7 +109,7 @@ worker:
             type: integer
             format: int64
       requestBody:
-        description: Optional clock-in timestamp
+        description: Clock-in information, including optional device location
         required: false
         content:
           application/json:
@@ -122,6 +122,12 @@ worker:
             application/json:
               schema:
                 $ref: '../../components/worker/components.yml#/components/schemas/ClockInResultDTO'
+        '400':
+          description: Clock-in timestamp or location is invalid
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
         '401':
           description: Unauthorized
         '403':
@@ -208,7 +214,7 @@ worker:
             type: integer
             format: int64
       requestBody:
-        description: Optional clock-out timestamp
+        description: Clock-out information, including optional device location
         required: false
         content:
           application/json:
@@ -221,6 +227,12 @@ worker:
             application/json:
               schema:
                 $ref: '../../components/common/components.yml#/components/schemas/SessionDTO'
+        '400':
+          description: Clock-out timestamp or location is invalid
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
         '401':
           description: Unauthorized
         '403':

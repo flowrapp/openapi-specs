@@ -99,6 +99,25 @@ components:
         - totalSecondsWeek
         - totalSecondsMonth
 
+    WorklogLocationDTO:
+      type: object
+      description: Device location captured when clocking in or out.
+      additionalProperties: false
+      properties:
+        latitude:
+          type: number
+          format: double
+          minimum: -90
+          maximum: 90
+          example: 36.19
+        longitude:
+          type: number
+          format: double
+          minimum: -180
+          maximum: 180
+          example: -5.99
+      required: [latitude, longitude]
+
     ClockInRequestDTO:
       type: object
       description: Request to clock in (start a work session)
@@ -108,6 +127,12 @@ components:
           format: date-time
           description: Optional clock-in timestamp. Server uses current time if omitted.
           example: "2025-07-29T08:30:00+02:00"
+        location:
+          description: Device location at clock-in; may be omitted or null if unavailable.
+          oneOf:
+            - $ref: '#/components/schemas/WorklogLocationDTO'
+            - type: 'null'
+          example: {latitude: 36.19, longitude: -5.99}
         idempotencyId:
           type: string
           format: uuid
@@ -139,6 +164,12 @@ components:
           format: date-time
           description: Optional clock-out timestamp. Server uses current time if omitted.
           example: "2025-07-29T17:30:00+02:00"
+        location:
+          description: Device location at clock-out; may be omitted or null if unavailable.
+          oneOf:
+            - $ref: '#/components/schemas/WorklogLocationDTO'
+            - type: 'null'
+          example: {latitude: 36.19, longitude: -5.99}
         idempotencyId:
           type: string
           format: uuid
