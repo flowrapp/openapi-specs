@@ -171,6 +171,10 @@ worker:
           application/json:
             schema:
               $ref: '../../components/worker/components.yml#/components/schemas/GeofenceEventRequestDTO'
+            example:
+              deviceId: "7c9e6679-7425-40de-944b-e07fc1f90ae7"
+              type: DWELL
+              occurredAt: "2026-08-06T08:30:00Z"
       responses:
         '201':
           description: Geofence event created successfully
