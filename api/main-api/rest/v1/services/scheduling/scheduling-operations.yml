@@ -71,6 +71,26 @@ shifts:
         '409': {$ref: '../../components/scheduling/components.yml#/components/responses/Conflict'}
       x-functional-errors: [1006, 1020, 1060, 1062]
   item:
+    get:
+      tags: [Shifts]
+      operationId: getBusinessShift
+      summary: Get a business Shift
+      description: Returns an active or archived Shift belonging to the requested business, including its default local start and end times. Only the business owner may access this operation.
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '../../components/scheduling/components.yml#/components/parameters/BusinessId'
+        - $ref: '../../components/scheduling/components.yml#/components/parameters/ShiftId'
+      responses:
+        '200':
+          description: Business Shift retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '../../components/scheduling/components.yml#/components/schemas/BusinessShiftResponseDTO'
+        '400': {$ref: '../../components/scheduling/components.yml#/components/responses/BadRequest'}
+        '403': {$ref: '../../components/scheduling/components.yml#/components/responses/Forbidden'}
+        '404': {$ref: '../../components/scheduling/components.yml#/components/responses/NotFound'}
+      x-functional-errors: [1006, 1020, 1061]
     put:
       tags: [Shifts]
       operationId: updateBusinessShift
@@ -90,6 +110,8 @@ shifts:
               name: Morning service
               color: "#4C9F70"
               active: true
+              defaultStartAt: "09:00:00"
+              defaultEndAt: "17:00:00"
       responses:
         '200':
           description: Business Shift updated or reactivated

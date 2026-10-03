@@ -1284,6 +1284,54 @@ manager:
               example: {status: 409, detail: "1062 - shift name already exists"}
 
   shift-item:
+    get:
+      summary: Get a business Shift
+      description: Returns an active or archived Shift belonging to the requested business, including its default local start and end times. Requires an OWNER membership.
+      tags: [Manager]
+      operationId: getManagerShift
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: businessId
+          in: path
+          required: true
+          schema: {type: integer, format: int64, minimum: 1}
+        - name: shiftId
+          in: path
+          required: true
+          schema: {type: integer, format: int64, minimum: 1}
+      responses:
+        '200':
+          description: Business Shift retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '../../components/manager/components.yml#/components/schemas/ManagerShiftResponseDTO'
+        '400':
+          description: Invalid business or Shift identifier
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+        '401':
+          description: Authentication is required
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+        '403':
+          description: Authenticated user is not an OWNER of the business
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              example: {status: 403, detail: "1020 - user is not the owner of business"}
+        '404':
+          description: Business or Shift not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              example: {status: 404, detail: "1061 - shift not found"}
     put:
       summary: Update or reactivate a business Shift
       description: Updates Shift presentation without changing its identity. Setting active to true reactivates an archived Shift.
@@ -1309,6 +1357,8 @@ manager:
               name: Morning service
               color: "#4C9F70"
               active: true
+              defaultStartAt: "09:00:00"
+              defaultEndAt: "17:00:00"
       responses:
         '200':
           description: Business Shift updated or reactivated
