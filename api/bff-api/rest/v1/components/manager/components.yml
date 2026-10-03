@@ -61,7 +61,7 @@ components:
           type: string
           minLength: 1
           description: Postal code of the business
-          example: '11160'
+          example: "11160"
       required: [nif, name, address, town, city, country, postalCode]
 
     ManagerBusinessDashboardResponseDTO:
@@ -82,9 +82,9 @@ components:
           type: array
           description: List of managed businesses with summary info
           items:
-            $ref: '#/components/schemas/ManagerBusinessSummaryDTO'
+            $ref: "#/components/schemas/ManagerBusinessSummaryDTO"
         home:
-          $ref: '#/components/schemas/ManagerBusinessHomeDTO'
+          $ref: "#/components/schemas/ManagerBusinessHomeDTO"
       required:
         - totalBusinesses
         - totalWorkers
@@ -107,12 +107,12 @@ components:
           type: string
           format: date
           description: Today in the business's time zone
-          example: '2026-09-24'
+          example: "2026-09-24"
         asOf:
           type: string
           format: date-time
           description: Snapshot instant used for current presence and running totals, with the business-local offset
-          example: '2026-09-24T10:30:00-04:00'
+          example: "2026-09-24T10:30:00-04:00"
         workingNow:
           type: object
           description: Distinct workers with an open worklog at asOf, ordered by clockIn ascending, then userId ascending
@@ -125,7 +125,7 @@ components:
             workers:
               type: array
               items:
-                $ref: '#/components/schemas/ManagerWorkingNowWorkerDTO'
+                $ref: "#/components/schemas/ManagerWorkingNowWorkerDTO"
           required: [count, workers]
         attendanceToday:
           type: object
@@ -139,7 +139,7 @@ components:
             workers:
               type: array
               items:
-                $ref: '#/components/schemas/ManagerAttendanceTodayWorkerDTO'
+                $ref: "#/components/schemas/ManagerAttendanceTodayWorkerDTO"
           required: [count, workers]
         teamHours:
           type: object
@@ -161,7 +161,7 @@ components:
               maxItems: 7
               description: Exactly seven business-local dates ordered Monday through Sunday; future dates have zero seconds
               items:
-                $ref: '#/components/schemas/ManagerTeamHoursDayDTO'
+                $ref: "#/components/schemas/ManagerTeamHoursDayDTO"
           required: [week, totalSeconds, days]
         presence:
           type: array
@@ -174,8 +174,18 @@ components:
             Each count is the number of distinct workers whose worklog includes that instant
             (clockIn <= at < clockOut, or clockOut is open and at <= asOf).
           items:
-            $ref: '#/components/schemas/ManagerPresencePointDTO'
-      required: [businessId, zone, date, asOf, workingNow, attendanceToday, teamHours, presence]
+            $ref: "#/components/schemas/ManagerPresencePointDTO"
+      required:
+        [
+          businessId,
+          zone,
+          date,
+          asOf,
+          workingNow,
+          attendanceToday,
+          teamHours,
+          presence,
+        ]
 
     ManagerWorkingNowWorkerDTO:
       type: object
@@ -191,7 +201,7 @@ components:
           type: string
           format: date-time
           description: Start of the currently open worklog, with the business-local offset
-          example: '2026-09-24T08:30:00-04:00'
+          example: "2026-09-24T08:30:00-04:00"
       required: [userId, name, clockIn]
 
     ManagerAttendanceTodayWorkerDTO:
@@ -208,12 +218,12 @@ components:
           type: string
           format: date-time
           description: Earliest worklog start overlapping today; may precede local midnight
-          example: '2026-09-24T06:00:00-04:00'
+          example: "2026-09-24T06:00:00-04:00"
         lastClockOut:
-          type: [string, 'null']
+          type: [string, "null"]
           format: date-time
           description: Latest end of today's worklogs, or null if the worker is still working
-          example: '2026-09-24T08:00:00-04:00'
+          example: "2026-09-24T08:00:00-04:00"
         totalSeconds:
           type: integer
           format: int64
@@ -229,7 +239,7 @@ components:
           type: string
           format: date
           description: Business-local calendar date
-          example: '2026-09-24'
+          example: "2026-09-24"
         totalSeconds:
           type: integer
           format: int64
@@ -245,7 +255,7 @@ components:
           type: string
           format: date-time
           description: Start instant of a business-local hour with its offset
-          example: '2026-09-24T09:00:00-04:00'
+          example: "2026-09-24T09:00:00-04:00"
         workerCount:
           type: integer
           format: int32
@@ -295,7 +305,7 @@ components:
           type: array
           description: List of workers
           items:
-            $ref: '#/components/schemas/ManagerWorkerDTO'
+            $ref: "#/components/schemas/ManagerWorkerDTO"
       required:
         - totalWorkers
         - workers
@@ -325,8 +335,8 @@ components:
           example: "EMPLOYEE"
         currentContract:
           oneOf:
-            - $ref: '#/components/schemas/ManagerCurrentContractDTO'
-            - type: 'null'
+            - $ref: "#/components/schemas/ManagerCurrentContractDTO"
+            - type: "null"
           description: Contract effective on the business-local current date, or null when absent
       required:
         - userId
@@ -358,7 +368,7 @@ components:
           type: array
           description: Per-worker breakdown with session details
           items:
-            $ref: '#/components/schemas/ManagerDayWorkerDTO'
+            $ref: "#/components/schemas/ManagerDayWorkerDTO"
       required:
         - date
         - totalSeconds
@@ -387,7 +397,7 @@ components:
           type: array
           description: Individual work sessions
           items:
-            $ref: '../common/components.yml#/components/schemas/SessionDTO'
+            $ref: "../common/components.yml#/components/schemas/SessionDTO"
       required:
         - userId
         - name
@@ -412,7 +422,7 @@ components:
           type: array
           description: Per-day breakdown with worker-level totals
           items:
-            $ref: '#/components/schemas/ManagerWeekDayDTO'
+            $ref: "#/components/schemas/ManagerWeekDayDTO"
       required:
         - week
         - totalSeconds
@@ -436,7 +446,7 @@ components:
           type: array
           description: Per-worker totals for this day (no session detail)
           items:
-            $ref: '#/components/schemas/ManagerWeekDayWorkerDTO'
+            $ref: "#/components/schemas/ManagerWeekDayWorkerDTO"
       required:
         - date
         - totalSeconds
@@ -490,7 +500,7 @@ components:
           type: array
           description: Per-day summary for the month
           items:
-            $ref: '#/components/schemas/ManagerMonthDayDTO'
+            $ref: "#/components/schemas/ManagerMonthDayDTO"
       required:
         - month
         - totalSeconds
@@ -533,7 +543,7 @@ components:
         clockOut:
           type:
             - string
-            - 'null'
+            - "null"
           format: date-time
           description: Updated clock-out timestamp (null to clear)
           example: "2025-07-29T17:30:00+02:00"
@@ -559,7 +569,7 @@ components:
           description: Date from which the contract is effective
           example: "2025-01-01"
         endDate:
-          type: [string, 'null']
+          type: [string, "null"]
           format: date
           description: Date until which the contract is effective, or null for an open-ended contract
           example: null
@@ -581,8 +591,8 @@ components:
           example: "OWNER"
         contract:
           oneOf:
-            - $ref: '#/components/schemas/InvitationContractDTO'
-            - type: 'null'
+            - $ref: "#/components/schemas/InvitationContractDTO"
+            - type: "null"
           description: Optional contract proposal. When absent, acceptance creates a 40-hour GENERAL job contract.
       required:
         - email
@@ -609,8 +619,8 @@ components:
           example: "EMPLOYEE"
         contract:
           oneOf:
-            - $ref: '#/components/schemas/InvitationContractDTO'
-            - type: 'null'
+            - $ref: "#/components/schemas/InvitationContractDTO"
+            - type: "null"
           description: Proposed contract, or null when the default GENERAL contract will be created on acceptance
         status:
           type: string
@@ -638,7 +648,7 @@ components:
 
     ManagerLocalMinuteTimeDTO:
       type: string
-      pattern: '^([01][0-9]|2[0-3]):[0-5][0-9]$'
+      pattern: "^([01][0-9]|2[0-3]):[0-5][0-9]$"
       description: Business-local time with minute precision in 24-hour HH:mm format
       example: "09:00"
 
@@ -652,18 +662,18 @@ components:
       description: Business-local settings that control automatic generation of the next weekly planning
       properties:
         generationDay:
-          $ref: '#/components/schemas/ManagerDayOfWeekDTO'
+          $ref: "#/components/schemas/ManagerDayOfWeekDTO"
         generationTime:
-          $ref: '#/components/schemas/ManagerLocalMinuteTimeDTO'
+          $ref: "#/components/schemas/ManagerLocalMinuteTimeDTO"
       required: [generationDay, generationTime]
 
     ManagerOpeningIntervalDTO:
       type: object
       properties:
         startTime:
-          $ref: '#/components/schemas/ManagerLocalMinuteTimeDTO'
+          $ref: "#/components/schemas/ManagerLocalMinuteTimeDTO"
         endTime:
-          $ref: '#/components/schemas/ManagerLocalMinuteTimeDTO'
+          $ref: "#/components/schemas/ManagerLocalMinuteTimeDTO"
       required: [startTime, endTime]
 
     ManagerRoleDemandDTO:
@@ -732,7 +742,16 @@ components:
           format: int32
           minimum: 0
           description: Missing employees below the target, never negative.
-      required: [jobRoleId, minimumEmployees, targetEmployees, maximumEmployees, assignedEmployees, minimumDeficit, targetDeficit]
+      required:
+        [
+          jobRoleId,
+          minimumEmployees,
+          targetEmployees,
+          maximumEmployees,
+          assignedEmployees,
+          minimumDeficit,
+          targetDeficit,
+        ]
 
     ManagerShiftCreateRequestDTO:
       type: object
@@ -745,7 +764,7 @@ components:
           example: Morning service
         color:
           type: string
-          pattern: '^#[0-9A-Fa-f]{6}$'
+          pattern: "^#[0-9A-Fa-f]{6}$"
           description: Six-digit hexadecimal display color.
           example: "#1A2B3C"
       required: [name, color]
@@ -761,7 +780,7 @@ components:
           example: Morning service
         color:
           type: string
-          pattern: '^#[0-9A-Fa-f]{6}$'
+          pattern: "^#[0-9A-Fa-f]{6}$"
           example: "#4C9F70"
         active:
           type: boolean
@@ -788,7 +807,7 @@ components:
           example: Morning service
         color:
           type: string
-          pattern: '^#[0-9A-Fa-f]{6}$'
+          pattern: "^#[0-9A-Fa-f]{6}$"
           example: "#1A2B3C"
         active:
           type: boolean
@@ -811,7 +830,7 @@ components:
           type: array
           description: Shifts ordered by active state descending, name ascending, and ID ascending.
           items:
-            $ref: '#/components/schemas/ManagerShiftResponseDTO'
+            $ref: "#/components/schemas/ManagerShiftResponseDTO"
         page:
           type: integer
           format: int32
@@ -857,9 +876,9 @@ components:
           minimum: 1
           example: 20
         startTime:
-          $ref: '#/components/schemas/ManagerLocalMinuteTimeDTO'
+          $ref: "#/components/schemas/ManagerLocalMinuteTimeDTO"
         endTime:
-          $ref: '#/components/schemas/ManagerLocalMinuteTimeDTO'
+          $ref: "#/components/schemas/ManagerLocalMinuteTimeDTO"
         breakMinutes:
           type: integer
           format: int32
@@ -868,7 +887,7 @@ components:
         demands:
           type: array
           items:
-            $ref: '#/components/schemas/ManagerRoleDemandDTO'
+            $ref: "#/components/schemas/ManagerRoleDemandDTO"
       required: [shiftId, startTime, endTime, breakMinutes, demands]
 
     ManagerDailyShiftDTO:
@@ -876,11 +895,11 @@ components:
       description: Day-specific occurrence values enriched with the current Shift resource.
       properties:
         shift:
-          $ref: '#/components/schemas/ManagerShiftResponseDTO'
+          $ref: "#/components/schemas/ManagerShiftResponseDTO"
         startTime:
-          $ref: '#/components/schemas/ManagerLocalMinuteTimeDTO'
+          $ref: "#/components/schemas/ManagerLocalMinuteTimeDTO"
         endTime:
-          $ref: '#/components/schemas/ManagerLocalMinuteTimeDTO'
+          $ref: "#/components/schemas/ManagerLocalMinuteTimeDTO"
         breakMinutes:
           type: integer
           format: int32
@@ -889,7 +908,7 @@ components:
         demands:
           type: array
           items:
-            $ref: '#/components/schemas/ManagerRoleDemandDTO'
+            $ref: "#/components/schemas/ManagerRoleDemandDTO"
       required: [shift, startTime, endTime, breakMinutes, demands]
       example:
         shift:
@@ -912,11 +931,11 @@ components:
         openingIntervals:
           type: array
           items:
-            $ref: '#/components/schemas/ManagerOpeningIntervalDTO'
+            $ref: "#/components/schemas/ManagerOpeningIntervalDTO"
         shifts:
           type: array
           items:
-            $ref: '#/components/schemas/ManagerDailyShiftRequestDTO'
+            $ref: "#/components/schemas/ManagerDailyShiftRequestDTO"
       required: [openingIntervals, shifts]
 
     ManagerDailyConfigurationDTO:
@@ -926,20 +945,20 @@ components:
         openingIntervals:
           type: array
           items:
-            $ref: '#/components/schemas/ManagerOpeningIntervalDTO'
+            $ref: "#/components/schemas/ManagerOpeningIntervalDTO"
         shifts:
           type: array
           items:
-            $ref: '#/components/schemas/ManagerDailyShiftDTO'
+            $ref: "#/components/schemas/ManagerDailyShiftDTO"
       required: [openingIntervals, shifts]
 
     ManagerRecurringScheduleDayRequestDTO:
       type: object
       properties:
         dayOfWeek:
-          $ref: '#/components/schemas/ManagerDayOfWeekDTO'
+          $ref: "#/components/schemas/ManagerDayOfWeekDTO"
         configuration:
-          $ref: '#/components/schemas/ManagerDailyConfigurationRequestDTO'
+          $ref: "#/components/schemas/ManagerDailyConfigurationRequestDTO"
       required: [dayOfWeek, configuration]
 
     ManagerRecurringScheduleDayDTO:
@@ -947,9 +966,9 @@ components:
       description: Recurring day with occurrence values and current Shift resources.
       properties:
         dayOfWeek:
-          $ref: '#/components/schemas/ManagerDayOfWeekDTO'
+          $ref: "#/components/schemas/ManagerDayOfWeekDTO"
         configuration:
-          $ref: '#/components/schemas/ManagerDailyConfigurationDTO'
+          $ref: "#/components/schemas/ManagerDailyConfigurationDTO"
       required: [dayOfWeek, configuration]
 
     ManagerRecurringScheduleRequestDTO:
@@ -970,7 +989,7 @@ components:
           minItems: 7
           maxItems: 7
           items:
-            $ref: '#/components/schemas/ManagerRecurringScheduleDayRequestDTO'
+            $ref: "#/components/schemas/ManagerRecurringScheduleDayRequestDTO"
       required: [validFrom, days]
 
     ManagerRecurringScheduleReplacementRequestDTO:
@@ -996,7 +1015,7 @@ components:
           minItems: 7
           maxItems: 7
           items:
-            $ref: '#/components/schemas/ManagerRecurringScheduleDayRequestDTO'
+            $ref: "#/components/schemas/ManagerRecurringScheduleDayRequestDTO"
       required: [version, validFrom, days]
 
     ManagerRecurringScheduleResponseDTO:
@@ -1030,7 +1049,7 @@ components:
           minItems: 7
           maxItems: 7
           items:
-            $ref: '#/components/schemas/ManagerRecurringScheduleDayDTO'
+            $ref: "#/components/schemas/ManagerRecurringScheduleDayDTO"
         createdAt:
           type: string
           format: date-time
@@ -1039,7 +1058,17 @@ components:
           type: string
           format: date-time
           example: "2025-07-27T08:00:00+02:00"
-      required: [id, version, businessId, validFrom, validUntil, days, createdAt, updatedAt]
+      required:
+        [
+          id,
+          version,
+          businessId,
+          validFrom,
+          validUntil,
+          days,
+          createdAt,
+          updatedAt,
+        ]
 
     ManagerScheduleExceptionRequestDTO:
       type: object
@@ -1050,7 +1079,7 @@ components:
           format: date
           example: "2025-08-15"
         configuration:
-          $ref: '#/components/schemas/ManagerDailyConfigurationRequestDTO'
+          $ref: "#/components/schemas/ManagerDailyConfigurationRequestDTO"
       required: [date, configuration]
 
     ManagerScheduleExceptionResponseDTO:
@@ -1071,7 +1100,7 @@ components:
           format: date
           example: "2025-08-15"
         configuration:
-          $ref: '#/components/schemas/ManagerDailyConfigurationDTO'
+          $ref: "#/components/schemas/ManagerDailyConfigurationDTO"
         createdAt:
           type: string
           format: date-time
@@ -1099,11 +1128,11 @@ components:
           example: Waiter
         color:
           type: string
-          pattern: '^#[0-9A-Fa-f]{6}$'
+          pattern: "^#[0-9A-Fa-f]{6}$"
           example: "#1A2B3C"
         icon:
           type: string
-          pattern: '^[a-z0-9]+(?:-[a-z0-9]+)*$'
+          pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*$"
           example: front-of-house
         active:
           type: boolean
@@ -1128,11 +1157,11 @@ components:
           maxLength: 500
         color:
           type: string
-          pattern: '^#[0-9A-Fa-f]{6}$'
+          pattern: "^#[0-9A-Fa-f]{6}$"
           example: "#1A2B3C"
         icon:
           type: string
-          pattern: '^[a-z0-9]+(?:-[a-z0-9]+)*$'
+          pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*$"
           example: front-of-house
       required: [code, name, color, icon]
 
@@ -1149,11 +1178,11 @@ components:
           maxLength: 500
         color:
           type: string
-          pattern: '^#[0-9A-Fa-f]{6}$'
+          pattern: "^#[0-9A-Fa-f]{6}$"
           example: "#1A2B3C"
         icon:
           type: string
-          pattern: '^[a-z0-9]+(?:-[a-z0-9]+)*$'
+          pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*$"
           example: front-of-house
         active:
           type: boolean
@@ -1184,11 +1213,11 @@ components:
           type: [string, "null"]
         color:
           type: string
-          pattern: '^#[0-9A-Fa-f]{6}$'
+          pattern: "^#[0-9A-Fa-f]{6}$"
           example: "#1A2B3C"
         icon:
           type: string
-          pattern: '^[a-z0-9]+(?:-[a-z0-9]+)*$'
+          pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*$"
           example: front-of-house
         active:
           type: boolean
@@ -1199,7 +1228,8 @@ components:
         updatedAt:
           type: string
           format: date-time
-      required: [id, businessId, code, name, color, icon, active, createdAt, updatedAt]
+      required:
+        [id, businessId, code, name, color, icon, active, createdAt, updatedAt]
 
     ManagerJobRoleSliceResponseDTO:
       type: object
@@ -1209,7 +1239,7 @@ components:
           type: array
           description: Job roles ordered by active state descending, name ascending, and ID ascending
           items:
-            $ref: '#/components/schemas/ManagerJobRoleResponseDTO'
+            $ref: "#/components/schemas/ManagerJobRoleResponseDTO"
         page:
           type: integer
           format: int32
@@ -1278,7 +1308,7 @@ components:
           minimum: 1
           example: 10
         jobRole:
-          $ref: '#/components/schemas/ManagerJobRoleSummaryDTO'
+          $ref: "#/components/schemas/ManagerJobRoleSummaryDTO"
         totalWeekHours:
           type: number
           format: double
@@ -1292,7 +1322,17 @@ components:
           type: [string, "null"]
           format: date
           example: null
-      required: [id, userId, businessId, jobRoleId, jobRole, totalWeekHours, startDate, endDate]
+      required:
+        [
+          id,
+          userId,
+          businessId,
+          jobRoleId,
+          jobRole,
+          totalWeekHours,
+          startDate,
+          endDate,
+        ]
 
     ManagerPlanningRequirementShiftDTO:
       type: object
@@ -1313,12 +1353,12 @@ components:
           example: Morning service
         shiftColor:
           type: string
-          pattern: '^#[0-9A-Fa-f]{6}$'
+          pattern: "^#[0-9A-Fa-f]{6}$"
           example: "#1A2B3C"
         startTime:
-          $ref: '#/components/schemas/ManagerLocalMinuteTimeDTO'
+          $ref: "#/components/schemas/ManagerLocalMinuteTimeDTO"
         endTime:
-          $ref: '#/components/schemas/ManagerLocalMinuteTimeDTO'
+          $ref: "#/components/schemas/ManagerLocalMinuteTimeDTO"
         breakMinutes:
           type: integer
           format: int32
@@ -1328,8 +1368,17 @@ components:
           type: array
           description: Staffing demands with derived planning coverage.
           items:
-            $ref: '#/components/schemas/ManagerPlanningRoleDemandDTO'
-      required: [shiftId, shiftName, shiftColor, startTime, endTime, breakMinutes, demands]
+            $ref: "#/components/schemas/ManagerPlanningRoleDemandDTO"
+      required:
+        [
+          shiftId,
+          shiftName,
+          shiftColor,
+          startTime,
+          endTime,
+          breakMinutes,
+          demands,
+        ]
 
     ManagerPlanningRequirementDTO:
       type: object
@@ -1351,7 +1400,7 @@ components:
         shifts:
           type: array
           items:
-            $ref: '#/components/schemas/ManagerPlanningRequirementShiftDTO'
+            $ref: "#/components/schemas/ManagerPlanningRequirementShiftDTO"
       required: [date, requiredSeconds, shifts]
 
     ManagerPlanningTotalsDTO:
@@ -1395,7 +1444,7 @@ components:
           minimum: 1
           example: 10
         jobRole:
-          $ref: '#/components/schemas/ManagerJobRoleSummaryDTO'
+          $ref: "#/components/schemas/ManagerJobRoleSummaryDTO"
         shiftId:
           type: integer
           format: int64
@@ -1408,7 +1457,7 @@ components:
           example: Morning service
         shiftColor:
           type: string
-          pattern: '^#[0-9A-Fa-f]{6}$'
+          pattern: "^#[0-9A-Fa-f]{6}$"
           example: "#1A2B3C"
         startAt:
           type: string
@@ -1429,7 +1478,19 @@ components:
           minimum: 0
           description: Net assigned duration after subtracting breaks
           example: 27000
-      required: [id, jobRoleId, jobRole, shiftId, shiftName, shiftColor, startAt, endAt, breakMinutes, durationSeconds]
+      required:
+        [
+          id,
+          jobRoleId,
+          jobRole,
+          shiftId,
+          shiftName,
+          shiftColor,
+          startAt,
+          endAt,
+          breakMinutes,
+          durationSeconds,
+        ]
 
     ManagerWorkerDayDTO:
       type: object
@@ -1449,7 +1510,7 @@ components:
           type: array
           description: Zero or more assigned shifts; multiple shifts on the same date are preserved.
           items:
-            $ref: '#/components/schemas/ManagerPlanningAssignmentDTO'
+            $ref: "#/components/schemas/ManagerPlanningAssignmentDTO"
       required: [date, scheduledSeconds, assignments]
 
     ManagerWorkerPlanningDTO:
@@ -1485,7 +1546,7 @@ components:
         days:
           type: array
           items:
-            $ref: '#/components/schemas/ManagerWorkerDayDTO'
+            $ref: "#/components/schemas/ManagerWorkerDayDTO"
       required: [userId, name, contractedSeconds, scheduledSeconds, days]
 
     ManagerPlanningDayDTO:
@@ -1522,6 +1583,14 @@ components:
       type: object
       description: Manual assignment; shift name and color are captured from the business Shift.
       properties:
+        id:
+          type: integer
+          format: int64
+          minimum: 1
+          description: >
+            Optional scheduled-shift ID returned in the planning response;
+            omit for a new assignment.
+          example: 900
         userId:
           type: integer
           format: int64
@@ -1566,7 +1635,7 @@ components:
           type: array
           description: Complete collection; an empty array removes every assignment.
           items:
-            $ref: '#/components/schemas/ManagerScheduledShiftRequestDTO'
+            $ref: "#/components/schemas/ManagerScheduledShiftRequestDTO"
       required: [version, scheduledShifts]
 
     ManagerPlanningResponseDTO:
@@ -1622,20 +1691,20 @@ components:
           description: Optional sanitized owner-facing failure reason; never a stack trace or raw solver payload
           example: null
         totals:
-          $ref: '#/components/schemas/ManagerPlanningTotalsDTO'
+          $ref: "#/components/schemas/ManagerPlanningTotalsDTO"
         requirements:
           type: array
           items:
-            $ref: '#/components/schemas/ManagerPlanningRequirementDTO'
+            $ref: "#/components/schemas/ManagerPlanningRequirementDTO"
         days:
           type: array
           items:
-            $ref: '#/components/schemas/ManagerPlanningDayDTO'
+            $ref: "#/components/schemas/ManagerPlanningDayDTO"
         workers:
           type: array
           description: Worker totals and per-date assignment arrays
           items:
-            $ref: '#/components/schemas/ManagerWorkerPlanningDTO'
+            $ref: "#/components/schemas/ManagerWorkerPlanningDTO"
         createdAt:
           type: string
           format: date-time
@@ -1647,4 +1716,21 @@ components:
         hasCoverageWarnings:
           type: boolean
           description: True when any immutable demand remains below its minimum staffing level.
-      required: [id, version, businessId, week, weekStart, weekEnd, status, failureReason, totals, requirements, days, workers, createdAt, publishedAt, hasCoverageWarnings]
+      required:
+        [
+          id,
+          version,
+          businessId,
+          week,
+          weekStart,
+          weekEnd,
+          status,
+          failureReason,
+          totals,
+          requirements,
+          days,
+          workers,
+          createdAt,
+          publishedAt,
+          hasCoverageWarnings,
+        ]
