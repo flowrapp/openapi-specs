@@ -141,6 +141,8 @@ components:
         | 1092 | 400 | ATTENDANCE_PERIOD_REOPEN_REASON_REQUIRED | attendance period reopen reason is required |
         | 1093 | 400 | INVALID_BUSINESS_PROFILE | business profile is invalid |
         | 1094 | 400 | INVALID_BUSINESS_GEOFENCE | business geofence is invalid |
+        | 1095 | 409 | PLANNING_ALREADY_EXISTS | a planning already exists for this business and week |
+        | 1096 | 409 | PLANNING_NOT_EDITABLE | planning scheduled shifts can only be replaced while the planning is in DRAFT |
       enum:
         - 1000
         - 1001
@@ -237,3 +239,5 @@ components:
         - 1092
         - 1093
         - 1094
+        - 1095
+        - 1096

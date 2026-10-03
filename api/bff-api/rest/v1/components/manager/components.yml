@@ -66,7 +66,7 @@ components:
 
     ManagerBusinessDashboardResponseDTO:
       type: object
-      description: Manager dashboard with aggregate business statistics
+      description: Manager dashboard with aggregate business statistics and an optional selected-business home view
       properties:
         totalBusinesses:
           type: integer
@@ -83,10 +83,176 @@ components:
           description: List of managed businesses with summary info
           items:
             $ref: '#/components/schemas/ManagerBusinessSummaryDTO'
+        home:
+          $ref: '#/components/schemas/ManagerBusinessHomeDTO'
       required:
         - totalBusinesses
         - totalWorkers
         - businesses
+
+    ManagerBusinessHomeDTO:
+      type: object
+      description: Present only when businessId selects a business managed by the authenticated user. Times and dates use the selected business's IANA time zone.
+      properties:
+        businessId:
+          type: integer
+          format: int64
+          minimum: 1
+          example: 1
+        zone:
+          type: string
+          description: IANA time zone of the selected business
+          example: America/New_York
+        date:
+          type: string
+          format: date
+          description: Today in the business's time zone
+          example: '2026-09-24'
+        asOf:
+          type: string
+          format: date-time
+          description: Snapshot instant used for current presence and running totals, with the business-local offset
+          example: '2026-09-24T10:30:00-04:00'
+        workingNow:
+          type: object
+          description: Distinct workers with an open worklog at asOf, ordered by clockIn ascending, then userId ascending
+          properties:
+            count:
+              type: integer
+              format: int32
+              minimum: 0
+              description: Number of returned workers
+            workers:
+              type: array
+              items:
+                $ref: '#/components/schemas/ManagerWorkingNowWorkerDTO'
+          required: [count, workers]
+        attendanceToday:
+          type: object
+          description: Distinct workers with at least one worklog overlapping today's business-local date before asOf, ordered by firstClockIn ascending, then userId ascending
+          properties:
+            count:
+              type: integer
+              format: int32
+              minimum: 0
+              description: Number of returned workers
+            workers:
+              type: array
+              items:
+                $ref: '#/components/schemas/ManagerAttendanceTodayWorkerDTO'
+          required: [count, workers]
+        teamHours:
+          type: object
+          description: Team time worked in the current business-local ISO week, clipped at asOf for open worklogs; excludes future time
+          properties:
+            week:
+              type: string
+              pattern: '^\d{4}-W\d{2}$'
+              description: ISO week containing date
+              example: 2026-W39
+            totalSeconds:
+              type: integer
+              format: int64
+              minimum: 0
+              description: Sum of the seven daily totals in seconds
+            days:
+              type: array
+              minItems: 7
+              maxItems: 7
+              description: Exactly seven business-local dates ordered Monday through Sunday; future dates have zero seconds
+              items:
+                $ref: '#/components/schemas/ManagerTeamHoursDayDTO'
+          required: [week, totalSeconds, days]
+        presence:
+          type: array
+          minItems: 23
+          maxItems: 25
+          description: >
+            One point at the start of every hour of date in the business's time zone, ordered by
+            instant. Includes future hours with zero present workers. A local day has 23, 24 or 25
+            points across daylight-saving changes; offsets distinguish repeated local hours.
+            Each count is the number of distinct workers whose worklog includes that instant
+            (clockIn <= at < clockOut, or clockOut is open and at <= asOf).
+          items:
+            $ref: '#/components/schemas/ManagerPresencePointDTO'
+      required: [businessId, zone, date, asOf, workingNow, attendanceToday, teamHours, presence]
+
+    ManagerWorkingNowWorkerDTO:
+      type: object
+      properties:
+        userId:
+          type: integer
+          format: int64
+          example: 11
+        name:
+          type: string
+          example: Alex Morgan
+        clockIn:
+          type: string
+          format: date-time
+          description: Start of the currently open worklog, with the business-local offset
+          example: '2026-09-24T08:30:00-04:00'
+      required: [userId, name, clockIn]
+
+    ManagerAttendanceTodayWorkerDTO:
+      type: object
+      properties:
+        userId:
+          type: integer
+          format: int64
+          example: 13
+        name:
+          type: string
+          example: Sam Rivera
+        firstClockIn:
+          type: string
+          format: date-time
+          description: Earliest worklog start overlapping today; may precede local midnight
+          example: '2026-09-24T06:00:00-04:00'
+        lastClockOut:
+          type: [string, 'null']
+          format: date-time
+          description: Latest end of today's worklogs, or null if the worker is still working
+          example: '2026-09-24T08:00:00-04:00'
+        totalSeconds:
+          type: integer
+          format: int64
+          minimum: 0
+          description: Seconds worked during today's local date up to asOf, including open worklogs
+          example: 7200
+      required: [userId, name, firstClockIn, lastClockOut, totalSeconds]
+
+    ManagerTeamHoursDayDTO:
+      type: object
+      properties:
+        date:
+          type: string
+          format: date
+          description: Business-local calendar date
+          example: '2026-09-24'
+        totalSeconds:
+          type: integer
+          format: int64
+          minimum: 0
+          description: Team seconds worked on this date up to asOf
+          example: 19800
+      required: [date, totalSeconds]
+
+    ManagerPresencePointDTO:
+      type: object
+      properties:
+        at:
+          type: string
+          format: date-time
+          description: Start instant of a business-local hour with its offset
+          example: '2026-09-24T09:00:00-04:00'
+        workerCount:
+          type: integer
+          format: int32
+          minimum: 0
+          description: Distinct workers present at this instant
+          example: 2
+      required: [at, workerCount]
 
     ManagerBusinessSummaryDTO:
       type: object
@@ -372,6 +538,33 @@ components:
           description: Updated clock-out timestamp (null to clear)
           example: "2025-07-29T17:30:00+02:00"
 
+    InvitationContractDTO:
+      type: object
+      description: Contract proposed for the invitee when accepting the invitation
+      properties:
+        jobRoleId:
+          type: integer
+          format: int64
+          description: Active job role contracted within the business
+          example: 10
+        totalWeekHours:
+          type: number
+          format: double
+          exclusiveMinimum: 0
+          description: Number of hours agreed for a working week
+          example: 40.0
+        startDate:
+          type: string
+          format: date
+          description: Date from which the contract is effective
+          example: "2025-01-01"
+        endDate:
+          type: [string, 'null']
+          format: date
+          description: Date until which the contract is effective, or null for an open-ended contract
+          example: null
+      required: [jobRoleId, totalWeekHours, startDate, endDate]
+
     InvitationRequestDTO:
       type: object
       description: Request to invite a user to join a business
@@ -386,6 +579,11 @@ components:
           description: Role to assign to the invitee
           enum: [OWNER, MANAGER, EMPLOYEE]
           example: "OWNER"
+        contract:
+          oneOf:
+            - $ref: '#/components/schemas/InvitationContractDTO'
+            - type: 'null'
+          description: Optional contract proposal. When absent, acceptance creates a 40-hour GENERAL job contract.
       required:
         - email
         - role
@@ -409,6 +607,11 @@ components:
           description: Role assigned to the invitee
           enum: [OWNER, MANAGER, EMPLOYEE]
           example: "EMPLOYEE"
+        contract:
+          oneOf:
+            - $ref: '#/components/schemas/InvitationContractDTO'
+            - type: 'null'
+          description: Proposed contract, or null when the default GENERAL contract will be created on acceptance
         status:
           type: string
           description: Current status of the invitation
@@ -428,6 +631,7 @@ components:
         - id
         - email
         - role
+        - contract
         - status
         - createdAt
         - expiresAt
@@ -1303,12 +1507,75 @@ components:
           example: 54000
       required: [date, requiredSeconds, scheduledSeconds]
 
+    ManagerCreateDraftPlanningRequestDTO:
+      type: object
+      description: Create an empty manual planning for one business-local ISO week.
+      properties:
+        weekStart:
+          type: string
+          format: date
+          description: Monday of the requested week.
+          example: "2026-10-05"
+      required: [weekStart]
+
+    ManagerScheduledShiftRequestDTO:
+      type: object
+      description: Manual assignment; shift name and color are captured from the business Shift.
+      properties:
+        userId:
+          type: integer
+          format: int64
+          minimum: 1
+          example: 42
+        jobRoleId:
+          type: integer
+          format: int64
+          minimum: 1
+          example: 7
+        shiftId:
+          type: integer
+          format: int64
+          minimum: 1
+          example: 20
+        startAt:
+          type: string
+          format: date-time
+          example: "2026-10-05T09:00:00+02:00"
+        endAt:
+          type: string
+          format: date-time
+          example: "2026-10-05T17:00:00+02:00"
+        breakMinutes:
+          type: integer
+          format: int32
+          minimum: 0
+          example: 30
+      required: [userId, jobRoleId, shiftId, startAt, endAt, breakMinutes]
+
+    ManagerReplacePlanningScheduledShiftsRequestDTO:
+      type: object
+      description: Complete replacement of a DRAFT planning's assignments.
+      properties:
+        version:
+          type: integer
+          format: int64
+          minimum: 0
+          description: Version from the latest manager planning response.
+          example: 3
+        scheduledShifts:
+          type: array
+          description: Complete collection; an empty array removes every assignment.
+          items:
+            $ref: '#/components/schemas/ManagerScheduledShiftRequestDTO'
+      required: [version, scheduledShifts]
+
     ManagerPlanningResponseDTO:
       type: object
       description: >
         Stable weekly planning response for CREATED, SOLVING, DRAFT, PUBLISHED, ARCHIVED, and
-        FAILED. DRAFT is solved and reviewable but unpublished; ARCHIVED is historical and
-        read-only. Requirements use local wall-clock
+        FAILED. DRAFT is editable and unpublished, whether created manually or by the solver;
+        manually created drafts have no requirements. ARCHIVED is historical and read-only.
+        Requirements use local wall-clock
         net shift duration multiplied by target staffing demand; assignments use offset elapsed
         duration minus breaks. Workers are the union of users with intersecting contracts and users
         with assignments, and planning totals reconcile to their daily and worker totals.
@@ -1318,6 +1585,12 @@ components:
           format: int64
           minimum: 1
           example: 500
+        version:
+          type: integer
+          format: int64
+          minimum: 0
+          description: Aggregate version required to replace draft assignments.
+          example: 3
         businessId:
           type: integer
           format: int64
@@ -1340,7 +1613,7 @@ components:
           example: "2025-08-03"
         status:
           type: string
-          description: CREATED is awaiting solver submission; DRAFT is solved and reviewable but unpublished; ARCHIVED is historical and read-only
+          description: CREATED is awaiting solver submission; DRAFT is editable and unpublished; ARCHIVED is historical and read-only
           enum: [CREATED, SOLVING, DRAFT, PUBLISHED, ARCHIVED, FAILED]
           example: SOLVING
         failureReason:
@@ -1374,4 +1647,4 @@ components:
         hasCoverageWarnings:
           type: boolean
           description: True when any immutable demand remains below its minimum staffing level.
-      required: [id, businessId, week, weekStart, weekEnd, status, failureReason, totals, requirements, days, workers, createdAt, publishedAt, hasCoverageWarnings]
+      required: [id, version, businessId, week, weekStart, weekEnd, status, failureReason, totals, requirements, days, workers, createdAt, publishedAt, hasCoverageWarnings]

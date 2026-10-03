@@ -1,5 +1,25 @@
 # Changelog
 
+## 0.0.57
+
+### Added
+
+- `GET /api/v1/manager/businesses` accepts an optional `businessId` and, for a managed business, includes `home` with sorted working-now and today's attendance rows, seven daily team-hour totals in seconds, and a business-local hourly presence series.
+
+## 0.0.56
+
+### Added
+
+- Manager invitations accept an optional proposed `contract` (job role, weekly hours, and start/end dates) and include it in invitation responses. When omitted, acceptance creates the default 40-hour GENERAL contract.
+
+## 0.0.55
+
+### Added
+
+- `POST /api/v1/manager/businesses/{businessId}/schedule` creates an empty manual DRAFT planning for a Monday `weekStart`.
+- `PUT /api/v1/manager/businesses/{businessId}/schedule/{planningId}/scheduled-shifts` atomically replaces all assignments in a DRAFT planning using its `version`; an empty array clears them.
+- Manager planning responses include `version` for optimistic concurrency and support manual drafts without solver requirements.
+
 ## 0.0.53
 
 ### Breaking changes

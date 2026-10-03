@@ -18,7 +18,7 @@ worklogs:
             type: integer
             format: int64
       requestBody:
-        description: Clock-in information (optional)
+        description: Clock-in information, including optional device location
         content:
           application/json:
             schema:
@@ -32,7 +32,7 @@ worklogs:
               schema:
                 $ref: '../../../open-api-rest.yml#/components/schemas/ClockInResult'
         '400':
-          description: Clock-in timestamp or note is invalid
+          description: Clock-in timestamp, note, or location is invalid
           content:
             application/problem+json:
               schema:
@@ -89,7 +89,7 @@ worklogs:
             type: integer
             format: int64
       requestBody:
-        description: Clock-out information (optional)
+        description: Clock-out information, including optional device location
         content:
           application/json:
             schema:
@@ -103,7 +103,7 @@ worklogs:
               schema:
                 $ref: '../../components/worklogs/components.yml#/components/schemas/WorkLogResponseDTO'
         '400':
-          description: Worklog times are invalid (e.g. clock-out before clock-in)
+          description: Worklog times or location are invalid (e.g. clock-out before clock-in)
           content:
             application/problem+json:
               schema:

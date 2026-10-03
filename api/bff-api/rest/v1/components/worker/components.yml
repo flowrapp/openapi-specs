@@ -9,6 +9,11 @@ components:
           format: int64
           description: Unique identifier for the business
           example: 101
+        nif:
+          type: string
+          minLength: 1
+          description: Tax identification number for the business
+          example: B12345678
         name:
           type: string
           description: Name of the business
@@ -46,6 +51,7 @@ components:
           example: "EMPLOYEE"
       required:
         - id
+        - nif
         - name
         - zone
         - address
@@ -93,6 +99,25 @@ components:
         - totalSecondsWeek
         - totalSecondsMonth
 
+    WorklogLocationDTO:
+      type: object
+      description: Device location captured when clocking in or out.
+      additionalProperties: false
+      properties:
+        latitude:
+          type: number
+          format: double
+          minimum: -90
+          maximum: 90
+          example: 36.19
+        longitude:
+          type: number
+          format: double
+          minimum: -180
+          maximum: 180
+          example: -5.99
+      required: [latitude, longitude]
+
     ClockInRequestDTO:
       type: object
       description: Request to clock in (start a work session)
@@ -102,6 +127,12 @@ components:
           format: date-time
           description: Optional clock-in timestamp. Server uses current time if omitted.
           example: "2025-07-29T08:30:00+02:00"
+        location:
+          description: Device location at clock-in; may be omitted or null if unavailable.
+          oneOf:
+            - $ref: '#/components/schemas/WorklogLocationDTO'
+            - type: 'null'
+          example: {latitude: 36.19, longitude: -5.99}
         idempotencyId:
           type: string
           format: uuid
@@ -133,6 +164,12 @@ components:
           format: date-time
           description: Optional clock-out timestamp. Server uses current time if omitted.
           example: "2025-07-29T17:30:00+02:00"
+        location:
+          description: Device location at clock-out; may be omitted or null if unavailable.
+          oneOf:
+            - $ref: '#/components/schemas/WorklogLocationDTO'
+            - type: 'null'
+          example: {latitude: 36.19, longitude: -5.99}
         idempotencyId:
           type: string
           format: uuid
@@ -143,7 +180,7 @@ components:
 
     GeofenceEventRequestDTO:
       type: object
-      description: Geofence transition captured by a worker's device
+      description: Geofence event captured by a worker's device
       additionalProperties: false
       properties:
         deviceId:
@@ -153,13 +190,13 @@ components:
           example: "7c9e6679-7425-40de-944b-e07fc1f90ae7"
         type:
           type: string
-          description: Geofence transition type
-          enum: [ENTER, EXIT]
+          description: ENTER when entering, DWELL while still inside, or EXIT when leaving the geofence
+          enum: [ENTER, DWELL, EXIT]
           example: ENTER
         occurredAt:
           type: string
           format: date-time
-          description: Timestamp when the transition occurred on the device
+          description: Timestamp when the event occurred on the device
           example: "2026-08-06T08:15:00Z"
       required:
         - deviceId
