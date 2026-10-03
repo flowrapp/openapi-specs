@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.0.62
+
+### Added
+
+- Owner-only auto-clocking settings with business-wide and per-business-user controls.
+
 ## 0.0.60
 
 ### Added

@@ -3,7 +3,7 @@ openapi: 3.1.0
 info:
   title: Flowrapp API
   description: REST API for Flowrapp Backend
-  version: 0.0.61
+  version: 0.0.62
   contact:
     name: Flowrapp Team
     url: https://flowrapp.github.io
@@ -18,13 +18,18 @@ servers:
 
 tags:
   - name: Users
-    description: Operations related to user management, including user profile retrieval, creation, and updates.
+    description: >-
+      Operations related to user management, including user profile retrieval,
+      creation, and updates.
   - name: Authentication
-    description: Endpoints for user authentication, token management, and session handling.
+    description: >-
+      Endpoints for user authentication, token management, and session handling.
   - name: Admin
     description: Administrative operations that require elevated privileges.
   - name: Businesses
     description: Operations for managing business entities.
+  - name: Settings
+    description: Operations for managing business-level settings.
   - name: Invitations
     description: Operations for managing invitations to join businesses.
   - name: Worklogs
@@ -32,7 +37,9 @@ tags:
   - name: Reports
     description: Raw daily time report data with flexible date-range filtering.
   - name: Timesheet
-    description: Reporting and analytics endpoints that provide aggregated data and insights.
+    description: >-
+      Reporting and analytics endpoints that provide aggregated data and
+      insights.
   - name: System
     description: System utility endpoints for monitoring and health checks.
   - name: Push Tokens
@@ -40,9 +47,12 @@ tags:
   - name: Contracts
     description: Operations for managing user contracts within businesses.
   - name: Recurring Schedules
-    description: Versioned recurring weekly opening hours, shifts and staffing demand.
+    description: >-
+      Versioned recurring weekly opening hours, shifts and staffing demand.
   - name: Schedule Exceptions
-    description: Date-specific replacements for recurring opening hours, shifts and staffing demand.
+    description: >-
+      Date-specific replacements for recurring opening hours, shifts and
+      staffing demand.
   - name: Job Roles
     description: Business job-role catalogs and member assignments.
   - name: Shifts
@@ -50,276 +60,387 @@ tags:
   - name: Planning
     description: Weekly business plannings and scheduled shifts.
   - name: Attendance
-    description: Daily reconciliation between published shifts and recorded worklogs.
+    description: >-
+      Daily reconciliation between published shifts and recorded worklogs.
 
 paths:
   "/api/v1/ping":
-    $ref: 'v1/services/system/system-operations.yml#/system/ping'
+    $ref: "v1/services/system/system-operations.yml#/system/ping"
   "/api/v1/push-tokens":
-    $ref: 'v1/services/pushTokens/push-tokens-operations.yml#/pushTokens/push-tokens'
+    $ref: "v1/services/pushTokens/push-tokens-operations.yml#/pushTokens/pus\
+      h-tokens"
   "/api/v1/push-tokens/{deviceId}":
-    $ref: 'v1/services/pushTokens/push-tokens-operations.yml#/pushTokens/deletion'
+    $ref: "v1/services/pushTokens/push-tokens-operations.yml#/pushTokens/del\
+      etion"
   "/api/v1/users":
-    $ref: 'v1/services/users/user-operations.yml#/users/byName'
+    $ref: "v1/services/users/user-operations.yml#/users/byName"
   "/api/v1/users/password":
-    $ref: 'v1/services/users/user-operations.yml#/users/change-password'
+    $ref: "v1/services/users/user-operations.yml#/users/change-password"
   "/api/v1/auth/login":
-    $ref: 'v1/services/auth/auth-operations.yml#/auth/login'
+    $ref: "v1/services/auth/auth-operations.yml#/auth/login"
   "/api/v1/auth/token-refresh":
-    $ref: 'v1/services/auth/auth-operations.yml#/auth/token-refresh'
+    $ref: "v1/services/auth/auth-operations.yml#/auth/token-refresh"
   "/api/v1/auth/forgot-password":
-    $ref: 'v1/services/auth/auth-operations.yml#/auth/forgot-password'
+    $ref: "v1/services/auth/auth-operations.yml#/auth/forgot-password"
   "/api/v1/auth/reset-password":
-    $ref: 'v1/services/auth/auth-operations.yml#/auth/reset-password'
+    $ref: "v1/services/auth/auth-operations.yml#/auth/reset-password"
   "/api/v1/auth/oauth/github":
-    $ref: 'v1/services/auth/auth-operations.yml#/auth/github'
+    $ref: "v1/services/auth/auth-operations.yml#/auth/github"
   "/api/v1/auth/oauth/google":
-    $ref: 'v1/services/auth/auth-operations.yml#/auth/google'
+    $ref: "v1/services/auth/auth-operations.yml#/auth/google"
   "/api/v1/admin/register":
-    $ref: 'v1/services/admin/admin-operations.yml#/admin/register'
+    $ref: "v1/services/admin/admin-operations.yml#/admin/register"
   "/api/v1/businesses":
-    $ref: 'v1/services/business/businesses-operations.yml#/businesses/get-businesses'
+    $ref: "v1/services/business/businesses-operations.yml#/businesses/get-bu\
+      sinesses"
   "/api/v1/businesses/{businessId}":
-    $ref: 'v1/services/business/businesses-operations.yml#/businesses/update-business-profile'
+    $ref: "v1/services/business/businesses-operations.yml#/businesses/update\
+      -business-profile"
   "/api/v1/businesses/{businessId}/geofence":
-    $ref: 'v1/services/business/businesses-operations.yml#/businesses/update-business-geofence'
+    $ref: "v1/services/business/businesses-operations.yml#/businesses/update\
+      -business-geofence"
+  "/api/v1/businesses/{businessId}/settings/auto-clocking":
+    $ref: "v1/services/settings/settings-operations.yml#/settings/business-a\
+      uto-clocking"
+  "/api/v1/businesses/{businessId}/settings/auto-clocking/users/{businessUserId}":
+    $ref: "v1/services/settings/settings-operations.yml#/settings/business-u\
+      ser-auto-clocking"
   "/api/v1/businesses/{businessId}/users":
-    $ref: 'v1/services/business/businesses-operations.yml#/businesses/get-business-users'
+    $ref: "v1/services/business/businesses-operations.yml#/businesses/get-bu\
+      siness-users"
   "/api/v1/businesses/{businessId}/geofence-events/{eventId}":
-    $ref: 'v1/services/geofenceEvents/geofence-events-operations.yml#/geofenceEvents/upsert-geofence-event'
+    $ref: "v1/services/geofenceEvents/geofence-events-operations.yml#/geofen\
+      ceEvents/upsert-geofence-event"
   "/api/v1/businesses/{businessId}/worklogs/clock-in":
-    $ref: 'v1/services/worklogs/worklogs-operations.yml#/worklogs/clock-in'
+    $ref: "v1/services/worklogs/worklogs-operations.yml#/worklogs/clock-in"
   "/api/v1/businesses/{businessId}/worklogs/{worklogId}/clock-out":
-    $ref: 'v1/services/worklogs/worklogs-operations.yml#/worklogs/clock-out'
+    $ref: "v1/services/worklogs/worklogs-operations.yml#/worklogs/clock-out"
   "/api/v1/businesses/{businessId}/worklogs/{worklogId}/breaks":
-    $ref: 'v1/services/worklogs/worklogs-operations.yml#/worklogs/start-break'
+    $ref: "v1/services/worklogs/worklogs-operations.yml#/worklogs/start-break"
   "/api/v1/businesses/{businessId}/worklogs/{worklogId}/breaks/{breakId}/end":
-    $ref: 'v1/services/worklogs/worklogs-operations.yml#/worklogs/end-break'
+    $ref: "v1/services/worklogs/worklogs-operations.yml#/worklogs/end-break"
   "/api/v1/businesses/{businessId}/worklogs":
-    $ref: 'v1/services/worklogs/worklogs-operations.yml#/worklogs/filtered-worklogs'
+    $ref: "v1/services/worklogs/worklogs-operations.yml#/worklogs/filtered-w\
+      orklogs"
   "/api/v1/worklogs":
-    $ref: 'v1/services/worklogs/worklogs-operations.yml#/worklogs/get-worklogs'
+    $ref: "v1/services/worklogs/worklogs-operations.yml#/worklogs/get-worklogs"
   "/api/v1/worklogs/{worklogId}":
-    $ref: 'v1/services/worklogs/worklogs-operations.yml#/worklogs/get-modify-worklog'
+    $ref: "v1/services/worklogs/worklogs-operations.yml#/worklogs/get-modify\
+      -worklog"
   "/api/v1/worklogs/{worklogId}/correction":
-    $ref: 'v1/services/worklogs/worklogs-operations.yml#/worklogs/worker-correction'
+    $ref: "v1/services/worklogs/worklogs-operations.yml#/worklogs/worker-cor\
+      rection"
   "/api/v1/worklogs/{worklogId}/breaks/{breakId}/correction":
-    $ref: 'v1/services/worklogs/worklogs-operations.yml#/worklogs/worker-break-correction'
+    $ref: "v1/services/worklogs/worklogs-operations.yml#/worklogs/worker-bre\
+      ak-correction"
   "/api/v1/worklogs/{worklogId}/breaks/{breakId}/void":
-    $ref: 'v1/services/worklogs/worklogs-operations.yml#/worklogs/worker-break-void'
+    $ref: "v1/services/worklogs/worklogs-operations.yml#/worklogs/worker-bre\
+      ak-void"
   "/api/v1/worklogs/{worklogId}/confirm":
-    $ref: 'v1/services/worklogs/worklogs-operations.yml#/worklogs/worker-confirmation'
+    $ref: "v1/services/worklogs/worklogs-operations.yml#/worklogs/worker-con\
+      firmation"
   "/api/v1/worklogs/{worklogId}/history":
-    $ref: 'v1/services/worklogs/worklogs-operations.yml#/worklogs/history'
+    $ref: "v1/services/worklogs/worklogs-operations.yml#/worklogs/history"
   "/api/v1/businesses/{businessId}/worklogs/{worklogId}/correction":
-    $ref: 'v1/services/worklogs/worklogs-operations.yml#/worklogs/management-correction'
+    $ref: "v1/services/worklogs/worklogs-operations.yml#/worklogs/management\
+      -correction"
   "/api/v1/businesses/{businessId}/worklogs/{worklogId}/breaks/{breakId}/correction":
-    $ref: 'v1/services/worklogs/worklogs-operations.yml#/worklogs/management-break-correction'
+    $ref: "v1/services/worklogs/worklogs-operations.yml#/worklogs/management\
+      -break-correction"
   "/api/v1/businesses/{businessId}/worklogs/{worklogId}/breaks/{breakId}/void":
-    $ref: 'v1/services/worklogs/worklogs-operations.yml#/worklogs/management-break-void'
+    $ref: "v1/services/worklogs/worklogs-operations.yml#/worklogs/management\
+      -break-void"
   "/api/v1/businesses/{businessId}/worklogs/{worklogId}/approve":
-    $ref: 'v1/services/worklogs/worklogs-operations.yml#/worklogs/approval'
+    $ref: "v1/services/worklogs/worklogs-operations.yml#/worklogs/approval"
   "/api/v1/businesses/{businessId}/worklogs/{worklogId}/reject":
-    $ref: 'v1/services/worklogs/worklogs-operations.yml#/worklogs/rejection'
+    $ref: "v1/services/worklogs/worklogs-operations.yml#/worklogs/rejection"
   "/api/v1/businesses/{businessId}/worklog-settings":
-    $ref: 'v1/services/worklogs/worklogs-operations.yml#/worklogs/settings'
+    $ref: "v1/services/worklogs/worklogs-operations.yml#/worklogs/settings"
   "/api/v1/businesses/{businessId}/timesheets/weekly-hours":
-    $ref: 'v1/services/timesheet/timesheet-operations.yml#/timesheet/weekly-hours'
+    $ref: "v1/services/timesheet/timesheet-operations.yml#/timesheet/weekly-\
+      hours"
   "/api/v1/timesheets/weekly-hours":
-    $ref: 'v1/services/timesheet/timesheet-operations.yml#/timesheet/user-weekly-hours'
+    $ref: "v1/services/timesheet/timesheet-operations.yml#/timesheet/user-we\
+      ekly-hours"
   "/api/v1/businesses/{businessId}/reports":
-    $ref: 'v1/services/reports/reports-operations.yml#/reports/business-reports'
+    $ref: "v1/services/reports/reports-operations.yml#/reports/business-reports"
   "/api/v1/businesses/{businessId}/reports/worked-hours.pdf":
-    $ref: 'v1/services/reports/reports-operations.yml#/reports/business-worked-hours-report-pdf'
+    $ref: "v1/services/reports/reports-operations.yml#/reports/business-work\
+      ed-hours-report-pdf"
   "/api/v1/reports":
-    $ref: 'v1/services/reports/reports-operations.yml#/reports/user-reports'
+    $ref: "v1/services/reports/reports-operations.yml#/reports/user-reports"
   "/api/v1/businesses/{businessId}/invitations":
-    $ref: 'v1/services/invitations/invitations-operations.yml#/invitations/get-and-create-invitations'
+    $ref: "v1/services/invitations/invitations-operations.yml#/invitations/g\
+      et-and-create-invitations"
   "/api/v1/businesses/{businessId}/invitations/{invitationId}":
-    $ref: 'v1/services/invitations/invitations-operations.yml#/invitations/delete-business-invitation'
+    $ref: "v1/services/invitations/invitations-operations.yml#/invitations/d\
+      elete-business-invitation"
   "/api/v1/invitations":
-    $ref: 'v1/services/invitations/invitations-operations.yml#/invitations/get-invitations'
+    $ref: "v1/services/invitations/invitations-operations.yml#/invitations/g\
+      et-invitations"
   "/api/v1/invitations/{invitationId}/accept":
-    $ref: 'v1/services/invitations/invitations-operations.yml#/invitations/accept-invitation'
+    $ref: "v1/services/invitations/invitations-operations.yml#/invitations/a\
+      ccept-invitation"
   "/api/v1/invitations/{invitationId}/decline":
-    $ref: 'v1/services/invitations/invitations-operations.yml#/invitations/decline-invitation'
+    $ref: "v1/services/invitations/invitations-operations.yml#/invitations/d\
+      ecline-invitation"
   "/api/v1/invitations/register":
-    $ref: 'v1/services/invitations/invitations-operations.yml#/invitations/register-user-from-invitation'
+    $ref: "v1/services/invitations/invitations-operations.yml#/invitations/r\
+      egister-user-from-invitation"
   "/api/v1/businesses/{businessId}/contracts":
-    $ref: 'v1/services/contracts/contracts-operations.yml#/contracts/business-contracts'
+    $ref: "v1/services/contracts/contracts-operations.yml#/contracts/busines\
+      s-contracts"
   "/api/v1/businesses/{businessId}/users/{userId}/contracts":
-    $ref: 'v1/services/contracts/contracts-operations.yml#/contracts/business-user-contracts'
+    $ref: "v1/services/contracts/contracts-operations.yml#/contracts/busines\
+      s-user-contracts"
   "/api/v1/businesses/{businessId}/users/{userId}/contracts/current":
-    $ref: 'v1/services/contracts/contracts-operations.yml#/contracts/current-business-user-contract'
+    $ref: "v1/services/contracts/contracts-operations.yml#/contracts/current\
+      -business-user-contract"
   "/api/v1/businesses/{businessId}/users/{userId}/contracts/{contractId}":
-    $ref: 'v1/services/contracts/contracts-operations.yml#/contracts/business-user-contract'
+    $ref: "v1/services/contracts/contracts-operations.yml#/contracts/busines\
+      s-user-contract"
   "/api/v1/contracts":
-    $ref: 'v1/services/contracts/contracts-operations.yml#/contracts/current-user-contracts'
+    $ref: "v1/services/contracts/contracts-operations.yml#/contracts/current\
+      -user-contracts"
   "/api/v1/businesses/{businessId}/recurring-schedules":
-    $ref: 'v1/services/scheduling/scheduling-operations.yml#/recurringSchedules/collection'
+    $ref: "v1/services/scheduling/scheduling-operations.yml#/recurringSchedu\
+      les/collection"
   "/api/v1/businesses/{businessId}/recurring-schedules/effective":
-    $ref: 'v1/services/scheduling/scheduling-operations.yml#/recurringSchedules/effective'
+    $ref: "v1/services/scheduling/scheduling-operations.yml#/recurringSchedu\
+      les/effective"
   "/api/v1/businesses/{businessId}/recurring-schedules/{scheduleId}":
-    $ref: 'v1/services/scheduling/scheduling-operations.yml#/recurringSchedules/item'
+    $ref: "v1/services/scheduling/scheduling-operations.yml#/recurringSchedu\
+      les/item"
   "/api/v1/businesses/{businessId}/schedule-exceptions":
-    $ref: 'v1/services/scheduling/scheduling-operations.yml#/scheduleExceptions/collection'
+    $ref: "v1/services/scheduling/scheduling-operations.yml#/scheduleExcepti\
+      ons/collection"
   "/api/v1/businesses/{businessId}/schedule-exceptions/{exceptionId}":
-    $ref: 'v1/services/scheduling/scheduling-operations.yml#/scheduleExceptions/item'
+    $ref: "v1/services/scheduling/scheduling-operations.yml#/scheduleExcepti\
+      ons/item"
   "/api/v1/businesses/{businessId}/job-roles":
-    $ref: 'v1/services/scheduling/scheduling-operations.yml#/jobRoles/collection'
+    $ref: "v1/services/scheduling/scheduling-operations.yml#/jobRoles/collec\
+      tion"
   "/api/v1/businesses/{businessId}/job-roles/{jobRoleId}":
-    $ref: 'v1/services/scheduling/scheduling-operations.yml#/jobRoles/item'
+    $ref: "v1/services/scheduling/scheduling-operations.yml#/jobRoles/item"
   "/api/v1/businesses/{businessId}/shifts":
-    $ref: 'v1/services/scheduling/scheduling-operations.yml#/shifts/collection'
+    $ref: "v1/services/scheduling/scheduling-operations.yml#/shifts/collection"
   "/api/v1/businesses/{businessId}/shifts/{shiftId}":
-    $ref: 'v1/services/scheduling/scheduling-operations.yml#/shifts/item'
+    $ref: "v1/services/scheduling/scheduling-operations.yml#/shifts/item"
   "/api/v1/businesses/{businessId}/planning-settings":
-    $ref: 'v1/services/scheduling/scheduling-operations.yml#/planning/settings'
+    $ref: "v1/services/scheduling/scheduling-operations.yml#/planning/settings"
   "/api/v1/businesses/{businessId}/plannings":
-    $ref: 'v1/services/scheduling/scheduling-operations.yml#/planning/collection'
+    $ref: "v1/services/scheduling/scheduling-operations.yml#/planning/collec\
+      tion"
   "/api/v1/businesses/{businessId}/plannings/{weekStart}":
-    $ref: 'v1/services/scheduling/scheduling-operations.yml#/planning/item'
+    $ref: "v1/services/scheduling/scheduling-operations.yml#/planning/item"
   "/api/v1/businesses/{businessId}/plannings/{planningId}/scheduled-shifts":
-    $ref: 'v1/services/scheduling/scheduling-operations.yml#/planning/scheduledShifts'
+    $ref: "v1/services/scheduling/scheduling-operations.yml#/planning/schedu\
+      ledShifts"
   "/api/v1/businesses/{businessId}/team-schedules/{weekStart}":
-    $ref: 'v1/services/scheduling/scheduling-operations.yml#/planning/teamSchedule'
+    $ref: "v1/services/scheduling/scheduling-operations.yml#/planning/teamSc\
+      hedule"
   "/api/v1/businesses/{businessId}/plannings/{planningId}/publish":
-    $ref: 'v1/services/scheduling/scheduling-operations.yml#/planning/publish'
+    $ref: "v1/services/scheduling/scheduling-operations.yml#/planning/publish"
   "/api/v1/businesses/{businessId}/scheduled-shifts":
-    $ref: 'v1/services/scheduling/scheduling-operations.yml#/planning/currentUserScheduledShifts'
+    $ref: "v1/services/scheduling/scheduling-operations.yml#/planning/curren\
+      tUserScheduledShifts"
   "/api/v1/attendance-matches/{attendanceMatchId}":
-    $ref: 'v1/services/attendance/attendance-operations.yml#/attendance/worker-match-detail'
+    $ref: "v1/services/attendance/attendance-operations.yml#/attendance/work\
+      er-match-detail"
   "/api/v1/businesses/{businessId}/attendance":
-    $ref: 'v1/services/attendance/attendance-operations.yml#/attendance/daily'
+    $ref: "v1/services/attendance/attendance-operations.yml#/attendance/daily"
   "/api/v1/businesses/{businessId}/attendance-tolerance":
-    $ref: 'v1/services/attendance/attendance-operations.yml#/attendance/tolerance'
+    $ref: "v1/services/attendance/attendance-operations.yml#/attendance/tole\
+      rance"
   "/api/v1/businesses/{businessId}/attendance-matches/{attendanceMatchId}/resolution":
-    $ref: 'v1/services/attendance/attendance-operations.yml#/attendance/match-resolution'
+    $ref: "v1/services/attendance/attendance-operations.yml#/attendance/matc\
+      h-resolution"
   "/api/v1/businesses/{businessId}/attendance-matches/{attendanceMatchId}/accept-unplanned":
-    $ref: 'v1/services/attendance/attendance-operations.yml#/attendance/unplanned-acceptance'
+    $ref: "v1/services/attendance/attendance-operations.yml#/attendance/unpl\
+      anned-acceptance"
   "/api/v1/businesses/{businessId}/scheduled-shifts/{scheduledShiftId}/no-show/acknowledge":
-    $ref: 'v1/services/attendance/attendance-operations.yml#/attendance/no-show-acknowledgment'
+    $ref: "v1/services/attendance/attendance-operations.yml#/attendance/no-s\
+      how-acknowledgment"
   "/api/v1/businesses/{businessId}/scheduled-shifts/{scheduledShiftId}/attendance/approve":
-    $ref: 'v1/services/attendance/attendance-operations.yml#/attendance/shift-approval'
+    $ref: "v1/services/attendance/attendance-operations.yml#/attendance/shif\
+      t-approval"
   "/api/v1/businesses/{businessId}/attendance-periods/{weekStart}":
-    $ref: 'v1/services/attendance/attendance-operations.yml#/attendance/weekly-period'
+    $ref: "v1/services/attendance/attendance-operations.yml#/attendance/week\
+      ly-period"
   "/api/v1/businesses/{businessId}/attendance-periods/{weekStart}/bulk-approve":
-    $ref: 'v1/services/attendance/attendance-operations.yml#/attendance/weekly-bulk-approval'
+    $ref: "v1/services/attendance/attendance-operations.yml#/attendance/week\
+      ly-bulk-approval"
   "/api/v1/businesses/{businessId}/attendance-periods/{weekStart}/close":
-    $ref: 'v1/services/attendance/attendance-operations.yml#/attendance/weekly-close'
+    $ref: "v1/services/attendance/attendance-operations.yml#/attendance/week\
+      ly-close"
   "/api/v1/businesses/{businessId}/attendance-periods/{weekStart}/reopen":
-    $ref: 'v1/services/attendance/attendance-operations.yml#/attendance/weekly-reopen'
+    $ref: "v1/services/attendance/attendance-operations.yml#/attendance/week\
+      ly-reopen"
 
 components:
   schemas:
     AttendanceMatch:
-      $ref: 'v1/components/attendance/components.yml#/components/schemas/AttendanceMatchDTO'
+      $ref: "v1/components/attendance/components.yml#/components/schemas/Atten\
+        danceMatchDTO"
     AttendanceMatchNotApplicable:
-      $ref: 'v1/components/attendance/components.yml#/components/schemas/AttendanceMatchNotApplicableDTO'
+      $ref: "v1/components/attendance/components.yml#/components/schemas/Atten\
+        danceMatchNotApplicableDTO"
     AttendanceMatchMatched:
-      $ref: 'v1/components/attendance/components.yml#/components/schemas/AttendanceMatchMatchedDTO'
+      $ref: "v1/components/attendance/components.yml#/components/schemas/Atten\
+        danceMatchMatchedDTO"
     AttendanceMatchUnscheduled:
-      $ref: 'v1/components/attendance/components.yml#/components/schemas/AttendanceMatchUnscheduledDTO'
+      $ref: "v1/components/attendance/components.yml#/components/schemas/Atten\
+        danceMatchUnscheduledDTO"
     AttendanceMatchAmbiguous:
-      $ref: 'v1/components/attendance/components.yml#/components/schemas/AttendanceMatchAmbiguousDTO'
+      $ref: "v1/components/attendance/components.yml#/components/schemas/Atten\
+        danceMatchAmbiguousDTO"
     ClockInResult:
-      $ref: 'v1/components/attendance/components.yml#/components/schemas/ClockInResultDTO'
+      $ref: "v1/components/attendance/components.yml#/components/schemas/Clock\
+        InResultDTO"
     AttendanceIncidentType:
-      $ref: 'v1/components/attendance/components.yml#/components/schemas/AttendanceIncidentTypeDTO'
+      $ref: "v1/components/attendance/components.yml#/components/schemas/Atten\
+        danceIncidentTypeDTO"
     AttendanceIncidentScope:
-      $ref: 'v1/components/attendance/components.yml#/components/schemas/AttendanceIncidentScopeDTO'
+      $ref: "v1/components/attendance/components.yml#/components/schemas/Atten\
+        danceIncidentScopeDTO"
     IncidentResolution:
-      $ref: 'v1/components/attendance/components.yml#/components/schemas/IncidentResolutionDTO'
+      $ref: "v1/components/attendance/components.yml#/components/schemas/Incid\
+        entResolutionDTO"
     IncidentLifecycle:
-      $ref: 'v1/components/attendance/components.yml#/components/schemas/IncidentLifecycleDTO'
+      $ref: "v1/components/attendance/components.yml#/components/schemas/Incid\
+        entLifecycleDTO"
     AttendanceIncidentEvidence:
-      $ref: 'v1/components/attendance/components.yml#/components/schemas/AttendanceIncidentEvidenceDTO'
+      $ref: "v1/components/attendance/components.yml#/components/schemas/Atten\
+        danceIncidentEvidenceDTO"
     AttendanceMetrics:
-      $ref: 'v1/components/attendance/components.yml#/components/schemas/AttendanceMetricsDTO'
+      $ref: "v1/components/attendance/components.yml#/components/schemas/Atten\
+        danceMetricsDTO"
     ShiftAttendanceLifecycle:
-      $ref: 'v1/components/attendance/components.yml#/components/schemas/ShiftAttendanceLifecycleDTO'
+      $ref: "v1/components/attendance/components.yml#/components/schemas/Shift\
+        AttendanceLifecycleDTO"
     ShiftAttendanceCoverage:
-      $ref: 'v1/components/attendance/components.yml#/components/schemas/ShiftAttendanceCoverageDTO'
+      $ref: "v1/components/attendance/components.yml#/components/schemas/Shift\
+        AttendanceCoverageDTO"
     ShiftAttendanceReview:
-      $ref: 'v1/components/attendance/components.yml#/components/schemas/ShiftAttendanceReviewDTO'
+      $ref: "v1/components/attendance/components.yml#/components/schemas/Shift\
+        AttendanceReviewDTO"
     ShiftAttendanceAlert:
-      $ref: 'v1/components/attendance/components.yml#/components/schemas/ShiftAttendanceAlertDTO'
+      $ref: "v1/components/attendance/components.yml#/components/schemas/Shift\
+        AttendanceAlertDTO"
     AttendanceWorker:
-      $ref: 'v1/components/attendance/components.yml#/components/schemas/AttendanceWorkerDTO'
+      $ref: "v1/components/attendance/components.yml#/components/schemas/Atten\
+        danceWorkerDTO"
     UnmatchedAttendance:
-      $ref: 'v1/components/attendance/components.yml#/components/schemas/UnmatchedAttendanceDTO'
+      $ref: "v1/components/attendance/components.yml#/components/schemas/Unmat\
+        chedAttendanceDTO"
     DailyAttendanceSummary:
-      $ref: 'v1/components/attendance/components.yml#/components/schemas/DailyAttendanceSummaryDTO'
+      $ref: "v1/components/attendance/components.yml#/components/schemas/Daily\
+        AttendanceSummaryDTO"
     AttendanceMatchKind:
-      $ref: 'v1/components/attendance/components.yml#/components/schemas/AttendanceMatchKindDTO'
+      $ref: "v1/components/attendance/components.yml#/components/schemas/Atten\
+        danceMatchKindDTO"
     AttendanceMatchOrigin:
-      $ref: 'v1/components/attendance/components.yml#/components/schemas/AttendanceMatchOriginDTO'
+      $ref: "v1/components/attendance/components.yml#/components/schemas/Atten\
+        danceMatchOriginDTO"
     ReconciliationState:
-      $ref: 'v1/components/attendance/components.yml#/components/schemas/ReconciliationStateDTO'
+      $ref: "v1/components/attendance/components.yml#/components/schemas/Recon\
+        ciliationStateDTO"
     AttendanceReconciliation:
-      $ref: 'v1/components/attendance/components.yml#/components/schemas/AttendanceReconciliationDTO'
+      $ref: "v1/components/attendance/components.yml#/components/schemas/Atten\
+        danceReconciliationDTO"
     AttendanceMatchBase:
-      $ref: 'v1/components/attendance/components.yml#/components/schemas/AttendanceMatchBaseDTO'
+      $ref: "v1/components/attendance/components.yml#/components/schemas/Atten\
+        danceMatchBaseDTO"
     AttendanceRevisionConflict:
-      $ref: 'v1/components/attendance/components.yml#/components/schemas/AttendanceRevisionConflictDTO'
+      $ref: "v1/components/attendance/components.yml#/components/schemas/Atten\
+        danceRevisionConflictDTO"
     AttendanceIncident:
-      $ref: 'v1/components/attendance/components.yml#/components/schemas/AttendanceIncidentDTO'
+      $ref: "v1/components/attendance/components.yml#/components/schemas/Atten\
+        danceIncidentDTO"
     DailyAttendance:
-      $ref: 'v1/components/attendance/components.yml#/components/schemas/DailyAttendanceDTO'
+      $ref: "v1/components/attendance/components.yml#/components/schemas/Daily\
+        AttendanceDTO"
     AttendanceTolerance:
-      $ref: 'v1/components/attendance/components.yml#/components/schemas/AttendanceToleranceDTO'
+      $ref: "v1/components/attendance/components.yml#/components/schemas/Atten\
+        danceToleranceDTO"
     AttendanceToleranceUpdateRequest:
-      $ref: 'v1/components/attendance/components.yml#/components/schemas/AttendanceToleranceUpdateRequestDTO'
+      $ref: "v1/components/attendance/components.yml#/components/schemas/Atten\
+        danceToleranceUpdateRequestDTO"
     AttendanceMatchResolutionRequest:
-      $ref: 'v1/components/attendance/components.yml#/components/schemas/AttendanceMatchResolutionRequestDTO'
+      $ref: "v1/components/attendance/components.yml#/components/schemas/Atten\
+        danceMatchResolutionRequestDTO"
     UnscheduledAttendanceAcceptanceRequest:
-      $ref: 'v1/components/attendance/components.yml#/components/schemas/UnscheduledAttendanceAcceptanceRequestDTO'
+      $ref: "v1/components/attendance/components.yml#/components/schemas/Unsch\
+        eduledAttendanceAcceptanceRequestDTO"
     NoShowAcknowledgementRequest:
-      $ref: 'v1/components/attendance/components.yml#/components/schemas/NoShowAcknowledgementRequestDTO'
+      $ref: "v1/components/attendance/components.yml#/components/schemas/NoSho\
+        wAcknowledgementRequestDTO"
     ShiftAttendanceApprovalRequest:
-      $ref: 'v1/components/attendance/components.yml#/components/schemas/ShiftAttendanceApprovalRequestDTO'
+      $ref: "v1/components/attendance/components.yml#/components/schemas/Shift\
+        AttendanceApprovalRequestDTO"
     ShiftAttendance:
-      $ref: 'v1/components/attendance/components.yml#/components/schemas/ShiftAttendanceDTO'
+      $ref: "v1/components/attendance/components.yml#/components/schemas/Shift\
+        AttendanceDTO"
     WeeklyAttendancePeriodState:
-      $ref: 'v1/components/attendance/components.yml#/components/schemas/WeeklyAttendancePeriodStateDTO'
+      $ref: "v1/components/attendance/components.yml#/components/schemas/Weekl\
+        yAttendancePeriodStateDTO"
     WeeklyAttendancePeriodTransitionAction:
-      $ref: 'v1/components/attendance/components.yml#/components/schemas/WeeklyAttendancePeriodTransitionActionDTO'
+      $ref: "v1/components/attendance/components.yml#/components/schemas/Weekl\
+        yAttendancePeriodTransitionActionDTO"
     WeeklyAttendancePeriodSummary:
-      $ref: 'v1/components/attendance/components.yml#/components/schemas/WeeklyAttendancePeriodSummaryDTO'
+      $ref: "v1/components/attendance/components.yml#/components/schemas/Weekl\
+        yAttendancePeriodSummaryDTO"
     WeeklyAttendancePeriodTransitionMetadata:
-      $ref: 'v1/components/attendance/components.yml#/components/schemas/WeeklyAttendancePeriodTransitionMetadataDTO'
+      $ref: "v1/components/attendance/components.yml#/components/schemas/Weekl\
+        yAttendancePeriodTransitionMetadataDTO"
     WeeklyAttendancePeriodBlockerType:
-      $ref: 'v1/components/attendance/components.yml#/components/schemas/WeeklyAttendancePeriodBlockerTypeDTO'
+      $ref: "v1/components/attendance/components.yml#/components/schemas/Weekl\
+        yAttendancePeriodBlockerTypeDTO"
     WeeklyAttendancePeriodNotFinishedBlocker:
-      $ref: 'v1/components/attendance/components.yml#/components/schemas/WeeklyAttendancePeriodNotFinishedBlocker'
+      $ref: "v1/components/attendance/components.yml#/components/schemas/Weekl\
+        yAttendancePeriodNotFinishedBlocker"
     WeeklyAttendancePeriodReconciliationPendingBlocker:
-      $ref: 'v1/components/attendance/components.yml#/components/schemas/WeeklyAttendancePeriodReconciliationPendingBlocker'
+      $ref: "v1/components/attendance/components.yml#/components/schemas/Weekl\
+        yAttendancePeriodReconciliationPendingBlocker"
     WeeklyAttendancePeriodOpenWorklogsBlocker:
-      $ref: 'v1/components/attendance/components.yml#/components/schemas/WeeklyAttendancePeriodOpenWorklogsBlocker'
+      $ref: "v1/components/attendance/components.yml#/components/schemas/Weekl\
+        yAttendancePeriodOpenWorklogsBlocker"
     WeeklyAttendancePeriodOpenBreaksBlocker:
-      $ref: 'v1/components/attendance/components.yml#/components/schemas/WeeklyAttendancePeriodOpenBreaksBlocker'
+      $ref: "v1/components/attendance/components.yml#/components/schemas/Weekl\
+        yAttendancePeriodOpenBreaksBlocker"
     WeeklyAttendancePeriodUndecidedWorklogsBlocker:
-      $ref: 'v1/components/attendance/components.yml#/components/schemas/WeeklyAttendancePeriodUndecidedWorklogsBlocker'
+      $ref: "v1/components/attendance/components.yml#/components/schemas/Weekl\
+        yAttendancePeriodUndecidedWorklogsBlocker"
     WeeklyAttendancePeriodUnresolvedIncidentsBlocker:
-      $ref: 'v1/components/attendance/components.yml#/components/schemas/WeeklyAttendancePeriodUnresolvedIncidentsBlocker'
+      $ref: "v1/components/attendance/components.yml#/components/schemas/Weekl\
+        yAttendancePeriodUnresolvedIncidentsBlocker"
     WeeklyAttendancePeriodAmbiguousAttendanceBlocker:
-      $ref: 'v1/components/attendance/components.yml#/components/schemas/WeeklyAttendancePeriodAmbiguousAttendanceBlocker'
+      $ref: "v1/components/attendance/components.yml#/components/schemas/Weekl\
+        yAttendancePeriodAmbiguousAttendanceBlocker"
     WeeklyAttendancePeriodUncoveredShiftsBlocker:
-      $ref: 'v1/components/attendance/components.yml#/components/schemas/WeeklyAttendancePeriodUncoveredShiftsBlocker'
+      $ref: "v1/components/attendance/components.yml#/components/schemas/Weekl\
+        yAttendancePeriodUncoveredShiftsBlocker"
     WeeklyAttendancePeriodBlocker:
-      $ref: 'v1/components/attendance/components.yml#/components/schemas/WeeklyAttendancePeriodBlockerDTO'
+      $ref: "v1/components/attendance/components.yml#/components/schemas/Weekl\
+        yAttendancePeriodBlockerDTO"
     WeeklyAttendancePeriod:
-      $ref: 'v1/components/attendance/components.yml#/components/schemas/WeeklyAttendancePeriodDTO'
+      $ref: "v1/components/attendance/components.yml#/components/schemas/Weekl\
+        yAttendancePeriodDTO"
     WeeklyAttendancePeriodApprovalSelection:
-      $ref: 'v1/components/attendance/components.yml#/components/schemas/WeeklyAttendancePeriodApprovalSelectionDTO'
+      $ref: "v1/components/attendance/components.yml#/components/schemas/Weekl\
+        yAttendancePeriodApprovalSelectionDTO"
     WeeklyAttendancePeriodBulkApprovalRequest:
-      $ref: 'v1/components/attendance/components.yml#/components/schemas/WeeklyAttendancePeriodBulkApprovalRequestDTO'
+      $ref: "v1/components/attendance/components.yml#/components/schemas/Weekl\
+        yAttendancePeriodBulkApprovalRequestDTO"
     WeeklyAttendancePeriodBulkApprovalResult:
-      $ref: 'v1/components/attendance/components.yml#/components/schemas/WeeklyAttendancePeriodBulkApprovalResultDTO'
+      $ref: "v1/components/attendance/components.yml#/components/schemas/Weekl\
+        yAttendancePeriodBulkApprovalResultDTO"
     CloseWeeklyAttendancePeriodRequest:
-      $ref: 'v1/components/attendance/components.yml#/components/schemas/CloseWeeklyAttendancePeriodRequestDTO'
+      $ref: "v1/components/attendance/components.yml#/components/schemas/Close\
+        WeeklyAttendancePeriodRequestDTO"
     ReopenWeeklyAttendancePeriodRequest:
-      $ref: 'v1/components/attendance/components.yml#/components/schemas/ReopenWeeklyAttendancePeriodRequestDTO'
+      $ref: "v1/components/attendance/components.yml#/components/schemas/Reope\
+        nWeeklyAttendancePeriodRequestDTO"
   securitySchemes:
     basicAuth:
       type: http
