@@ -4,7 +4,7 @@ components:
       name: businessId
       in: path
       required: true
-      schema: {type: integer, format: int64}
+      schema: { type: integer, format: int64 }
     Page:
       name: page
       in: query
@@ -30,108 +30,108 @@ components:
       name: userId
       in: path
       required: true
-      schema: {type: integer, format: int64}
+      schema: { type: integer, format: int64 }
     JobRoleId:
       name: jobRoleId
       in: path
       required: true
-      schema: {type: integer, format: int64}
+      schema: { type: integer, format: int64 }
     ShiftId:
       name: shiftId
       in: path
       required: true
-      schema: {type: integer, format: int64, minimum: 1}
+      schema: { type: integer, format: int64, minimum: 1 }
     ScheduleId:
       name: scheduleId
       in: path
       required: true
-      schema: {type: integer, format: int64}
+      schema: { type: integer, format: int64 }
     ScheduleExceptionId:
       name: exceptionId
       in: path
       required: true
-      schema: {type: integer, format: int64}
+      schema: { type: integer, format: int64 }
     Date:
       name: date
       in: path
       required: true
-      schema: {type: string, format: date}
+      schema: { type: string, format: date }
     From:
       name: from
       in: query
       required: true
-      schema: {type: string, format: date}
+      schema: { type: string, format: date }
     To:
       name: to
       in: query
       required: true
-      schema: {type: string, format: date}
+      schema: { type: string, format: date }
     WeekStart:
       name: weekStart
       in: path
       required: true
-      schema: {type: string, format: date}
+      schema: { type: string, format: date }
     PlanningId:
       name: planningId
       in: path
       required: true
       description: ID of the existing planning
-      schema: {type: integer, format: int64, minimum: 1, example: 500}
+      schema: { type: integer, format: int64, minimum: 1, example: 500 }
     PlanningEmployeeId:
       name: employeeId
       in: query
       required: false
       description: Restrict scheduled shifts to one employee; positive identifiers with no match return an empty filtered projection
-      schema: {type: integer, format: int64, minimum: 1, example: 1}
+      schema: { type: integer, format: int64, minimum: 1, example: 1 }
     PlanningJobRoleId:
       name: jobRoleId
       in: query
       required: false
       description: Restrict scheduled shifts and immutable requirements to one job role; positive identifiers with no match return an empty filtered projection
-      schema: {type: integer, format: int64, minimum: 1, example: 10}
+      schema: { type: integer, format: int64, minimum: 1, example: 10 }
     CurrentUserScheduledShiftJobRoleId:
       name: jobRoleId
       in: query
       required: false
       description: Restrict the current user's published shifts to one job role; a positive identifier with no matching shift returns an empty collection.
-      schema: {type: integer, format: int64, minimum: 1, example: 10}
+      schema: { type: integer, format: int64, minimum: 1, example: 10 }
     CurrentUserScheduledShiftShiftId:
       name: shiftId
       in: query
       required: false
       description: Restrict the current user's published shifts to one business Shift; a positive identifier with no matching shift returns an empty collection.
-      schema: {type: integer, format: int64, minimum: 1, example: 20}
+      schema: { type: integer, format: int64, minimum: 1, example: 20 }
     CurrentUserScheduledShiftPlanningId:
       name: planningId
       in: query
       required: false
       description: Restrict the current user's published shifts to one planning; a positive identifier with no matching shift returns an empty collection.
-      schema: {type: integer, format: int64, minimum: 1, example: 500}
+      schema: { type: integer, format: int64, minimum: 1, example: 500 }
   responses:
     BadRequest:
       description: Invalid request or scheduling configuration
       content:
         application/problem+json:
           schema:
-            $ref: '../common/error-components.yml#/components/schemas/ProblemDetail'
+            $ref: "../common/error-components.yml#/components/schemas/ProblemDetail"
     Forbidden:
       description: Current user is not the business owner
       content:
         application/problem+json:
           schema:
-            $ref: '../common/error-components.yml#/components/schemas/ProblemDetail'
+            $ref: "../common/error-components.yml#/components/schemas/ProblemDetail"
     NotFound:
       description: Business or nested resource not found
       content:
         application/problem+json:
           schema:
-            $ref: '../common/error-components.yml#/components/schemas/ProblemDetail'
+            $ref: "../common/error-components.yml#/components/schemas/ProblemDetail"
     Conflict:
       description: Scheduling configuration conflict
       content:
         application/problem+json:
           schema:
-            $ref: '../common/error-components.yml#/components/schemas/ProblemDetail'
+            $ref: "../common/error-components.yml#/components/schemas/ProblemDetail"
   schemas:
     DayOfWeekDTO:
       type: string
@@ -141,7 +141,7 @@ components:
 
     LocalMinuteTimeDTO:
       type: string
-      pattern: '^([01][0-9]|2[0-3]):[0-5][0-9]$'
+      pattern: "^([01][0-9]|2[0-3]):[0-5][0-9]$"
       description: Local business time with minute precision. An end time before the start time ends on the following day.
       example: "09:00"
 
@@ -149,18 +149,18 @@ components:
       type: object
       properties:
         startTime:
-          $ref: '#/components/schemas/LocalMinuteTimeDTO'
+          $ref: "#/components/schemas/LocalMinuteTimeDTO"
         endTime:
-          $ref: '#/components/schemas/LocalMinuteTimeDTO'
+          $ref: "#/components/schemas/LocalMinuteTimeDTO"
       required: [startTime, endTime]
 
     OpeningIntervalResponseDTO:
       type: object
       properties:
         startTime:
-          $ref: '#/components/schemas/LocalMinuteTimeDTO'
+          $ref: "#/components/schemas/LocalMinuteTimeDTO"
         endTime:
-          $ref: '#/components/schemas/LocalMinuteTimeDTO'
+          $ref: "#/components/schemas/LocalMinuteTimeDTO"
       required: [startTime, endTime]
 
     RoleDemandRequestDTO:
@@ -231,7 +231,16 @@ components:
           format: int32
           minimum: 0
           description: Missing employees below the target, never negative.
-      required: [jobRoleId, minimumEmployees, targetEmployees, maximumEmployees, assignedEmployees, minimumDeficit, targetDeficit]
+      required:
+        [
+          jobRoleId,
+          minimumEmployees,
+          targetEmployees,
+          maximumEmployees,
+          assignedEmployees,
+          minimumDeficit,
+          targetDeficit,
+        ]
 
     CreateBusinessShiftRequestDTO:
       type: object
@@ -244,7 +253,7 @@ components:
           example: Morning service
         color:
           type: string
-          pattern: '^#[0-9A-Fa-f]{6}$'
+          pattern: "^#[0-9A-Fa-f]{6}$"
           description: Six-digit hexadecimal display color.
           example: "#1A2B3C"
       required: [name, color]
@@ -260,7 +269,7 @@ components:
           example: Morning service
         color:
           type: string
-          pattern: '^#[0-9A-Fa-f]{6}$'
+          pattern: "^#[0-9A-Fa-f]{6}$"
           description: Six-digit hexadecimal display color.
           example: "#4C9F70"
         active:
@@ -288,7 +297,7 @@ components:
           example: Morning service
         color:
           type: string
-          pattern: '^#[0-9A-Fa-f]{6}$'
+          pattern: "^#[0-9A-Fa-f]{6}$"
           example: "#1A2B3C"
         active:
           type: boolean
@@ -311,7 +320,7 @@ components:
           type: array
           description: Shifts ordered by active state descending, name ascending, and ID ascending.
           items:
-            $ref: '#/components/schemas/BusinessShiftResponseDTO'
+            $ref: "#/components/schemas/BusinessShiftResponseDTO"
         page:
           type: integer
           format: int32
@@ -358,9 +367,9 @@ components:
           description: Business Shift referenced by this occurrence.
           example: 20
         startTime:
-          $ref: '#/components/schemas/LocalMinuteTimeDTO'
+          $ref: "#/components/schemas/LocalMinuteTimeDTO"
         endTime:
-          $ref: '#/components/schemas/LocalMinuteTimeDTO'
+          $ref: "#/components/schemas/LocalMinuteTimeDTO"
         breakMinutes:
           type: integer
           format: int32
@@ -368,7 +377,7 @@ components:
         demands:
           type: array
           items:
-            $ref: '#/components/schemas/RoleDemandRequestDTO'
+            $ref: "#/components/schemas/RoleDemandRequestDTO"
       required: [shiftId, startTime, endTime, breakMinutes, demands]
 
     DailyShiftResponseDTO:
@@ -381,9 +390,9 @@ components:
           minimum: 1
           example: 20
         startTime:
-          $ref: '#/components/schemas/LocalMinuteTimeDTO'
+          $ref: "#/components/schemas/LocalMinuteTimeDTO"
         endTime:
-          $ref: '#/components/schemas/LocalMinuteTimeDTO'
+          $ref: "#/components/schemas/LocalMinuteTimeDTO"
         breakMinutes:
           type: integer
           format: int32
@@ -391,37 +400,37 @@ components:
         demands:
           type: array
           items:
-            $ref: '#/components/schemas/RoleDemandResponseDTO'
+            $ref: "#/components/schemas/RoleDemandResponseDTO"
       required: [shiftId, startTime, endTime, breakMinutes, demands]
 
     RecurringScheduleDayRequestDTO:
       type: object
       properties:
         dayOfWeek:
-          $ref: '#/components/schemas/DayOfWeekDTO'
+          $ref: "#/components/schemas/DayOfWeekDTO"
         openingIntervals:
           type: array
           items:
-            $ref: '#/components/schemas/OpeningIntervalRequestDTO'
+            $ref: "#/components/schemas/OpeningIntervalRequestDTO"
         shifts:
           type: array
           items:
-            $ref: '#/components/schemas/DailyShiftRequestDTO'
+            $ref: "#/components/schemas/DailyShiftRequestDTO"
       required: [dayOfWeek, openingIntervals, shifts]
 
     RecurringScheduleDayResponseDTO:
       type: object
       properties:
         dayOfWeek:
-          $ref: '#/components/schemas/DayOfWeekDTO'
+          $ref: "#/components/schemas/DayOfWeekDTO"
         openingIntervals:
           type: array
           items:
-            $ref: '#/components/schemas/OpeningIntervalResponseDTO'
+            $ref: "#/components/schemas/OpeningIntervalResponseDTO"
         shifts:
           type: array
           items:
-            $ref: '#/components/schemas/DailyShiftResponseDTO'
+            $ref: "#/components/schemas/DailyShiftResponseDTO"
       required: [dayOfWeek, openingIntervals, shifts]
 
     RecurringScheduleRequestDTO:
@@ -446,7 +455,7 @@ components:
           minItems: 7
           maxItems: 7
           items:
-            $ref: '#/components/schemas/RecurringScheduleDayRequestDTO'
+            $ref: "#/components/schemas/RecurringScheduleDayRequestDTO"
       required: [validFrom, days]
 
     RecurringScheduleResponseDTO:
@@ -470,7 +479,7 @@ components:
         days:
           type: array
           items:
-            $ref: '#/components/schemas/RecurringScheduleDayResponseDTO'
+            $ref: "#/components/schemas/RecurringScheduleDayResponseDTO"
         createdAt:
           type: string
           format: date-time
@@ -486,11 +495,11 @@ components:
         openingIntervals:
           type: array
           items:
-            $ref: '#/components/schemas/OpeningIntervalRequestDTO'
+            $ref: "#/components/schemas/OpeningIntervalRequestDTO"
         shifts:
           type: array
           items:
-            $ref: '#/components/schemas/DailyShiftRequestDTO'
+            $ref: "#/components/schemas/DailyShiftRequestDTO"
       required: [openingIntervals, shifts]
 
     DailyConfigurationResponseDTO:
@@ -499,11 +508,11 @@ components:
         openingIntervals:
           type: array
           items:
-            $ref: '#/components/schemas/OpeningIntervalResponseDTO'
+            $ref: "#/components/schemas/OpeningIntervalResponseDTO"
         shifts:
           type: array
           items:
-            $ref: '#/components/schemas/DailyShiftResponseDTO'
+            $ref: "#/components/schemas/DailyShiftResponseDTO"
       required: [openingIntervals, shifts]
 
     ScheduleExceptionRequestDTO:
@@ -515,7 +524,7 @@ components:
           format: date
           description: Business-local exception date. It must be today or a future date.
         configuration:
-          $ref: '#/components/schemas/DailyConfigurationRequestDTO'
+          $ref: "#/components/schemas/DailyConfigurationRequestDTO"
       required: [date, configuration]
 
     ScheduleExceptionResponseDTO:
@@ -531,7 +540,7 @@ components:
           type: string
           format: date
         configuration:
-          $ref: '#/components/schemas/DailyConfigurationResponseDTO'
+          $ref: "#/components/schemas/DailyConfigurationResponseDTO"
         createdAt:
           type: string
           format: date-time
@@ -559,12 +568,12 @@ components:
           maxLength: 500
         color:
           type: string
-          pattern: '^#[0-9A-Fa-f]{6}$'
+          pattern: "^#[0-9A-Fa-f]{6}$"
           description: Hexadecimal display color. Values without exactly six hexadecimal digits are invalid.
           example: "#1A2B3C"
         icon:
           type: string
-          pattern: '^[a-z0-9]+(?:-[a-z0-9]+)*$'
+          pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*$"
           description: Lowercase slug from the open client icon catalog.
           example: front-of-house
       required: [code, name, color, icon]
@@ -582,12 +591,12 @@ components:
           maxLength: 500
         color:
           type: string
-          pattern: '^#[0-9A-Fa-f]{6}$'
+          pattern: "^#[0-9A-Fa-f]{6}$"
           description: Hexadecimal display color. Values without exactly six hexadecimal digits are invalid.
           example: "#1A2B3C"
         icon:
           type: string
-          pattern: '^[a-z0-9]+(?:-[a-z0-9]+)*$'
+          pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*$"
           description: Lowercase slug from the open client icon catalog.
           example: front-of-house
         active:
@@ -614,11 +623,11 @@ components:
           type: [string, "null"]
         color:
           type: string
-          pattern: '^#[0-9A-Fa-f]{6}$'
+          pattern: "^#[0-9A-Fa-f]{6}$"
           example: "#1A2B3C"
         icon:
           type: string
-          pattern: '^[a-z0-9]+(?:-[a-z0-9]+)*$'
+          pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*$"
           example: front-of-house
         active:
           type: boolean
@@ -628,7 +637,8 @@ components:
         updatedAt:
           type: string
           format: date-time
-      required: [id, businessId, code, name, color, icon, active, createdAt, updatedAt]
+      required:
+        [id, businessId, code, name, color, icon, active, createdAt, updatedAt]
 
     BusinessJobRoleSliceResponseDTO:
       type: object
@@ -638,7 +648,7 @@ components:
           type: array
           description: Job roles ordered by active state descending, name ascending, and ID ascending
           items:
-            $ref: '#/components/schemas/BusinessJobRoleResponseDTO'
+            $ref: "#/components/schemas/BusinessJobRoleResponseDTO"
         page:
           type: integer
           format: int32
@@ -699,13 +709,13 @@ components:
           example: Morning service
         color:
           type: string
-          pattern: '^#[0-9A-Fa-f]{6}$'
+          pattern: "^#[0-9A-Fa-f]{6}$"
           description: Shift display color captured in the planning snapshot
           example: "#1A2B3C"
         startTime:
-          $ref: '#/components/schemas/LocalMinuteTimeDTO'
+          $ref: "#/components/schemas/LocalMinuteTimeDTO"
         endTime:
-          $ref: '#/components/schemas/LocalMinuteTimeDTO'
+          $ref: "#/components/schemas/LocalMinuteTimeDTO"
         breakMinutes:
           type: integer
           format: int32
@@ -715,8 +725,9 @@ components:
           type: array
           description: Staffing demand by stable business job-role ID with derived planning coverage.
           items:
-            $ref: '#/components/schemas/PlanningRoleDemandResponseDTO'
-      required: [shiftId, name, color, startTime, endTime, breakMinutes, demands]
+            $ref: "#/components/schemas/PlanningRoleDemandResponseDTO"
+      required:
+        [shiftId, name, color, startTime, endTime, breakMinutes, demands]
 
     PlanningRequirementDTO:
       type: object
@@ -731,16 +742,16 @@ components:
           type: array
           description: Shift requirements captured for this date
           items:
-            $ref: '#/components/schemas/PlanningRequirementShiftDTO'
+            $ref: "#/components/schemas/PlanningRequirementShiftDTO"
       required: [date, shifts]
 
     PlanningSettingsDTO:
       type: object
       properties:
         generationDay:
-          $ref: '#/components/schemas/DayOfWeekDTO'
+          $ref: "#/components/schemas/DayOfWeekDTO"
         generationTime:
-          $ref: '#/components/schemas/LocalMinuteTimeDTO'
+          $ref: "#/components/schemas/LocalMinuteTimeDTO"
       required: [generationDay, generationTime]
 
     PlanningStatusDTO:
@@ -783,7 +794,7 @@ components:
           example: Morning service
         shiftColor:
           type: string
-          pattern: '^#[0-9A-Fa-f]{6}$'
+          pattern: "^#[0-9A-Fa-f]{6}$"
           description: Display color captured from the planning requirement
           example: "#1A2B3C"
         startAt:
@@ -802,7 +813,22 @@ components:
         updatedAt:
           type: string
           format: date-time
-      required: [id, planningId, businessId, userId, jobRoleId, shiftId, shiftName, shiftColor, startAt, endAt, breakMinutes, createdAt, updatedAt]
+      required:
+        [
+          id,
+          planningId,
+          businessId,
+          userId,
+          jobRoleId,
+          shiftId,
+          shiftName,
+          shiftColor,
+          startAt,
+          endAt,
+          breakMinutes,
+          createdAt,
+          updatedAt,
+        ]
 
     CreateDraftPlanningRequestDTO:
       type: object
@@ -819,6 +845,14 @@ components:
       type: object
       description: One manual assignment. Presentation metadata is resolved and captured by the server from shiftId.
       properties:
+        id:
+          type: integer
+          format: int64
+          minimum: 1
+          description: >
+            Optional scheduled-shift ID returned in the planning response;
+            omit for a new assignment.
+          example: 900
         userId:
           type: integer
           format: int64
@@ -863,7 +897,7 @@ components:
           type: array
           description: Complete replacement collection; an empty array removes all draft shifts.
           items:
-            $ref: '#/components/schemas/ScheduledShiftRequestDTO'
+            $ref: "#/components/schemas/ScheduledShiftRequestDTO"
       required: [version, scheduledShifts]
 
     PlanningResponseDTO:
@@ -894,7 +928,7 @@ components:
           description: Sunday of the planning week in the business-local calendar
           example: "2025-08-03"
         status:
-          $ref: '#/components/schemas/PlanningStatusDTO'
+          $ref: "#/components/schemas/PlanningStatusDTO"
         failureReason:
           type: [string, "null"]
           maxLength: 500
@@ -904,7 +938,7 @@ components:
           type: array
           description: Immutable requirements captured only for automatically generated plannings; empty for manually created drafts.
           items:
-            $ref: '#/components/schemas/PlanningRequirementDTO'
+            $ref: "#/components/schemas/PlanningRequirementDTO"
         createdAt:
           type: string
           format: date-time
@@ -915,11 +949,24 @@ components:
           type: array
           description: Persisted manual or solver-generated assignments. Empty when the planning has no assignments yet.
           items:
-            $ref: '#/components/schemas/ScheduledShiftResponseDTO'
+            $ref: "#/components/schemas/ScheduledShiftResponseDTO"
         hasCoverageWarnings:
           type: boolean
           description: True when any immutable demand remains below its minimum staffing level.
-      required: [id, version, businessId, weekStart, weekEnd, status, failureReason, requirements, createdAt, scheduledShifts, hasCoverageWarnings]
+      required:
+        [
+          id,
+          version,
+          businessId,
+          weekStart,
+          weekEnd,
+          status,
+          failureReason,
+          requirements,
+          createdAt,
+          scheduledShifts,
+          hasCoverageWarnings,
+        ]
       example:
         id: 500
         businessId: 101
@@ -1057,7 +1104,7 @@ components:
           type: array
           description: Days containing assigned shifts, ordered by business-local date
           items:
-            $ref: '#/components/schemas/TeamScheduleDayDTO'
+            $ref: "#/components/schemas/TeamScheduleDayDTO"
       required: [businessId, week, weekStart, weekEnd, days]
 
     TeamScheduleDayDTO:
@@ -1072,7 +1119,7 @@ components:
           type: array
           description: Shifts ordered by start instant and then stable shift ID
           items:
-            $ref: '#/components/schemas/TeamScheduleShiftDTO'
+            $ref: "#/components/schemas/TeamScheduleShiftDTO"
       required: [date, shifts]
 
     TeamScheduleShiftDTO:
@@ -1085,9 +1132,9 @@ components:
           minimum: 1
           example: 900
         worker:
-          $ref: '#/components/schemas/TeamScheduleWorkerDTO'
+          $ref: "#/components/schemas/TeamScheduleWorkerDTO"
         jobRole:
-          $ref: '#/components/schemas/TeamScheduleJobRoleDTO'
+          $ref: "#/components/schemas/TeamScheduleJobRoleDTO"
         shiftId:
           type: integer
           format: int64
@@ -1100,7 +1147,7 @@ components:
           example: Morning service
         shiftColor:
           type: string
-          pattern: '^#[0-9A-Fa-f]{6}$'
+          pattern: "^#[0-9A-Fa-f]{6}$"
           example: "#1A2B3C"
         startAt:
           type: string
@@ -1117,7 +1164,18 @@ components:
           format: int32
           minimum: 0
           example: 30
-      required: [id, worker, jobRole, shiftId, shiftName, shiftColor, startAt, endAt, breakMinutes]
+      required:
+        [
+          id,
+          worker,
+          jobRole,
+          shiftId,
+          shiftName,
+          shiftColor,
+          startAt,
+          endAt,
+          breakMinutes,
+        ]
 
     TeamScheduleWorkerDTO:
       type: object
@@ -1150,10 +1208,10 @@ components:
           example: Waiter
         color:
           type: string
-          pattern: '^#[0-9A-Fa-f]{6}$'
+          pattern: "^#[0-9A-Fa-f]{6}$"
           example: "#1A2B3C"
         icon:
           type: string
-          pattern: '^[a-z0-9]+(?:-[a-z0-9]+)*$'
+          pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*$"
           example: front-of-house
       required: [id, code, name, color, icon]
