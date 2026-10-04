@@ -68,3 +68,69 @@ components:
             business-wide enabled value AND this user's enabled value.
           example: true
       required: [businessUserId, name, role, enabled, effectiveEnabled]
+
+    GeofencingPolicy:
+      type: string
+      description: >-
+        Policy for clock-in and clock-out outside the business geofence.
+        ALLOW permits the action without a warning; WARN permits it with a
+        warning; BLOCK prevents it. Missing business and individual settings
+        default to ALLOW. Restrictiveness increases from ALLOW to WARN to BLOCK.
+      enum: [ALLOW, WARN, BLOCK]
+      example: BLOCK
+
+    ManagerGeofencingPolicyRequestDTO:
+      type: object
+      description: Desired business-wide or per-user geofencing policy.
+      additionalProperties: false
+      properties:
+        policy:
+          $ref: "#/components/schemas/GeofencingPolicy"
+      required: [policy]
+
+    ManagerGeofencingSettingsDTO:
+      type: object
+      description: Business-wide geofencing policy and per-user policies.
+      additionalProperties: false
+      properties:
+        policy:
+          $ref: "#/components/schemas/GeofencingPolicy"
+        users:
+          type: array
+          description: >-
+            All current business users, including OWNER, MANAGER, and EMPLOYEE
+            memberships, ordered by name without regard to case and then by
+            businessUserId ascending.
+          items:
+            $ref: "#/components/schemas/ManagerGeofencingUserSettingDTO"
+      required: [policy, users]
+
+    ManagerGeofencingUserSettingDTO:
+      type: object
+      description: Geofencing policy and effective policy for one business user.
+      additionalProperties: false
+      properties:
+        businessUserId:
+          type: integer
+          format: int64
+          minimum: 1
+          description: Unique identifier of the user's membership in this business.
+          example: 101
+        name:
+          type: string
+          description: Display name of the business user.
+          example: Ana García
+        role:
+          type: string
+          description: Role of this user in the business.
+          enum: [OWNER, MANAGER, EMPLOYEE]
+          example: EMPLOYEE
+        policy:
+          $ref: "#/components/schemas/GeofencingPolicy"
+        effectivePolicy:
+          description: >-
+            The more restrictive of the business-wide and individual policies,
+            ordered ALLOW < WARN < BLOCK. An individual policy cannot relax the
+            business-wide policy. Applies to both clock-in and clock-out.
+          $ref: "#/components/schemas/GeofencingPolicy"
+      required: [businessUserId, name, role, policy, effectivePolicy]
