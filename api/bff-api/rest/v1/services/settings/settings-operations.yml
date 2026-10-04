@@ -1,0 +1,231 @@
+settings:
+  manager-business-auto-clocking:
+    get:
+      summary: Get manager business auto-clocking settings
+      description: >-
+        Returns the business-wide auto-clocking switch and the individual
+        preference for every current business user, regardless of role. Missing
+        business and user settings default to true. `effectiveEnabled` is the
+        business-wide switch AND the user's preference. Requires an OWNER
+        membership. Pass-through to the Main API.
+      tags: [Manager]
+      operationId: getManagerBusinessAutoClockingSettings
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: businessId
+          in: path
+          required: true
+          description: ID of the business
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+      responses:
+        "200":
+          description: Business auto-clocking settings retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: "../../components/settings/\
+                  components.yml#/components/schemas/ManagerAutoClockingSettingsDTO"
+              example:
+                enabled: true
+                users:
+                  - businessUserId: 101
+                    name: Ana García
+                    role: EMPLOYEE
+                    enabled: true
+                    effectiveEnabled: true
+                  - businessUserId: 102
+                    name: Luis Pérez
+                    role: MANAGER
+                    enabled: false
+                    effectiveEnabled: false
+                  - businessUserId: 103
+                    name: Marta Ruiz
+                    role: OWNER
+                    enabled: true
+                    effectiveEnabled: true
+        "401":
+          description: Authentication is required
+          content:
+            application/problem+json:
+              schema:
+                $ref: "../../components/\
+                  common/components.yml#/components/schemas/ProblemDetail"
+        "403":
+          description: Authenticated user is not an OWNER of the business
+          content:
+            application/problem+json:
+              schema:
+                $ref: "../../components/\
+                  common/components.yml#/components/schemas/ProblemDetail"
+              example:
+                status: 403
+                detail: "1020 - user is not the owner of business"
+        "404":
+          description: Business not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: "../../components/\
+                  common/components.yml#/components/schemas/ProblemDetail"
+              example:
+                status: 404
+                detail: "1006 - business does not exist"
+
+    patch:
+      summary: Update manager business auto-clocking setting
+      description: >-
+        Sets only the business-wide auto-clocking switch; individual user
+        preferences are unchanged. Requires an OWNER membership. Pass-through
+        to the Main API.
+      tags: [Manager]
+      operationId: updateManagerBusinessAutoClockingSetting
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: businessId
+          in: path
+          required: true
+          description: ID of the business
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+      requestBody:
+        required: true
+        description: Desired state of the business-wide auto-clocking switch
+        content:
+          application/json:
+            schema:
+              $ref: "../../components/settings/\
+                components.yml#/components/schemas/ManagerAutoClockingEnabledRequestDTO"
+            example:
+              enabled: false
+      responses:
+        "204":
+          description: Business auto-clocking setting updated successfully
+        "400":
+          description: Request body is invalid
+          content:
+            application/problem+json:
+              schema:
+                $ref: "../../components/\
+                  common/components.yml#/components/schemas/ProblemDetail"
+        "401":
+          description: Authentication is required
+          content:
+            application/problem+json:
+              schema:
+                $ref: "../../components/\
+                  common/components.yml#/components/schemas/ProblemDetail"
+        "403":
+          description: Authenticated user is not an OWNER of the business
+          content:
+            application/problem+json:
+              schema:
+                $ref: "../../components/\
+                  common/components.yml#/components/schemas/ProblemDetail"
+              example:
+                status: 403
+                detail: "1020 - user is not the owner of business"
+        "404":
+          description: Business not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: "../../components/\
+                  common/components.yml#/components/schemas/ProblemDetail"
+              example:
+                status: 404
+                detail: "1006 - business does not exist"
+
+  manager-business-user-auto-clocking:
+    patch:
+      summary: Update a manager business user's auto-clocking preference
+      description: >-
+        Sets only the preference for the specified business user. The business
+        user must belong to the requested business. This preference is retained
+        when business-wide auto-clocking is disabled. Requires an OWNER
+        membership. Pass-through to the Main API.
+      tags: [Manager]
+      operationId: updateManagerBusinessUserAutoClockingPreference
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: businessId
+          in: path
+          required: true
+          description: ID of the business
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+        - name: businessUserId
+          in: path
+          required: true
+          description: >-
+            ID of the user's membership in this business.
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+      requestBody:
+        required: true
+        description: >-
+          Desired state of this business user's auto-clocking preference.
+        content:
+          application/json:
+            schema:
+              $ref: "../../components/settings/\
+                components.yml#/components/schemas/ManagerAutoClockingEnabledRequestDTO"
+            example:
+              enabled: false
+      responses:
+        "204":
+          description: >-
+            Business user's auto-clocking preference updated successfully.
+        "400":
+          description: Request body or identifier is invalid
+          content:
+            application/problem+json:
+              schema:
+                $ref: "../../components/\
+                  common/components.yml#/components/schemas/ProblemDetail"
+        "401":
+          description: Authentication is required
+          content:
+            application/problem+json:
+              schema:
+                $ref: "../../components/\
+                  common/components.yml#/components/schemas/ProblemDetail"
+        "403":
+          description: Authenticated user is not an OWNER of the business
+          content:
+            application/problem+json:
+              schema:
+                $ref: "../../components/\
+                  common/components.yml#/components/schemas/ProblemDetail"
+              example:
+                status: 403
+                detail: "1020 - user is not the owner of business"
+        "404":
+          description: >-
+            Business or business user not found. A membership belonging to
+            another business is also returned as not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "../../components/\
+                  common/components.yml#/components/schemas/ProblemDetail"
+              examples:
+                BUSINESS_NOT_FOUND:
+                  value:
+                    status: 404
+                    detail: "1006 - business does not exist"
+                BUSINESS_USER_NOT_FOUND:
+                  value:
+                    status: 404
+                    detail: "business user not found in this business"

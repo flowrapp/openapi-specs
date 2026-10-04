@@ -1,0 +1,70 @@
+components:
+  schemas:
+    ManagerAutoClockingEnabledRequestDTO:
+      type: object
+      description: >-
+        Desired state for a business-wide or per-user auto-clocking switch.
+      additionalProperties: false
+      properties:
+        enabled:
+          type: boolean
+          description: Whether auto-clocking should be enabled at this scope.
+          example: false
+      required: [enabled]
+
+    ManagerAutoClockingSettingsDTO:
+      type: object
+      description: Business-wide auto-clocking setting and per-user preferences.
+      additionalProperties: false
+      properties:
+        enabled:
+          type: boolean
+          description: >-
+            Business-wide auto-clocking switch. Defaults to true when no
+            business setting has been stored.
+          example: true
+        users:
+          type: array
+          description: >-
+            All current business users, including OWNER, MANAGER, and EMPLOYEE
+            memberships, ordered by name without regard to case and then by
+            businessUserId ascending.
+          items:
+            $ref: "#/components/schemas/ManagerAutoClockingUserSettingDTO"
+      required: [enabled, users]
+
+    ManagerAutoClockingUserSettingDTO:
+      type: object
+      description: >-
+        Auto-clocking preference and effective state for one business user.
+      additionalProperties: false
+      properties:
+        businessUserId:
+          type: integer
+          format: int64
+          minimum: 1
+          description: >-
+            Unique identifier of the user's membership in this business.
+          example: 101
+        name:
+          type: string
+          description: Display name of the business user.
+          example: Ana García
+        role:
+          type: string
+          description: Role of this user in the business.
+          enum: [OWNER, MANAGER, EMPLOYEE]
+          example: EMPLOYEE
+        enabled:
+          type: boolean
+          description: >-
+            Individual auto-clocking preference. Defaults to true when no
+            preference has been stored for this business user.
+          example: true
+        effectiveEnabled:
+          type: boolean
+          description: >-
+            Whether auto-clocking is effectively enabled. Equals the
+            business-wide enabled value AND this user's enabled value.
+          example: true
+      required: [businessUserId, name, role, enabled, effectiveEnabled]

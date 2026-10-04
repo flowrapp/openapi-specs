@@ -7,7 +7,7 @@ info:
     This BFF aggregates and shapes data from the Flowrapp main API to serve
     the specific needs of the mobile frontend, providing role-based endpoints
     for workers and managers.
-  version: 0.0.57
+  version: 0.0.58
   contact:
     name: Flowrapp Team
     url: https://flowrapp.github.io
@@ -30,7 +30,8 @@ tags:
   - name: User
     description: Current user profile and account management.
   - name: Push Tokens
-    description: Push notification token management. Pass-through to the main API.
+    description: >-
+      Push notification token management. Pass-through to the main API.
   - name: Worker
     description: >
       Worker-facing endpoints for clock-in/out and work history views.
@@ -39,116 +40,135 @@ tags:
     description: >
       Manager-facing endpoints for business oversight, worker management,
       work history reporting, owner-only invitation management, timesheet export,
-      and owner-only Shift, recurring-schedule, exception, job-role, and planning management.
+      and owner-only Shift, recurring-schedule, exception, job-role, and
+      planning management.
 
 paths:
   # ── System ──────────────────────────────────────────────────────────────
   "/api/v1/ping":
-    $ref: 'v1/services/system/system-operations.yml#/system/ping'
+    $ref: "v1/services/system/system-operations.yml#/system/ping"
 
   # ── Authentication (pass-through, no auth required) ─────────────────────
   "/api/v1/auth/login":
-    $ref: 'v1/services/auth/auth-operations.yml#/auth/login'
+    $ref: "v1/services/auth/auth-operations.yml#/auth/login"
   "/api/v1/auth/token-refresh":
-    $ref: 'v1/services/auth/auth-operations.yml#/auth/token-refresh'
+    $ref: "v1/services/auth/auth-operations.yml#/auth/token-refresh"
   "/api/v1/auth/forgot-password":
-    $ref: 'v1/services/auth/auth-operations.yml#/auth/forgot-password'
+    $ref: "v1/services/auth/auth-operations.yml#/auth/forgot-password"
   "/api/v1/auth/reset-password":
-    $ref: 'v1/services/auth/auth-operations.yml#/auth/reset-password'
+    $ref: "v1/services/auth/auth-operations.yml#/auth/reset-password"
   "/api/v1/auth/oauth/github":
-    $ref: 'v1/services/auth/auth-operations.yml#/auth/github'
+    $ref: "v1/services/auth/auth-operations.yml#/auth/github"
   "/api/v1/auth/oauth/google":
-    $ref: 'v1/services/auth/auth-operations.yml#/auth/google'
+    $ref: "v1/services/auth/auth-operations.yml#/auth/google"
   "/api/v1/invitations/register":
-    $ref: 'v1/services/auth/auth-operations.yml#/auth/register-from-invitation'
+    $ref: "v1/services/auth/auth-operations.yml#/auth/register-from-invitation"
 
   # ── User (shared, authenticated) ────────────────────────────────────────
   "/api/v1/me":
-    $ref: 'v1/services/user/user-operations.yml#/user/profile'
+    $ref: "v1/services/user/user-operations.yml#/user/profile"
   "/api/v1/me/password":
-    $ref: 'v1/services/user/user-operations.yml#/user/change-password'
+    $ref: "v1/services/user/user-operations.yml#/user/change-password"
   "/api/v1/me/invitations":
-    $ref: 'v1/services/user/user-operations.yml#/user/invitations'
+    $ref: "v1/services/user/user-operations.yml#/user/invitations"
   "/api/v1/me/invitations/{invitationId}/accept":
-    $ref: 'v1/services/user/user-operations.yml#/user/accept-invitation'
+    $ref: "v1/services/user/user-operations.yml#/user/accept-invitation"
   "/api/v1/me/invitations/{invitationId}/decline":
-    $ref: 'v1/services/user/user-operations.yml#/user/decline-invitation'
+    $ref: "v1/services/user/user-operations.yml#/user/decline-invitation"
 
   # ── Push Tokens (shared, authenticated) ─────────────────────────────────
   "/api/v1/push-tokens":
-    $ref: 'v1/services/pushTokens/push-tokens-operations.yml#/pushTokens/push-tokens'
+    $ref: "v1/services/pushTokens/push-tokens-operations.yml#/pushTokens/pus\
+      h-tokens"
   "/api/v1/push-tokens/{deviceId}":
-    $ref: 'v1/services/pushTokens/push-tokens-operations.yml#/pushTokens/deletion'
+    $ref: "v1/services/pushTokens/push-tokens-operations.yml#/pushTokens/del\
+      etion"
 
   # ── Worker ──────────────────────────────────────────────────────────────
   "/api/v1/worker/businesses":
-    $ref: 'v1/services/worker/worker-operations.yml#/worker/businesses'
+    $ref: "v1/services/worker/worker-operations.yml#/worker/businesses"
   "/api/v1/worker/businesses/{businessId}/clock":
-    $ref: 'v1/services/worker/worker-operations.yml#/worker/clock-view'
+    $ref: "v1/services/worker/worker-operations.yml#/worker/clock-view"
   "/api/v1/worker/businesses/{businessId}/schedule":
-    $ref: 'v1/services/worker/worker-operations.yml#/worker/team-schedule'
+    $ref: "v1/services/worker/worker-operations.yml#/worker/team-schedule"
   "/api/v1/worker/businesses/{businessId}/clock-in":
-    $ref: 'v1/services/worker/worker-operations.yml#/worker/clock-in'
+    $ref: "v1/services/worker/worker-operations.yml#/worker/clock-in"
   "/api/v1/worker/businesses/{businessId}/geofence-events/{eventId}":
-    $ref: 'v1/services/worker/worker-operations.yml#/worker/geofence-event'
+    $ref: "v1/services/worker/worker-operations.yml#/worker/geofence-event"
   "/api/v1/worker/businesses/{businessId}/worklogs/{worklogId}/clock-out":
-    $ref: 'v1/services/worker/worker-operations.yml#/worker/clock-out'
+    $ref: "v1/services/worker/worker-operations.yml#/worker/clock-out"
   "/api/v1/worker/businesses/{businessId}/history/day":
-    $ref: 'v1/services/worker/worker-operations.yml#/worker/history-day'
+    $ref: "v1/services/worker/worker-operations.yml#/worker/history-day"
   "/api/v1/worker/businesses/{businessId}/history/week":
-    $ref: 'v1/services/worker/worker-operations.yml#/worker/history-week'
+    $ref: "v1/services/worker/worker-operations.yml#/worker/history-week"
   "/api/v1/worker/businesses/{businessId}/history/month":
-    $ref: 'v1/services/worker/worker-operations.yml#/worker/history-month'
+    $ref: "v1/services/worker/worker-operations.yml#/worker/history-month"
 
   # ── Manager ─────────────────────────────────────────────────────────────
   "/api/v1/manager/businesses":
-    $ref: 'v1/services/manager/manager-operations.yml#/manager/businesses'
+    $ref: "v1/services/manager/manager-operations.yml#/manager/businesses"
   "/api/v1/manager/businesses/{businessId}":
-    $ref: 'v1/services/manager/manager-operations.yml#/manager/business-profile'
+    $ref: "v1/services/manager/manager-operations.yml#/manager/business-profile"
   "/api/v1/manager/businesses/{businessId}/geofence":
-    $ref: 'v1/services/manager/manager-operations.yml#/manager/business-geofence'
+    $ref: "v1/services/manager/manager-operations.yml#/manager/business-geof\
+      ence"
+  "/api/v1/manager/businesses/{businessId}/settings/auto-clocking":
+    $ref: "v1/services/settings/settings-operations.yml#/settings/manager-bu\
+      siness-auto-clocking"
+  "/api/v1/manager/businesses/{businessId}/settings/auto-clocking/users/{businessUserId}":
+    $ref: "v1/services/settings/settings-operations.yml#/settings/manager-bu\
+      siness-user-auto-clocking"
   "/api/v1/manager/businesses/{businessId}/workers":
-    $ref: 'v1/services/manager/manager-operations.yml#/manager/workers'
+    $ref: "v1/services/manager/manager-operations.yml#/manager/workers"
   "/api/v1/manager/businesses/{businessId}/schedule/recurring":
-    $ref: 'v1/services/manager/manager-operations.yml#/manager/recurring-schedule'
+    $ref: "v1/services/manager/manager-operations.yml#/manager/recurring-sch\
+      edule"
   "/api/v1/manager/businesses/{businessId}/schedule/generation-settings":
-    $ref: 'v1/services/manager/manager-operations.yml#/manager/planning-generation-settings'
+    $ref: "v1/services/manager/manager-operations.yml#/manager/planning-gene\
+      ration-settings"
   "/api/v1/manager/businesses/{businessId}/schedule/recurring/{scheduleId}":
-    $ref: 'v1/services/manager/manager-operations.yml#/manager/recurring-schedule-item'
+    $ref: "v1/services/manager/manager-operations.yml#/manager/recurring-sch\
+      edule-item"
   "/api/v1/manager/businesses/{businessId}/schedule/exceptions":
-    $ref: 'v1/services/manager/manager-operations.yml#/manager/schedule-exceptions'
+    $ref: "v1/services/manager/manager-operations.yml#/manager/schedule-exce\
+      ptions"
   "/api/v1/manager/businesses/{businessId}/schedule/exceptions/{exceptionId}":
-    $ref: 'v1/services/manager/manager-operations.yml#/manager/schedule-exception-item'
+    $ref: "v1/services/manager/manager-operations.yml#/manager/schedule-exce\
+      ption-item"
   "/api/v1/manager/businesses/{businessId}/job-roles":
-    $ref: 'v1/services/manager/manager-operations.yml#/manager/job-roles'
+    $ref: "v1/services/manager/manager-operations.yml#/manager/job-roles"
   "/api/v1/manager/businesses/{businessId}/job-roles/{jobRoleId}":
-    $ref: 'v1/services/manager/manager-operations.yml#/manager/job-role-item'
+    $ref: "v1/services/manager/manager-operations.yml#/manager/job-role-item"
   "/api/v1/manager/businesses/{businessId}/shifts":
-    $ref: 'v1/services/manager/manager-operations.yml#/manager/shifts'
+    $ref: "v1/services/manager/manager-operations.yml#/manager/shifts"
   "/api/v1/manager/businesses/{businessId}/shifts/{shiftId}":
-    $ref: 'v1/services/manager/manager-operations.yml#/manager/shift-item'
+    $ref: "v1/services/manager/manager-operations.yml#/manager/shift-item"
   "/api/v1/manager/businesses/{businessId}/schedule":
-    $ref: 'v1/services/manager/manager-operations.yml#/manager/planning'
+    $ref: "v1/services/manager/manager-operations.yml#/manager/planning"
   "/api/v1/manager/businesses/{businessId}/schedule/{planningId}/scheduled-shifts":
-    $ref: 'v1/services/manager/manager-operations.yml#/manager/planning-scheduled-shifts'
+    $ref: "v1/services/manager/manager-operations.yml#/manager/planning-sche\
+      duled-shifts"
   "/api/v1/manager/businesses/{businessId}/schedule/{planningId}/publish":
-    $ref: 'v1/services/manager/manager-operations.yml#/manager/publish-planning'
+    $ref: "v1/services/manager/manager-operations.yml#/manager/publish-planning"
   "/api/v1/manager/businesses/{businessId}/history/day":
-    $ref: 'v1/services/manager/manager-operations.yml#/manager/history-day'
+    $ref: "v1/services/manager/manager-operations.yml#/manager/history-day"
   "/api/v1/manager/businesses/{businessId}/history/week":
-    $ref: 'v1/services/manager/manager-operations.yml#/manager/history-week'
+    $ref: "v1/services/manager/manager-operations.yml#/manager/history-week"
   "/api/v1/manager/businesses/{businessId}/history/month":
-    $ref: 'v1/services/manager/manager-operations.yml#/manager/history-month'
+    $ref: "v1/services/manager/manager-operations.yml#/manager/history-month"
   "/api/v1/manager/businesses/{businessId}/worklogs/{worklogId}":
-    $ref: 'v1/services/manager/manager-operations.yml#/manager/edit-worklog'
+    $ref: "v1/services/manager/manager-operations.yml#/manager/edit-worklog"
   "/api/v1/manager/businesses/{businessId}/invitations":
-    $ref: 'v1/services/manager/manager-operations.yml#/manager/invitations'
+    $ref: "v1/services/manager/manager-operations.yml#/manager/invitations"
   "/api/v1/manager/businesses/{businessId}/invitations/{invitationId}":
-    $ref: 'v1/services/manager/manager-operations.yml#/manager/delete-invitation'
+    $ref: "v1/services/manager/manager-operations.yml#/manager/delete-invita\
+      tion"
   "/api/v1/manager/businesses/{businessId}/export/weekly-timesheet":
-    $ref: 'v1/services/manager/manager-operations.yml#/manager/export-weekly-timesheet'
+    $ref: "v1/services/manager/manager-operations.yml#/manager/export-weekly\
+      -timesheet"
   "/api/v1/manager/businesses/{businessId}/export/worked-hours-report":
-    $ref: 'v1/services/manager/manager-operations.yml#/manager/export-worked-hours-report'
+    $ref: "v1/services/manager/manager-operations.yml#/manager/export-worked\
+      -hours-report"
 
 components:
   securitySchemes:
@@ -156,4 +176,6 @@ components:
       type: http
       scheme: bearer
       bearerFormat: JWT
-      description: JWT-based authentication. Tokens are obtained via the login or OAuth endpoints.
+      description: >-
+        JWT-based authentication. Tokens are obtained via the login or OAuth
+        endpoints.

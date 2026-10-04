@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.0.58
+
+### Added
+
+- Owner-only manager endpoints for reading and updating business-wide and per-business-user auto-clocking settings.
+
 ## 0.0.57
 
 ### Added
