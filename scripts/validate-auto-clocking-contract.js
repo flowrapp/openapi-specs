@@ -24,6 +24,7 @@ function resolveRef(file, ref) {
 
 const schemas = [];
 const geofencingSchemas = [];
+const currentUserSchemas = [];
 for (const [api, prefix] of [
   ["main-api", "/api/v1"],
   ["bff-api", "/api/v1/manager"],
@@ -173,7 +174,57 @@ for (const [api, prefix] of [
     );
   }
   geofencingSchemas.push(memberSettings.value);
+
+  const ownSchemas = [];
+  for (const [setting, field] of [
+    ["auto-clocking", "effectiveEnabled"],
+    ["geofencing", "effectivePolicy"],
+  ]) {
+    const ownPath = api === "main-api"
+      ? `/api/v1/businesses/{businessId}/settings/${setting}/users/me`
+      : `/api/v1/worker/businesses/{businessId}/settings/${setting}`;
+    const own = resolveRef(root, spec.paths[ownPath].$ref);
+    assert.deepEqual(Object.keys(own.value), ["get"]);
+    const operation = own.value.get;
+    assert.deepEqual(operation.security, [{ bearerAuth: [] }]);
+    assert.match(operation.description, /bearer token/);
+    assert.match(operation.description, /OWNER, MANAGER, or EMPLOYEE/);
+    assert.deepEqual(operation.parameters.map(parameter => parameter.name), ["businessId"]);
+    assert.equal(operation.parameters[0].in, "path");
+    assert.equal(operation.parameters[0].required, true);
+    assert.equal(operation.parameters[0].schema.minimum, 1);
+    assert.equal(operation.requestBody, undefined);
+    for (const status of ["401", "403", "404"]) {
+      const error = operation.responses[status].content["application/problem+json"];
+      assert.equal(resolveRef(own.file, error.schema.$ref).value.type, "object");
+    }
+    if (api === "main-api") {
+      assert.deepEqual(operation["x-functional-errors"], [1006, 1015]);
+    }
+    const content = operation.responses["200"].content["application/json"];
+    const ownSchema = resolveRef(own.file, content.schema.$ref);
+    assert.equal(ownSchema.value.additionalProperties, false);
+    assert.deepEqual(ownSchema.value.required, [field]);
+    assert.deepEqual(Object.keys(ownSchema.value.properties), [field]);
+    assert.deepEqual(Object.keys(content.example), [field]);
+    if (setting === "auto-clocking") {
+      assert.equal(ownSchema.value.properties[field].type, "boolean");
+      assert.equal(typeof content.example[field], "boolean");
+      assert.match(operation.description, /switch AND the individual preference/);
+      assert.match(operation.description, /default to true/);
+    } else {
+      const policy = resolveRef(ownSchema.file, ownSchema.value.properties[field].$ref);
+      assert.deepEqual(policy.value.enum, policies);
+      assert.ok(policies.includes(content.example[field]));
+      assert.match(operation.description, /ALLOW < WARN < BLOCK/);
+      assert.match(operation.description, /default to ALLOW/);
+      assert.match(operation.description, /clock-in and clock-out/);
+    }
+    ownSchemas.push(ownSchema.value);
+  }
+  currentUserSchemas.push(ownSchemas);
 }
 assert.deepEqual(schemas[0], schemas[1]);
 assert.deepEqual(geofencingSchemas[0], geofencingSchemas[1]);
+assert.deepEqual(currentUserSchemas[0], currentUserSchemas[1]);
 console.log("Auto-clocking and geofencing contracts and BFF user schemas are consistent.");

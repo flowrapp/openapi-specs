@@ -1,5 +1,31 @@
 components:
   schemas:
+    CurrentUserAutoClockingSettingsDTO:
+      type: object
+      description: Effective auto-clocking setting for the authenticated business member.
+      additionalProperties: false
+      properties:
+        effectiveEnabled:
+          type: boolean
+          description: >-
+            Business-wide enabled value AND the current user's enabled value.
+            Missing business and individual settings default to true.
+          example: true
+      required: [effectiveEnabled]
+
+    CurrentUserGeofencingSettingsDTO:
+      type: object
+      description: Effective geofencing policy for the authenticated business member.
+      additionalProperties: false
+      properties:
+        effectivePolicy:
+          description: >-
+            The more restrictive of the business-wide and current user's policies,
+            ordered ALLOW < WARN < BLOCK. Missing settings default to ALLOW.
+            Applies to both clock-in and clock-out.
+          $ref: "#/components/schemas/GeofencingPolicy"
+      required: [effectivePolicy]
+
     ManagerAutoClockingEnabledRequestDTO:
       type: object
       description: >-

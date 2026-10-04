@@ -1,4 +1,119 @@
 settings:
+  current-user-auto-clocking:
+    get:
+      summary: Get current user's effective auto-clocking setting
+      description: >-
+        Returns only the authenticated user's effective auto-clocking setting for
+        this business: the business-wide switch AND the individual preference.
+        Missing business and individual settings default to true. The user is
+        identified by the bearer token, not by a supplied user identifier.
+        Requires a membership in this business (OWNER, MANAGER, or EMPLOYEE).
+      tags: [Settings]
+      operationId: getCurrentUserAutoClockingSettings
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: businessId
+          in: path
+          required: true
+          description: Unique identifier of the business
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+      responses:
+        "200":
+          description: Current user's effective auto-clocking setting retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: "../../components/settings/components.yml#/components/schemas/CurrentUserAutoClockingSettingsDTO"
+              example:
+                effectiveEnabled: true
+        "401":
+          description: Authentication is required
+          content:
+            application/problem+json:
+              schema:
+                $ref: "../../components/common/error-components.yml#/components/schemas/ProblemDetail"
+        "403":
+          description: Current user is not a member of this business
+          content:
+            application/problem+json:
+              schema:
+                $ref: "../../components/common/error-components.yml#/components/schemas/ProblemDetail"
+              example:
+                status: 403
+                detail: "1015 - user is not member of business"
+        "404":
+          description: Business not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: "../../components/common/error-components.yml#/components/schemas/ProblemDetail"
+              example:
+                status: 404
+                detail: "1006 - business does not exist"
+      x-functional-errors: [1006, 1015]
+
+  current-user-geofencing:
+    get:
+      summary: Get current user's effective geofencing policy
+      description: >-
+        Returns only the authenticated user's effective geofencing policy for
+        this business: the more restrictive of the business-wide and individual
+        policies, ordered ALLOW < WARN < BLOCK. Missing settings default to ALLOW.
+        Applies to both clock-in and clock-out. The user is identified by the
+        bearer token, not by a supplied user identifier. Requires a membership
+        in this business (OWNER, MANAGER, or EMPLOYEE).
+      tags: [Settings]
+      operationId: getCurrentUserGeofencingSettings
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: businessId
+          in: path
+          required: true
+          description: Unique identifier of the business
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+      responses:
+        "200":
+          description: Current user's effective geofencing policy retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: "../../components/settings/components.yml#/components/schemas/CurrentUserGeofencingSettingsDTO"
+              example:
+                effectivePolicy: WARN
+        "401":
+          description: Authentication is required
+          content:
+            application/problem+json:
+              schema:
+                $ref: "../../components/common/error-components.yml#/components/schemas/ProblemDetail"
+        "403":
+          description: Current user is not a member of this business
+          content:
+            application/problem+json:
+              schema:
+                $ref: "../../components/common/error-components.yml#/components/schemas/ProblemDetail"
+              example:
+                status: 403
+                detail: "1015 - user is not member of business"
+        "404":
+          description: Business not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: "../../components/common/error-components.yml#/components/schemas/ProblemDetail"
+              example:
+                status: 404
+                detail: "1006 - business does not exist"
+      x-functional-errors: [1006, 1015]
+
   business-geofencing:
     get:
       summary: Get business geofencing settings

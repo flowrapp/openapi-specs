@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.0.60
+
+### Added
+
+- Worker endpoints expose the authenticated business member's effective settings via `GET /api/v1/worker/businesses/{businessId}/settings/auto-clocking` and `GET /api/v1/worker/businesses/{businessId}/settings/geofencing`, available to all membership roles.
+
 ## 0.0.59
 
 ### Added

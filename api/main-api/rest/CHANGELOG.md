@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.0.64
+
+### Added
+
+- Authenticated business members can retrieve their own effective auto-clocking and geofencing settings via `GET /api/v1/businesses/{businessId}/settings/auto-clocking/users/me` and `GET /api/v1/businesses/{businessId}/settings/geofencing/users/me`.
+
 ## 0.0.63
 
 ### Added

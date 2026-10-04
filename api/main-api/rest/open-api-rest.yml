@@ -3,7 +3,7 @@ openapi: 3.1.0
 info:
   title: Flowrapp API
   description: REST API for Flowrapp Backend
-  version: 0.0.63
+  version: 0.0.64
   contact:
     name: Flowrapp Team
     url: https://flowrapp.github.io
@@ -105,10 +105,14 @@ paths:
   "/api/v1/businesses/{businessId}/settings/auto-clocking/users/{businessUserId}":
     $ref: "v1/services/settings/settings-operations.yml#/settings/business-u\
       ser-auto-clocking"
+  "/api/v1/businesses/{businessId}/settings/auto-clocking/users/me":
+    $ref: "v1/services/settings/settings-operations.yml#/settings/current-user-auto-clocking"
   "/api/v1/businesses/{businessId}/settings/geofencing":
     $ref: "v1/services/settings/settings-operations.yml#/settings/business-geofencing"
   "/api/v1/businesses/{businessId}/settings/geofencing/users/{businessUserId}":
     $ref: "v1/services/settings/settings-operations.yml#/settings/business-user-geofencing"
+  "/api/v1/businesses/{businessId}/settings/geofencing/users/me":
+    $ref: "v1/services/settings/settings-operations.yml#/settings/current-user-geofencing"
   "/api/v1/businesses/{businessId}/users":
     $ref: "v1/services/business/businesses-operations.yml#/businesses/get-bu\
       siness-users"
