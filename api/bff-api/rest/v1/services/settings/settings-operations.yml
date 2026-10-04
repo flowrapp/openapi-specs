@@ -1,4 +1,224 @@
 settings:
+  manager-business-geofencing:
+    get:
+      summary: Get manager business geofencing settings
+      description: >-
+        Returns the business-wide geofencing policy and the individual policy
+        for every current business user, regardless of role. Missing business
+        and individual settings default to ALLOW. `effectivePolicy` is the more
+        restrictive policy, ordered ALLOW < WARN < BLOCK, for both clock-in and
+        clock-out outside the geofence. Requires an OWNER membership.
+        Pass-through to the Main API.
+      tags: [Manager]
+      operationId: getManagerBusinessGeofencingSettings
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: businessId
+          in: path
+          required: true
+          description: ID of the business
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+      responses:
+        "200":
+          description: Business geofencing settings retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: "../../components/settings/components.yml#/components/schemas/ManagerGeofencingSettingsDTO"
+              example:
+                policy: WARN
+                users:
+                  - businessUserId: 101
+                    name: Ana García
+                    role: EMPLOYEE
+                    policy: BLOCK
+                    effectivePolicy: BLOCK
+                  - businessUserId: 102
+                    name: Luis Pérez
+                    role: MANAGER
+                    policy: ALLOW
+                    effectivePolicy: WARN
+                  - businessUserId: 103
+                    name: Marta Ruiz
+                    role: OWNER
+                    policy: WARN
+                    effectivePolicy: WARN
+        "401":
+          description: Authentication is required
+          content:
+            application/problem+json:
+              schema:
+                $ref: "../../components/common/components.yml#/components/schemas/ProblemDetail"
+        "403":
+          description: Authenticated user is not an OWNER of the business
+          content:
+            application/problem+json:
+              schema:
+                $ref: "../../components/common/components.yml#/components/schemas/ProblemDetail"
+              example:
+                status: 403
+                detail: "1020 - user is not the owner of business"
+        "404":
+          description: Business not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: "../../components/common/components.yml#/components/schemas/ProblemDetail"
+              example:
+                status: 404
+                detail: "1006 - business does not exist"
+
+    patch:
+      summary: Update manager business geofencing policy
+      description: >-
+        Sets only the business-wide geofencing policy for clock-in and clock-out;
+        individual policies are retained. The effective policy is the more
+        restrictive of the business-wide and individual policies, ordered
+        ALLOW < WARN < BLOCK. Requires an OWNER membership. Sending the same
+        value repeatedly is safe. Pass-through to the Main API.
+      tags: [Manager]
+      operationId: updateManagerBusinessGeofencingPolicy
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: businessId
+          in: path
+          required: true
+          description: ID of the business
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+      requestBody:
+        required: true
+        description: Desired business-wide geofencing policy
+        content:
+          application/json:
+            schema:
+              $ref: "../../components/settings/components.yml#/components/schemas/ManagerGeofencingPolicyRequestDTO"
+            example:
+              policy: BLOCK
+      responses:
+        "204":
+          description: Business geofencing policy updated successfully
+        "400":
+          description: Request body is invalid or policy is not ALLOW, WARN, or BLOCK
+          content:
+            application/problem+json:
+              schema:
+                $ref: "../../components/common/components.yml#/components/schemas/ProblemDetail"
+        "401":
+          description: Authentication is required
+          content:
+            application/problem+json:
+              schema:
+                $ref: "../../components/common/components.yml#/components/schemas/ProblemDetail"
+        "403":
+          description: Authenticated user is not an OWNER of the business
+          content:
+            application/problem+json:
+              schema:
+                $ref: "../../components/common/components.yml#/components/schemas/ProblemDetail"
+              example:
+                status: 403
+                detail: "1020 - user is not the owner of business"
+        "404":
+          description: Business not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: "../../components/common/components.yml#/components/schemas/ProblemDetail"
+              example:
+                status: 404
+                detail: "1006 - business does not exist"
+
+  manager-business-user-geofencing:
+    patch:
+      summary: Update a manager business user's geofencing policy
+      description: >-
+        Sets only the policy for the specified business user, who must belong
+        to the requested business. The effective policy for clock-in and
+        clock-out is the more restrictive of the business-wide and individual
+        policies, ordered ALLOW < WARN < BLOCK. An individual policy cannot
+        relax the business-wide policy and is retained when that policy changes.
+        Requires an OWNER membership. Sending the same value repeatedly is safe.
+        Pass-through to the Main API.
+      tags: [Manager]
+      operationId: updateManagerBusinessUserGeofencingPolicy
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: businessId
+          in: path
+          required: true
+          description: ID of the business
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+        - name: businessUserId
+          in: path
+          required: true
+          description: ID of the user's membership in this business
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+      requestBody:
+        required: true
+        description: Desired geofencing policy for this business user
+        content:
+          application/json:
+            schema:
+              $ref: "../../components/settings/components.yml#/components/schemas/ManagerGeofencingPolicyRequestDTO"
+            example:
+              policy: ALLOW
+      responses:
+        "204":
+          description: Business user's geofencing policy updated successfully
+        "400":
+          description: Request body or identifier is invalid, or policy is not ALLOW, WARN, or BLOCK
+          content:
+            application/problem+json:
+              schema:
+                $ref: "../../components/common/components.yml#/components/schemas/ProblemDetail"
+        "401":
+          description: Authentication is required
+          content:
+            application/problem+json:
+              schema:
+                $ref: "../../components/common/components.yml#/components/schemas/ProblemDetail"
+        "403":
+          description: Authenticated user is not an OWNER of the business
+          content:
+            application/problem+json:
+              schema:
+                $ref: "../../components/common/components.yml#/components/schemas/ProblemDetail"
+              example:
+                status: 403
+                detail: "1020 - user is not the owner of business"
+        "404":
+          description: >-
+            Business or business user not found. A membership belonging to
+            another business is also returned as not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "../../components/common/components.yml#/components/schemas/ProblemDetail"
+              examples:
+                BUSINESS_NOT_FOUND:
+                  value:
+                    status: 404
+                    detail: "1006 - business does not exist"
+                BUSINESS_USER_NOT_FOUND:
+                  value:
+                    status: 404
+                    detail: "business user not found in this business"
+
   manager-business-auto-clocking:
     get:
       summary: Get manager business auto-clocking settings

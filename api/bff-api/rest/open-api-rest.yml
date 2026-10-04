@@ -7,7 +7,7 @@ info:
     This BFF aggregates and shapes data from the Flowrapp main API to serve
     the specific needs of the mobile frontend, providing role-based endpoints
     for workers and managers.
-  version: 0.0.58
+  version: 0.0.59
   contact:
     name: Flowrapp Team
     url: https://flowrapp.github.io
@@ -118,6 +118,10 @@ paths:
   "/api/v1/manager/businesses/{businessId}/settings/auto-clocking/users/{businessUserId}":
     $ref: "v1/services/settings/settings-operations.yml#/settings/manager-bu\
       siness-user-auto-clocking"
+  "/api/v1/manager/businesses/{businessId}/settings/geofencing":
+    $ref: "v1/services/settings/settings-operations.yml#/settings/manager-business-geofencing"
+  "/api/v1/manager/businesses/{businessId}/settings/geofencing/users/{businessUserId}":
+    $ref: "v1/services/settings/settings-operations.yml#/settings/manager-business-user-geofencing"
   "/api/v1/manager/businesses/{businessId}/workers":
     $ref: "v1/services/manager/manager-operations.yml#/manager/workers"
   "/api/v1/manager/businesses/{businessId}/schedule/recurring":

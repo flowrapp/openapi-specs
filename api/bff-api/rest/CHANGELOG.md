@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.0.59
+
+### Added
+
+- Owner-only manager endpoints for reading and updating business-wide and per-business-user geofencing policies (`ALLOW`, `WARN`, `BLOCK`) for clock-in and clock-out. Missing settings default to `ALLOW`; the more restrictive policy applies.
+
 ## 0.0.58
 
 ### Added
