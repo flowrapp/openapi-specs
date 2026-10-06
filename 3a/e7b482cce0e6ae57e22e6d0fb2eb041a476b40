@@ -1,0 +1,20 @@
+api/bff-api/rest/CHANGELOG.md
+  h_a041df4244d543 3-8
+api/bff-api/rest/open-api-rest.yml
+  h_a041df4244d543 10,72-73
+api/bff-api/rest/v1/services/settings/settings-operations.yml
+  h_a041df4244d543 2-73
+scripts/validate-auto-clocking-contract.js
+  h_a041df4244d543 226-253
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "3ae7b482cce0e6ae57e22e6d0fb2eb041a476b40",
+  "prompts": {},
+  "humans": {
+    "h_a041df4244d543": {
+      "author": "sergiobpa <sergiobpa@ext.inditex.com>"
+    }
+  }
+}
