@@ -7,7 +7,7 @@ info:
     This BFF aggregates and shapes data from the Flowrapp main API to serve
     the specific needs of the mobile frontend, providing role-based endpoints
     for workers and managers.
-  version: 0.0.60
+  version: 0.0.61
   contact:
     name: Flowrapp Team
     url: https://flowrapp.github.io
@@ -69,6 +69,8 @@ paths:
     $ref: "v1/services/user/user-operations.yml#/user/profile"
   "/api/v1/me/password":
     $ref: "v1/services/user/user-operations.yml#/user/change-password"
+  "/api/v1/me/settings/geofencing":
+    $ref: "v1/services/settings/settings-operations.yml#/settings/current-user-geofencing"
   "/api/v1/me/invitations":
     $ref: "v1/services/user/user-operations.yml#/user/invitations"
   "/api/v1/me/invitations/{invitationId}/accept":

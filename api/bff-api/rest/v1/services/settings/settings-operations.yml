@@ -1,4 +1,76 @@
 settings:
+  current-user-geofencing:
+    get:
+      summary: Get current user's effective geofencing policy for a business
+      description: >-
+        Returns only the authenticated user's effective geofencing policy for
+        the business selected by businessId: the more restrictive of the
+        business-wide and individual policies, ordered ALLOW < WARN < BLOCK.
+        Missing settings default to ALLOW. Applies to both clock-in and clock-out.
+        The user is identified by the bearer token, not by a supplied user
+        identifier. Requires a membership in this business (OWNER, MANAGER, or EMPLOYEE).
+        Pass-through to GET /api/v1/businesses/{businessId}/settings/geofencing/users/me
+        on the Main API. The business geofence center and radius are available
+        in the worker businesses response. Clients may refresh this policy
+        periodically to validate location before submitting a clock action;
+        backend validation remains authoritative.
+      tags: [User]
+      operationId: getCurrentUserGeofencingSettings
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: businessId
+          in: query
+          required: true
+          description: ID of the business whose effective policy is requested
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+          example: 101
+      responses:
+        "200":
+          description: Current user's effective geofencing policy retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: "../../components/settings/components.yml#/components/schemas/CurrentUserGeofencingSettingsDTO"
+              example:
+                effectivePolicy: BLOCK
+        "400":
+          description: businessId is missing or is not a positive integer
+          content:
+            application/problem+json:
+              schema:
+                $ref: "../../components/common/components.yml#/components/schemas/ProblemDetail"
+              example:
+                status: 400
+                detail: "businessId must be a positive integer"
+        "401":
+          description: Authentication is required
+          content:
+            application/problem+json:
+              schema:
+                $ref: "../../components/common/components.yml#/components/schemas/ProblemDetail"
+        "403":
+          description: Current user is not a member of this business
+          content:
+            application/problem+json:
+              schema:
+                $ref: "../../components/common/components.yml#/components/schemas/ProblemDetail"
+              example:
+                status: 403
+                detail: "1015 - user is not member of business"
+        "404":
+          description: Business not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: "../../components/common/components.yml#/components/schemas/ProblemDetail"
+              example:
+                status: 404
+                detail: "1006 - business does not exist"
+
   worker-auto-clocking:
     get:
       summary: Get current user's effective auto-clocking setting

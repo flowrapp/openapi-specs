@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.0.61
+
+### Added
+
+- `GET /api/v1/me/settings/geofencing?businessId=101` exposes the authenticated user's effective geofencing policy for the selected business to all membership roles, for client-side clock-in and clock-out validation.
+
 ## 0.0.60
 
 ### Added

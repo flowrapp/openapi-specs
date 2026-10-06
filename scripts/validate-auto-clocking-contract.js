@@ -223,6 +223,34 @@ for (const [api, prefix] of [
     ownSchemas.push(ownSchema.value);
   }
   currentUserSchemas.push(ownSchemas);
+  if (api === "bff-api") {
+    const own = resolveRef(root, spec.paths["/api/v1/me/settings/geofencing"].$ref);
+    assert.deepEqual(Object.keys(own.value), ["get"]);
+    const operation = own.value.get;
+    assert.deepEqual(operation.tags, ["User"]);
+    assert.deepEqual(operation.security, [{ bearerAuth: [] }]);
+    assert.match(operation.description, /bearer token/);
+    assert.match(operation.description, /OWNER, MANAGER, or EMPLOYEE/);
+    assert.match(operation.description, /ALLOW < WARN < BLOCK/);
+    assert.match(operation.description, /default to ALLOW/);
+    assert.match(operation.description, /clock-in and clock-out/);
+    assert.deepEqual(operation.parameters.map(parameter => parameter.name), ["businessId"]);
+    const parameter = operation.parameters[0];
+    assert.equal(parameter.in, "query");
+    assert.equal(parameter.required, true);
+    assert.equal(parameter.schema.type, "integer");
+    assert.equal(parameter.schema.format, "int64");
+    assert.equal(parameter.schema.minimum, 1);
+    assert.equal(operation.requestBody, undefined);
+    for (const status of ["400", "401", "403", "404"]) {
+      const error = operation.responses[status].content["application/problem+json"];
+      assert.equal(resolveRef(own.file, error.schema.$ref).value.type, "object");
+    }
+    const content = operation.responses["200"].content["application/json"];
+    assert.deepEqual(resolveRef(own.file, content.schema.$ref).value, ownSchemas[1]);
+    assert.deepEqual(Object.keys(content.example), ["effectivePolicy"]);
+    assert.ok(policies.includes(content.example.effectivePolicy));
+  }
 }
 assert.deepEqual(schemas[0], schemas[1]);
 assert.deepEqual(geofencingSchemas[0], geofencingSchemas[1]);
