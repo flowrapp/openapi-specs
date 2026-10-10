@@ -1,0 +1,16 @@
+api/bff-api/rest/v1/services/manager/manager-operations.yml
+  h_a041df4244d543 660,662-667,697-718,721,727-730,733,738
+api/main-api/rest/v1/services/reports/reports-operations.yml
+  h_a041df4244d543 91,93-95,129-150,153,159-162,165,170
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "23e26d045937b8247356d1da145d8bf23276e518",
+  "prompts": {},
+  "humans": {
+    "h_a041df4244d543": {
+      "author": "sergiobpa <sergiobpa@ext.inditex.com>"
+    }
+  }
+}
