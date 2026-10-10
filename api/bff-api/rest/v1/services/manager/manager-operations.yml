@@ -655,64 +655,16 @@ manager:
         '404':
           description: Business or invitation not found
 
-  export-weekly-timesheet:
-    get:
-      summary: Export weekly timesheet as PDF
-      description: >
-        Generates and downloads a PDF document containing the weekly timesheet for a business.
-        The PDF includes each worker's daily clock-in/clock-out times and total hours for the
-        specified week.
-      tags:
-        - Manager
-      operationId: exportWeeklyTimesheetPdf
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: businessId
-          in: path
-          required: true
-          description: ID of the business
-          schema:
-            type: integer
-            format: int64
-        - name: week
-          in: query
-          required: true
-          description: ISO 8601 week to export (YYYY-Www)
-          schema:
-            type: string
-            pattern: '^\d{4}-W\d{2}$'
-            example: "2025-W31"
-      responses:
-        '200':
-          description: PDF generated successfully
-          content:
-            application/pdf:
-              schema:
-                type: string
-                format: binary
-          headers:
-            Content-Disposition:
-              description: Attachment filename
-              schema:
-                type: string
-                example: 'attachment; filename="timesheet-2025-W31.pdf"'
-        '400':
-          description: Invalid week format
-        '401':
-          description: Unauthorized
-        '403':
-          description: Forbidden - User is not a manager of this business
-        '404':
-          description: Business not found or no data for the specified week
-
   export-worked-hours-report:
     get:
-      summary: Export worked hours report as PDF
+      summary: Export worked hours report as PDF or Excel
       description: >
-        Downloads a PDF report with worked-hours information for every employee in the business
-        within the requested date range. This endpoint is a pass-through proxy to the main API,
-        where privileged business access is enforced for OWNER and MANAGER roles.
+        Downloads a PDF or Excel (.xlsx) report with worked-hours information for the selected
+        employees in the business within the requested date range. If userIds is omitted or
+        empty, all employees in the business are included. Every supplied user ID must belong
+        to the requested business. The type parameter selects the output format and defaults
+        to PDF. This endpoint forwards type and userIds to the main API, where privileged
+        business access is enforced for OWNER and MANAGER roles.
       tags:
         - Manager
       operationId: exportManagerWorkedHoursReportPdf
@@ -742,22 +694,48 @@ manager:
             type: string
             format: date
             example: "2025-12-31"
+        - name: type
+          in: query
+          required: false
+          description: Output format of the report. EXCEL generates an .xlsx workbook.
+          schema:
+            type: string
+            enum: [PDF, EXCEL]
+            default: PDF
+            example: EXCEL
+        - name: userIds
+          in: query
+          required: false
+          description: User IDs to include, all belonging to this business. Omit or leave empty to include all employees. Repeat the parameter for multiple IDs (userIds=12&userIds=34).
+          style: form
+          explode: true
+          allowEmptyValue: true
+          schema:
+            type: array
+            items:
+              type: integer
+              format: int64
+            example: [12, 34]
       responses:
         '200':
-          description: PDF generated successfully
+          description: Report generated successfully. The response media type and attachment extension match the requested type.
           content:
             application/pdf:
               schema:
                 type: string
                 format: binary
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                type: string
+                format: binary
           headers:
             Content-Disposition:
-              description: Attachment filename
+              description: Attachment filename ending in .pdf for PDF or .xlsx for EXCEL
               schema:
                 type: string
                 example: 'attachment; filename="worked-hours-report-2025-01-01-2025-12-31.pdf"'
         '400':
-          description: Invalid date range
+          description: Invalid date range, report type, or user IDs (including users outside the requested business)
         '401':
           description: Unauthorized
         '403':

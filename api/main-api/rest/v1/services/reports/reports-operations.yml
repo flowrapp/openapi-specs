@@ -88,9 +88,11 @@ reports:
 
   business-worked-hours-report-pdf:
     get:
-      summary: Export business worked hours report as PDF
+      summary: Export business worked hours report as PDF or Excel
       description: |
-        Generates and downloads a PDF report containing worked-hours information for every employee in the business within the requested date range.
+        Generates and downloads a PDF or Excel (.xlsx) report containing worked-hours information for the selected employees in the business within the requested date range.
+        If userIds is omitted or empty, all employees in the business are included. Every supplied user ID must belong to the requested business.
+        The type parameter selects the output format and defaults to PDF. The .pdf URL suffix is retained for compatibility, including when Excel is requested.
         The range is day-based and inclusive. This endpoint is intended for annual reports, but supports any valid date range.
         Caller must have privileged access to the business, either OWNER or MANAGER.
       tags:
@@ -124,22 +126,48 @@ reports:
             type: string
             format: date
             example: "2025-12-31"
+        - name: type
+          in: query
+          required: false
+          description: Output format of the report. EXCEL generates an .xlsx workbook.
+          schema:
+            type: string
+            enum: [PDF, EXCEL]
+            default: PDF
+            example: EXCEL
+        - name: userIds
+          in: query
+          required: false
+          description: User IDs to include, all belonging to this business. Omit or leave empty to include all employees. Repeat the parameter for multiple IDs (userIds=12&userIds=34).
+          style: form
+          explode: true
+          allowEmptyValue: true
+          schema:
+            type: array
+            items:
+              type: integer
+              format: int64
+            example: [12, 34]
       responses:
         '200':
-          description: PDF generated successfully
+          description: Report generated successfully. The response media type and attachment extension match the requested type.
           content:
             application/pdf:
               schema:
                 type: string
                 format: binary
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                type: string
+                format: binary
           headers:
             Content-Disposition:
-              description: Attachment filename
+              description: Attachment filename ending in .pdf for PDF or .xlsx for EXCEL
               schema:
                 type: string
                 example: 'attachment; filename="worked-hours-report-2025-01-01-2025-12-31.pdf"'
         '400':
-          description: Invalid date range
+          description: Invalid date range, report type, or user IDs (including users outside the requested business)
         '401':
           description: Unauthorized
         '403':
