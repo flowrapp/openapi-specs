@@ -1,8 +1,20 @@
 components:
   schemas:
     PushTokenRequestDTO:
+      description: Request to register or update push notifications for a device
+      allOf:
+        - $ref: '#/components/schemas/PushTokenDetailsDTO'
+        - type: object
+          properties:
+            deviceId:
+              type: string
+              description: Stable app-installation identifier; must match the session only when the bearer token has device binding; legacy authentication remains supported
+              example: "550e8400-e29b-41d4-a716-446655440000"
+          required:
+            - deviceId
+    PushTokenDetailsDTO:
       type: object
-      description: Request to register a device push notification token
+      description: Push token and platform, optionally supplied during authentication; a token must be associated with only one user at a time
       properties:
         token:
           type: string
@@ -13,11 +25,6 @@ components:
           description: The device platform
           enum: [ANDROID, IOS]
           example: "ANDROID"
-        deviceId:
-          type: string
-          description: Unique identifier for the device
-          example: "550e8400-e29b-41d4-a716-446655440000"
       required:
         - token
         - platform
-        - deviceId

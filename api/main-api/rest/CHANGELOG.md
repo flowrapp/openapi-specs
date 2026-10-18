@@ -1,5 +1,31 @@
 # Changelog
 
+## 0.0.66
+
+### Compatibility
+
+- Restores compatibility with clients predating 0.0.65: `deviceId` is optional for password and Google/GitHub OAuth login. It is required only when `push` is supplied.
+- Login without `deviceId`, existing unbound access/refresh tokens, and independent push registration retain their previous behavior; no forced reauthentication is required.
+- Device/session checks for push registration apply only to device-bound tokens. Missing or revoked bound sessions must never fall back to legacy validation.
+- The new logout endpoint still requires `deviceId` and a device-bound session. Legacy tokens return `403` on this endpoint only; clients can opt into device-bound logout by authenticating with `deviceId`.
+
+## 0.0.65
+
+### Added
+
+- Login and Google/GitHub OAuth accept optional `push` details (`token`, `platform`) to register notifications in the same transaction as session creation. Independent push registration remains available for delayed tokens and rotation.
+- `POST /api/v1/auth/logout` accepts `deviceId`, revokes the authenticated session and all its access/refresh tokens immediately, and removes its push registration atomically. Other sessions and reassigned push registrations are preserved.
+
+### Breaking changes
+
+- `deviceId` is required for password and Google/GitHub OAuth login. Clients must supply a stable app-installation identifier.
+- Bearer authentication now requires an active server-side user/device session. Refresh preserves that binding and cannot reactivate a revoked session. Existing unbound tokens require reauthentication.
+- Bearer-authenticated push registration must target the session's device; a mismatch returns `403`.
+
+### Client behavior
+
+- Logout requires a valid access token; refresh an expired token before calling it. Already revoked sessions return `401`. Local credential deletion alone does not confirm server-side logout if the request fails or the device is offline.
+
 ## 0.0.64
 
 ### Added

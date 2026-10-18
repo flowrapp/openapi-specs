@@ -4,19 +4,46 @@ auth:
       summary: Authenticate a user
       description: >
         Authenticates a user by validating their email and password credentials.
-        Returns access and refresh tokens for subsequent API requests.
-        This is a pass-through to the main API.
+        Omitting deviceId preserves the existing login behavior for legacy
+        clients. Supplying deviceId creates a server-side user/device session
+        supporting immediate logout and returns its access and refresh tokens.
+        Optional push details require deviceId and are registered in the same
+        transaction in the main API. Missing notification
+        permissions or a token not yet available must not prevent login: omit
+        push and register it later via POST /api/v1/push-tokens.
+        This is a single pass-through call to the main API.
       tags:
         - Authentication
       operationId: login
       security: []
       requestBody:
-        description: User credentials
+        description: User credentials with optional device identity and push registration
         required: true
         content:
           application/json:
             schema:
               $ref: '../../components/auth/components.yml#/components/schemas/LoginRequestDTO'
+            examples:
+              legacy:
+                summary: Existing clients can still log in without deviceId or push
+                value:
+                  username: "user@example.com"
+                  password: "securePassword123"
+              withPush:
+                summary: Login and register push notifications
+                value:
+                  username: "user@example.com"
+                  password: "securePassword123"
+                  deviceId: "550e8400-e29b-41d4-a716-446655440000"
+                  push:
+                    token: "fcm-token-abc123xyz"
+                    platform: ANDROID
+              withoutPush:
+                summary: Login without notification permissions or an available push token
+                value:
+                  username: "user@example.com"
+                  password: "securePassword123"
+                  deviceId: "550e8400-e29b-41d4-a716-446655440000"
       responses:
         '200':
           description: Authentication successful
@@ -24,14 +51,80 @@ auth:
             application/json:
               schema:
                 $ref: '../../components/auth/components.yml#/components/schemas/TokenResponseDTO'
+        '400':
+          description: Invalid credentials payload, device identity, or push registration
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
         '401':
           description: Invalid credentials
+
+  logout:
+    post:
+      summary: Log out the current device session
+      description: >
+        Single pass-through call to the main API, which atomically revokes the
+        session identified by the bearer token and removes its push registration.
+        The supplied deviceId must match that session; it cannot select another
+        device or session. All session access and refresh tokens become unusable
+        immediately, including tokens previously issued through refresh.
+        Other sessions and their push registrations are not affected. Cleanup
+        must not remove a registration reassigned to another user or a newer
+        session. A missing push registration does not prevent logout. No push
+        token is required. An expired access token must be refreshed before
+        calling this endpoint; an already revoked session returns 401.
+        This endpoint requires a device-bound session: legacy tokens without
+        device binding return 403 without changes. To use this new logout flow,
+        authenticate again with deviceId; legacy authentication and push
+        deletion remain available without upgrading.
+      tags:
+        - Authentication
+      operationId: logout
+      security:
+        - bearerAuth: []
+      requestBody:
+        description: Device identity for the authenticated session
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '../../components/auth/components.yml#/components/schemas/LogoutRequestDTO'
+            example:
+              deviceId: "550e8400-e29b-41d4-a716-446655440000"
+      responses:
+        '204':
+          description: Session revoked and any associated push registration removed
+        '400':
+          description: Invalid device identity or request body
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+        '401':
+          description: Missing, invalid, or expired access token, or session already revoked
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+        '403':
+          description: Device identity does not match the session, or the token has no device binding; no changes are made
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
 
   token-refresh:
     post:
       summary: Refresh authentication tokens
       description: >
-        Renews authentication by generating new access and refresh tokens using a valid refresh token.
+        Renews authentication using a valid refresh token. Legacy refresh tokens
+        without device binding retain their existing behavior and do not require
+        deviceId or reauthentication. For device-bound tokens, the session must
+        be active and new tokens retain the same session, user, and device
+        binding. A missing or revoked bound session cannot be refreshed or
+        reactivated, including by a refresh racing with logout; it must never
+        fall back to the legacy flow.
         Pass-through to the main API.
       tags:
         - Authentication
@@ -52,7 +145,7 @@ auth:
               schema:
                 $ref: '../../components/auth/components.yml#/components/schemas/TokenResponseDTO'
         '401':
-          description: Invalid or expired refresh token
+          description: Invalid or expired refresh token, or revoked session
 
   forgot-password:
     post:
@@ -108,8 +201,13 @@ auth:
     post:
       summary: Authenticate via GitHub OAuth
       description: >
-        Exchanges a GitHub OAuth authorization code for Flowrapp access and refresh tokens.
-        Pass-through to the main API.
+        Exchanges a GitHub OAuth authorization code for access and refresh tokens.
+        Omitting deviceId preserves legacy authentication. Supplying deviceId
+        creates a server-side user/device session supporting immediate logout.
+        Optional push details require deviceId and are registered for the user and
+        device in the same transaction; omitting push does not prevent login.
+        Push tokens obtained or rotated later can be registered separately.
+        Single pass-through call to the main API.
       tags:
         - Authentication
       operationId: oauthGithub
@@ -121,6 +219,19 @@ auth:
           application/json:
             schema:
               $ref: '../../components/auth/components.yml#/components/schemas/OAuthCredentialRequestDTO'
+            examples:
+              legacy:
+                summary: Existing OAuth login without device binding
+                value:
+                  credential: "github-authorization-code"
+              withPush:
+                summary: Device-bound OAuth login with push registration
+                value:
+                  credential: "github-authorization-code"
+                  deviceId: "550e8400-e29b-41d4-a716-446655440000"
+                  push:
+                    token: "fcm-token-abc123xyz"
+                    platform: ANDROID
       responses:
         '200':
           description: OAuth authentication successful
@@ -128,6 +239,12 @@ auth:
             application/json:
               schema:
                 $ref: '../../components/auth/components.yml#/components/schemas/TokenResponseDTO'
+        '400':
+          description: Invalid device identity, push registration, or request body
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
         '401':
           description: Invalid OAuth credential
 
@@ -135,8 +252,13 @@ auth:
     post:
       summary: Authenticate via Google OAuth
       description: >
-        Exchanges a Google OAuth credential (ID token) for Flowrapp access and refresh tokens.
-        Pass-through to the main API.
+        Exchanges a Google OAuth credential (ID token) for access and refresh
+        tokens. Omitting deviceId preserves legacy authentication. Supplying
+        deviceId creates a server-side user/device session supporting immediate
+        logout. Optional push details require deviceId and are registered for the
+        user and device in the same transaction; omitting push does not prevent
+        login. Push tokens obtained or rotated later can be registered separately.
+        Single pass-through call to the main API.
       tags:
         - Authentication
       operationId: oauthGoogle
@@ -148,6 +270,19 @@ auth:
           application/json:
             schema:
               $ref: '../../components/auth/components.yml#/components/schemas/OAuthCredentialRequestDTO'
+            examples:
+              legacy:
+                summary: Existing OAuth login without device binding
+                value:
+                  credential: "eyJhbGciOiJSUzI1NiIsImtpZCI6IjE2MjM0NTY3ODkwIn0..."
+              withPush:
+                summary: Device-bound OAuth login with push registration
+                value:
+                  credential: "eyJhbGciOiJSUzI1NiIsImtpZCI6IjE2MjM0NTY3ODkwIn0..."
+                  deviceId: "550e8400-e29b-41d4-a716-446655440000"
+                  push:
+                    token: "fcm-token-abc123xyz"
+                    platform: ANDROID
       responses:
         '200':
           description: OAuth authentication successful
@@ -155,6 +290,12 @@ auth:
             application/json:
               schema:
                 $ref: '../../components/auth/components.yml#/components/schemas/TokenResponseDTO'
+        '400':
+          description: Invalid device identity, push registration, or request body
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
         '401':
           description: Invalid OAuth credential
 

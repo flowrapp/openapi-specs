@@ -2,7 +2,7 @@ components:
   schemas:
     LoginRequestDTO:
       type: object
-      description: Request object for user login
+      description: User credentials with optional device binding; deviceId is required only when push is supplied
       properties:
         username:
           type: string
@@ -12,24 +12,44 @@ components:
           type: string
           description: Password for authentication
           example: pass
+        deviceId:
+          type: string
+          minLength: 1
+          description: Optional stable app-installation identifier; enables device-bound sessions when supplied and preserves legacy login when omitted; not a credential
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        push:
+          $ref: '../pushTokens/components.yml#/components/schemas/PushTokenDetailsDTO'
       required:
         - username
         - password
+      dependentRequired:
+        push: [deviceId]
+    LogoutRequestDTO:
+      type: object
+      description: Request to revoke the authenticated session and remove its device push registration; no push token is required
+      properties:
+        deviceId:
+          type: string
+          minLength: 1
+          description: Must match the device bound to the authenticated session; cannot select another session or device
+          example: "550e8400-e29b-41d4-a716-446655440000"
+      required:
+        - deviceId
     TokenResponseDTO:
       type: object
       description: Response object containing authentication tokens
       properties:
         accessToken:
           type: string
-          description: JWT access token
+          description: JWT access token; when issued with deviceId, identifies a server-side user/device session and is rejected immediately after its revocation; legacy tokens remain supported
           example: eyJhbGciOiJIUzI1NiIs...
         refreshToken:
           type: string
-          description: Refresh token for obtaining new access tokens
+          description: Refresh token; device-bound tokens retain their session and cannot be used after revocation; legacy tokens retain their existing behavior
           example: d8a1fef4-234d-4c2b-bd7a-...
     RefreshRequestDTO:
       type: object
-      description: Request object for token refresh
+      description: Refresh request supporting legacy and device-bound tokens without additional fields; device binding is derived from the token when present
       properties:
         refreshToken:
           type: string
@@ -72,11 +92,20 @@ components:
         - password
     OAuthCredentialRequestDTO:
       type: object
-      description: Request object containing a third-party OAuth credential (e.g., Google ID token or GitHub OAuth credential)
+      description: Third-party OAuth credential with optional device binding; deviceId is required only when push is supplied
       properties:
         credential:
           type: string
           description: The credential string obtained from the OAuth provider
           example: eyJhbGciOiJSUzI1NiIsImtpZCI6IjE2MjM0NTY3ODkwIn0...
+        deviceId:
+          type: string
+          minLength: 1
+          description: Optional stable app-installation identifier; enables device-bound sessions when supplied and preserves legacy login when omitted; not a credential
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        push:
+          $ref: '../pushTokens/components.yml#/components/schemas/PushTokenDetailsDTO'
       required:
         - credential
+      dependentRequired:
+        push: [deviceId]

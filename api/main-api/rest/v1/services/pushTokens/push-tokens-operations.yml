@@ -2,7 +2,16 @@ pushTokens:
   push-tokens:
     post:
       summary: Register push notification token
-      description: Registers a device push notification token for the authenticated user
+      description: >
+        Registers or updates a device push notification token for the
+        authenticated user. Remains available when a token becomes available
+        after login, permissions change, or the push provider rotates the token.
+        Legacy bearer tokens without device binding and basic authentication
+        remain supported with the existing user/device registration behavior.
+        Only for device-bound bearer tokens must deviceId match the authenticated
+        session; the registration is then associated with that session for logout
+        cleanup. Registering a token replaces any previous association of that
+        token with another user, so notifications cannot reach the previous account.
       tags:
         - Push Tokens
       operationId: registerPushToken
@@ -22,10 +31,19 @@ pushTokens:
           description: Invalid request
         '401':
           description: Unauthorized
+        '403':
+          description: Device identity does not match the device-bound bearer session; does not apply to legacy tokens
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
   deletion:
     delete:
       summary: Delete push notification token
-      description: Deletes a device push notification token for the authenticated user
+      description: >
+        Deletes a device push notification token for the authenticated user.
+        Does not revoke the authentication session; use POST /api/v1/auth/logout
+        to revoke the current session and remove its push registration together.
       tags:
         - Push Tokens
       operationId: deletePushToken
