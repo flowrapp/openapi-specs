@@ -1,0 +1,46 @@
+api/main-api/rest/v1/services/pushTokens/push-tokens-operations.yml
+  h_a041df4244d543 5-12,34-36,43
+  h_a041df4244d543 13-14,37-39,44-46,68
+api/main-api/rest/v1/services/auth/auth-operations.yml
+  h_a041df4244d543 5-12,25-37,75-116,120-124,247-249,285-286,309-312
+  h_a041df4244d543 13-14,20,38-45,54-59,117-119,125-128,132-139,159,250-253,265-277,287-290,313-316,328-340,348-353
+api/main-api/rest/v1/components/auth/auth-components.yml
+  h_a041df4244d543 15-21,25-36,101-103
+  h_a041df4244d543 5,37,44,48,52,95,104-107,110-111
+api/bff-api/rest/CHANGELOG.md
+  h_a041df4244d543 12-28
+  h_a041df4244d543 3-11
+api/main-api/rest/CHANGELOG.md
+  h_a041df4244d543 12-28
+  h_a041df4244d543 3-11
+api/bff-api/rest/v1/services/pushTokens/push-tokens-operations.yml
+  h_a041df4244d543 5-12,33-35,43-44
+  h_a041df4244d543 13-14,36-38,45-47
+api/bff-api/rest/v1/components/pushTokens/components.yml
+  h_a041df4244d543 4-15,17
+api/main-api/rest/open-api-rest.yml
+  h_a041df4244d543 6,81-82,463-467
+  h_a041df4244d543 468-469
+api/bff-api/rest/open-api-rest.yml
+  h_a041df4244d543 10,51,54-55,190-193
+  h_a041df4244d543 194-195
+api/main-api/rest/v1/components/pushTokens/components.yml
+  h_a041df4244d543 4-15,17
+api/bff-api/rest/v1/services/auth/auth-operations.yml
+  h_a041df4244d543 7-12,26-38,46,55-59,63-104,109-112,204-206,227-231,243,255-256
+  h_a041df4244d543 13-14,20,39-45,54,105-108,113-116,121-127,148,207-210,222-226,232-234,242,244-247,257-261,273-285,293-298
+api/bff-api/rest/v1/components/auth/components.yml
+  h_a041df4244d543 16-22,26-38,108-110
+  h_a041df4244d543 5,39,47,51,56,102,111-114,117-118
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "734535f7ebf395d1fa350ef6a9444ad6050b93c0",
+  "prompts": {},
+  "humans": {
+    "h_a041df4244d543": {
+      "author": "sergiobpa <sergiobpa@ext.inditex.com>"
+    }
+  }
+}
