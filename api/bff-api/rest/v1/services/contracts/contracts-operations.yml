@@ -22,7 +22,7 @@ contracts:
         slice ordered by start date descending, including past, current, and future contracts.
         Only the business OWNER may access this operation; the MANAGER role is not sufficient.
       tags:
-        - Manager
+        - Contracts
       operationId: getManagerWorkerContracts
       security:
         - bearerAuth: []
@@ -96,7 +96,7 @@ contracts:
         business, even when the job roles differ. Only the business OWNER may create contracts;
         the MANAGER role is not sufficient.
       tags:
-        - Manager
+        - Contracts
       operationId: createManagerWorkerContract
       security:
         - bearerAuth: []
@@ -172,7 +172,7 @@ contracts:
         a planning in SOLVING, DRAFT, PUBLISHED, or ARCHIVED. CREATED and FAILED plannings do
         not by themselves block deletion. The BFF propagates the Main API's functional errors.
       tags:
-        - Manager
+        - Contracts
       operationId: deleteManagerWorkerContract
       security:
         - bearerAuth: []
@@ -251,7 +251,7 @@ contracts:
         non-overlap and planning-state restrictions. Only the business OWNER may update contracts;
         the MANAGER role is not sufficient.
       tags:
-        - Manager
+        - Contracts
       operationId: updateManagerWorkerContract
       security:
         - bearerAuth: []

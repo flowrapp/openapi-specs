@@ -40,8 +40,11 @@ tags:
     description: >
       Manager-facing endpoints for business oversight, worker management,
       work history reporting, owner-only invitation management, timesheet export,
-      and owner-only contract, Shift, recurring-schedule, exception, job-role, and
-      planning management.
+      Shift, recurring-schedule, exception, job-role, and planning management.
+  - name: Reports
+    description: Owner-only business report generation requests.
+  - name: Contracts
+    description: Owner-only contract management operations.
 
 paths:
   # ── System ──────────────────────────────────────────────────────────────
@@ -111,6 +114,10 @@ paths:
     $ref: "v1/services/worker/worker-operations.yml#/worker/history-week"
   "/api/v1/worker/businesses/{businessId}/history/month":
     $ref: "v1/services/worker/worker-operations.yml#/worker/history-month"
+
+  # ── Reports (owner-only) ─────────────────────────────────────────────────
+  "/api/v1/businesses/{businessId}/reports/worked-hours":
+    $ref: "v1/services/reports/reports-operations.yml#/reports/request-business-worked-hours-report"
 
   # ── Manager ─────────────────────────────────────────────────────────────
   "/api/v1/manager/businesses":
