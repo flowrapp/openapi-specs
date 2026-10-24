@@ -1,0 +1,22 @@
+api/bff-api/rest/open-api-rest.yml
+  h_a041df4244d543 43-47,118-121
+api/bff-api/rest/v1/services/contracts/contracts-operations.yml
+  h_a041df4244d543 25,99,175,254
+api/bff-api/rest/v1/services/reports/reports-operations.yml
+  h_a041df4244d543 1-80
+api/main-api/rest/open-api-rest.yml
+  h_a041df4244d543 177-178
+api/main-api/rest/v1/services/reports/reports-operations.yml
+  h_a041df4244d543 194-285
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.6",
+  "base_commit_sha": "23c6aeeb663d6a1bdbc034c2dd3f750c8fcc884e",
+  "prompts": {},
+  "humans": {
+    "h_a041df4244d543": {
+      "author": "sergiobpa <sergiobpa@ext.inditex.com>"
+    }
+  }
+}
