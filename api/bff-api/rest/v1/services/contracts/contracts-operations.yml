@@ -1,0 +1,265 @@
+contracts:
+  worker-contracts:
+    parameters:
+      - name: businessId
+        in: path
+        required: true
+        description: ID of the business
+        schema:
+          type: integer
+          format: int64
+      - name: userId
+        in: path
+        required: true
+        description: User ID of the worker, not the business membership ID
+        schema:
+          type: integer
+          format: int64
+    get:
+      summary: Get a worker's contract history
+      description: >
+        Forwards to the Main API's business-scoped user contract history. Returns a paginated
+        slice ordered by start date descending, including past, current, and future contracts.
+        Only the business OWNER may access this operation; the MANAGER role is not sufficient.
+      tags:
+        - Manager
+      operationId: getManagerWorkerContracts
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          required: false
+          description: Zero-based slice number
+          schema:
+            type: integer
+            format: int32
+            minimum: 0
+            default: 0
+        - name: size
+          in: query
+          required: false
+          description: Number of contracts in the slice
+          schema:
+            type: integer
+            format: int32
+            minimum: 1
+            maximum: 100
+            default: 20
+      responses:
+        '200':
+          description: Contract history retrieved successfully; content is empty when no contracts match
+          content:
+            application/json:
+              schema:
+                $ref: '../../components/contracts/components.yml#/components/schemas/ManagerContractSliceResponseDTO'
+              examples:
+                contractHistory:
+                  value:
+                    content:
+                      - id: 123
+                        businessId: 101
+                        jobRoleId: 10
+                        totalWeekHours: 40.0
+                        startDate: "2025-01-01"
+                        endDate: null
+                        createdAt: "2024-12-20T10:15:00+00:00"
+                        updatedAt: "2024-12-20T10:15:00+00:00"
+                    page: 0
+                    size: 20
+                    hasNext: false
+                emptyHistory:
+                  value: {content: [], page: 0, size: 20, hasNext: false}
+        '401':
+          description: Unauthorized
+        '403':
+          description: Authenticated user is not an OWNER of the business
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              example: {status: 403, detail: "1020 - user is not the owner of business"}
+        '404':
+          description: Business or user not found, or user is not associated with the business
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              example: {status: 404, detail: "1006 - business does not exist"}
+      x-functional-errors: [1000, 1006, 1015, 1020]
+
+    post:
+      summary: Create a worker contract
+      description: >
+        Forwards contract creation to the Main API for a user associated with the business.
+        Inclusive contract dates must not overlap any other contract for the same user and
+        business, even when the job roles differ. Only the business OWNER may create contracts;
+        the MANAGER role is not sufficient.
+      tags:
+        - Manager
+      operationId: createManagerWorkerContract
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        description: New contract terms
+        content:
+          application/json:
+            schema:
+              $ref: '../../components/contracts/components.yml#/components/schemas/ManagerContractRequestDTO'
+            example:
+              jobRoleId: 10
+              totalWeekHours: 40.0
+              startDate: "2025-01-01"
+              endDate: null
+      responses:
+        '201':
+          description: Contract created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '../../components/contracts/components.yml#/components/schemas/ManagerContractResponseDTO'
+              example:
+                id: 123
+                businessId: 101
+                jobRoleId: 10
+                totalWeekHours: 40.0
+                startDate: "2025-01-01"
+                endDate: null
+                createdAt: "2024-12-20T10:15:00+00:00"
+                updatedAt: "2024-12-20T10:15:00+00:00"
+        '400':
+          description: Contract dates or weekly hours are invalid
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+        '401':
+          description: Unauthorized
+        '403':
+          description: Authenticated user is not an OWNER of the business
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              example: {status: 403, detail: "1020 - user is not the owner of business"}
+        '404':
+          description: Business or user not found, or user is not associated with the business
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              example: {status: 404, detail: "1006 - business does not exist"}
+        '409':
+          description: Contract dates overlap another contract for the same user and business, regardless of job role
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              example: {status: 409, detail: "1029 - contract overlaps another contract for the same user and business"}
+      x-functional-errors: [1000, 1006, 1015, 1020, 1029]
+
+  worker-contract:
+    put:
+      summary: Update a worker contract end date
+      description: >
+        Forwards an end-date-only update to the Main API. The job role, weekly hours, and start
+        date are immutable; changed terms require a new consecutive non-overlapping contract.
+        The previous and proposed inclusive contract periods must not intersect a planning in
+        SOLVING, DRAFT, PUBLISHED, or ARCHIVED. CREATED and FAILED plannings do not by themselves
+        freeze contract validity. A null endDate reopens the contract, subject to the same
+        non-overlap and planning-state restrictions. Only the business OWNER may update contracts;
+        the MANAGER role is not sufficient.
+      tags:
+        - Manager
+      operationId: updateManagerWorkerContract
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: businessId
+          in: path
+          required: true
+          description: ID of the business
+          schema:
+            type: integer
+            format: int64
+        - name: userId
+          in: path
+          required: true
+          description: User ID of the worker, not the business membership ID
+          schema:
+            type: integer
+            format: int64
+        - name: contractId
+          in: path
+          required: true
+          description: ID of the worker contract to update
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        description: New inclusive contract end date; all other terms remain unchanged
+        content:
+          application/json:
+            schema:
+              $ref: '../../components/contracts/components.yml#/components/schemas/ManagerContractEndDateUpdateRequestDTO'
+            examples:
+              endContract:
+                value: {endDate: "2025-07-31"}
+              reopenContract:
+                value: {endDate: null}
+      responses:
+        '200':
+          description: Contract updated successfully with only its end date changed
+          content:
+            application/json:
+              schema:
+                $ref: '../../components/contracts/components.yml#/components/schemas/ManagerContractResponseDTO'
+              example:
+                id: 123
+                businessId: 101
+                jobRoleId: 10
+                totalWeekHours: 40.0
+                startDate: "2025-01-01"
+                endDate: "2025-07-31"
+                createdAt: "2024-12-20T10:15:00+00:00"
+                updatedAt: "2025-06-20T10:15:00+00:00"
+        '400':
+          description: Contract end date is invalid
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              example: {status: 400, detail: "1057 - contract date range is invalid"}
+        '401':
+          description: Unauthorized
+        '403':
+          description: Authenticated user is not an OWNER of the business
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              example: {status: 403, detail: "1020 - user is not the owner of business"}
+        '404':
+          description: Business, user, or contract not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              example: {status: 404, detail: "1006 - business does not exist"}
+        '409':
+          description: >
+            The proposed end date overlaps another contract for the same user and business, or
+            the previous or proposed contract period intersects a planning in SOLVING, DRAFT,
+            PUBLISHED, or ARCHIVED. CREATED and FAILED plannings do not cause this conflict.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              examples:
+                contractOverlap:
+                  value: {status: 409, detail: "1029 - contract overlaps another contract for the same user and business"}
+                planningStateConflict:
+                  value: {status: 409, detail: "1058 - contract update is blocked by planning state"}
+      x-functional-errors: [1000, 1006, 1015, 1020, 1029, 1057, 1058]

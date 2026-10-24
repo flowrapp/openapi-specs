@@ -1,0 +1,113 @@
+components:
+  schemas:
+    ManagerContractRequestDTO:
+      type: object
+      description: New contract terms. Inclusive dates must not overlap another contract for the same user and business, regardless of job role.
+      properties:
+        jobRoleId:
+          type: integer
+          format: int64
+          description: Active job role contracted within the business
+          example: 10
+        totalWeekHours:
+          type: number
+          format: double
+          exclusiveMinimum: 0
+          description: Number of hours agreed for a working week
+          example: 40.0
+        startDate:
+          type: string
+          format: date
+          description: Inclusive business-local contract start date
+          example: "2025-01-01"
+        endDate:
+          type: [string, "null"]
+          format: date
+          description: Inclusive business-local contract end date, or null for an open-ended contract
+          example: null
+      required: [jobRoleId, totalWeekHours, startDate, endDate]
+
+    ManagerContractEndDateUpdateRequestDTO:
+      type: object
+      additionalProperties: false
+      description: Only the end date may be updated; all other contract terms are immutable.
+      properties:
+        endDate:
+          type: [string, "null"]
+          format: date
+          description: Inclusive business-local contract end date, or null to reopen the contract
+          example: "2025-07-31"
+      required: [endDate]
+
+    ManagerContractResponseDTO:
+      type: object
+      description: Contract details forwarded from the Main API for the user identified in the path.
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: Unique identifier of the contract
+          example: 123
+        businessId:
+          type: integer
+          format: int64
+          description: Business associated with the contract
+          example: 101
+        jobRoleId:
+          type: integer
+          format: int64
+          description: Job role associated with the contract
+          example: 10
+        totalWeekHours:
+          type: number
+          format: double
+          description: Number of hours agreed for a working week
+          example: 40.0
+        startDate:
+          type: string
+          format: date
+          description: Inclusive business-local contract start date
+          example: "2025-01-01"
+        endDate:
+          type: [string, "null"]
+          format: date
+          description: Inclusive business-local contract end date, or null for an open-ended contract
+          example: null
+        createdAt:
+          type: string
+          format: date-time
+          description: Instant when the contract was created
+          example: "2024-12-20T10:15:00+00:00"
+        updatedAt:
+          type: string
+          format: date-time
+          description: Instant when the contract was last updated
+          example: "2024-12-20T10:15:00+00:00"
+      required: [id, businessId, jobRoleId, totalWeekHours, startDate, endDate, createdAt, updatedAt]
+
+    ManagerContractSliceResponseDTO:
+      type: object
+      description: Paginated contract history ordered by start date descending, without a total-count query.
+      properties:
+        content:
+          type: array
+          description: Contracts in the requested slice
+          items:
+            $ref: '#/components/schemas/ManagerContractResponseDTO'
+        page:
+          type: integer
+          format: int32
+          minimum: 0
+          description: Current page number, zero-based
+          example: 0
+        size:
+          type: integer
+          format: int32
+          minimum: 1
+          description: Requested page size
+          example: 20
+        hasNext:
+          type: boolean
+          description: Whether another slice is available
+          example: false
+      required: [content, page, size, hasNext]

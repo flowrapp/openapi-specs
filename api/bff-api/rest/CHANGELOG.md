@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.0.64
+
+### Added
+
+- Owner-only manager endpoints to create a worker contract and read its paginated history at `/api/v1/manager/businesses/{businessId}/workers/{userId}/contracts`.
+- `PUT /api/v1/manager/businesses/{businessId}/workers/{userId}/contracts/{contractId}` updates only the nullable `endDate`, preserving the Main API's non-overlap and planning-state restrictions. Changes to weekly hours, job role, or start date require a new contract.
+
 ## 0.0.63
 
 ### Compatibility
