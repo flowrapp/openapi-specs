@@ -160,6 +160,86 @@ contracts:
       x-functional-errors: [1000, 1006, 1015, 1020, 1029]
 
   worker-contract:
+    delete:
+      summary: Delete a future worker contract
+      description: >
+        Forwards deletion to the Main API, which validates eligibility and deletes atomically.
+        The contract must belong to the business and user identified in the path; otherwise,
+        returns 404. Only the business OWNER may delete contracts; the MANAGER role is not
+        sufficient. The startDate must be strictly after the current date in the business
+        time zone. Contracts starting today or earlier cannot be deleted, regardless of
+        whether the worker has clocked in. The inclusive contract period must not intersect
+        a planning in SOLVING, DRAFT, PUBLISHED, or ARCHIVED. CREATED and FAILED plannings do
+        not by themselves block deletion. The BFF propagates the Main API's functional errors.
+      tags:
+        - Manager
+      operationId: deleteManagerWorkerContract
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: businessId
+          in: path
+          required: true
+          description: ID of the business
+          schema:
+            type: integer
+            format: int64
+        - name: userId
+          in: path
+          required: true
+          description: User ID of the worker, not the business membership ID
+          schema:
+            type: integer
+            format: int64
+        - name: contractId
+          in: path
+          required: true
+          description: ID of the future worker contract to delete
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '204':
+          description: Future contract deleted successfully; no response body
+        '401':
+          description: Unauthorized
+        '403':
+          description: Authenticated user is not an OWNER of the business, or the target user is not a business member
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              examples:
+                notOwner:
+                  value: {status: 403, detail: "1020 - user is not the owner of business"}
+                notMember:
+                  value: {status: 403, detail: "1015 - user is not member of business"}
+        '404':
+          description: Business or user not found, or contract not found for the specified business and user (including an already deleted contract)
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              examples:
+                businessNotFound:
+                  value: {status: 404, detail: "1006 - business does not exist"}
+                userNotFound:
+                  value: {status: 404, detail: "1000 - user not found"}
+                contractNotFound:
+                  value: {status: 404, detail: "1030 - Contract not found"}
+        '409':
+          description: Contract starts today or earlier in the business time zone, or its inclusive period intersects a planning in SOLVING, DRAFT, PUBLISHED, or ARCHIVED
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              examples:
+                contractAlreadyStarted:
+                  value: {status: 409, detail: "1097 - contract has already started"}
+                planningStateConflict:
+                  value: {status: 409, detail: "1098 - contract deletion is blocked by planning state"}
+      x-functional-errors: [1000, 1006, 1015, 1020, 1030, 1097, 1098]
+
     put:
       summary: Update a worker contract end date
       description: >

@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.0.65
+
+### Added
+
+- Owner-only `DELETE /api/v1/manager/businesses/{businessId}/workers/{userId}/contracts/{contractId}` forwards future contract deletion to the Main API and returns `204` without a response body.
+- Preserves the Main API's business-local date restriction (`startDate` must be strictly after today) and planning-state protection (`SOLVING`, `DRAFT`, `PUBLISHED`, `ARCHIVED`). Functional codes `1097` and `1098` identify these conflicts; `CREATED` and `FAILED` do not block deletion.
+
 ## 0.0.64
 
 ### Added

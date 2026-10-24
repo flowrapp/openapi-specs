@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.0.67
+
+### Added
+
+- Owner-only `DELETE /api/v1/businesses/{businessId}/users/{userId}/contracts/{contractId}` removes a contract belonging to the specified user and business and returns `204` without a response body.
+- Deletion requires `startDate` strictly after the business-local current date. Contracts starting today or earlier return `409` with functional code `1097`.
+- Deletion is blocked when the inclusive contract period intersects a planning in `SOLVING`, `DRAFT`, `PUBLISHED`, or `ARCHIVED` (`409`, code `1098`); `CREATED` and `FAILED` do not block deletion. Eligibility checks and deletion must be atomic.
+
 ## 0.0.66
 
 ### Compatibility
