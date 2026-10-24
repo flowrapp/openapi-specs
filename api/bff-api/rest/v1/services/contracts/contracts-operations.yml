@@ -237,8 +237,8 @@ contracts:
                 contractAlreadyStarted:
                   value: {status: 409, detail: "1097 - contract has already started"}
                 planningStateConflict:
-                  value: {status: 409, detail: "1098 - contract deletion is blocked by planning state"}
-      x-functional-errors: [1000, 1006, 1015, 1020, 1030, 1097, 1098]
+                  value: {status: 409, detail: "1102 - contract deletion is blocked by planning state"}
+      x-functional-errors: [1000, 1006, 1015, 1020, 1030, 1097, 1102]
 
     put:
       summary: Update a worker contract end date

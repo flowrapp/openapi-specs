@@ -144,7 +144,8 @@ components:
         | 1095 | 409 | PLANNING_ALREADY_EXISTS | a planning already exists for this business and week |
         | 1096 | 409 | PLANNING_NOT_EDITABLE | planning scheduled shifts can only be replaced while the planning is in DRAFT |
         | 1097 | 409 | CONTRACT_ALREADY_STARTED | contract has already started |
-        | 1098 | 409 | CONTRACT_DELETE_BLOCKED_BY_PLANNING | contract deletion is blocked by planning state |
+        | 1098 | 400 | PLANNING_CREATE_ON_PAST | Planning week creation cannot be in the past |
+        | 1102 | 409 | CONTRACT_DELETE_BLOCKED_BY_PLANNING | contract deletion is blocked by planning state |
       enum:
         - 1000
         - 1001
@@ -245,3 +246,4 @@ components:
         - 1096
         - 1097
         - 1098
+        - 1102
