@@ -1,0 +1,40 @@
+api/bff-api/rest/v1/services/members/members-operations.yml
+  s_ac4abdcbd0f967::t_7d22860d4369c5 1-64
+api/main-api/rest/CHANGELOG.md
+  s_ac4abdcbd0f967::t_227234ec9c850b 5-9
+api/main-api/rest/open-api-rest.yml
+  s_ac4abdcbd0f967::t_5d39d8435c8bec 121-122
+api/main-api/rest/v1/components/common/error-components.yml
+  s_ac4abdcbd0f967::t_db6cb1dbbdcf4f 149,251
+api/main-api/rest/v1/services/business/businesses-operations.yml
+  s_f67680c4afb9a7::t_2f913101890ebf 300-366
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.6",
+  "base_commit_sha": "93c872e9d9a4fa8340fcc5fc55351c74a3a779de",
+  "prompts": {},
+  "humans": {
+    "h_a041df4244d543": {
+      "author": "sergiobpa <sergiobpa@ext.inditex.com>"
+    }
+  },
+  "sessions": {
+    "s_ac4abdcbd0f967": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_e72a63a1effehArJKDXHbJe0v7",
+        "model": "claude-sonnet-5.5"
+      },
+      "human_author": "sergiobpa <sergiobpa@ext.inditex.com>"
+    },
+    "s_f67680c4afb9a7": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_e72aca6f6ffesmoE1SN9l7YKgF",
+        "model": "claude-sonnet-5.5"
+      },
+      "human_author": "sergiobpa <sergiobpa@ext.inditex.com>"
+    }
+  }
+}
