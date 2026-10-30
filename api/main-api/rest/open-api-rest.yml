@@ -118,6 +118,8 @@ paths:
   "/api/v1/businesses/{businessId}/users":
     $ref: "v1/services/business/businesses-operations.yml#/businesses/get-bu\
       siness-users"
+  "/api/v1/businesses/{businessId}/users/{userId}":
+    $ref: "v1/services/business/businesses-operations.yml#/businesses/remove-business-user"
   "/api/v1/businesses/{businessId}/geofence-events/{eventId}":
     $ref: "v1/services/geofenceEvents/geofence-events-operations.yml#/geofen\
       ceEvents/upsert-geofence-event"

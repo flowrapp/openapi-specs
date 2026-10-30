@@ -146,6 +146,7 @@ components:
         | 1097 | 409 | CONTRACT_ALREADY_STARTED | contract has already started |
         | 1098 | 400 | PLANNING_CREATE_ON_PAST | Planning week creation cannot be in the past |
         | 1102 | 409 | CONTRACT_DELETE_BLOCKED_BY_PLANNING | contract deletion is blocked by planning state |
+        | 1103 | 409 | LAST_OWNER_CANNOT_BE_REMOVED | business must keep at least one owner |
       enum:
         - 1000
         - 1001
@@ -247,3 +248,4 @@ components:
         - 1097
         - 1098
         - 1102
+        - 1103

@@ -297,3 +297,70 @@ businesses:
           description: Unauthorized
         '404':
           description: Business not found
+
+  remove-business-user:
+    delete:
+      summary: Remove a user from a business
+      description: >
+        Ends a user's membership in the business. Only the business OWNER may perform this
+        operation; the MANAGER role is not sufficient. The user's historical data (worklogs,
+        contracts, reports) is preserved. The last OWNER of a business cannot be removed.
+      tags:
+        - Businesses
+      operationId: removeBusinessUser
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: businessId
+          in: path
+          required: true
+          description: Unique identifier of the business
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+        - name: userId
+          in: path
+          required: true
+          description: User ID of the member to remove, not the business membership ID
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+      responses:
+        '204':
+          description: User removed from the business successfully; no response body
+        '401':
+          description: Unauthorized
+        '403':
+          description: Current user is not the owner of the business, or the target user is not a business member
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+              examples:
+                notOwner:
+                  value: {status: 403, detail: "1020 - user is not the owner of business"}
+                notMember:
+                  value: {status: 403, detail: "1015 - user is not member of business"}
+        '404':
+          description: Business or user not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+              examples:
+                businessNotFound:
+                  value: {status: 404, detail: "1006 - business does not exist"}
+                userNotFound:
+                  value: {status: 404, detail: "1000 - user not found"}
+        '409':
+          description: The user is the last OWNER of the business
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+              example:
+                status: 409
+                detail: "1103 - business must keep at least one owner"
+      x-functional-errors: [1000, 1006, 1015, 1020, 1103]

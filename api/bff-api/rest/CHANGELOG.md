@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+### Added
+
+- Owner-only `DELETE /api/v1/businesses/{businessId}/members/{userId}` under the new `Members` tag forwards membership removal to the Main API and returns `204` without a response body. Historical data is preserved.
+- Removing the last OWNER returns `409` with functional code `1103`.
+
 ### Changed
 
 - Future worker contract deletion propagates functional code `1102` instead of `1098` for planning-state conflicts, matching the Main API. Already-started contracts continue to return `1097`; both conflicts use HTTP `409`.

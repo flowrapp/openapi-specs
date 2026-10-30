@@ -45,6 +45,8 @@ tags:
     description: Owner-only business report generation requests.
   - name: Contracts
     description: Owner-only contract management operations.
+  - name: Members
+    description: Owner-only business membership management operations.
 
 paths:
   # ── System ──────────────────────────────────────────────────────────────
@@ -118,6 +120,8 @@ paths:
   # ── Reports (owner-only) ─────────────────────────────────────────────────
   "/api/v1/businesses/{businessId}/reports/worked-hours":
     $ref: "v1/services/reports/reports-operations.yml#/reports/request-business-worked-hours-report"
+  "/api/v1/businesses/{businessId}/members/{userId}":
+    $ref: "v1/services/members/members-operations.yml#/members/remove-business-member"
 
   # ── Manager ─────────────────────────────────────────────────────────────
   "/api/v1/manager/businesses":
