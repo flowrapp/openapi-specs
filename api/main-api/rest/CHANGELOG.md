@@ -11,6 +11,12 @@
 
 - Contract deletion blocked by planning now returns functional code `1102` instead of `1098`, avoiding a collision with the backend's existing `PLANNING_CREATE_ON_PAST` error. Contracts starting today or earlier continue to return `1097`; both deletion conflicts use HTTP `409`.
 
+## 0.0.68
+
+### Changed
+
+- `GET /api/v1/businesses/{businessId}/users` is restricted to an OWNER or MANAGER of that business. Previously any authenticated user could list another business's members. Callers who are not an owner or manager receive `403` with functional code `1020`. A missing business returns `404` with functional code `1006`.
+
 ## 0.0.67
 
 ### Added
