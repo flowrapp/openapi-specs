@@ -1,0 +1,18 @@
+api/main-api/rest/CHANGELOG.md
+  h_a041df4244d543 9
+api/main-api/rest/v1/components/business/components.yml
+  h_a041df4244d543 244-248
+api/main-api/rest/v1/services/business/businesses-operations.yml
+  h_a041df4244d543 243-252
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.6",
+  "base_commit_sha": "c922cfea12c667c7bef9469eac90a30d0a6cf6fe",
+  "prompts": {},
+  "humans": {
+    "h_a041df4244d543": {
+      "author": "sergiobpa <sergiobpa@ext.inditex.com>"
+    }
+  }
+}
