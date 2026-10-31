@@ -1,0 +1,30 @@
+api/bff-api/rest/CHANGELOG.md
+  s_0d97e63e4d2672::t_3a80e9906ff0e2 13
+api/bff-api/rest/v1/services/members/members-operations.yml
+  s_0d97e63e4d2672::t_b76833cbd94031 65,67-68,75-76,89-91,109,111-116,152-153,195
+api/main-api/rest/CHANGELOG.md
+  s_0d97e63e4d2672::t_8284b8c7da9357 13
+api/main-api/rest/v1/services/business/businesses-operations.yml
+  s_0d97e63e4d2672::t_aee5a4d643522c 403-404,430-434
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.6",
+  "base_commit_sha": "9cf778694c70ce34f4b9d4e58894081fc8296e15",
+  "prompts": {},
+  "humans": {
+    "h_a041df4244d543": {
+      "author": "sergiobpa <sergiobpa@ext.inditex.com>"
+    }
+  },
+  "sessions": {
+    "s_0d97e63e4d2672": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_e6c2c7cf1ffewLZmDubu8Qirjs",
+        "model": "claude-sonnet-5.5"
+      },
+      "human_author": "sergiobpa <sergiobpa@ext.inditex.com>"
+    }
+  }
+}
