@@ -10,6 +10,7 @@
 
 ### Changed
 
+- `GET /api/v1/businesses/{businessId}/members/search`: `q` is now optional. Omitted, empty, or blank lists every active member (ordered by normalized name, then userId) instead of returning `400`. A non-blank `q` that normalizes to fewer than 2 characters still returns `400` `1107`.
 - Future worker contract deletion propagates functional code `1102` instead of `1098` for planning-state conflicts, matching the Main API. Already-started contracts continue to return `1097`; both conflicts use HTTP `409`.
 - Member removal propagates `403` `1106` instead of `409` `1103`. `1103` remains `INVALID_REPORT_TYPE` (`only PDF worked-hours reports are supported`).
 

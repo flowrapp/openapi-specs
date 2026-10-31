@@ -62,16 +62,18 @@ members:
 
   search-business-members:
     get:
-      summary: Search business members by name
+      summary: Search or list business members by name
       description: >
-        Searches members by name and returns one page ready for the hub. Access is
+        Searches members by name, or lists all of them when `q` is omitted, empty, or
+        blank, and returns one page ready for the hub. Access is
         limited to an OWNER or MANAGER of the business. Anyone else receives 403 with
         functional code 1020. A missing business receives 404 with functional code 1006.
         The literal path segment `search` is registered beside `/members/{userId}`;
         `userId` is an int64, so `search` is not a member id.
         The BFF does not interpret the cursor. It makes at most three Main API calls
         for the page, never one call per user:
-        1. `GET /api/v2/businesses/{businessId}/users` with `search` set to `q`, plus
+        1. `GET /api/v2/businesses/{businessId}/users` with `search` set to `q` (omitted
+        when `q` is empty or blank), plus
         `limit` and `cursor`. That response is user and membership only (`userId`,
         `username`, `name`, `role`). `username` is currently equal to `name`. `hasNext`
         and `nextCursor` are forwarded as-is.
@@ -84,8 +86,9 @@ members:
         user id, and false otherwise.
         Calls 2 and 3 run for the whole page together. An empty page skips them.
         `q` is the v2 `search` parameter: accent- and case-insensitive, name only, not
-        email, 2 to 64 characters after trim and normalization. Order is the v2 order:
-        rank (a prefix of the name or of a word first), then normalized name, then userId.
+        email, 2 to 64 characters after trim and normalization when present. Order is the
+        v2 order: with `q`, rank (a prefix of the name or of a word first), then normalized
+        name, then userId. Without `q`, normalized name, then userId.
       tags:
         - Members
       operationId: searchBusinessMembers
@@ -103,18 +106,17 @@ members:
             example: 101
         - name: q
           in: query
-          required: true
+          required: false
           description: >
-            Name query, accent- and case-insensitive. Sent to the Main API as `search`
-            on `GET /api/v2/businesses/{businessId}/users`. The Main API trims and
-            normalizes it (lowercase, accents removed, ñ folded to n) and requires 2
-            to 64 characters after that normalization. A missing, blank, or shorter
-            query returns 400 SEARCH_QUERY_TOO_SHORT. A longer query returns 400
-            SEARCH_QUERY_TOO_LONG. Percent, underscore, and backslash are literal.
+            Optional name query, accent- and case-insensitive. Omitted, empty, or blank
+            means no filter: every active member is listed. Otherwise sent to the Main API
+            as `search` on `GET /api/v2/businesses/{businessId}/users`. The Main API trims
+            and normalizes it (lowercase, accents removed, ñ folded to n) and requires 2
+            to 64 characters after that normalization. A shorter query returns 400
+            SEARCH_QUERY_TOO_SHORT. A longer query returns 400 SEARCH_QUERY_TOO_LONG. Percent, underscore, and backslash are literal.
             Search is by name only, not by email.
           schema:
             type: string
-            minLength: 2
             maxLength: 64
             example: tur
         - name: limit
@@ -147,8 +149,8 @@ members:
       responses:
         '200':
           description: >
-            One page of matching active memberships, ordered by rank, normalized name,
-            and userId
+            One page of matching active memberships. With `q`, ordered by rank, normalized
+            name, and userId. Without `q`, ordered by normalized name and userId.
           content:
             application/json:
               schema:
@@ -190,7 +192,7 @@ members:
         '400':
           description: >
             The Main API rejected the query, limit, or cursor. A query that normalizes
-            to fewer than 2 characters returns SEARCH_QUERY_TOO_SHORT; one longer than
+            to a single character returns SEARCH_QUERY_TOO_SHORT; one longer than
             64 characters returns SEARCH_QUERY_TOO_LONG. A limit outside 1..50 returns
             INVALID_SEARCH_LIMIT. A cursor that is malformed or was issued for a
             different query or business returns INVALID_SEARCH_CURSOR.

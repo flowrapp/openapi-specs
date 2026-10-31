@@ -10,6 +10,7 @@
 
 ### Changed
 
+- `GET /api/v2/businesses/{businessId}/users`: an empty or blank `search` now lists every active membership, same as omitting it. The `minLength: 2` constraint is removed from the schema. A non-blank value that normalizes to fewer than 2 characters still returns `400` `1107`.
 - Contract deletion blocked by planning now returns functional code `1102` instead of `1098`, avoiding a collision with the backend's existing `PLANNING_CREATE_ON_PAST` error. Contracts starting today or earlier continue to return `1097`; both deletion conflicts use HTTP `409`.
 
 ## 0.0.69
