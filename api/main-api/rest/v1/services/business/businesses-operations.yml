@@ -400,7 +400,8 @@ businesses:
         `search`, when present, is accent- and case-insensitive and matches the name only,
         never the email. The server trims it and normalizes it (lowercase, accents removed,
         ñ folded to n). After normalization it must be 2 to 64 characters. Percent,
-        underscore, and backslash are literal. Omitting `search` lists every active membership.
+        underscore, and backslash are literal. Omitting `search`, or sending it empty or
+        blank, lists every active membership.
         With a search, order is rank, then normalized name, then userId. Rank is 0 when the
         normalized query is a prefix of the normalized name or of a word inside it, and 1
         when it is only an interior substring. Without a search, order is normalized name,
@@ -426,15 +427,15 @@ businesses:
           in: query
           required: false
           description: >
-            Optional name query, accent- and case-insensitive. Applied only when present.
-            After trim and normalization (lowercase, accents removed, ñ folded to n) it must
-            be 2 to 64 characters. A blank or shorter value returns 400 SEARCH_QUERY_TOO_SHORT.
-            A longer value returns 400 SEARCH_QUERY_TOO_LONG. Percent, underscore, and
+            Optional name query, accent- and case-insensitive. Applied only when present
+            and not blank: an empty or blank value is the same as omitting it and lists every
+            active membership. After trim and normalization (lowercase, accents removed, ñ
+            folded to n) a non-blank value must be 2 to 64 characters. A shorter value
+            returns 400 SEARCH_QUERY_TOO_SHORT. A longer value returns 400 SEARCH_QUERY_TOO_LONG. Percent, underscore, and
             backslash are literal. Search is by name only, not by email. This is not the v1
             `search` parameter: v1 also matches username and email and has no length minimum.
           schema:
             type: string
-            minLength: 2
             maxLength: 64
             example: tur
         - name: limit
