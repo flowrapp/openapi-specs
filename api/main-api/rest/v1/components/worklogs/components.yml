@@ -1,5 +1,19 @@
 components:
   schemas:
+    OpenWorklogUserDTO:
+      type: object
+      description: >
+        A requested member who has an open worklog in the business. The worklog itself is not
+        returned.
+      properties:
+        userId:
+          type: integer
+          format: int64
+          minimum: 1
+          description: User identifier with an open worklog in this business
+          example: 41
+      required: [userId]
+
     WorklogBreakStatusDTO:
       type: string
       description: Current effectiveness of a worklog break. VOIDED breaks remain queryable but do not deduct worked time.

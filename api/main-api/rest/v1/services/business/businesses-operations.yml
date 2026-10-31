@@ -322,7 +322,7 @@ businesses:
       description: >
         Ends a user's membership in the business. Only the business OWNER may perform this
         operation; the MANAGER role is not sufficient. The user's historical data (worklogs,
-        contracts, reports) is preserved. The last OWNER of a business cannot be removed.
+        contracts, reports) is preserved. An OWNER cannot be removed.
       tags:
         - Businesses
       operationId: removeBusinessUser
@@ -351,7 +351,9 @@ businesses:
         '401':
           description: Unauthorized
         '403':
-          description: Current user is not the owner of the business, or the target user is not a business member
+          description: >
+            Current user is not the owner of the business, the target user is not a business
+            member, or the target user is an OWNER of the business.
           content:
             application/problem+json:
               schema:
@@ -361,6 +363,8 @@ businesses:
                   value: {status: 403, detail: "1020 - user is not the owner of business"}
                 notMember:
                   value: {status: 403, detail: "1015 - user is not member of business"}
+                cannotRemoveOwner:
+                  value: {status: 403, detail: "1106 - user cannot remove the owner from the business"}
         '404':
           description: Business or user not found
           content:
@@ -372,13 +376,158 @@ businesses:
                   value: {status: 404, detail: "1006 - business does not exist"}
                 userNotFound:
                   value: {status: 404, detail: "1000 - user not found"}
-        '409':
-          description: The user is the last OWNER of the business
+      x-functional-errors: [1000, 1006, 1015, 1020, 1106]
+
+  get-business-users-v2:
+    get:
+      summary: List business members, paginated
+      description: >
+        Returns one keyset page of active memberships: user identity and membership role only.
+        Email, the current contract, the job role, and whether the member is working are not
+        included. `GET /api/v1/businesses/{businessId}/users` is unchanged and still returns
+        the full array, including email and the current contract, when `limit` and `cursor`
+        are omitted.
+        `search`, when present, is accent- and case-insensitive and matches the name only,
+        never the email. The server trims it and normalizes it (lowercase, accents removed,
+        ñ folded to n). After normalization it must be 2 to 64 characters. Percent,
+        underscore, and backslash are literal. Omitting `search` lists every active membership.
+        With a search, order is rank, then normalized name, then userId. Rank is 0 when the
+        normalized query is a prefix of the normalized name or of a word inside it, and 1
+        when it is only an interior substring. Without a search, order is normalized name,
+        then userId. The caller must be an OWNER or MANAGER of the business. Removed
+        memberships are excluded. `userId` is the same identifier schedule and planning
+        accept as `employeeId`.
+      tags:
+        - Businesses
+      operationId: getBusinessUsersV2
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: businessId
+          in: path
+          required: true
+          description: Unique identifier of the business
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+            example: 101
+        - name: search
+          in: query
+          required: false
+          description: >
+            Optional name query, accent- and case-insensitive. Applied only when present.
+            After trim and normalization (lowercase, accents removed, ñ folded to n) it must
+            be 2 to 64 characters. A blank or shorter value returns 400 SEARCH_QUERY_TOO_SHORT.
+            A longer value returns 400 SEARCH_QUERY_TOO_LONG. Percent, underscore, and
+            backslash are literal. Search is by name only, not by email. This is not the v1
+            `search` parameter: v1 also matches username and email and has no length minimum.
+          schema:
+            type: string
+            minLength: 2
+            maxLength: 64
+            example: tur
+        - name: limit
+          in: query
+          required: false
+          description: >
+            Maximum number of members to return. Defaults to 20. A value below 1 or above
+            50 returns 400 INVALID_SEARCH_LIMIT and is not clamped.
+          schema:
+            type: integer
+            format: int32
+            minimum: 1
+            maximum: 50
+            default: 20
+            example: 20
+        - name: cursor
+          in: query
+          required: false
+          description: >
+            Opaque keyset cursor from a previous page. Omit it to read the first page.
+            The cursor is bound to this business and to the normalized search, including
+            the no-search listing. A malformed cursor, or one reused with a different
+            search or businessId, returns 400 INVALID_SEARCH_CURSOR.
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 512
+            example: eyJ2IjoxLCJyIjoxfQ
+      responses:
+        '200':
+          description: >
+            One page of active memberships. With `search`, ordered by rank, normalized name,
+            and userId. Without `search`, ordered by normalized name and userId.
+          content:
+            application/json:
+              schema:
+                $ref: '../../components/business/components.yml#/components/schemas/BusinessUserMembershipPageDTO'
+              example:
+                content:
+                  - userId: 41
+                    username: "Turín García"
+                    name: "Turín García"
+                    role: EMPLOYEE
+                  - userId: 18
+                    username: "Arturo López"
+                    name: "Arturo López"
+                    role: EMPLOYEE
+                  - userId: 27
+                    username: "Saturnino Ruiz"
+                    name: "Saturnino Ruiz"
+                    role: MANAGER
+                hasNext: true
+                nextCursor: "eyJ2IjoxLCJyIjoxfQ"
+        '400':
+          description: >
+            The search, limit, or cursor is invalid. A present search that normalizes to
+            fewer than 2 characters returns SEARCH_QUERY_TOO_SHORT; one longer than 64
+            characters returns SEARCH_QUERY_TOO_LONG. A limit outside 1..50 returns
+            INVALID_SEARCH_LIMIT. A cursor that is malformed or was issued for a different
+            search or business returns INVALID_SEARCH_CURSOR.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+              examples:
+                queryTooShort:
+                  summary: "1107 - search query is shorter than 2 characters after trim and normalization"
+                  value:
+                    status: 400
+                    detail: "1107 - search query is shorter than 2 characters after trim and normalization"
+                queryTooLong:
+                  summary: "1108 - search query is longer than 64 characters after trim and normalization"
+                  value:
+                    status: 400
+                    detail: "1108 - search query is longer than 64 characters after trim and normalization"
+                limitOutOfRange:
+                  summary: "1109 - search limit must be between 1 and 50"
+                  value:
+                    status: 400
+                    detail: "1109 - search limit must be between 1 and 50"
+                invalidCursor:
+                  summary: "1110 - search cursor is invalid or does not match this business and query"
+                  value:
+                    status: 400
+                    detail: "1110 - search cursor is invalid or does not match this business and query"
+        '401':
+          description: No authenticated session
+        '403':
+          description: Current user is not an owner or manager of the business
           content:
             application/problem+json:
               schema:
                 $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
               example:
-                status: 409
-                detail: "1103 - business must keep at least one owner"
-      x-functional-errors: [1000, 1006, 1015, 1020, 1103]
+                status: 403
+                detail: "1020 - user is not the owner of business"
+        '404':
+          description: Business not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+              example:
+                status: 404
+                detail: "1006 - business does not exist"
+      x-functional-errors: [1006, 1020, 1107, 1108, 1109, 1110]

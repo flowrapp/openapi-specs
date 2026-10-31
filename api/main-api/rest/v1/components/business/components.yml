@@ -243,6 +243,80 @@ components:
           description: Contract effective on the business-local current date, or null when absent
       required: [userId, username, name, email, role, currentContract]
 
+    BusinessUserMembershipPageDTO:
+      type: object
+      description: >
+        One page of active business memberships. With a search, ordered by rank
+        (a prefix of the name or of a word first), then by normalized name, then by
+        userId. Without a search, ordered by normalized name, then by userId.
+        There is no total count.
+      properties:
+        content:
+          type: array
+          description: Memberships for this page, possibly empty
+          items:
+            $ref: '#/components/schemas/BusinessUserMembershipDTO'
+        hasNext:
+          type: boolean
+          description: True when another page exists after this one
+          example: true
+        nextCursor:
+          type: [string, "null"]
+          description: >
+            Opaque cursor for the next page, or null on the last page. Bound to the
+            business and the normalized search.
+          example: "eyJ2IjoxLCJyIjoxfQ"
+      required: [content, hasNext, nextCursor]
+
+    BusinessUserMembershipDTO:
+      type: object
+      description: >
+        User and membership projection used by the paginated member list.
+        `BusinessUserResponseDTO` is not reused: that schema requires `email` and
+        `currentContract`, and this list must not expose either. `username` is kept
+        for consistency with that v1 list and is currently equal to `name`. `userId`
+        is the same identifier schedule and planning accept as `employeeId`.
+      properties:
+        userId:
+          type: integer
+          format: int64
+          minimum: 1
+          description: >
+            User identifier. Same id that schedule and planning use as employeeId.
+          example: 41
+        username:
+          type: string
+          description: >
+            Currently equal to `name`. Kept for consistency with the v1 member list.
+            The backend has no separate username column; the member mapper fills
+            `username` with `users.name`.
+          example: "Turín García"
+        name:
+          type: string
+          description: Display name (`users.name`). Search matches this field only, not email.
+          example: "Turín García"
+        role:
+          type: string
+          description: Role of the user in the business
+          enum: [OWNER, MANAGER, EMPLOYEE]
+          example: EMPLOYEE
+      required: [userId, username, name, role]
+
+    BusinessCurrentContractBatchItemDTO:
+      type: object
+      description: >
+        Current contract of one requested member, including the job role of that contract.
+        Requested members without a current contract are omitted from the collection.
+      properties:
+        userId:
+          type: integer
+          format: int64
+          minimum: 1
+          description: User identifier the contract belongs to
+          example: 41
+        contract:
+          $ref: '#/components/schemas/BusinessUserCurrentContractDTO'
+      required: [userId, contract]
 
     LocationDTO:
       type: object
