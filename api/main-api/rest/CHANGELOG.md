@@ -6,6 +6,7 @@
 
 - Owner-only `DELETE /api/v1/businesses/{businessId}/users/{userId}` ends a user's membership in the business and returns `204` without a response body. Historical data (worklogs, contracts, reports) is preserved.
 - Removing an OWNER returns `403` with functional code `1106` (`CANNOT_REMOVE_OWNER_FROM_BUSINESS`).
+- `GET /api/v1/businesses/{businessId}/users` accepts optional `includeRemoved` (default `false`). When true, removed members are also returned with a non-null `removedAt` and a null `currentContract`, so historical plannings and reports can resolve their names. `BusinessUserResponseDTO` gains the optional nullable `removedAt`.
 
 ### Changed
 

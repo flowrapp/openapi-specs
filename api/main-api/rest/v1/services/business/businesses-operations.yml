@@ -240,6 +240,16 @@ businesses:
             ignoring case, then user ID ascending.
           schema:
             type: string
+        - name: includeRemoved
+          in: query
+          required: false
+          description: >
+            When true, memberships ended by removal from the business are also returned, with
+            `removedAt` set and `currentContract` null. Defaults to false, so removed members are
+            omitted.
+          schema:
+            type: boolean
+            default: false
       responses:
         '200':
           description: Business memberships with profile and current-contract data retrieved successfully
