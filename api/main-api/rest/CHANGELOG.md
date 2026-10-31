@@ -25,6 +25,12 @@
 - Membership removal no longer documents functional code `1103` or a `409` for the last owner. The backend has no `LAST_OWNER_CANNOT_BE_REMOVED`. Removing an OWNER is `403` `1106`. `1105` (`CANNOT_REMOVE_SELF_FROM_BUSINESS`) is catalogued because the backend defines it; the removal operation does not document self-removal, so it does not reference `1105`.
 - Name-search failures use `1107` `SEARCH_QUERY_TOO_SHORT`, `1108` `SEARCH_QUERY_TOO_LONG`, `1109` `INVALID_SEARCH_LIMIT`, and `1110` `INVALID_SEARCH_CURSOR`. A `userIds` list outside 1..50 uses `1111` `INVALID_USER_IDS`.
 
+## 0.0.68
+
+### Changed
+
+- `GET /api/v1/businesses/{businessId}/users` is restricted to an OWNER or MANAGER of that business. Previously any authenticated user could list another business's members. Callers who are not an owner or manager receive `403` with functional code `1020`. A missing business returns `404` with functional code `1006`.
+
 ## 0.0.67
 
 ### Added
