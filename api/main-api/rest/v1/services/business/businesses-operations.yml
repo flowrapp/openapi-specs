@@ -513,14 +513,17 @@ businesses:
         '401':
           description: No authenticated session
         '403':
-          description: Current user is not an owner or manager of the business
+          description: >
+            Current user is not an OWNER or MANAGER of the business. The functional
+            code is 1020 (`USER_NOT_OWNER_OF_BUSINESS`). The message states that
+            both roles are allowed. `searchBusinessMembers` forwards this detail.
           content:
             application/problem+json:
               schema:
                 $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
               example:
                 status: 403
-                detail: "1020 - user is not the owner of business"
+                detail: "1020 - user is not an owner or manager of the business"
         '404':
           description: Business not found
           content:
