@@ -345,6 +345,75 @@ components:
         - role
         - currentContract
 
+    ManagerWorkerSearchPageDTO:
+      type: object
+      description: >
+        Pass-through of the Main API name-search page. Ordered by rank (a prefix of
+        the name or of a word first), then by normalized name, then by userId.
+        There is no total count. The BFF does not interpret the cursor.
+      properties:
+        content:
+          type: array
+          description: Matching memberships for this page, possibly empty
+          items:
+            $ref: "#/components/schemas/ManagerWorkerSearchItemDTO"
+        hasNext:
+          type: boolean
+          description: True when another page exists after this one
+          example: true
+        nextCursor:
+          type: [string, "null"]
+          description: >
+            Opaque cursor for the next page, or null on the last page. Bound to the
+            business and the normalized query. Forward it unchanged.
+          example: "eyJ2IjoxLCJyIjoxfQ"
+      required: [content, hasNext, nextCursor]
+
+    ManagerWorkerSearchItemDTO:
+      type: object
+      description: >
+        Pass-through of a Main API search hit. Email is not included.
+        `userId` is the same identifier schedule accepts as `employeeId`.
+      properties:
+        userId:
+          type: integer
+          format: int64
+          minimum: 1
+          description: >
+            User identifier. Same id that the manager schedule accepts as employeeId.
+          example: 41
+        name:
+          type: string
+          description: Display name. Search matches this field only, not email.
+          example: "Turín García"
+        role:
+          type: string
+          description: Role of the user in the business
+          enum: [OWNER, MANAGER, EMPLOYEE]
+          example: EMPLOYEE
+        jobRole:
+          description: >
+            Job role of the worker's current contract, or null when there is no
+            current contract. Reuses the manager job-role summary.
+          oneOf:
+            - $ref: "#/components/schemas/ManagerJobRoleSummaryDTO"
+            - type: "null"
+        currentContractId:
+          description: Identifier of the current contract, or null when the worker has none
+          oneOf:
+            - type: integer
+              format: int64
+              minimum: 1
+              example: 501
+            - type: "null"
+        workingNow:
+          type: boolean
+          description: >
+            Optional. True when the worker has an open worklog in this business.
+            Omitted when presence is not included in the response.
+          example: true
+      required: [userId, name, role, jobRole, currentContractId]
+
     ManagerDayHistoryResponseDTO:
       type: object
       description: All workers' sessions for a specific day in a business

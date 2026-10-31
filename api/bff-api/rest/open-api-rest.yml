@@ -143,6 +143,8 @@ paths:
     $ref: "v1/services/settings/settings-operations.yml#/settings/manager-business-user-geofencing"
   "/api/v1/manager/businesses/{businessId}/workers":
     $ref: "v1/services/manager/manager-operations.yml#/manager/workers"
+  "/api/v1/manager/businesses/{businessId}/workers/search":
+    $ref: "v1/services/manager/manager-operations.yml#/manager/workers-search"
   "/api/v1/manager/businesses/{businessId}/workers/{userId}/contracts":
     $ref: "v1/services/contracts/contracts-operations.yml#/contracts/worker-contracts"
   "/api/v1/manager/businesses/{businessId}/workers/{userId}/contracts/{contractId}":

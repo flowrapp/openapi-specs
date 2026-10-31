@@ -298,6 +298,175 @@ businesses:
         '404':
           description: Business not found
 
+  search-business-users:
+    get:
+      summary: Search business members by name
+      description: >
+        Returns one keyset page of active memberships whose name contains the query.
+        Matching is accent- and case-insensitive and applies to the name only, never
+        to email. The literal path segment `search` is registered beside
+        `/users/{userId}`; `userId` is an int64, and servers match this concrete path
+        before the templated member path, so `search` is not a user id.
+        Results are ordered by rank, then by normalized name, then by userId ascending.
+        Rank is 0 when the normalized query is a prefix of the normalized name or of a
+        word inside it, and 1 when it is only an interior substring. Normalization is
+        lowercase with accents removed and ñ folded to n.
+        The caller must be an OWNER or MANAGER of the business. Members without a
+        current contract are included with a null job role and contract id. Removed
+        memberships are excluded.
+      tags:
+        - Businesses
+      operationId: searchBusinessUsers
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: businessId
+          in: path
+          required: true
+          description: Unique identifier of the business
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+            example: 101
+        - name: q
+          in: query
+          required: true
+          description: >
+            Name query, accent- and case-insensitive. The server trims surrounding
+            whitespace and normalizes the value (lowercase, accents removed, ñ folded
+            to n) before checking length. After normalization the query must be 2 to
+            64 characters. A missing, blank, or shorter query returns 400
+            SEARCH_QUERY_TOO_SHORT. A longer query returns 400 SEARCH_QUERY_TOO_LONG.
+            Percent, underscore, and backslash are matched as literal characters.
+            Search is by name only, not by email.
+          schema:
+            type: string
+            minLength: 2
+            maxLength: 64
+            example: tur
+        - name: limit
+          in: query
+          required: false
+          description: >
+            Maximum number of members to return. Defaults to 20. A value below 1 or
+            above 50 returns 400 INVALID_SEARCH_LIMIT and is not clamped.
+          schema:
+            type: integer
+            format: int32
+            minimum: 1
+            maximum: 50
+            default: 20
+            example: 20
+        - name: cursor
+          in: query
+          required: false
+          description: >
+            Opaque keyset cursor from a previous page. Omit it to read the first page.
+            The cursor is bound to this business and to the normalized query. A
+            malformed cursor, or one reused with a different q or businessId, returns
+            400 INVALID_SEARCH_CURSOR.
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 512
+            example: eyJ2IjoxLCJyIjoxfQ
+      responses:
+        '200':
+          description: >
+            One page of matching active memberships, ordered by rank, normalized name,
+            and userId
+          content:
+            application/json:
+              schema:
+                $ref: '../../components/business/components.yml#/components/schemas/BusinessUserSearchPageDTO'
+              example:
+                content:
+                  - userId: 41
+                    name: "Turín García"
+                    role: EMPLOYEE
+                    jobRole:
+                      id: 11
+                      code: COOK
+                      name: Cocina
+                      color: "#4C9F70"
+                      icon: kitchen
+                      active: true
+                    currentContractId: 501
+                    workingNow: true
+                  - userId: 18
+                    name: "Arturo López"
+                    role: EMPLOYEE
+                    jobRole:
+                      id: 10
+                      code: WAITER
+                      name: Sala
+                      color: "#1A2B3C"
+                      icon: front-of-house
+                      active: true
+                    currentContractId: 480
+                    workingNow: false
+                  - userId: 27
+                    name: "Saturnino Ruiz"
+                    role: MANAGER
+                    jobRole: null
+                    currentContractId: null
+                hasNext: true
+                nextCursor: "eyJ2IjoxLCJyIjoxfQ"
+        '400':
+          description: >
+            The query, limit, or cursor is invalid. A query that normalizes to fewer
+            than 2 characters returns SEARCH_QUERY_TOO_SHORT; one longer than 64
+            characters returns SEARCH_QUERY_TOO_LONG. A limit outside 1..50 returns
+            INVALID_SEARCH_LIMIT. A cursor that is malformed or was issued for a
+            different query or business returns INVALID_SEARCH_CURSOR.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+              examples:
+                queryTooShort:
+                  summary: "1108 - search query is shorter than 2 characters after trim and normalization"
+                  value:
+                    status: 400
+                    detail: "1108 - search query is shorter than 2 characters after trim and normalization"
+                queryTooLong:
+                  summary: "1109 - search query is longer than 64 characters after trim and normalization"
+                  value:
+                    status: 400
+                    detail: "1109 - search query is longer than 64 characters after trim and normalization"
+                limitOutOfRange:
+                  summary: "1110 - search limit must be between 1 and 50"
+                  value:
+                    status: 400
+                    detail: "1110 - search limit must be between 1 and 50"
+                invalidCursor:
+                  summary: "1111 - search cursor is invalid or does not match this business and query"
+                  value:
+                    status: 400
+                    detail: "1111 - search cursor is invalid or does not match this business and query"
+        '401':
+          description: No authenticated session
+        '403':
+          description: Caller is not an OWNER or MANAGER of the business
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+              example:
+                status: 403
+                detail: "1020 - user is not the owner of business"
+        '404':
+          description: Business not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+              example:
+                status: 404
+                detail: "1006 - business does not exist"
+      x-functional-errors: [1006, 1020, 1108, 1109, 1110, 1111]
+
   remove-business-user:
     delete:
       summary: Remove a user from a business
@@ -362,5 +531,5 @@ businesses:
                 $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
               example:
                 status: 409
-                detail: "1103 - business must keep at least one owner"
-      x-functional-errors: [1000, 1006, 1015, 1020, 1103]
+                detail: "1107 - business must keep at least one owner"
+      x-functional-errors: [1000, 1006, 1015, 1020, 1107]

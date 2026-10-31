@@ -243,6 +243,74 @@ components:
           description: Contract effective on the business-local current date, or null when absent
       required: [userId, username, name, email, role, currentContract]
 
+    BusinessUserSearchPageDTO:
+      type: object
+      description: >
+        One page of active business members matching a name search. Ordered by rank
+        (a prefix of the name or of a word first), then by normalized name, then by
+        userId. There is no total count.
+      properties:
+        content:
+          type: array
+          description: Matching memberships for this page, possibly empty
+          items:
+            $ref: '#/components/schemas/BusinessUserSearchItemDTO'
+        hasNext:
+          type: boolean
+          description: True when another page exists after this one
+          example: true
+        nextCursor:
+          type: [string, "null"]
+          description: >
+            Opaque cursor for the next page, or null on the last page. Bound to the
+            business and the normalized query.
+          example: "eyJ2IjoxLCJyIjoxfQ"
+      required: [content, hasNext, nextCursor]
+
+    BusinessUserSearchItemDTO:
+      type: object
+      description: >
+        Minimal member projection for name search. Email is not included.
+        `userId` is the same identifier schedule and planning accept as `employeeId`.
+      properties:
+        userId:
+          type: integer
+          format: int64
+          minimum: 1
+          description: >
+            User identifier. Same id that schedule and planning use as employeeId.
+          example: 41
+        name:
+          type: string
+          description: Display name (`users.name`). Search matches this field only, not email.
+          example: "Turín García"
+        role:
+          type: string
+          description: Role of the user in the business
+          enum: [OWNER, MANAGER, EMPLOYEE]
+          example: EMPLOYEE
+        jobRole:
+          description: >
+            Job role of the member's current contract, or null when the member has no
+            current contract. Reuses the job-role projection already embedded in business users.
+          oneOf:
+            - $ref: '#/components/schemas/BusinessUserJobRoleDTO'
+            - type: 'null'
+        currentContractId:
+          description: Identifier of the current contract, or null when the member has none
+          oneOf:
+            - type: integer
+              format: int64
+              minimum: 1
+              example: 501
+            - type: 'null'
+        workingNow:
+          type: boolean
+          description: >
+            Optional. True when the member has an open worklog in this business.
+            Omitted when presence is not included in the response.
+          example: true
+      required: [userId, name, role, jobRole, currentContractId]
 
     LocationDTO:
       type: object

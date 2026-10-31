@@ -60,5 +60,5 @@ members:
             application/problem+json:
               schema:
                 $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
-              example: {status: 409, detail: "1103 - business must keep at least one owner"}
-      x-functional-errors: [1000, 1006, 1015, 1020, 1103]
+              example: {status: 409, detail: "1107 - business must keep at least one owner"}
+      x-functional-errors: [1000, 1006, 1015, 1020, 1107]

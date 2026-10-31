@@ -5,11 +5,13 @@
 ### Added
 
 - Owner-only `DELETE /api/v1/businesses/{businessId}/users/{userId}` ends a user's membership in the business and returns `204` without a response body. Historical data (worklogs, contracts, reports) is preserved.
-- Removing the last OWNER of a business returns `409` with new functional code `1103`.
+- Removing the last OWNER of a business returns `409` with functional code `1107` (`LAST_OWNER_CANNOT_BE_REMOVED`).
+- `GET /api/v1/businesses/{businessId}/users/search` (`searchBusinessUsers`) returns a keyset page of active members matched by name only. The query is accent- and case-insensitive, must be 2 to 64 characters after trim and normalization, and does not match email. `limit` defaults to 20 and a value above 50 returns `400`. The opaque cursor is bound to the business and the normalized query.
 
 ### Changed
 
 - Contract deletion blocked by planning now returns functional code `1102` instead of `1098`, avoiding a collision with the backend's existing `PLANNING_CREATE_ON_PAST` error. Contracts starting today or earlier continue to return `1097`; both deletion conflicts use HTTP `409`.
+- Functional code `1103` is `INVALID_REPORT_TYPE` (HTTP 400), matching the backend. The unreleased last-owner error moves from `1103` to `1107` because `1103` is already `INVALID_REPORT_TYPE` in the backend. Codes `1104`–`1106` stay unused in this spec because the backend catalog already reaches `1106`.
 
 ## 0.0.67
 

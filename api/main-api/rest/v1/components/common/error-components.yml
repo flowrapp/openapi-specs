@@ -146,7 +146,12 @@ components:
         | 1097 | 409 | CONTRACT_ALREADY_STARTED | contract has already started |
         | 1098 | 400 | PLANNING_CREATE_ON_PAST | Planning week creation cannot be in the past |
         | 1102 | 409 | CONTRACT_DELETE_BLOCKED_BY_PLANNING | contract deletion is blocked by planning state |
-        | 1103 | 409 | LAST_OWNER_CANNOT_BE_REMOVED | business must keep at least one owner |
+        | 1103 | 400 | INVALID_REPORT_TYPE | invalid report type |
+        | 1107 | 409 | LAST_OWNER_CANNOT_BE_REMOVED | business must keep at least one owner |
+        | 1108 | 400 | SEARCH_QUERY_TOO_SHORT | search query is shorter than 2 characters after trim and normalization |
+        | 1109 | 400 | SEARCH_QUERY_TOO_LONG | search query is longer than 64 characters after trim and normalization |
+        | 1110 | 400 | INVALID_SEARCH_LIMIT | search limit must be between 1 and 50 |
+        | 1111 | 400 | INVALID_SEARCH_CURSOR | search cursor is invalid or does not match this business and query |
       enum:
         - 1000
         - 1001
@@ -249,3 +254,8 @@ components:
         - 1098
         - 1102
         - 1103
+        - 1107
+        - 1108
+        - 1109
+        - 1110
+        - 1111
