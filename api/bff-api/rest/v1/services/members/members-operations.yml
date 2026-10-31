@@ -59,3 +59,184 @@ members:
                 userNotFound:
                   value: {status: 404, detail: "1000 - user not found"}
       x-functional-errors: [1000, 1006, 1015, 1020, 1106]
+
+  search-business-members:
+    get:
+      summary: Search business members by name
+      description: >
+        Searches members by name and returns one page ready for the hub. Access is
+        limited to an OWNER or MANAGER of the business. Anyone else receives 403 with
+        functional code 1020. A missing business receives 404 with functional code 1006.
+        The literal path segment `search` is registered beside `/members/{userId}`;
+        `userId` is an int64, so `search` is not a member id.
+        The BFF does not interpret the cursor. It makes at most three Main API calls
+        for the page, never one call per user:
+        1. `GET /api/v2/businesses/{businessId}/users` with `search` set to `q`, plus
+        `limit` and `cursor`. That response is user and membership only (`userId`,
+        `username`, `name`, `role`). `username` is currently equal to `name`. `hasNext`
+        and `nextCursor` are forwarded as-is.
+        2. When the page is not empty, `GET /api/v1/businesses/{businessId}/contracts/current?userIds=`
+        once, with every user id of the page (at most 50). `currentContractId` is
+        `contract.id` and `jobRole` is `contract.jobRole`. A member missing from this
+        response has `currentContractId: null` and `jobRole: null`.
+        3. When the page is not empty, `GET /api/v1/businesses/{businessId}/worklogs/open?userIds=`
+        once, with the same ids. `workingNow` is true when that response contains the
+        user id, and false otherwise.
+        Calls 2 and 3 run for the whole page together. An empty page skips them.
+        `q` is the v2 `search` parameter: accent- and case-insensitive, name only, not
+        email, 2 to 64 characters after trim and normalization. Order is the v2 order:
+        rank (a prefix of the name or of a word first), then normalized name, then userId.
+      tags:
+        - Members
+      operationId: searchBusinessMembers
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: businessId
+          in: path
+          required: true
+          description: ID of the business
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+            example: 101
+        - name: q
+          in: query
+          required: true
+          description: >
+            Name query, accent- and case-insensitive. Sent to the Main API as `search`
+            on `GET /api/v2/businesses/{businessId}/users`. The Main API trims and
+            normalizes it (lowercase, accents removed, ñ folded to n) and requires 2
+            to 64 characters after that normalization. A missing, blank, or shorter
+            query returns 400 SEARCH_QUERY_TOO_SHORT. A longer query returns 400
+            SEARCH_QUERY_TOO_LONG. Percent, underscore, and backslash are literal.
+            Search is by name only, not by email.
+          schema:
+            type: string
+            minLength: 2
+            maxLength: 64
+            example: tur
+        - name: limit
+          in: query
+          required: false
+          description: >
+            Maximum number of members to return. Defaults to 20. A value below 1 or
+            above 50 returns 400 INVALID_SEARCH_LIMIT and is not clamped.
+          schema:
+            type: integer
+            format: int32
+            minimum: 1
+            maximum: 50
+            default: 20
+            example: 20
+        - name: cursor
+          in: query
+          required: false
+          description: >
+            Opaque keyset cursor from a previous page of
+            `GET /api/v2/businesses/{businessId}/users`. Omit it to read the first page.
+            Forward it unchanged. It is bound to this business and to the normalized
+            query. A malformed cursor, or one reused with a different q or businessId,
+            returns 400 INVALID_SEARCH_CURSOR.
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 512
+            example: eyJ2IjoxLCJyIjoxfQ
+      responses:
+        '200':
+          description: >
+            One page of matching active memberships, ordered by rank, normalized name,
+            and userId
+          content:
+            application/json:
+              schema:
+                $ref: '../../components/members/components.yml#/components/schemas/MemberSearchPageDTO'
+              example:
+                content:
+                  - userId: 41
+                    name: "Turín García"
+                    role: EMPLOYEE
+                    jobRole:
+                      id: 11
+                      code: COOK
+                      name: Cocina
+                      color: "#4C9F70"
+                      icon: kitchen
+                      active: true
+                    currentContractId: 501
+                    workingNow: true
+                  - userId: 18
+                    name: "Arturo López"
+                    role: EMPLOYEE
+                    jobRole:
+                      id: 10
+                      code: WAITER
+                      name: Sala
+                      color: "#1A2B3C"
+                      icon: front-of-house
+                      active: true
+                    currentContractId: 480
+                    workingNow: false
+                  - userId: 27
+                    name: "Saturnino Ruiz"
+                    role: MANAGER
+                    jobRole: null
+                    currentContractId: null
+                    workingNow: false
+                hasNext: true
+                nextCursor: "eyJ2IjoxLCJyIjoxfQ"
+        '400':
+          description: >
+            The Main API rejected the query, limit, or cursor. A query that normalizes
+            to fewer than 2 characters returns SEARCH_QUERY_TOO_SHORT; one longer than
+            64 characters returns SEARCH_QUERY_TOO_LONG. A limit outside 1..50 returns
+            INVALID_SEARCH_LIMIT. A cursor that is malformed or was issued for a
+            different query or business returns INVALID_SEARCH_CURSOR.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              examples:
+                queryTooShort:
+                  summary: "1107 - search query is shorter than 2 characters after trim and normalization"
+                  value:
+                    status: 400
+                    detail: "1107 - search query is shorter than 2 characters after trim and normalization"
+                queryTooLong:
+                  summary: "1108 - search query is longer than 64 characters after trim and normalization"
+                  value:
+                    status: 400
+                    detail: "1108 - search query is longer than 64 characters after trim and normalization"
+                limitOutOfRange:
+                  summary: "1109 - search limit must be between 1 and 50"
+                  value:
+                    status: 400
+                    detail: "1109 - search limit must be between 1 and 50"
+                invalidCursor:
+                  summary: "1110 - search cursor is invalid or does not match this business and query"
+                  value:
+                    status: 400
+                    detail: "1110 - search cursor is invalid or does not match this business and query"
+        '401':
+          description: No authenticated session
+        '403':
+          description: Caller is not an OWNER or MANAGER of the business
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              example:
+                status: 403
+                detail: "1020 - user is not the owner of business"
+        '404':
+          description: Business not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              example:
+                status: 404
+                detail: "1006 - business does not exist"
+      x-functional-errors: [1006, 1020, 1107, 1108, 1109, 1110]

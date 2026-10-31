@@ -46,7 +46,9 @@ tags:
   - name: Contracts
     description: Owner-only contract management operations.
   - name: Members
-    description: Owner-only business membership management operations.
+    description: >
+      Business membership operations. Removal is owner-only. Name search is
+      limited to an OWNER or MANAGER of the business.
 
 paths:
   # ── System ──────────────────────────────────────────────────────────────
@@ -120,6 +122,8 @@ paths:
   # ── Reports (owner-only) ─────────────────────────────────────────────────
   "/api/v1/businesses/{businessId}/reports/worked-hours":
     $ref: "v1/services/reports/reports-operations.yml#/reports/request-business-worked-hours-report"
+  "/api/v1/businesses/{businessId}/members/search":
+    $ref: "v1/services/members/members-operations.yml#/members/search-business-members"
   "/api/v1/businesses/{businessId}/members/{userId}":
     $ref: "v1/services/members/members-operations.yml#/members/remove-business-member"
 
@@ -143,8 +147,6 @@ paths:
     $ref: "v1/services/settings/settings-operations.yml#/settings/manager-business-user-geofencing"
   "/api/v1/manager/businesses/{businessId}/workers":
     $ref: "v1/services/manager/manager-operations.yml#/manager/workers"
-  "/api/v1/manager/businesses/{businessId}/workers/search":
-    $ref: "v1/services/manager/manager-operations.yml#/manager/workers-search"
   "/api/v1/manager/businesses/{businessId}/workers/{userId}/contracts":
     $ref: "v1/services/contracts/contracts-operations.yml#/contracts/worker-contracts"
   "/api/v1/manager/businesses/{businessId}/workers/{userId}/contracts/{contractId}":

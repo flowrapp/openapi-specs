@@ -273,9 +273,9 @@ components:
       description: >
         User and membership projection used by the paginated member list.
         `BusinessUserResponseDTO` is not reused: that schema requires `email` and
-        `currentContract`, and this list must not expose either. `username` is the
-        same field the v1 member list returns. `userId` is the same identifier
-        schedule and planning accept as `employeeId`.
+        `currentContract`, and this list must not expose either. `username` is kept
+        for consistency with that v1 list and is currently equal to `name`. `userId`
+        is the same identifier schedule and planning accept as `employeeId`.
       properties:
         userId:
           type: integer
@@ -287,8 +287,9 @@ components:
         username:
           type: string
           description: >
-            Username returned with the business member. The current model has no
-            separate username column; this is the same value the v1 member list returns.
+            Currently equal to `name`. Kept for consistency with the v1 member list.
+            The backend has no separate username column; the member mapper fills
+            `username` with `users.name`.
           example: "Turín García"
         name:
           type: string
