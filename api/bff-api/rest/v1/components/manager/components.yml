@@ -348,9 +348,9 @@ components:
     ManagerWorkerSearchPageDTO:
       type: object
       description: >
-        Pass-through of the Main API name-search page. Ordered by rank (a prefix of
-        the name or of a word first), then by normalized name, then by userId.
-        There is no total count. The BFF does not interpret the cursor.
+        One hub search page. The envelope (`content`, `hasNext`, `nextCursor`) comes
+        from `GET /api/v2/businesses/{businessId}/users`. Each item adds the current
+        contract, its job role, and whether the member is working, loaded in batch.
       properties:
         content:
           type: array
@@ -372,8 +372,11 @@ components:
     ManagerWorkerSearchItemDTO:
       type: object
       description: >
-        Pass-through of a Main API search hit. Email is not included.
-        `userId` is the same identifier schedule accepts as `employeeId`.
+        Hub search hit. `userId`, `name`, and `role` come from the Main API membership
+        page. `currentContractId` and `jobRole` come from the current-contract batch,
+        or null when that user has no current contract. `workingNow` comes from the
+        open-worklog batch. Email is not included. `userId` is the same identifier
+        schedule accepts as `employeeId`.
       properties:
         userId:
           type: integer
@@ -409,10 +412,10 @@ components:
         workingNow:
           type: boolean
           description: >
-            Optional. True when the worker has an open worklog in this business.
-            Omitted when presence is not included in the response.
+            True when the open-worklog batch for this page includes the user id.
+            False when it does not. Always present.
           example: true
-      required: [userId, name, role, jobRole, currentContractId]
+      required: [userId, name, role, jobRole, currentContractId, workingNow]
 
     ManagerDayHistoryResponseDTO:
       type: object

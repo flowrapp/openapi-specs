@@ -343,14 +343,25 @@ manager:
     get:
       summary: Search business workers by name
       description: >
-        Forwards to the Main API name search and returns the page unchanged. Matching
-        is accent- and case-insensitive and applies to the name only, never to email.
-        The BFF does not interpret `q`, `limit`, or the opaque cursor. The literal
+        Searches members by name and returns one page ready for the hub. The literal
         path segment `search` is registered beside `/workers/{userId}/...`; it is not
-        a user id.
-        Results keep the Main API order: rank (a prefix of the name or of a word
-        first), then normalized name, then userId. The caller must be an OWNER or
-        MANAGER of the business.
+        a user id. The caller must be an OWNER or MANAGER of the business.
+        The BFF does not interpret the cursor. It makes at most three Main API calls
+        for the page, never one call per user:
+        1. `GET /api/v2/businesses/{businessId}/users` with `search` set to `q`, plus
+        `limit` and `cursor`. That response is user and membership only (`userId`,
+        `username`, `name`, `role`). `hasNext` and `nextCursor` are forwarded as-is.
+        2. When the page is not empty, `GET /api/v1/businesses/{businessId}/contracts/current?userIds=`
+        once, with every user id of the page (at most 50). `currentContractId` is
+        `contract.id` and `jobRole` is `contract.jobRole`. A user missing from this
+        response has `currentContractId: null` and `jobRole: null`.
+        3. When the page is not empty, `GET /api/v1/businesses/{businessId}/worklogs/open?userIds=`
+        once, with the same ids. `workingNow` is true when that response contains the
+        user id, and false otherwise.
+        Calls 2 and 3 run for the whole page together. An empty page skips them.
+        `q` is the v2 `search` parameter: accent- and case-insensitive, name only, not
+        email, 2 to 64 characters after trim and normalization. Order is the v2 order:
+        rank (a prefix of the name or of a word first), then normalized name, then userId.
       tags:
         - Manager
       operationId: searchManagerBusinessWorkers
@@ -370,12 +381,13 @@ manager:
           in: query
           required: true
           description: >
-            Name query, accent- and case-insensitive. Forwarded unchanged. The Main
-            API trims and normalizes it (lowercase, accents removed, ñ folded to n)
-            and requires 2 to 64 characters after that normalization. A missing,
-            blank, or shorter query returns 400 SEARCH_QUERY_TOO_SHORT. A longer
-            query returns 400 SEARCH_QUERY_TOO_LONG. Percent, underscore, and
-            backslash are literal. Search is by name only, not by email.
+            Name query, accent- and case-insensitive. Sent to the Main API as `search`
+            on `GET /api/v2/businesses/{businessId}/users`. The Main API trims and
+            normalizes it (lowercase, accents removed, ñ folded to n) and requires 2
+            to 64 characters after that normalization. A missing, blank, or shorter
+            query returns 400 SEARCH_QUERY_TOO_SHORT. A longer query returns 400
+            SEARCH_QUERY_TOO_LONG. Percent, underscore, and backslash are literal.
+            Search is by name only, not by email.
           schema:
             type: string
             minLength: 2
@@ -398,7 +410,8 @@ manager:
           in: query
           required: false
           description: >
-            Opaque keyset cursor from a previous page. Omit it to read the first page.
+            Opaque keyset cursor from a previous page of
+            `GET /api/v2/businesses/{businessId}/users`. Omit it to read the first page.
             Forward it unchanged. It is bound to this business and to the normalized
             query. A malformed cursor, or one reused with a different q or businessId,
             returns 400 INVALID_SEARCH_CURSOR.
@@ -447,6 +460,7 @@ manager:
                     role: MANAGER
                     jobRole: null
                     currentContractId: null
+                    workingNow: false
                 hasNext: true
                 nextCursor: "eyJ2IjoxLCJyIjoxfQ"
         '400':
@@ -462,25 +476,25 @@ manager:
                 $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
               examples:
                 queryTooShort:
-                  summary: "1108 - search query is shorter than 2 characters after trim and normalization"
+                  summary: "1107 - search query is shorter than 2 characters after trim and normalization"
                   value:
                     status: 400
-                    detail: "1108 - search query is shorter than 2 characters after trim and normalization"
+                    detail: "1107 - search query is shorter than 2 characters after trim and normalization"
                 queryTooLong:
-                  summary: "1109 - search query is longer than 64 characters after trim and normalization"
+                  summary: "1108 - search query is longer than 64 characters after trim and normalization"
                   value:
                     status: 400
-                    detail: "1109 - search query is longer than 64 characters after trim and normalization"
+                    detail: "1108 - search query is longer than 64 characters after trim and normalization"
                 limitOutOfRange:
-                  summary: "1110 - search limit must be between 1 and 50"
+                  summary: "1109 - search limit must be between 1 and 50"
                   value:
                     status: 400
-                    detail: "1110 - search limit must be between 1 and 50"
+                    detail: "1109 - search limit must be between 1 and 50"
                 invalidCursor:
-                  summary: "1111 - search cursor is invalid or does not match this business and query"
+                  summary: "1110 - search cursor is invalid or does not match this business and query"
                   value:
                     status: 400
-                    detail: "1111 - search cursor is invalid or does not match this business and query"
+                    detail: "1110 - search cursor is invalid or does not match this business and query"
         '401':
           description: No authenticated session
         '403':
@@ -501,7 +515,7 @@ manager:
               example:
                 status: 404
                 detail: "1006 - business does not exist"
-      x-functional-errors: [1006, 1020, 1108, 1109, 1110, 1111]
+      x-functional-errors: [1006, 1020, 1107, 1108, 1109, 1110]
 
   history-day:
     get:

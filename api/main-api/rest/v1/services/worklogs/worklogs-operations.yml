@@ -271,6 +271,95 @@ worklogs:
         - 1006
         - 1020
 
+  open-worklogs:
+    get:
+      summary: List open worklogs for a set of users
+      description: >
+        Returns the requested members who have an open worklog in this business (clocked in and
+        not yet clocked out). One call covers the whole set. Requested users who are not working,
+        and user ids that are not active members, are omitted rather than rejected. The response
+        is only the user id, not the worklog. The caller must be an OWNER or MANAGER of the
+        business. `userIds` is required and holds 1 to 50 identifiers, the same cap as a
+        member-list page.
+        `GET /api/v1/businesses/{businessId}/worklogs` does not fit this call: it accepts a single
+        `userId`, has no open-worklog filter, and returns the full worklog.
+      tags:
+        - Worklogs
+      operationId: getOpenWorklogsForUsers
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: businessId
+          in: path
+          required: true
+          description: Unique identifier of the business
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+            example: 101
+        - name: userIds
+          in: query
+          required: true
+          description: >
+            User ids to check, repeated (`userIds=41&userIds=18`). At least 1 and at most 50
+            distinct ids. More than 50, an empty list, or duplicates return 400 INVALID_USER_IDS.
+          style: form
+          explode: true
+          schema:
+            type: array
+            minItems: 1
+            maxItems: 50
+            uniqueItems: true
+            items:
+              type: integer
+              format: int64
+              minimum: 1
+            example: [41, 18, 27]
+      responses:
+        '200':
+          description: >
+            Members from the request who have an open worklog. Members who are not working are
+            absent.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '../../components/worklogs/components.yml#/components/schemas/OpenWorklogUserDTO'
+              example:
+                - userId: 41
+        '400':
+          description: userIds is missing, empty, longer than 50, or contains duplicates
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+              example:
+                status: 400
+                detail: "1111 - userIds must contain between 1 and 50 identifiers"
+        '401':
+          description: No authenticated session
+        '403':
+          description: Current user is not an owner or manager of the business
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+              example:
+                status: 403
+                detail: "1020 - user is not the owner of business"
+        '404':
+          description: Business not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+              example:
+                status: 404
+                detail: "1006 - business does not exist"
+      x-functional-errors: [1006, 1020, 1111]
+
   get-worklogs:
     get:
       summary: Get user worklogs

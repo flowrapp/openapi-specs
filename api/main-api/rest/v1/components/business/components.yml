@@ -243,18 +243,19 @@ components:
           description: Contract effective on the business-local current date, or null when absent
       required: [userId, username, name, email, role, currentContract]
 
-    BusinessUserSearchPageDTO:
+    BusinessUserMembershipPageDTO:
       type: object
       description: >
-        One page of active business members matching a name search. Ordered by rank
+        One page of active business memberships. With a search, ordered by rank
         (a prefix of the name or of a word first), then by normalized name, then by
-        userId. There is no total count.
+        userId. Without a search, ordered by normalized name, then by userId.
+        There is no total count.
       properties:
         content:
           type: array
-          description: Matching memberships for this page, possibly empty
+          description: Memberships for this page, possibly empty
           items:
-            $ref: '#/components/schemas/BusinessUserSearchItemDTO'
+            $ref: '#/components/schemas/BusinessUserMembershipDTO'
         hasNext:
           type: boolean
           description: True when another page exists after this one
@@ -263,15 +264,18 @@ components:
           type: [string, "null"]
           description: >
             Opaque cursor for the next page, or null on the last page. Bound to the
-            business and the normalized query.
+            business and the normalized search.
           example: "eyJ2IjoxLCJyIjoxfQ"
       required: [content, hasNext, nextCursor]
 
-    BusinessUserSearchItemDTO:
+    BusinessUserMembershipDTO:
       type: object
       description: >
-        Minimal member projection for name search. Email is not included.
-        `userId` is the same identifier schedule and planning accept as `employeeId`.
+        User and membership projection used by the paginated member list.
+        `BusinessUserResponseDTO` is not reused: that schema requires `email` and
+        `currentContract`, and this list must not expose either. `username` is the
+        same field the v1 member list returns. `userId` is the same identifier
+        schedule and planning accept as `employeeId`.
       properties:
         userId:
           type: integer
@@ -280,6 +284,12 @@ components:
           description: >
             User identifier. Same id that schedule and planning use as employeeId.
           example: 41
+        username:
+          type: string
+          description: >
+            Username returned with the business member. The current model has no
+            separate username column; this is the same value the v1 member list returns.
+          example: "Turín García"
         name:
           type: string
           description: Display name (`users.name`). Search matches this field only, not email.
@@ -289,28 +299,23 @@ components:
           description: Role of the user in the business
           enum: [OWNER, MANAGER, EMPLOYEE]
           example: EMPLOYEE
-        jobRole:
-          description: >
-            Job role of the member's current contract, or null when the member has no
-            current contract. Reuses the job-role projection already embedded in business users.
-          oneOf:
-            - $ref: '#/components/schemas/BusinessUserJobRoleDTO'
-            - type: 'null'
-        currentContractId:
-          description: Identifier of the current contract, or null when the member has none
-          oneOf:
-            - type: integer
-              format: int64
-              minimum: 1
-              example: 501
-            - type: 'null'
-        workingNow:
-          type: boolean
-          description: >
-            Optional. True when the member has an open worklog in this business.
-            Omitted when presence is not included in the response.
-          example: true
-      required: [userId, name, role, jobRole, currentContractId]
+      required: [userId, username, name, role]
+
+    BusinessCurrentContractBatchItemDTO:
+      type: object
+      description: >
+        Current contract of one requested member, including the job role of that contract.
+        Requested members without a current contract are omitted from the collection.
+      properties:
+        userId:
+          type: integer
+          format: int64
+          minimum: 1
+          description: User identifier the contract belongs to
+          example: 41
+        contract:
+          $ref: '#/components/schemas/BusinessUserCurrentContractDTO'
+      required: [userId, contract]
 
     LocationDTO:
       type: object

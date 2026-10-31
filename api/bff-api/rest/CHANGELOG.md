@@ -5,13 +5,13 @@
 ### Added
 
 - Owner-only `DELETE /api/v1/businesses/{businessId}/members/{userId}` under the new `Members` tag forwards membership removal to the Main API and returns `204` without a response body. Historical data is preserved.
-- Removing the last OWNER returns `409` with functional code `1107` (`LAST_OWNER_CANNOT_BE_REMOVED`).
-- `GET /api/v1/manager/businesses/{businessId}/workers/search` (`searchManagerBusinessWorkers`) forwards the Main API name search unchanged. The response is a keyset page (`content`, `hasNext`, `nextCursor`) of members without email. `q`, `limit`, and `cursor` use the same rules as the Main API, and the BFF does not interpret the cursor.
+- Removing an OWNER returns `403` with functional code `1106` (`CANNOT_REMOVE_OWNER_FROM_BUSINESS`).
+- `GET /api/v1/manager/businesses/{businessId}/workers/search` (`searchManagerBusinessWorkers`) returns a keyset page for the hub. It calls `GET /api/v2/businesses/{businessId}/users` once, then, for the whole page, `GET /api/v1/businesses/{businessId}/contracts/current?userIds=` and `GET /api/v1/businesses/{businessId}/worklogs/open?userIds=`. Each item has `userId`, `name`, `role`, `jobRole` or null, `currentContractId` or null, and `workingNow`. There is no per-user call and no email.
 
 ### Changed
 
 - Future worker contract deletion propagates functional code `1102` instead of `1098` for planning-state conflicts, matching the Main API. Already-started contracts continue to return `1097`; both conflicts use HTTP `409`.
-- Last-owner removal now propagates functional code `1107` instead of `1103`, matching the Main API correction. `1103` remains `INVALID_REPORT_TYPE`.
+- Member removal propagates `403` `1106` instead of `409` `1103`. `1103` remains `INVALID_REPORT_TYPE` (`only PDF worked-hours reports are supported`).
 
 ## 0.0.65
 

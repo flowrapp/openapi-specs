@@ -5,8 +5,8 @@ members:
       description: >
         Forwards to the Main API, which ends the user's membership in the business. Only the
         business OWNER may perform this operation; the MANAGER role is not sufficient. The
-        member's historical data (worklogs, contracts, reports) is preserved. The last OWNER of
-        a business cannot be removed. The BFF propagates the Main API's functional errors.
+        member's historical data (worklogs, contracts, reports) is preserved. An OWNER cannot
+        be removed. The BFF propagates the Main API's functional errors.
       tags:
         - Members
       operationId: removeBusinessMember
@@ -33,7 +33,9 @@ members:
         '401':
           description: Unauthorized
         '403':
-          description: Authenticated user is not an OWNER of the business, or the target user is not a business member
+          description: >
+            Authenticated user is not an OWNER of the business, the target user is not a business
+            member, or the target user is an OWNER of the business.
           content:
             application/problem+json:
               schema:
@@ -43,6 +45,8 @@ members:
                   value: {status: 403, detail: "1020 - user is not the owner of business"}
                 notMember:
                   value: {status: 403, detail: "1015 - user is not member of business"}
+                cannotRemoveOwner:
+                  value: {status: 403, detail: "1106 - user cannot remove the owner from the business"}
         '404':
           description: Business or user not found
           content:
@@ -54,11 +58,4 @@ members:
                   value: {status: 404, detail: "1006 - business does not exist"}
                 userNotFound:
                   value: {status: 404, detail: "1000 - user not found"}
-        '409':
-          description: The user is the last OWNER of the business
-          content:
-            application/problem+json:
-              schema:
-                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
-              example: {status: 409, detail: "1107 - business must keep at least one owner"}
-      x-functional-errors: [1000, 1006, 1015, 1020, 1107]
+      x-functional-errors: [1000, 1006, 1015, 1020, 1106]

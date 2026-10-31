@@ -3,7 +3,7 @@ openapi: 3.1.0
 info:
   title: Flowrapp API
   description: REST API for Flowrapp Backend
-  version: 0.0.67
+  version: 0.0.69
   contact:
     name: Flowrapp Team
     url: https://flowrapp.github.io
@@ -118,14 +118,16 @@ paths:
   "/api/v1/businesses/{businessId}/users":
     $ref: "v1/services/business/businesses-operations.yml#/businesses/get-bu\
       siness-users"
-  "/api/v1/businesses/{businessId}/users/search":
-    $ref: "v1/services/business/businesses-operations.yml#/businesses/search\
-      -business-users"
+  "/api/v2/businesses/{businessId}/users":
+    $ref: "v1/services/business/businesses-operations.yml#/businesses/get-bu\
+      siness-users-v2"
   "/api/v1/businesses/{businessId}/users/{userId}":
     $ref: "v1/services/business/businesses-operations.yml#/businesses/remove-business-user"
   "/api/v1/businesses/{businessId}/geofence-events/{eventId}":
     $ref: "v1/services/geofenceEvents/geofence-events-operations.yml#/geofen\
       ceEvents/upsert-geofence-event"
+  "/api/v1/businesses/{businessId}/worklogs/open":
+    $ref: "v1/services/worklogs/worklogs-operations.yml#/worklogs/open-worklogs"
   "/api/v1/businesses/{businessId}/worklogs/clock-in":
     $ref: "v1/services/worklogs/worklogs-operations.yml#/worklogs/clock-in"
   "/api/v1/businesses/{businessId}/worklogs/{worklogId}/clock-out":
@@ -207,6 +209,9 @@ paths:
   "/api/v1/businesses/{businessId}/contracts":
     $ref: "v1/services/contracts/contracts-operations.yml#/contracts/busines\
       s-contracts"
+  "/api/v1/businesses/{businessId}/contracts/current":
+    $ref: "v1/services/contracts/contracts-operations.yml#/contracts/current\
+      -contracts-batch"
   "/api/v1/businesses/{businessId}/users/{userId}/contracts":
     $ref: "v1/services/contracts/contracts-operations.yml#/contracts/busines\
       s-user-contracts"

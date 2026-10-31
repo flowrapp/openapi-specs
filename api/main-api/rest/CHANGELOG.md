@@ -5,13 +5,25 @@
 ### Added
 
 - Owner-only `DELETE /api/v1/businesses/{businessId}/users/{userId}` ends a user's membership in the business and returns `204` without a response body. Historical data (worklogs, contracts, reports) is preserved.
-- Removing the last OWNER of a business returns `409` with functional code `1107` (`LAST_OWNER_CANNOT_BE_REMOVED`).
-- `GET /api/v1/businesses/{businessId}/users/search` (`searchBusinessUsers`) returns a keyset page of active members matched by name only. The query is accent- and case-insensitive, must be 2 to 64 characters after trim and normalization, and does not match email. `limit` defaults to 20 and a value above 50 returns `400`. The opaque cursor is bound to the business and the normalized query.
+- Removing an OWNER returns `403` with functional code `1106` (`CANNOT_REMOVE_OWNER_FROM_BUSINESS`).
 
 ### Changed
 
 - Contract deletion blocked by planning now returns functional code `1102` instead of `1098`, avoiding a collision with the backend's existing `PLANNING_CREATE_ON_PAST` error. Contracts starting today or earlier continue to return `1097`; both deletion conflicts use HTTP `409`.
-- Functional code `1103` is `INVALID_REPORT_TYPE` (HTTP 400), matching the backend. The unreleased last-owner error moves from `1103` to `1107` because `1103` is already `INVALID_REPORT_TYPE` in the backend. Codes `1104`–`1106` stay unused in this spec because the backend catalog already reaches `1106`.
+
+## 0.0.69
+
+### Added
+
+- `GET /api/v2/businesses/{businessId}/users` (`getBusinessUsersV2`) returns a keyset page of active memberships (`content`, `hasNext`, `nextCursor`). Each item is the user and the membership role only: `userId`, `username`, `name`, and `role`. Email, the current contract, the job role, and presence are not included. Optional `search` matches the name only and must be 2 to 64 characters after trim and normalization. `limit` defaults to 20 and cannot exceed 50. The opaque cursor is bound to the business and the normalized search. `GET /api/v1/businesses/{businessId}/users` is unchanged.
+- `GET /api/v1/businesses/{businessId}/contracts/current?userIds=` returns the current contract, including its job role, for up to 50 users in one call. Users without a current contract are omitted.
+- `GET /api/v1/businesses/{businessId}/worklogs/open?userIds=` returns the user ids, among up to 50, that have an open worklog. It does not return the worklog.
+
+### Changed
+
+- Functional code `1103` is `INVALID_REPORT_TYPE` (HTTP 400), message `only PDF worked-hours reports are supported`, matching the backend.
+- Membership removal no longer documents functional code `1103` or a `409` for the last owner. The backend has no `LAST_OWNER_CANNOT_BE_REMOVED`. Removing an OWNER is `403` `1106`. `1105` (`CANNOT_REMOVE_SELF_FROM_BUSINESS`) is catalogued because the backend defines it; the removal operation does not document self-removal, so it does not reference `1105`.
+- Name-search failures use `1107` `SEARCH_QUERY_TOO_SHORT`, `1108` `SEARCH_QUERY_TOO_LONG`, `1109` `INVALID_SEARCH_LIMIT`, and `1110` `INVALID_SEARCH_CURSOR`. A `userIds` list outside 1..50 uses `1111` `INVALID_USER_IDS`.
 
 ## 0.0.67
 
