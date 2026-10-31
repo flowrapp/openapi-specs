@@ -2,7 +2,12 @@ worklogs:
   clock-in:
     post:
       summary: Register start of workday
-      description: Records the start time of a work session for the authenticated user at a specific business location.
+      description: >
+        Records the start time of a work session for the authenticated user at a
+        specific business location. The response `attendanceMatchId` stays
+        required. The backend fills it with the attendance match created for the
+        new worklog, including a NOT_APPLICABLE match. The clock-in use case does
+        not select the match; the API completes the identifier before it responds.
       tags:
         - Worklogs
       operationId: clockIn
@@ -66,7 +71,14 @@ worklogs:
   clock-out:
     put:
       summary: Close open worklog
-      description: Finalizes an active work session by recording the end time for the authenticated user at a specific business location.
+      description: >
+        Finalizes an active work session by recording the end time for the
+        authenticated user at a specific business location. Closing sets
+        `reviewStatus` to PENDING_RECONCILIATION, including when the session is
+        closed automatically. The worklog stays in worklog listings and does not
+        count in worked-hours reports until attendance reconciliation moves it
+        to CONFIRMED, when there is nothing to review, or to PENDING_REVIEW,
+        when an open attendance incident remains.
       tags:
         - Worklogs
       operationId: clockOut
@@ -175,7 +187,11 @@ worklogs:
   filtered-worklogs:
     get:
       summary: Get filtered worklogs
-      description: Retrieves a collection of worklog records for a specific business, filtered by various time-based and user criteria.
+      description: >
+        Retrieves a collection of worklog records for a specific business,
+        filtered by various time-based and user criteria. A worklog in
+        PENDING_RECONCILIATION is included. Reports omit that state; this list
+        does not. Repeat `reviewStatus=PENDING_RECONCILIATION` to read only it.
       tags:
         - Worklogs
       operationId: getWorklogs
@@ -225,7 +241,10 @@ worklogs:
         - name: reviewStatus
           in: query
           required: false
-          description: One or more review states to include. Repeating the parameter adds another state.
+          description: >
+            One or more review states to include. Repeating the parameter adds
+            another state. PENDING_RECONCILIATION selects closed worklogs that
+            attendance reconciliation has not finished.
           style: form
           explode: true
           schema:
@@ -363,7 +382,10 @@ worklogs:
   get-worklogs:
     get:
       summary: Get user worklogs
-      description: Retrieves a collection of worklog records for the authenticated user.
+      description: >
+        Retrieves a collection of worklog records for the authenticated user.
+        A worklog in PENDING_RECONCILIATION is included. Reports omit that
+        state; this list does not.
       tags:
         - Worklogs
       operationId: getUserWorklogs
@@ -406,7 +428,10 @@ worklogs:
         - name: reviewStatus
           in: query
           required: false
-          description: One or more review states to include. Repeating the parameter adds another state.
+          description: >
+            One or more review states to include. Repeating the parameter adds
+            another state. PENDING_RECONCILIATION selects closed worklogs that
+            attendance reconciliation has not finished.
           style: form
           explode: true
           schema:
@@ -695,7 +720,9 @@ worklogs:
       description: >
         Allows an owner or manager of the route business to correct a worker worklog. A non-blank
         reason is required. Successful management corrections are approved immediately; changed
-        punch origins become ADMIN while unchanged origins are preserved.
+        punch origins become ADMIN while unchanged origins are preserved. This is the correction
+        route for attendance. The contract does not add a correction action on the incident.
+        Reconciliation may later record the incident resolution CORRECTED.
       tags:
         - Worklogs
       operationId: correctBusinessWorklog
@@ -824,7 +851,12 @@ worklogs:
   rejection:
     post:
       summary: Reject a business worklog
-      description: Allows an owner or manager of the business to reject a worklog. A non-blank reason is required and the worklog remains retained for audit.
+      description: >
+        Allows an owner or manager of the business to reject a worklog. A non-blank
+        reason is required and the worklog remains retained for audit. This is the
+        rejection route for attendance. The contract does not add a rejection action
+        on the incident. Reconciliation may later record the incident resolution
+        WORKLOG_REJECTED.
       tags:
         - Worklogs
       operationId: rejectWorklog

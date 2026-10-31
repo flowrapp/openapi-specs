@@ -132,13 +132,9 @@ components:
         | 1083 | 409 | ATTENDANCE_STRUCTURAL_INCIDENTS | attendance has unresolved structural incidents |
         | 1084 | 409 | ATTENDANCE_INVALID_RESOLUTION | attendance resolution is not allowed for the current state |
         | 1085 | 404 | ATTENDANCE_INCIDENT_NOT_FOUND | attendance incident not found |
-        | 1086 | 409 | ATTENDANCE_PERIOD_CLOSED | attendance period is closed |
-        | 1087 | 409 | ATTENDANCE_PERIOD_REVISION_CONFLICT | attendance period changed since it was read |
-        | 1088 | 409 | ATTENDANCE_PERIOD_NOT_FINISHED | attendance period is not finished |
-        | 1089 | 409 | ATTENDANCE_PERIOD_NOT_CLOSABLE | attendance period contains unresolved attendance |
-        | 1090 | 409 | ATTENDANCE_PERIOD_NOT_CLOSED | attendance period is not closed |
-        | 1091 | 400 | INVALID_ATTENDANCE_PERIOD_WEEK | attendance period week must start on Monday |
-        | 1092 | 400 | ATTENDANCE_PERIOD_REOPEN_REASON_REQUIRED | attendance period reopen reason is required |
+        | 1086 | 401 | SESSION_EXPIRED | session expired |
+        | 1087 | 409 | PLANNING_ALREADY_EXISTS | a planning already exists for this business and week |
+        | 1088 | 409 | PLANNING_VERSION_MISMATCH | planning version does not match |
         | 1093 | 400 | INVALID_BUSINESS_PROFILE | business profile is invalid |
         | 1094 | 400 | INVALID_BUSINESS_GEOFENCE | business geofence is invalid |
         | 1095 | 409 | PLANNING_ALREADY_EXISTS | a planning already exists for this business and week |
@@ -154,6 +150,12 @@ components:
         | 1109 | 400 | INVALID_SEARCH_LIMIT | search limit must be between 1 and 50 |
         | 1110 | 400 | INVALID_SEARCH_CURSOR | search cursor is invalid or does not match this business and query |
         | 1111 | 400 | INVALID_USER_IDS | userIds must contain between 1 and 50 identifiers |
+        | 1112 | 409 | ATTENDANCE_JUSTIFICATION_NOT_ALLOWED | attendance justification is not allowed |
+        | 1113 | 400 | ATTENDANCE_JUSTIFICATION_REQUIRED | attendance justification text is required |
+
+        Codes 1086, 1087 and 1088 are the backend enum: SESSION_EXPIRED, PLANNING_ALREADY_EXISTS and PLANNING_VERSION_MISMATCH. Codes 1089–1092 belonged to weekly attendance periods, which were never implemented, and are removed with those routes. Code 1095 remains a separate PLANNING_ALREADY_EXISTS entry and is unchanged here.
+
+        Code 1020 (`USER_NOT_OWNER_OF_BUSINESS`) stays in the catalog. Owner-only operations keep the message `user is not the owner of business`. An operation that allows an OWNER or a MANAGER uses the same code with the message `user is not an owner or manager of the business`.
       enum:
         - 1000
         - 1001
@@ -244,10 +246,6 @@ components:
         - 1086
         - 1087
         - 1088
-        - 1089
-        - 1090
-        - 1091
-        - 1092
         - 1093
         - 1094
         - 1095
@@ -263,3 +261,5 @@ components:
         - 1109
         - 1110
         - 1111
+        - 1112
+        - 1113

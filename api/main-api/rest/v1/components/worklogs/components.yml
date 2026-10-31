@@ -371,8 +371,21 @@ components:
 
     WorklogReviewStatusDTO:
       type: string
-      description: Current review state of the worklog.
-      enum: [CONFIRMED, PENDING_REVIEW, APPROVED, REJECTED]
+      description: >
+        Review state of the worklog. The existing states stay: CONFIRMED and
+        APPROVED are the states worked-hours reports count; PENDING_REVIEW waits
+        for a person and is excluded from those reports; REJECTED is kept for
+        audit and is excluded. PENDING_RECONCILIATION is the new state entered
+        when a worklog is closed, before the attendance reconciliation consumer
+        has run. It uses the same PENDING_ prefix as PENDING_REVIEW and the same
+        reconciliation vocabulary as the attendance match, and it is a different
+        wait: nothing has been decided yet, so it is not already PENDING_REVIEW.
+        Listings return a worklog in this state. Worked-hours reports do not
+        count it. When reconciliation finishes, the consumer moves it to
+        CONFIRMED if nothing is left to review, or to PENDING_REVIEW if an open
+        attendance incident remains. Only CONFIRMED, and later APPROVED, count
+        in reports.
+      enum: [CONFIRMED, PENDING_RECONCILIATION, PENDING_REVIEW, APPROVED, REJECTED]
       example: CONFIRMED
 
     WorklogAuditActorTypeDTO:

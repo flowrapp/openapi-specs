@@ -22,7 +22,11 @@ components:
         seconds:
           type: integer
           format: int64
-          description: Total worked seconds for this user on this day
+          description: >
+            Total worked seconds for this user on this day. Only worklogs in
+            CONFIRMED or APPROVED are included. PENDING_RECONCILIATION is excluded
+            until attendance reconciliation moves the worklog to CONFIRMED or
+            PENDING_REVIEW.
           example: 32040
       required:
         - userId

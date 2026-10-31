@@ -1,5 +1,28 @@
 # Changelog
 
+## 0.0.81
+
+### Added
+
+- `POST /api/v1/attendance-incidents/{incidentId}/justification` (`justifyAttendanceIncident`) lets the employee who owns the worklog or the shift write or replace the justification of an open incident. The incident stays OPEN. Blank or over-long text returns `400` `1113`. A resolved incident returns `409` `1112`. A missing incident, or one the caller does not own, returns `404` `1085`.
+- `AttendanceIncidentDTO.justification` is an optional nullable object `{ text, justifiedBy, justifiedAt }`. `text` is at most 500 characters.
+- `AttendanceMatchDTO.incidents` is an optional list of the match incidents, returned only to the owner of the worklog.
+- Worklog review status `PENDING_RECONCILIATION`. Closing a worklog enters this state. Worklog listings still return it. Worked-hours reports count only `CONFIRMED` and `APPROVED`, so this state does not count until attendance reconciliation moves the worklog to `CONFIRMED` or `PENDING_REVIEW`.
+
+### Changed
+
+- `GET /api/v1/businesses/{businessId}/attendance` accepts an EMPLOYEE and returns the same daily schema restricted to that employee's shifts and worklogs. A caller who is not a member receives `403` `1015`.
+- `attendanceMatchId` on clock-in stays required. The backend fills it with the match created for the worklog, including `NOT_APPLICABLE`.
+- Attendance tolerance stays one field of the business. It is not a per-member setting and not a business-settings key. Only the OWNER may change it.
+- `CORRECTED` and `WORKLOG_REJECTED` are not new incident actions. They come from `PUT /api/v1/businesses/{businessId}/worklogs/{worklogId}/correction` and `POST /api/v1/businesses/{businessId}/worklogs/{worklogId}/reject`.
+- `GET /api/v2/businesses/{businessId}/users` documents `403` `1020` as `user is not an owner or manager of the business`. The code is the existing `USER_NOT_OWNER_OF_BUSINESS`. Owner-only operations keep the message `user is not the owner of business`.
+
+### Breaking changes
+
+- Removed the unimplemented weekly attendance period routes and schemas: `GET /api/v1/businesses/{businessId}/attendance-periods/{weekStart}`, and `POST` `bulk-approve`, `close`, and `reopen`. Functional codes `1089`–`1092` are removed with them.
+- Functional codes `1086`, `1087`, and `1088` now match the backend enum: `401` `SESSION_EXPIRED` (`session expired`), `409` `PLANNING_ALREADY_EXISTS` (`a planning already exists for this business and week`), and `409` `PLANNING_VERSION_MISMATCH` (`planning version does not match`). Code `1095` is still `PLANNING_ALREADY_EXISTS` and is unchanged. This renumbering lives in the error catalog; oasdiff does not see it as a schema break.
+- Adding `PENDING_RECONCILIATION` to `WorklogReviewStatusDTO` is a response enum addition. Clients that only accept the previous four values must accept this one. oasdiff reports it, and `.oasdiff-err-ignore.md` records that report together with the removed period routes.
+
 ## Unreleased
 
 ### Added

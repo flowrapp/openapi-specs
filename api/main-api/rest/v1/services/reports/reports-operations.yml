@@ -5,6 +5,10 @@ reports:
       description: |
         Retrieves daily time reports for a specific business within a date range.
         Returns raw daily seconds per user, suitable for aggregation into weekly, monthly, or custom period totals.
+        Seconds include only worklogs whose reviewStatus is CONFIRMED or APPROVED.
+        A closed worklog in PENDING_RECONCILIATION does not count until attendance
+        reconciliation moves it to CONFIRMED or PENDING_REVIEW. PENDING_REVIEW does
+        not count either. The worklog list still returns PENDING_RECONCILIATION.
         Caller must be the owner of the business.
       tags:
         - Reports
@@ -94,6 +98,9 @@ reports:
         If userIds is omitted or empty, all employees in the business are included. Every supplied user ID must belong to the requested business.
         The type parameter selects the output format and defaults to PDF. The .pdf URL suffix is retained for compatibility, including when Excel is requested.
         The range is day-based and inclusive. This endpoint is intended for annual reports, but supports any valid date range.
+        Seconds include only worklogs whose reviewStatus is CONFIRMED or APPROVED.
+        A closed worklog in PENDING_RECONCILIATION does not count until attendance
+        reconciliation moves it to CONFIRMED or PENDING_REVIEW. PENDING_REVIEW does not count either.
         Caller must have privileged access to the business, either OWNER or MANAGER.
       tags:
         - Reports
@@ -199,6 +206,9 @@ reports:
         employees in the business. If userIds is omitted or empty, all employees in the business
         are included. Every supplied user ID must belong to the requested business. The report is
         generated asynchronously; this response only confirms that the request was accepted.
+        Seconds include only worklogs whose reviewStatus is CONFIRMED or APPROVED.
+        A closed worklog in PENDING_RECONCILIATION does not count until attendance
+        reconciliation moves it to CONFIRMED or PENDING_REVIEW. PENDING_REVIEW does not count either.
         Caller must be the owner of the business.
       tags:
         - Reports

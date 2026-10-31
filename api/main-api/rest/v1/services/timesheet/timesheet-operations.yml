@@ -6,6 +6,7 @@ timesheet:
         Generates and retrieves a comprehensive weekly hours report for users within a specified business.
 
         **Deprecated:** Use `GET /api/v1/businesses/{businessId}/reports` instead, which provides flexible date-range filtering and machine-friendly seconds values.
+        Hours follow the same rule as those reports: only CONFIRMED and APPROVED worklogs count. PENDING_RECONCILIATION does not count until attendance reconciliation moves the worklog to CONFIRMED or PENDING_REVIEW.
       deprecated: true
       tags:
         - Timesheet
