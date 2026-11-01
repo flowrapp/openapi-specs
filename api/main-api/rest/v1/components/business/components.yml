@@ -241,6 +241,11 @@ components:
             - $ref: '#/components/schemas/BusinessUserCurrentContractDTO'
             - type: 'null'
           description: Contract effective on the business-local current date, or null when absent
+        removedAt:
+          type: [string, "null"]
+          format: date-time
+          description: Instant the user was removed from the business. Null for active members; only non-null when `includeRemoved=true`.
+          example: null
       required: [userId, username, name, email, role, currentContract]
 
     BusinessUserMembershipPageDTO:
