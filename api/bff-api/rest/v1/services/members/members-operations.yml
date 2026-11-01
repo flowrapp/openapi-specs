@@ -65,8 +65,12 @@ members:
       summary: Search business members by name
       description: >
         Searches members by name and returns one page ready for the hub. Access is
-        limited to an OWNER or MANAGER of the business. Anyone else receives 403 with
-        functional code 1020. A missing business receives 404 with functional code 1006.
+        limited to an OWNER or MANAGER of the business. Anyone else receives 403
+        with functional code 1020 (`USER_NOT_OWNER_OF_BUSINESS`), already in the
+        catalog. On this operation the detail is
+        `1020 - user is not an owner or manager of the business`, because a
+        MANAGER is allowed and the failure is not "not the owner". A missing
+        business receives 404 with functional code 1006.
         The literal path segment `search` is registered beside `/members/{userId}`;
         `userId` is an int64, so `search` is not a member id.
         The BFF does not interpret the cursor. It makes at most three Main API calls
@@ -222,14 +226,16 @@ members:
         '401':
           description: No authenticated session
         '403':
-          description: Caller is not an OWNER or MANAGER of the business
+          description: >
+            Caller is not an OWNER or MANAGER of the business. The functional code
+            is 1020, which is already in the catalog. The message states that rule.
           content:
             application/problem+json:
               schema:
                 $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
               example:
                 status: 403
-                detail: "1020 - user is not the owner of business"
+                detail: "1020 - user is not an owner or manager of the business"
         '404':
           description: Business not found
           content:
