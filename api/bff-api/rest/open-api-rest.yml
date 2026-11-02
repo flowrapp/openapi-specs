@@ -7,7 +7,7 @@ info:
     This BFF aggregates and shapes data from the Flowrapp main API to serve
     the specific needs of the mobile frontend, providing role-based endpoints
     for workers and managers.
-  version: 0.0.65
+  version: 0.0.66
   contact:
     name: Flowrapp Team
     url: https://flowrapp.github.io
@@ -49,6 +49,13 @@ tags:
     description: >
       Business membership operations. Removal is owner-only. Name search is
       limited to an OWNER or MANAGER of the business.
+  - name: Attendance
+    description: >
+      Owner-only «Asistencia» tab: one endpoint per screen (Hours, Today, Week,
+      detail sheet, tab badge) and the review actions, under
+      /api/v1/businesses/{businessId}/attendance. Each endpoint aggregates Main API
+      calls with parZip (at most 8 in flight) and never filters in memory; the
+      app does not call the Main API directly.
 
 paths:
   # ── System ──────────────────────────────────────────────────────────────
@@ -126,6 +133,44 @@ paths:
     $ref: "v1/services/members/members-operations.yml#/members/search-business-members"
   "/api/v1/businesses/{businessId}/members/{userId}":
     $ref: "v1/services/members/members-operations.yml#/members/remove-business-member"
+
+  # ── Attendance (owner-only) ─────────────────────────────────────────────
+  "/api/v1/businesses/{businessId}/attendance/hours":
+    $ref: "v1/services/attendance/attendance-operations.yml#/attendance/hours"
+  "/api/v1/businesses/{businessId}/attendance/day":
+    $ref: "v1/services/attendance/attendance-operations.yml#/attendance/day"
+  "/api/v1/businesses/{businessId}/attendance/week":
+    $ref: "v1/services/attendance/attendance-operations.yml#/attendance/week"
+  "/api/v1/businesses/{businessId}/attendance/badge":
+    $ref: "v1/services/attendance/attendance-operations.yml#/attendance/badge"
+  "/api/v1/businesses/{businessId}/attendance/shifts/{scheduledShiftId}":
+    $ref: "v1/services/attendance/attendance-operations.yml#/attendance/shift-detail"
+  "/api/v1/businesses/{businessId}/attendance/shifts/{scheduledShiftId}/accept":
+    $ref: "v1/services/attendance/attendance-operations.yml#/attendance/shift-accept"
+  "/api/v1/businesses/{businessId}/attendance/shifts/{scheduledShiftId}/no-show/acknowledge":
+    $ref: "v1/services/attendance/attendance-operations.yml#/attendance/shift-no-show-acknowledgement"
+  "/api/v1/businesses/{businessId}/attendance/shifts/{scheduledShiftId}/correction":
+    $ref: "v1/services/attendance/attendance-operations.yml#/attendance/shift-correction"
+  "/api/v1/businesses/{businessId}/attendance/shifts/{scheduledShiftId}/rejection":
+    $ref: "v1/services/attendance/attendance-operations.yml#/attendance/shift-rejection"
+  "/api/v1/businesses/{businessId}/attendance/shifts/{scheduledShiftId}/breaks/{breakId}/correction":
+    $ref: "v1/services/attendance/attendance-operations.yml#/attendance/shift-break-correction"
+  "/api/v1/businesses/{businessId}/attendance/shifts/{scheduledShiftId}/breaks/{breakId}/void":
+    $ref: "v1/services/attendance/attendance-operations.yml#/attendance/shift-break-void"
+  "/api/v1/businesses/{businessId}/attendance/matches/{attendanceMatchId}":
+    $ref: "v1/services/attendance/attendance-operations.yml#/attendance/match-detail"
+  "/api/v1/businesses/{businessId}/attendance/matches/{attendanceMatchId}/accept":
+    $ref: "v1/services/attendance/attendance-operations.yml#/attendance/match-accept"
+  "/api/v1/businesses/{businessId}/attendance/matches/{attendanceMatchId}/resolution":
+    $ref: "v1/services/attendance/attendance-operations.yml#/attendance/match-resolution"
+  "/api/v1/businesses/{businessId}/attendance/matches/{attendanceMatchId}/correction":
+    $ref: "v1/services/attendance/attendance-operations.yml#/attendance/match-correction"
+  "/api/v1/businesses/{businessId}/attendance/matches/{attendanceMatchId}/rejection":
+    $ref: "v1/services/attendance/attendance-operations.yml#/attendance/match-rejection"
+  "/api/v1/businesses/{businessId}/attendance/matches/{attendanceMatchId}/breaks/{breakId}/correction":
+    $ref: "v1/services/attendance/attendance-operations.yml#/attendance/match-break-correction"
+  "/api/v1/businesses/{businessId}/attendance/matches/{attendanceMatchId}/breaks/{breakId}/void":
+    $ref: "v1/services/attendance/attendance-operations.yml#/attendance/match-break-void"
 
   # ── Manager ─────────────────────────────────────────────────────────────
   "/api/v1/manager/businesses":

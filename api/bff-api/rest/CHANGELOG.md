@@ -1,9 +1,19 @@
 # Changelog
 
-## Unreleased
+## 0.0.66
 
 ### Added
 
+- New `Attendance` tag, OWNER only, with one endpoint per screen of the owner's attendance area under `/api/v1/businesses/{businessId}/attendance/…`. Responses are ready to paint, so the front never calls the Main API: `hours` (`getAttendanceHours`), `day` (`getAttendanceDay`), `week` (`getAttendanceWeek`), `shifts/{scheduledShiftId}` (`getAttendanceShiftDetail`), `matches/{attendanceMatchId}?date&userId` (`getAttendanceMatchDetail`) and `badge` (`getAttendanceBadge`). Each operation lists the Main API calls it aggregates (Main API 0.0.87). Independent calls run with Arrow `parZip`, with at most 8 Main API calls in flight per request, and every filter is a Main API parameter.
+- Attendance actions, each on its own resource and each returning the refreshed `AttendanceDetailDTO`:
+  - on a shift: `…/shifts/{scheduledShiftId}/accept`, `/no-show-acknowledgement`, `/correction`, `/rejection`, `/breaks/{breakId}/correction` and `/breaks/{breakId}/void`;
+  - on a match: `…/matches/{attendanceMatchId}/accept`, `/resolution`, `/correction`, `/rejection`, `/breaks/{breakId}/correction` and `/breaks/{breakId}/void`.
+- An `AUTOMATIC_CLOSE` incident is resolved only by correction or rejection. `revision` is an opaque string. Evidence is in seconds, and `measuredSeconds` is nullable.
+- Attendance severity follows a fixed mapping (`AttendanceSeverityDTO`):
+  - `CRITICAL`: `NO_SHOW`, `AUTOMATIC_CLOSE`, and the alerts `MISSING_CLOCK_IN` and `LONG_OPEN`;
+  - `WARNING`: every other incident type, plus any unknown value.
+- All attendance enums are open, so clients must tolerate unknown values.
+- Every attendance action is OWNER only, and a non-owner gets `403` `1020`. Main API functional errors are propagated unchanged and documented per operation (`1006`, `1015`, `1017`, `1022`, `1049`, `1067`–`1069`, `1073`–`1076`, `1078`–`1085` and `1111`).
 - Owner-only `DELETE /api/v1/businesses/{businessId}/members/{userId}` under the new `Members` tag forwards membership removal to the Main API and returns `204` without a response body. Historical data is preserved.
 - Removing an OWNER returns `403` with functional code `1106` (`CANNOT_REMOVE_OWNER_FROM_BUSINESS`).
 - `GET /api/v1/businesses/{businessId}/members/search` (`searchBusinessMembers`), under the `Members` tag, returns a keyset page for the hub. It calls `GET /api/v2/businesses/{businessId}/users` once, then, for the whole page, `GET /api/v1/businesses/{businessId}/contracts/current?userIds=` and `GET /api/v1/businesses/{businessId}/worklogs/open?userIds=`. Each item has `userId`, `name`, `role`, `jobRole` or null, `currentContractId` or null, and `workingNow`. Access is OWNER or MANAGER (`403` `1020`, `404` `1006`). There is no per-user call and no email.
@@ -19,6 +29,10 @@
 - Worked-hours reports are owner-only. `GET /api/v1/manager/businesses/{businessId}/export/worked-hours-report` no longer documents MANAGER access: like `POST /api/v1/businesses/{businessId}/reports/worked-hours`, only the business OWNER may call it, and anyone else receives `403` `1020`, propagated from the Main API.
 - Worked-hours reports (`POST /api/v1/businesses/{businessId}/reports/worked-hours` and `GET /api/v1/manager/businesses/{businessId}/export/worked-hours-report`) accept a period that ends after today; the Main API truncates the effective end to today in the business time zone. A period whose `from` is after today returns `400`.
 - `PUT /api/v1/manager/businesses/{businessId}/worklogs/{worklogId}` (`managerUpdateWorklog`) is documented as OWNER-only (M7, Main API 0.0.85): a MANAGER receives `403`. The schema does not change.
+
+### Tooling
+
+- `scripts/validate-error-codes.js` now also checks the `x-functional-errors` of `api/bff-api/rest/v1/services`, not only the Main API.
 
 ## 0.0.65
 
