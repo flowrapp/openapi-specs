@@ -467,8 +467,8 @@ components:
         in this order: SHIFT_NOT_FINISHED (lifecycle is not FINISHED, 409
         1081), RECONCILIATION_PENDING (reconciliation of a match is still
         pending, 409 1080), OPEN_WORKLOGS (an open worklog or an open break,
-        409 1082), STRUCTURAL_INCIDENTS (an open structural incident:
-        UNSCHEDULED_WORK, AMBIGUOUS_MATCH or NO_SHOW, 409 1083; resolve it
+        409 1082), STRUCTURAL_INCIDENTS (an open structural incident, 409
+        1083; for example UNSCHEDULED_WORK, AMBIGUOUS_MATCH or NO_SHOW, resolved
         first with acceptUnplannedAttendance, resolveAttendanceMatch or
         acknowledgeNoShow). It does not cover a stale expectedRevision (1079)
         or the caller's role. New values may be added; clients must tolerate
