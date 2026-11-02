@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+
+- `getAttendanceWeek` examples: `state: "OFF"` is quoted in the three week-cell examples, so YAML 1.1 parsers no longer read it as `false`. Examples only; no contract change and no version bump.
+
 ## 0.0.68
 
 ### Added
