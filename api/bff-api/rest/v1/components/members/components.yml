@@ -112,7 +112,7 @@ components:
           example: EMPLOYEE
         isSelf:
           type: boolean
-          description: True when the member is the caller (`getUser` id equals `userId`)
+          description: True when the member is the caller (the JWT `sub` equals `userId`)
           example: false
         asOf:
           type: string

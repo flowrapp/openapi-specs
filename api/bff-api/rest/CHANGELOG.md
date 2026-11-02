@@ -1,9 +1,14 @@
 # Changelog
 
-## Unreleased
+## 0.0.71
+
+### Changed
+
+- Attendance `filterOptions.people` (`getAttendanceHours`, `getAttendanceDay`, `getAttendanceWeek`): documented guarantee that it never depends on `userIds`, `jobRoleId`, the period or the rows. Every filtered person who is or was a member of the business (removed members included, `removed: true`) is always listed with their name, even without shifts, worklogs or hours in the period, so the member profile's shortcut to Attendance filtered by person can label its filter chip. A requested id that was never a member is not added. Documentation of the current behaviour (the list is the full `getBusinessUsers?includeRemoved=true` roster); no schema change.
 
 ### Fixed
 
+- Correction to the 0.0.69 `getBusinessMemberProfile` description: the BFF does not call the Main API `getUser` (`POST /api/v1/users`). The caller's id for `isSelf` is the JWT `sub`, the same source as BFF `GET /api/v1/me` (which never called `getUser` either). Stage 0 is 2 calls (`getUserBusinesses` and `getBusinessUsers`), 11 Main API calls in total with one page each of contracts and job roles, at most 8 in flight. A `sub` that is not a numeric user id returns 401 1003 before any Main API call (1003 added to the operation's `x-functional-errors`). Documentation only; no schema change.
 - `getAttendanceWeek` examples: `state: "OFF"` is quoted in the three week-cell examples, so YAML 1.1 parsers no longer read it as `false`. Examples only; no contract change and no version bump.
 - Settings `businessUserId` (geofencing and auto-clocking lists and the two member PATCH path parameters) is described as the user id (`userId`), as the Main API fills it, not the membership row id. Mirrors the Main API doc fix; documentation only, no contract change and no version bump.
 
