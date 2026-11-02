@@ -261,15 +261,17 @@ members:
         Kotlin with the business `ZoneId` (`getUserBusinesses.zone`), never in SQL.
 
         The shortcuts «Su histórico» and «Su horario» need no data: the front opens Attendance with
-        `userIds=<userId>` and the schedule with `userIds=<userId>` (or `employeeId`) for `week.weekStart`.
+        `userIds=<userId>` and the schedule with `userIds=<userId>` (or `employeeId`) for `week.from`.
 
-        Main API calls (10, never one per contract, day or worklog):
-        1. Stage 0, one `parZip` (2 calls):
+        Main API calls (11, never one per contract, day or worklog):
+        1. Stage 0, one `parZip` (3 calls):
            - `getUserBusinesses` (`GET /api/v1/businesses`): the caller's role (OWNER required, otherwise
              403 1020; not a member: 403 1015), `zone`, `attendanceToleranceMinutes` and `location.area`;
            - `getBusinessUsers` (`GET /api/v1/businesses/{businessId}/users`, active members only): name,
              email, role and current contract (with its job role) of `userId`. When `userId` is not in
-             the response, the BFF returns 404 1128 and makes no other call.
+             the response, the BFF returns 404 1128 and makes no other call;
+           - `getUser` (`POST /api/v1/users`, the caller's own profile, as the BFF `GET /api/v1/me` reads it
+             today): its id gives `isSelf`.
         2. Stage 1, one `parZip` (8 calls, at most 8 in flight):
            - `getUserContracts` (`GET /api/v1/businesses/{businessId}/users/{userId}/contracts?size=100`),
              the contract history; further pages only while `hasNext` is true;
@@ -285,14 +287,16 @@ members:
              planned seconds of the week. A 404 1046 (no published planning) is not an error here: it
              gives `week.plannedSeconds: null`;
            - `getDailyAttendance` (`GET /api/v1/businesses/{businessId}/attendance?date&userIds`), today in
-             the business time zone: today's shifts, their lifecycle, clock-in and entry deviation;
+             the business time zone: today's shifts, their lifecycle, clock-in, entry deviation, open
+             incidents and alerts (chips, same rules as the Attendance Day rows);
            - `getBusinessGeofencingSettings` (`GET /api/v1/businesses/{businessId}/settings/geofencing`): the
              business policy and this person's `policy` and `effectivePolicy`;
            - `getBusinessAutoClockingSettings` (`GET /api/v1/businesses/{businessId}/settings/auto-clocking`):
              the business switch and this person's `enabled` and `effectiveEnabled`.
            In both settings responses, `businessUserId` carries the user id (Main API mapper source
-           `businessUser.user.id`), so the BFF matches it with `userId`. A person missing from a settings
-           list gets the Main API defaults (ALLOW, enabled).
+           `businessUser.user.id`), so the BFF matches it with `userId` and returns it as `businessUserId`.
+           A person missing from a settings list gets the Main API defaults (ALLOW, enabled) and
+           `businessUserId = userId`.
 
         Errors: any other Main API failure fails the whole request and is propagated unchanged (no partial
         response), like the Attendance screens.
@@ -329,9 +333,11 @@ members:
                 $ref: '../../components/members/components.yml#/components/schemas/MemberProfileDTO'
               example:
                 userId: 41
+                businessUserId: 41
                 name: "Lucía Ramos"
                 email: "lucia.ramos@example.com"
                 role: EMPLOYEE
+                isSelf: false
                 jobRole: {id: 10, code: WAITER, name: Sala, color: "#3494FB", icon: front-of-house, active: true}
                 asOf: "2026-11-19T10:40:00+01:00"
                 zone: "Europe/Madrid"
@@ -345,12 +351,12 @@ members:
                   lateSeconds: 840
                 week:
                   week: "2026-W47"
-                  weekStart: "2026-11-16"
-                  weekEnd: "2026-11-22"
+                  from: "2026-11-16"
+                  to: "2026-11-22"
                   workedSeconds: 68700
-                  inProgressSeconds: 1560
+                  openElapsedSeconds: 1560
                   plannedSeconds: 115200
-                  remainingSeconds: 44940
+                  remainingPlannedSeconds: 44940
                 todayShifts:
                   - scheduledShiftId: 900
                     shiftName: "Mañana"
@@ -365,19 +371,21 @@ members:
                     clockInOrigin: GEOFENCE
                     entryDeviationSeconds: 840
                     late: true
+                    chips:
+                      - {type: LATE_ENTRY, severity: WARNING, seconds: 840, sinceSeconds: null, justified: false}
                 clockInRules:
                   geofencing:
                     businessPolicy: WARN
-                    personalPolicy: BLOCK
+                    memberPolicy: BLOCK
                     effectivePolicy: BLOCK
-                    customized: true
+                    source: MEMBER
                     selectablePolicies: [WARN, BLOCK]
                     radiusMeters: 150
                   autoClocking:
                     businessEnabled: true
-                    personalEnabled: true
+                    memberEnabled: true
                     effectiveEnabled: true
-                    customized: false
+                    source: BUSINESS
                   customRuleCount: 1
                   followsBusiness: false
                 employment:
@@ -387,13 +395,16 @@ members:
                   weeklyHours: 32
                   contractEndDate: null
                 contracts:
-                  current: {id: 501, jobRole: {id: 10, code: WAITER, name: Sala, color: "#3494FB", icon: front-of-house, active: true}, totalWeekHours: 32, startDate: "2026-06-01", endDate: null, state: CURRENT}
+                  current: {id: 501, jobRole: {id: 10, code: WAITER, name: Sala, color: "#3494FB", icon: front-of-house, active: true}, totalWeekHours: 32, startDate: "2026-06-01", endDate: null, state: CURRENT, canDelete: false}
                   upcoming: []
                   previous:
-                    - {id: 480, jobRole: {id: 10, code: WAITER, name: Sala, color: "#3494FB", icon: front-of-house, active: true}, totalWeekHours: 20, startDate: "2026-03-01", endDate: "2026-05-31", state: ENDED}
+                    - {id: 480, jobRole: {id: 10, code: WAITER, name: Sala, color: "#3494FB", icon: front-of-house, active: true}, totalWeekHours: 20, startDate: "2026-03-01", endDate: "2026-05-31", state: ENDED, canDelete: false}
                 actions:
+                  canEditContracts: true
+                  canEndContract: true
                   canRemove: true
-                  removeBlocker: null
+                  removeBlockedReason: null
+                  canEditClockRules: true
         '401':
           description: No authenticated session
         '403':

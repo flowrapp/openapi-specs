@@ -41,10 +41,9 @@ invitations:
                   totalWeekHours: 32
                   startDate: "2026-11-23"
                   endDate: null
-                resend:
-                  allowed: true
-                  nextAllowedAt: "2026-11-16T09:10:00+01:00"
-                  blocker: null
+                canResend: true
+                resendAvailableAt: "2026-11-16T09:10:00+01:00"
+                resendBlocker: null
                 canCancel: true
         '401':
           description: No authenticated session
@@ -113,10 +112,9 @@ invitations:
                 expiresAt: "2026-11-26T10:40:00+01:00"
                 lastSentAt: "2026-11-19T10:40:00+01:00"
                 contract: null
-                resend:
-                  allowed: false
-                  nextAllowedAt: "2026-11-19T10:50:00+01:00"
-                  blocker: TOO_SOON
+                canResend: false
+                resendAvailableAt: "2026-11-19T10:50:00+01:00"
+                resendBlocker: TOO_SOON
                 canCancel: true
         '401':
           description: No authenticated session

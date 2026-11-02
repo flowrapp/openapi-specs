@@ -72,13 +72,27 @@ components:
             - $ref: "#/components/schemas/InvitationProfileContractDTO"
             - type: "null"
           example: null
-        resend:
-          $ref: "#/components/schemas/InvitationResendStateDTO"
+        canResend:
+          type: boolean
+          description: True when `resendBlocker` is null («Reenviar invitación» enabled)
+          example: true
+        resendAvailableAt:
+          type: [string, "null"]
+          format: date-time
+          description: >
+            Main API `nextResendAllowedAt`: when the resend is accepted again (`lastSentAt` plus 10 minutes);
+            null when the invitation is not PENDING
+          example: "2026-11-16T09:10:00+01:00"
+        resendBlocker:
+          example: null
+          oneOf:
+            - $ref: "#/components/schemas/InvitationResendBlockerDTO"
+            - type: "null"
         canCancel:
           type: boolean
           description: True for PENDING («Cancelar invitación», `managerDeleteInvitation`)
           example: true
-      required: [invitationId, email, role, status, expired, createdAt, expiresAt, lastSentAt, contract, resend, canCancel]
+      required: [invitationId, email, role, status, expired, createdAt, expiresAt, lastSentAt, contract, canResend, resendAvailableAt, resendBlocker, canCancel]
 
     InvitationProfileContractDTO:
       type: object
@@ -106,27 +120,7 @@ components:
     InvitationResendBlockerDTO:
       type: string
       description: >
-        Why «Reenviar invitación» is disabled: NOT_PENDING (the invitation is not PENDING, Main API 409 1126)
+        Why «Reenviar invitación» is disabled (`resendBlocker`): NOT_PENDING (the invitation is not PENDING, Main API 409 1126)
         or TOO_SOON (inside the 10-minute cooldown, Main API 429 1127). Open enum.
       enum: [NOT_PENDING, TOO_SOON]
       example: TOO_SOON
-
-    InvitationResendStateDTO:
-      type: object
-      description: State of the «Reenviar invitación» button, computed from the Main API `status` and `nextResendAllowedAt`
-      properties:
-        allowed:
-          type: boolean
-          description: True when `blocker` is null
-          example: false
-        nextAllowedAt:
-          type: [string, "null"]
-          format: date-time
-          description: Main API `nextResendAllowedAt`; null when the invitation is not PENDING
-          example: "2026-11-16T09:10:00+01:00"
-        blocker:
-          example: TOO_SOON
-          oneOf:
-            - $ref: "#/components/schemas/InvitationResendBlockerDTO"
-            - type: "null"
-      required: [allowed, nextAllowedAt, blocker]
