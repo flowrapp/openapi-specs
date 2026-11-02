@@ -407,7 +407,7 @@ components:
         AMBIGUOUS_MATCH) incident is open, CRITICAL while an AUTOMATIC_CLOSE is open, and
         ON_TIME with `warningDot` once the unplanned work is accepted. It is never UPCOMING or
         OFF.
-      enum: [ON_TIME, WARNING, CRITICAL, IN_PROGRESS, UPCOMING, OFF]
+      enum: [ON_TIME, WARNING, CRITICAL, IN_PROGRESS, UPCOMING, "OFF"]
       example: ON_TIME
 
     AttendanceWorklogChangeActionDTO:
@@ -954,6 +954,14 @@ components:
           description: Codes of the actions enabled in the detail; always includes VIEW_DETAIL
           items:
             $ref: "#/components/schemas/AttendanceActionCodeDTO"
+        clockInNotice:
+          description: >
+            SHIFT: clock-in notice state of the shift (Main API `ShiftAttendanceDTO.clockInNotice`), to
+            show «avisado hace X min» and enable «Avisar para fichar». Null for UNMATCHED. Always
+            returned from 0.0.68; not listed as required.
+          oneOf:
+            - $ref: "#/components/schemas/AttendanceClockInNoticeStateDTO"
+            - type: "null"
         detailRef:
           $ref: "#/components/schemas/AttendanceDetailRefDTO"
       required: [rowId, kind, section, severity, status, worker, jobRole, planned, clocked, deviations, chips, actions, detailRef]
@@ -1337,6 +1345,14 @@ components:
             True while the Main API is still reconciling this attendance (after a clock-out or
             a correction). Incidents may change shortly; refetch the detail.
           example: false
+        clockInNotice:
+          description: >
+            SHIFT: clock-in notice state of the shift (Main API `ShiftAttendanceDTO.clockInNotice`), to
+            show «avisado hace X min» and enable «Avisar para fichar». Null for UNMATCHED. Always
+            returned from 0.0.68; not listed as required.
+          oneOf:
+            - $ref: "#/components/schemas/AttendanceClockInNoticeStateDTO"
+            - type: "null"
         actions:
           $ref: "#/components/schemas/AttendanceDetailActionsDTO"
       required: [kind, detailRef, header, planned, clocked, clockIns, timeline, incidents, candidateShifts, revision, reconciliationPending, actions]
@@ -1827,3 +1843,61 @@ components:
           maxLength: 500
           example: The worker covered the morning service.
       required: [action, scheduledShiftId, reason]
+
+    # ── Clock-in notice ────────────────────────────────────────────────────────
+    AttendanceClockInNoticeBlockerDTO:
+      type: string
+      enum: [OUTSIDE_WINDOW, ALREADY_CLOCKED_IN, MEMBER_NOT_ELIGIBLE, TOO_SOON]
+      description: >
+        Main API `ClockInNoticeBlockerDTO`, forwarded unchanged: OUTSIDE_WINDOW (1116),
+        ALREADY_CLOCKED_IN (1117), MEMBER_NOT_ELIGIBLE (1118), TOO_SOON (1119). The BFF does not
+        recompute it. Open set: clients must tolerate unknown values.
+      example: TOO_SOON
+
+    AttendanceClockInNoticeDTO:
+      type: object
+      description: One clock-in notice sent by the OWNER (Main API `ClockInNoticeDTO`).
+      properties:
+        id:
+          type: integer
+          format: int64
+          minimum: 1
+          example: 7001
+        scheduledShiftId:
+          type: integer
+          format: int64
+          minimum: 1
+          example: 900
+        notifiedAt:
+          type: string
+          format: date-time
+          example: "2026-11-02T09:07:00+01:00"
+        notifiedBy:
+          type: integer
+          format: int64
+          minimum: 1
+          description: User id of the OWNER who sent it
+          example: 1
+        nextAllowedAt:
+          type: string
+          format: date-time
+          description: No other notice for this shift is accepted before this instant (cooldown of 10 minutes)
+          example: "2026-11-02T09:17:00+01:00"
+      required: [id, scheduledShiftId, notifiedAt, notifiedBy, nextAllowedAt]
+
+    AttendanceClockInNoticeStateDTO:
+      type: object
+      description: >
+        Clock-in notice state of a shift. The action «Avisar para fichar» is enabled when
+        `blocker` is null; the Main API stays the authority and may still answer 409 or 429.
+      properties:
+        lastNotice:
+          description: Latest notice of the shift; null when none was sent
+          oneOf:
+            - $ref: "#/components/schemas/AttendanceClockInNoticeDTO"
+            - type: "null"
+        blocker:
+          oneOf:
+            - $ref: "#/components/schemas/AttendanceClockInNoticeBlockerDTO"
+            - type: "null"
+      required: [lastNotice, blocker]

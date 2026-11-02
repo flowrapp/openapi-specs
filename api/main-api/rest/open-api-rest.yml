@@ -3,7 +3,7 @@ openapi: 3.1.0
 info:
   title: Flowrapp API
   description: REST API for Flowrapp Backend
-  version: 0.0.87
+  version: 0.0.88
   contact:
     name: Flowrapp Team
     url: https://flowrapp.github.io
@@ -250,6 +250,10 @@ paths:
     $ref: "v1/services/scheduling/scheduling-operations.yml#/shifts/item"
   "/api/v1/businesses/{businessId}/planning-settings":
     $ref: "v1/services/scheduling/scheduling-operations.yml#/planning/settings"
+  "/api/v1/businesses/{businessId}/planning-generations":
+    $ref: "v1/services/scheduling/scheduling-operations.yml#/planning/generations"
+  "/api/v1/businesses/{businessId}/planning-generations/{generationId}":
+    $ref: "v1/services/scheduling/scheduling-operations.yml#/planning/generation"
   "/api/v1/businesses/{businessId}/plannings":
     $ref: "v1/services/scheduling/scheduling-operations.yml#/planning/collec\
       tion"
@@ -295,6 +299,8 @@ paths:
   "/api/v1/businesses/{businessId}/scheduled-shifts/{scheduledShiftId}/attendance/approve":
     $ref: "v1/services/attendance/attendance-operations.yml#/attendance/shif\
       t-approval"
+  "/api/v1/businesses/{businessId}/scheduled-shifts/{scheduledShiftId}/clock-in-notices":
+    $ref: "v1/services/attendance/attendance-operations.yml#/attendance/clock-in-notices"
 
 components:
   schemas:
