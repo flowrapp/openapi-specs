@@ -8,6 +8,7 @@
 - Removing an OWNER returns `403` with functional code `1106` (`CANNOT_REMOVE_OWNER_FROM_BUSINESS`).
 - `GET /api/v1/businesses/{businessId}/members/search` (`searchBusinessMembers`), under the `Members` tag, returns a keyset page for the hub. It calls `GET /api/v2/businesses/{businessId}/users` once, then, for the whole page, `GET /api/v1/businesses/{businessId}/contracts/current?userIds=` and `GET /api/v1/businesses/{businessId}/worklogs/open?userIds=`. Each item has `userId`, `name`, `role`, `jobRole` or null, `currentContractId` or null, and `workingNow`. Access is OWNER or MANAGER (`403` `1020`, `404` `1006`). There is no per-user call and no email.
 - Optional `periodType` (`MONTH`, `YEAR`, `RANGE`; default `RANGE`) in the body of `POST /api/v1/businesses/{businessId}/reports/worked-hours` and as a query parameter of `GET /api/v1/manager/businesses/{businessId}/export/worked-hours-report`, defined as `WorkedHoursReportPeriodTypeDTO` and forwarded to the Main API (0.0.84). Omitting it behaves exactly as before (`RANGE`). A mismatch propagates `400` `1114` (`REPORT_PERIOD_TYPE_MISMATCH`).
+- Main API 0.0.84 adds the attendance incident type `AUTOMATIC_CLOSE` (worklog closed automatically after 24 hours without a clock-out). No BFF schema exposes attendance incident types today, so the BFF contract does not change. A future BFF schema that exposes them must include this value and tolerate unknown values.
 
 ### Changed
 
