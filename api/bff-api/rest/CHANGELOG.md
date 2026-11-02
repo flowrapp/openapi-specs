@@ -5,6 +5,18 @@
 ### Fixed
 
 - `getAttendanceWeek` examples: `state: "OFF"` is quoted in the three week-cell examples, so YAML 1.1 parsers no longer read it as `false`. Examples only; no contract change and no version bump.
+- Settings `businessUserId` (geofencing and auto-clocking lists and the two member PATCH path parameters) is described as the user id (`userId`), as the Main API fills it, not the membership row id. Mirrors the Main API doc fix; documentation only, no contract change and no version bump.
+
+## 0.0.69
+
+### Added
+
+- `GET /api/v1/businesses/{businessId}/members/{userId}/profile` (`getBusinessMemberProfile`, tag `Members`): the «ficha de persona» (design A) in one response ready to paint, OWNER only.
+  - Header: `userId`, `businessUserId` (the id the geofencing and auto-clocking PATCHes take), `name`, `email`, `role`, `isSelf` and `liveStatus` (`WORKING`, `ON_BREAK`, `NOT_CLOCKED_IN`, `NOT_STARTED`, `FINISHED`, `NO_SHOW`, `OFF`, first match wins, so the gap of a split shift is `NOT_STARTED`; `since`, `lateSeconds`).
+  - Resumen: `week` (`from`, `to`, `workedSeconds` including pending worklogs as Attendance «Horas», `openElapsedSeconds`, `plannedSeconds` or null without a published planning, `remainingPlannedSeconds`; every worklog counts by the business-local day of its clock-in), `today` rows (`kind` `SHIFT`/`UNMATCHED`, so clock-ins without a shift show with the `UNSCHEDULED_WORK` chip; the chips are the only source of «Tarde»), `clockInRules` summary (`customRuleCount`, `followsBusiness`) and `employment` (`hireDate` = first contract start, `seniority`).
+  - Contratos: `contracts` (`current`, the only source of the current job role, weekly hours and end date; `upcoming`, `previous`; `state`, `canDelete` = UPCOMING). Fichaje: `clockInRules.geofencing` and `autoClocking` (business, member and effective values, `source` `BUSINESS`/`MEMBER`, `selectablePolicies`, `radiusMeters`; «Como el negocio» is `ALLOW` / `enabled: true`). Ajustes: `actions` (`canEndContract`, `canRemove`, `removeBlockedReason` `SELF`/`TARGET_IS_OWNER`).
+  - Only existing Main API reads, 12 calls in two `parZip` stages (3, then 9 with at most 8 in flight): `getUserBusinesses`, `getBusinessUsers`, `getUser`, `getUserContracts`, `getBusinessJobRoles`, `getWorklogs`, 2 × `getBusinessReports` (reportable and pending), `getBusinessTeamSchedule`, `getDailyAttendance`, `getBusinessGeofencingSettings`, `getBusinessAutoClockingSettings`. Time zones are converted in Kotlin with the business `ZoneId`.
+  - Errors: a user who is not an active member returns `404` `1126`; a non-owner `403` `1020`, a non-member `403` `1015`. Any other Main API failure fails the whole request (no partial response), except `404` `1046` of `getBusinessTeamSchedule`, which gives `week.plannedSeconds: null`.
 
 ## 0.0.68
 

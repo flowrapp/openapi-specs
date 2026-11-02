@@ -245,11 +245,11 @@ invitations:
               schema:
                 $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
               examples:
-                USER_INVITATION_NOT_OWNER:
-                  summary: "1011 - user not authorized for invitation"
+                USER_NOT_OWNER_OF_BUSINESS:
+                  summary: "1020 - user is not the owner of business"
                   value:
                     status: 403
-                    detail: "1011 - user not authorized for invitation"
+                    detail: "1020 - user is not the owner of business"
         '404':
           description: Business not found
           content:
@@ -283,7 +283,7 @@ invitations:
         - 1006
         - 1007
         - 1008
-        - 1011
+        - 1020
     get:
       summary: Get invitations for a business
       description: Retrieves a list of all pending invitations for the specified business.
@@ -344,11 +344,11 @@ invitations:
               schema:
                 $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
               examples:
-                USER_INVITATION_NOT_OWNER:
-                  summary: "1011 - user not authorized for invitation"
+                USER_NOT_OWNER_OF_BUSINESS:
+                  summary: "1020 - user is not the owner of business"
                   value:
                     status: 403
-                    detail: "1011 - user not authorized for invitation"
+                    detail: "1020 - user is not the owner of business"
         '404':
           description: Business not found
           content:
@@ -363,7 +363,7 @@ invitations:
                     detail: "1006 - business does not exist"
       x-functional-errors:
         - 1006
-        - 1011
+        - 1020
 
   delete-business-invitation:
     delete:
@@ -400,11 +400,11 @@ invitations:
               schema:
                 $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
               examples:
-                USER_INVITATION_NOT_OWNER:
-                  summary: "1011 - user not authorized for invitation"
+                USER_NOT_OWNER_OF_BUSINESS:
+                  summary: "1020 - user is not the owner of business"
                   value:
                     status: 403
-                    detail: "1011 - user not authorized for invitation"
+                    detail: "1020 - user is not the owner of business"
                 INVITATION_NOT_PENDING:
                   summary: "1013 - invitation not pending"
                   value:
@@ -430,8 +430,8 @@ invitations:
       x-functional-errors:
         - 1005
         - 1006
-        - 1011
         - 1013
+        - 1020
 
   get-invitations:
     get:
