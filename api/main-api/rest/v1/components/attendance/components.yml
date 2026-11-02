@@ -459,6 +459,22 @@ components:
           example: Bob Wilson
       required: [id, name]
 
+    ShiftAttendanceApprovalBlockerDTO:
+      type: string
+      enum: [SHIFT_NOT_FINISHED, RECONCILIATION_PENDING, OPEN_WORKLOGS, STRUCTURAL_INCIDENTS]
+      description: >
+        Why approveShiftAttendance would refuse the shift right now, evaluated
+        in this order: SHIFT_NOT_FINISHED (lifecycle is not FINISHED, 409
+        1081), RECONCILIATION_PENDING (reconciliation of a match is still
+        pending, 409 1080), OPEN_WORKLOGS (an open worklog or an open break,
+        409 1082), STRUCTURAL_INCIDENTS (an open structural incident:
+        UNSCHEDULED_WORK, AMBIGUOUS_MATCH or NO_SHOW, 409 1083; resolve it
+        first with acceptUnplannedAttendance, resolveAttendanceMatch or
+        acknowledgeNoShow). It does not cover a stale expectedRevision (1079)
+        or the caller's role. New values may be added; clients must tolerate
+        unknown values.
+      example: SHIFT_NOT_FINISHED
+
     ShiftAttendanceDTO:
       type: object
       description: On-demand reconciliation of one scheduled shift and its current worklogs.
@@ -489,6 +505,24 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/AttendanceIncidentDTO'
+        worklogs:
+          type: array
+          description: >
+            Current worklogs of this shift (the worklogs of its matches,
+            including ambiguous candidates), ordered by clock-in, REJECTED
+            included for audit; each worklog carries its `breaks`; consumers
+            draw entry, exit and break segments from them without another call.
+          items:
+            $ref: '../worklogs/components.yml#/components/schemas/WorkLogResponseDTO'
+        approvalBlocker:
+          description: >
+            Null when the shift can be approved now with the current revision;
+            otherwise the first reason approveShiftAttendance would refuse it.
+            Derived by the backend from the same rule as the approval; clients
+            must not recompute it.
+          oneOf:
+            - $ref: '#/components/schemas/ShiftAttendanceApprovalBlockerDTO'
+            - type: 'null'
         revision:
           type: string
           minLength: 1
@@ -546,10 +580,19 @@ components:
           type: integer
           format: int64
           minimum: 0
+          description: >
+            Net worked seconds of the day, breaks deducted: the
+            recordedWorkedSeconds of every shift attendance plus the net
+            seconds of the unmatched worklogs not already counted in a shift.
         reportableWorkedSeconds:
           type: integer
           format: int64
           minimum: 0
+          description: >
+            Net reportable seconds of the day, breaks deducted: the
+            reportableWorkedSeconds of every shift attendance plus the net
+            seconds of the closed unmatched worklogs in CONFIRMED or APPROVED
+            not already counted in a shift.
       required: [shiftCount, coveredShiftCount, potentiallyCoveredShiftCount, uncoveredShiftCount, unmatchedAttendanceCount, pendingReconciliationCount, openIncidentCount, recordedWorkedSeconds, reportableWorkedSeconds]
 
     DailyAttendanceDTO:

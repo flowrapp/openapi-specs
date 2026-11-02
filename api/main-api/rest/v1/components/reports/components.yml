@@ -17,16 +17,18 @@ components:
         day:
           type: string
           format: date
-          description: The calendar date of this report
+          description: Business-local calendar date of this report. A worklog counts on the business-local date of its clock-in.
           example: "2025-07-28"
         seconds:
           type: integer
           format: int64
           description: >
-            Total worked seconds for this user on this day. Only worklogs in
-            CONFIRMED or APPROVED are included. PENDING_RECONCILIATION is excluded
-            until attendance reconciliation moves the worklog to CONFIRMED or
-            PENDING_REVIEW.
+            Total worked seconds for this user on this day, net of effective
+            breaks. By default only worklogs in CONFIRMED or APPROVED are
+            included. PENDING_RECONCILIATION is excluded until attendance
+            reconciliation moves the worklog to CONFIRMED or PENDING_REVIEW.
+            When getBusinessReports receives reviewStatus, only worklogs in the
+            requested states are included.
           example: 32040
       required:
         - userId

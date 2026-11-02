@@ -1198,6 +1198,12 @@ components:
           format: int32
           minimum: 0
           example: 30
+        plannedSeconds:
+          type: integer
+          format: int64
+          minimum: 0
+          description: "Planned net seconds of the shift: endAt minus startAt minus breakMinutes, never negative. Same rule as AttendanceMetrics.plannedSeconds. Optional: older servers may omit it."
+          example: 27000
       required:
         [
           id,

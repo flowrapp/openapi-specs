@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.0.85
+
+Meant to be released after 0.0.84 (PR #40, `periodType` on worked-hours reports).
+
+### Added
+
+- `GET /api/v1/businesses/{businessId}/reports` (`getBusinessReports`) accepts optional repeated `userIds` and `reviewStatus`. Each closed worklog is attributed to the business-local date of its clock-in, with seconds net of effective breaks. Without `reviewStatus`, only `CONFIRMED` and `APPROVED` count, as before.
+- `GET /api/v1/businesses/{businessId}/attendance` (`getDailyAttendance`) accepts optional repeated `userIds`, restricting shifts, unmatched worklogs and the summary to those users.
+- `ShiftAttendanceDTO.worklogs` lists the current worklogs of the shift with their `breaks`. `ShiftAttendanceDTO.approvalBlocker` is the nullable first reason `approveShiftAttendance` would refuse the shift, typed by the new `ShiftAttendanceApprovalBlockerDTO` (`SHIFT_NOT_FINISHED`, `RECONCILIATION_PENDING`, `OPEN_WORKLOGS`, `STRUCTURAL_INCIDENTS`).
+- `GET /api/v1/businesses/{businessId}/scheduled-shifts/{scheduledShiftId}/attendance` (`getShiftAttendance`) returns the read-only `ShiftAttendance` of one shift. Errors: `403` `1020`, `404` `1006` or `1076`.
+- `TeamScheduleShiftDTO.plannedSeconds` is the optional planned net seconds of the shift.
+
+### Changed
+
+- `getBusinessReports` documents OWNER or MANAGER access (`403` `1020`), matching the backend.
+- `DailyAttendanceSummaryDTO.recordedWorkedSeconds` and `reportableWorkedSeconds` are documented as net of breaks.
+
 ## 0.0.83
 
 ### Added
