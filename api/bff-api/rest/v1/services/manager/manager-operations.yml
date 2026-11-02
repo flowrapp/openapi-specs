@@ -663,9 +663,9 @@ manager:
         employees in the business within the requested date range. If userIds is omitted or
         empty, all employees in the business are included. Every supplied user ID must belong
         to the requested business. The type parameter selects the output format and defaults
-        to PDF. This endpoint forwards type, periodType and userIds to the main API, where
-        privileged business access is enforced for OWNER and MANAGER roles. When periodType is
-        omitted the request behaves exactly as before (RANGE).
+        to PDF. This endpoint forwards type, periodType and userIds to the main API. Only the
+        business OWNER may export the report; a MANAGER or EMPLOYEE receives 403 (1020). When
+        periodType is omitted the request behaves exactly as before (RANGE).
         A PDF report that covers several employees, for any periodType including YEAR, is
         delivered as one single PDF document, not as a ZIP.
       tags:
@@ -755,10 +755,15 @@ manager:
         '401':
           description: Unauthorized
         '403':
-          description: Forbidden - User does not have privileged access to this business
+          description: Authenticated user is not the OWNER of the business (a MANAGER is not allowed)
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              example: {status: 403, detail: "1020 - user is not the owner of business"}
         '404':
           description: Business not found
-      x-functional-errors: [1114]
+      x-functional-errors: [1020, 1114]
 
   planning-generation-settings:
     get:

@@ -7,6 +7,10 @@
 - Optional `periodType` (`MONTH`, `YEAR`, `RANGE`; default `RANGE`) on `GET /api/v1/businesses/{businessId}/reports/worked-hours.pdf` (query) and `POST /api/v1/businesses/{businessId}/reports/worked-hours` (request body), defined once as `WorkedHoursReportPeriodTypeDTO`. `MONTH` requires `from`/`to` to cover exactly one calendar month, `YEAR` exactly one calendar year (January 1 to December 31; no fiscal years), and `RANGE` accepts any valid range as before. A mismatch returns `400` with the new functional code `1114` (`REPORT_PERIOD_TYPE_MISMATCH`, `from and to do not match periodType`). Omitting it behaves exactly as before (`RANGE`); nothing is inferred from the dates. A multi-employee PDF, including YEAR, is one single PDF, not a ZIP.
 - Attendance incident type `AUTOMATIC_CLOSE` in `AttendanceIncidentTypeDTO`. The system opens it when it closes a worklog automatically after 24 hours without a clock-out. The clock-out time is a placeholder and not valid: the worklog does not count in totals or reports until a manager corrects the clock-out or rejects the worklog, and `POST /api/v1/businesses/{businessId}/worklogs/{worklogId}/approve` returns `409` `1067` while the incident is open. This is an additive value in a response enum: clients must tolerate unknown values.
 
+### Changed
+
+- Worked-hours reports are owner-only. `GET /api/v1/businesses/{businessId}/reports/worked-hours.pdf` no longer allows a MANAGER: like `POST /api/v1/businesses/{businessId}/reports/worked-hours`, only the business OWNER may call it, and anyone else receives `403` `1020` (`user is not the owner of business`).
+
 ## 0.0.83
 
 ### Added

@@ -6,7 +6,7 @@ reports:
         Requests a PDF or Excel (.xlsx) worked-hours report for the selected employees in the
         business. If userIds is omitted or empty, all employees in the business are included.
         The report is generated asynchronously; this response only confirms that the request was
-        accepted. Only the business OWNER may request report generation.
+        accepted. Only the business OWNER may request report generation. A MANAGER or EMPLOYEE receives 403 (1020).
         The optional periodType (MONTH, YEAR or RANGE, default RANGE) is forwarded to the main API; when it is omitted the request behaves exactly as before (RANGE).
         A PDF report that covers several employees, for any periodType including YEAR, is delivered as one single PDF document, not as a ZIP.
       tags:
@@ -76,7 +76,7 @@ reports:
         '401':
           description: Unauthorized
         '403':
-          description: Authenticated user is not an OWNER of the business
+          description: Authenticated user is not the OWNER of the business (a MANAGER is not allowed)
           content:
             application/problem+json:
               schema:

@@ -15,6 +15,7 @@
 - `searchBusinessMembers` documents `403` `1020` as `user is not an owner or manager of the business`. The code stays `USER_NOT_OWNER_OF_BUSINESS`, which is already in the catalog. A MANAGER is allowed; the previous example said the caller was not the owner.
 - Future worker contract deletion propagates functional code `1102` instead of `1098` for planning-state conflicts, matching the Main API. Already-started contracts continue to return `1097`; both conflicts use HTTP `409`.
 - Member removal propagates `403` `1106` instead of `409` `1103`. `1103` remains `INVALID_REPORT_TYPE` (`only PDF worked-hours reports are supported`).
+- Worked-hours reports are owner-only. `GET /api/v1/manager/businesses/{businessId}/export/worked-hours-report` no longer documents MANAGER access: like `POST /api/v1/businesses/{businessId}/reports/worked-hours`, only the business OWNER may call it, and anyone else receives `403` `1020`, propagated from the Main API.
 
 ## 0.0.65
 
