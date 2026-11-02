@@ -103,6 +103,7 @@ reports:
         A closed worklog in PENDING_RECONCILIATION does not count until attendance
         reconciliation moves it to CONFIRMED or PENDING_REVIEW. PENDING_REVIEW does not count either.
         Caller must have privileged access to the business, either OWNER or MANAGER.
+        A PDF report that covers several employees, for any periodType including YEAR, is delivered as one single PDF document, not as a ZIP.
       tags:
         - Reports
       operationId: exportBusinessWorkedHoursReportPdf
@@ -218,6 +219,7 @@ reports:
         A closed worklog in PENDING_RECONCILIATION does not count until attendance
         reconciliation moves it to CONFIRMED or PENDING_REVIEW. PENDING_REVIEW does not count either.
         Caller must be the owner of the business.
+        A PDF report that covers several employees, for any periodType including YEAR, is delivered as one single PDF document, not as a ZIP.
       tags:
         - Reports
       operationId: requestBusinessWorkedHoursReport

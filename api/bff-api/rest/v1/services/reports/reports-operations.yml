@@ -8,6 +8,7 @@ reports:
         The report is generated asynchronously; this response only confirms that the request was
         accepted. Only the business OWNER may request report generation.
         The optional periodType (MONTH, YEAR or RANGE, default RANGE) is forwarded to the main API; when it is omitted the request behaves exactly as before (RANGE).
+        A PDF report that covers several employees, for any periodType including YEAR, is delivered as one single PDF document, not as a ZIP.
       tags:
         - Reports
       operationId: requestBusinessWorkedHoursReport

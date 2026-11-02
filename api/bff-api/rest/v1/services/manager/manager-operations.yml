@@ -666,6 +666,8 @@ manager:
         to PDF. This endpoint forwards type, periodType and userIds to the main API, where
         privileged business access is enforced for OWNER and MANAGER roles. When periodType is
         omitted the request behaves exactly as before (RANGE).
+        A PDF report that covers several employees, for any periodType including YEAR, is
+        delivered as one single PDF document, not as a ZIP.
       tags:
         - Manager
       operationId: exportManagerWorkedHoursReportPdf
