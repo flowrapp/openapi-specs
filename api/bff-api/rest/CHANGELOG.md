@@ -7,12 +7,16 @@
 - Owner-only `DELETE /api/v1/businesses/{businessId}/members/{userId}` under the new `Members` tag forwards membership removal to the Main API and returns `204` without a response body. Historical data is preserved.
 - Removing an OWNER returns `403` with functional code `1106` (`CANNOT_REMOVE_OWNER_FROM_BUSINESS`).
 - `GET /api/v1/businesses/{businessId}/members/search` (`searchBusinessMembers`), under the `Members` tag, returns a keyset page for the hub. It calls `GET /api/v2/businesses/{businessId}/users` once, then, for the whole page, `GET /api/v1/businesses/{businessId}/contracts/current?userIds=` and `GET /api/v1/businesses/{businessId}/worklogs/open?userIds=`. Each item has `userId`, `name`, `role`, `jobRole` or null, `currentContractId` or null, and `workingNow`. Access is OWNER or MANAGER (`403` `1020`, `404` `1006`). There is no per-user call and no email.
+- Optional `periodType` (`MONTH`, `YEAR`, `RANGE`; default `RANGE`) in the body of `POST /api/v1/businesses/{businessId}/reports/worked-hours` and as a query parameter of `GET /api/v1/manager/businesses/{businessId}/export/worked-hours-report`, defined as `WorkedHoursReportPeriodTypeDTO` and forwarded to the Main API (0.0.84). Omitting it behaves exactly as before (`RANGE`). A mismatch propagates `400` `1114` (`REPORT_PERIOD_TYPE_MISMATCH`).
+- Main API 0.0.84 adds the attendance incident type `AUTOMATIC_CLOSE` (worklog closed automatically after 24 hours without a clock-out). No BFF schema exposes attendance incident types today, so the BFF contract does not change. A future BFF schema that exposes them must include this value and tolerate unknown values.
 
 ### Changed
 
 - `searchBusinessMembers` documents `403` `1020` as `user is not an owner or manager of the business`. The code stays `USER_NOT_OWNER_OF_BUSINESS`, which is already in the catalog. A MANAGER is allowed; the previous example said the caller was not the owner.
 - Future worker contract deletion propagates functional code `1102` instead of `1098` for planning-state conflicts, matching the Main API. Already-started contracts continue to return `1097`; both conflicts use HTTP `409`.
 - Member removal propagates `403` `1106` instead of `409` `1103`. `1103` remains `INVALID_REPORT_TYPE` (`only PDF worked-hours reports are supported`).
+- Worked-hours reports are owner-only. `GET /api/v1/manager/businesses/{businessId}/export/worked-hours-report` no longer documents MANAGER access: like `POST /api/v1/businesses/{businessId}/reports/worked-hours`, only the business OWNER may call it, and anyone else receives `403` `1020`, propagated from the Main API.
+- Worked-hours reports (`POST /api/v1/businesses/{businessId}/reports/worked-hours` and `GET /api/v1/manager/businesses/{businessId}/export/worked-hours-report`) accept a period that ends after today; the Main API truncates the effective end to today in the business time zone. A period whose `from` is after today returns `400`.
 - `PUT /api/v1/manager/businesses/{businessId}/worklogs/{worklogId}` (`managerUpdateWorklog`) is documented as OWNER-only (M7, Main API 0.0.85): a MANAGER receives `403`. The schema does not change.
 
 ## 0.0.65

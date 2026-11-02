@@ -1,0 +1,23 @@
+components:
+  schemas:
+    WorkedHoursReportPeriodTypeDTO:
+      type: string
+      description: |
+        Period type of a worked-hours report. It selects the report layout (title, grouping and
+        subtotals) and how from and to are validated. from and to are calendar days in the
+        business time zone, both inclusive.
+        - MONTH: from and to must cover exactly one calendar month (from is the first day and to
+          is the last day of the same month).
+        - YEAR: from and to must cover exactly one complete calendar year (from is January 1 and
+          to is December 31 of the same year). Fiscal or rolling 12-month years are not supported.
+        - RANGE: any from and to with from on or before to, exactly as before this field existed.
+        For every period type, the period may end after today: send the full period (for example
+        MONTH 2026-11-01 to 2026-11-30, or YEAR 2026-01-01 to 2026-12-31) and the server truncates
+        the effective end to today in the business time zone. A period whose from is after today
+        is rejected with 400.
+        When omitted, RANGE is used. Nothing is inferred from the dates.
+        If from and to do not match the period type, the request fails with 400 and functional code 1114 (REPORT_PERIOD_TYPE_MISMATCH).
+        The BFF forwards it unchanged to the main API, which validates it.
+      enum: [MONTH, YEAR, RANGE]
+      default: RANGE
+      example: MONTH
