@@ -941,7 +941,7 @@ worklogs:
         then by id ascending. The list is not paginated: a worklog has a handful of changes.
         A worklog without changes returns an empty list.
         The worker who owns the worklog and the OWNER of its business may read it; anyone else,
-        including a MANAGER, receives 403 (1019).
+        including a MANAGER, receives 403 (1020).
       tags:
         - Worklogs
       operationId: getWorklogHistory
@@ -974,11 +974,11 @@ worklogs:
               schema:
                 $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
               examples:
-                WORKLOG_NOT_OWNER:
-                  summary: "1019 - user is not the owner of worklog"
+                USER_NOT_OWNER_OF_BUSINESS:
+                  summary: "1020 - user is not the owner of business"
                   value:
                     status: 403
-                    detail: "1019 - user is not the owner of worklog"
+                    detail: "1020 - user is not the owner of business"
         '404':
           description: Worklog not found
           content:
@@ -993,7 +993,7 @@ worklogs:
                     detail: "1017 - worklog not found"
       x-functional-errors:
         - 1017
-        - 1019
+        - 1020
 
   settings:
     put:
