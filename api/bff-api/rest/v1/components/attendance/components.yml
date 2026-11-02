@@ -48,8 +48,8 @@ components:
       description: >
         Deprecated and optional since BFF 0.0.67: the BFF reads the match by id with the
         Main API owner read `getBusinessAttendanceMatch` (Main API 0.0.87) and ignores this
-        value. Kept so existing clients keep working; it will be dropped in a later
-        version. Formerly the `date` of `getDailyAttendance`, as in `detailRef.date`.
+        value. It stays optional and deprecated until the front stops sending it; only
+        then will it be dropped. Formerly the `date` of `getDailyAttendance`, as in `detailRef.date`.
       schema:
         type: string
         format: date
@@ -62,8 +62,8 @@ components:
       description: >
         Deprecated and optional since BFF 0.0.67: the BFF reads the match by id with the
         Main API owner read `getBusinessAttendanceMatch` (Main API 0.0.87) and ignores this
-        value. Kept so existing clients keep working; it will be dropped in a later
-        version. Formerly the only `userIds` of `getDailyAttendance`, as in `detailRef.userId`.
+        value. It stays optional and deprecated until the front stops sending it; only
+        then will it be dropped. Formerly the only `userIds` of `getDailyAttendance`, as in `detailRef.userId`.
       schema:
         type: integer
         format: int64
@@ -94,7 +94,8 @@ components:
       in: query
       required: false
       description: >
-        Restricts the screen to the members whose current contract has this job role. The
+        Restricts the screen to this job role: the job role stored on each scheduled shift
+        (Main API semantics, so a past day keeps the job role in force that day). The
         BFF forwards it unchanged as `jobRoleId` to the Main API calls that back the screen
         (`getBusinessReports` and `getDailyAttendance`, Main API 0.0.87), which filter it
         server-side; it no longer resolves the job role to `userIds`. With `userIds` too,

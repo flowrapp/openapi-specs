@@ -97,7 +97,7 @@ attendance:
           in: query
           required: false
           description: >
-            Restricts the day to the shifts and unmatched worklogs of the users whose current contract has this job role, filtered server-side; the summary is computed over the restricted set. Combined with userIds using AND. A job role with no matching user, or not of this business, returns an empty day.
+            Restricts the day to the shift attendances of this job role, filtered server-side; the summary is computed over the restricted set. The job role of a scheduled shift is the one stored on the shift when it was created (scheduled_shifts.job_role_id), so a past day keeps the job role in force that day even if the member's contract changed later. Worklogs count under the job role of the scheduled shift they are matched to; worklogs without a scheduled shift (unscheduled or ambiguous) have no stored job role, and how they are filtered is still to be defined. Combined with userIds using AND. A job role with no match, or not of this business, returns an empty day.
           schema:
             type: integer
             format: int64
@@ -199,8 +199,9 @@ attendance:
         Returns one attendance match of the business by id, in the same shape as an
         entry of `unmatchedAttendances` in `getDailyAttendance`: the match, its current
         worklog and the incidents of that match. The match is returned whatever its
-        current state; when reconciliation has assigned it to a shift, `match` shows that
-        shift and the shift's attendance stays in `getShiftAttendance`. Only the OWNER of
+        current state: a match already assigned to a shift is still returned with 200
+        (never 404 or 409), `match` shows that shift, and the shift's attendance stays in
+        `getShiftAttendance`. Only the OWNER of
         the business may call this operation; anyone else, MANAGER and EMPLOYEE included,
         receives 403 (1020). A match that does not exist or belongs to another business
         returns 404 (1074).

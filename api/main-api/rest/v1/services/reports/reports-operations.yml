@@ -73,7 +73,7 @@ reports:
           in: query
           required: false
           description: >
-            Restricts the rows to the users whose current contract has this job role, filtered server-side. Combined with userId and userIds using AND. A job role with no matching user, or not of this business, returns no rows.
+            Restricts the seconds to work under this job role, filtered server-side. The job role of a scheduled shift is the one stored on the shift when it was created (scheduled_shifts.job_role_id), so a past day keeps the job role in force that day even if the member's contract changed later. Worklogs count under the job role of the scheduled shift they are matched to; worklogs without a scheduled shift (unscheduled or ambiguous) have no stored job role, and how they are filtered is still to be defined. Combined with userId and userIds using AND. A job role with no match, or not of this business, returns no rows.
           schema:
             type: integer
             format: int64

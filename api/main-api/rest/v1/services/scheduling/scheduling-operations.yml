@@ -1025,6 +1025,20 @@ planning:
               format: int64
               minimum: 1
             example: [3, 7]
+        - name: jobRoleId
+          in: query
+          required: false
+          description: >
+            Restricts the schedule to the shifts of this job role, filtered server-side:
+            the job role stored on each scheduled shift when it was created
+            (scheduled_shifts.job_role_id), so past weeks keep the job role in force that
+            day. Combined with userIds using AND. A job role with no shift in the week, or
+            not of this business, returns an empty schedule.
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+            example: 10
       responses:
         '200':
           description: Published or previously published archived team schedule

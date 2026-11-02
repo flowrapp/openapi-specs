@@ -10,9 +10,9 @@
 
 ### Added
 
-- `GET /api/v1/businesses/{businessId}/reports` (`getBusinessReports`) and `GET /api/v1/businesses/{businessId}/attendance` (`getDailyAttendance`) accept an optional `jobRoleId` (int64) query parameter: only users whose current contract has that job role are included, filtered server-side and combined with `userId`/`userIds` using AND (M8).
-- `GET /api/v1/businesses/{businessId}/attendance-matches/{attendanceMatchId}` (`getBusinessAttendanceMatch`): OWNER read of one attendance match of the business, returning `UnmatchedAttendance` (match, worklog and incidents), the same shape as an entry of `getDailyAttendance.unmatchedAttendances`. Errors: `403` `1020` for anyone but the OWNER, `404` `1006` or `1074`.
-- `GET /api/v1/businesses/{businessId}/team-schedules/{weekStart}` (`getBusinessTeamSchedule`) accepts optional repeated `userIds`, filtered server-side.
+- `GET /api/v1/businesses/{businessId}/reports` (`getBusinessReports`) and `GET /api/v1/businesses/{businessId}/attendance` (`getDailyAttendance`) accept an optional `jobRoleId` (int64) query parameter, filtered server-side and combined with `userId`/`userIds` using AND (M8). The job role is the one stored on the scheduled shift when it was created (`scheduled_shifts.job_role_id`), so a past day keeps the job role in force that day; worklogs count under the job role of their matched shift, and worklogs without a shift are still to be defined.
+- `GET /api/v1/businesses/{businessId}/attendance-matches/{attendanceMatchId}` (`getBusinessAttendanceMatch`): OWNER read of one attendance match of the business, returning `UnmatchedAttendance` (match, worklog and incidents), the same shape as an entry of `getDailyAttendance.unmatchedAttendances`. A match already assigned to a shift is still returned with `200`. Errors: `403` `1020` for anyone but the OWNER, `404` `1006` or `1074`.
+- `GET /api/v1/businesses/{businessId}/team-schedules/{weekStart}` (`getBusinessTeamSchedule`) accepts optional repeated `userIds` and an optional `jobRoleId` (same job-role semantics, from `scheduled_shifts.job_role_id`), filtered server-side and combined using AND.
 
 ## 0.0.86
 
