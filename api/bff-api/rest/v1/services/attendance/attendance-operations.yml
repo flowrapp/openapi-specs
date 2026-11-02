@@ -9,7 +9,7 @@ attendance:
 
         Main API calls:
         1. Stage 0: `getUserBusinesses` (`GET /api/v1/businesses`), for the caller's role (OWNER required, otherwise 403 1020; not a member: 403 1015) and the business time zone.
-        2. Stage 1, one `parZip` (11 calls, at most 8 in flight):
+        2. Stage 1, one `parZip` (13 calls, at most 8 in flight):
            - `getBusinessReports` (`GET /api/v1/businesses/{businessId}/reports?from&to&userIds`), the
              reportable seconds (CONFIRMED + APPROVED) per person and day;
            - `getBusinessReports` with `reviewStatus=PENDING_RECONCILIATION&reviewStatus=PENDING_REVIEW`, the
@@ -17,13 +17,21 @@ attendance:
            - 7 × `getDailyAttendance` (`GET /api/v1/businesses/{businessId}/attendance?date&userIds`), one per
              day, for the planned seconds (`metrics.plannedSeconds`), the clock-in and clock-out of the
              selected day's rows, their warnings and their `detailRef`;
+           - `getPlannings` (`GET /api/v1/businesses/{businessId}/plannings?from&to`, the week), to tell
+             «no published plan» (`plannedSeconds: null`) from «a plan with 0 h» (`0`): only a planning in
+             PUBLISHED or ARCHIVED counts as published;
            - `getBusinessUsers` (`includeRemoved=true`), for names, current job roles and `filterOptions.people`;
-           - `getBusinessJobRoles` (`active=true`), for `filterOptions.jobRoles`.
+           - `getBusinessJobRoles` without `active` (all roles, inactive included), for the job-role name of
+             each row: a current contract may point to a role that is no longer active;
+           - `getBusinessJobRoles` (`active=true`), for `filterOptions.jobRoles` (the Main API filters it).
 
         With `jobRoleId`, `getBusinessUsers` runs first, alone, to resolve the job role to user ids; the
-        other ten calls then run as one `parZip` with those `userIds`. When `userIds` resolves to no one, the
-        response has zeros and no rows, and no attendance or report call is made.
-        clocked = reportable + pending, per person, day and week.
+        other twelve calls then run as one `parZip` with those `userIds`. When `userIds` resolves to no one,
+        the response has zeros (or null planned seconds without a plan) and no rows, and no attendance or
+        report call is made. clocked = reportable + pending, per person, day and week.
+
+        Validation before any Main API call: an invalid `week` or `date`, or a `date` outside `week`, returns
+        400 1115. The BFF never moves `date` into the week: the front sends a `date` of the week it shows.
 
         Concurrency: independent Main API calls of one stage run with Arrow `parZip`; fan-outs are bounded by `Semaphore(8)`, so at most 8 Main API calls are in flight per request. The BFF never filters rows in memory: every filter (date, week, users) is a Main API parameter.
       tags:
@@ -116,12 +124,15 @@ attendance:
                     - {id: 3, name: Barra}
         '400':
           description: >
-            Invalid week or date, or more than 50 `userIds` (1111).
+            Invalid `week` or `date`, or `date` outside `week` (1115); or more than 50 `userIds` (1111).
           content:
             application/problem+json:
               schema:
                 $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
               examples:
+                invalidAttendancePeriod:
+                  summary: "1115 - attendance week or date is invalid"
+                  value: {status: 400, detail: "1115 - attendance week or date is invalid"}
                 invalidUserIds:
                   summary: "1111 - userIds must contain between 1 and 50 identifiers"
                   value: {status: 400, detail: "1111 - userIds must contain between 1 and 50 identifiers"}
@@ -152,7 +163,7 @@ attendance:
                 businessNotFound:
                   summary: "1006 - business does not exist"
                   value: {status: 404, detail: "1006 - business does not exist"}
-      x-functional-errors: [1006, 1015, 1020, 1111]
+      x-functional-errors: [1006, 1015, 1020, 1111, 1115]
 
   day:
     get:
@@ -165,14 +176,15 @@ attendance:
 
         Main API calls:
         1. Stage 0: `getUserBusinesses` (`GET /api/v1/businesses`), for the caller's role (OWNER required, otherwise 403 1020; not a member: 403 1015) and the business time zone.
-        2. Stage 1, one `parZip` (3 calls):
+        2. Stage 1, one `parZip` (4 calls):
            - `getDailyAttendance` (`GET /api/v1/businesses/{businessId}/attendance?date&userIds`), the
              rows: `shiftAttendances` (kind SHIFT) and `unmatchedAttendances` (kind UNMATCHED), with
              metrics, alerts, incidents and worklogs with breaks;
            - `getBusinessJobRoles` (all, active or not), for the job-role name of each scheduled shift
              (`ScheduledShiftResponseDTO` has only `jobRoleId`);
            - `getBusinessUsers` (`includeRemoved=true`), for the job role of UNMATCHED rows and
-             `filterOptions`.
+             `filterOptions.people`;
+           - `getBusinessJobRoles` (`active=true`), for `filterOptions.jobRoles` (the Main API filters it).
 
         With `jobRoleId` the roster call runs first and the attendance call uses the resolved `userIds`.
         Worklogs of a business without a published plan (NOT_APPLICABLE matches) are not part of the
@@ -259,12 +271,15 @@ attendance:
                     - {id: 3, name: Barra}
         '400':
           description: >
-            Invalid date, or more than 50 `userIds` (1111).
+            Invalid `date` (1115), or more than 50 `userIds` (1111).
           content:
             application/problem+json:
               schema:
                 $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
               examples:
+                invalidAttendancePeriod:
+                  summary: "1115 - attendance week or date is invalid"
+                  value: {status: 400, detail: "1115 - attendance week or date is invalid"}
                 invalidUserIds:
                   summary: "1111 - userIds must contain between 1 and 50 identifiers"
                   value: {status: 400, detail: "1111 - userIds must contain between 1 and 50 identifiers"}
@@ -295,7 +310,7 @@ attendance:
                 businessNotFound:
                   summary: "1006 - business does not exist"
                   value: {status: 404, detail: "1006 - business does not exist"}
-      x-functional-errors: [1006, 1015, 1020, 1111]
+      x-functional-errors: [1006, 1015, 1020, 1111, 1115]
 
   week:
     get:
@@ -362,12 +377,15 @@ attendance:
                     - {id: 1, name: Sala}
         '400':
           description: >
-            Invalid week, or more than 50 `userIds` (1111).
+            Invalid `week` (1115), or more than 50 `userIds` (1111).
           content:
             application/problem+json:
               schema:
                 $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
               examples:
+                invalidAttendancePeriod:
+                  summary: "1115 - attendance week or date is invalid"
+                  value: {status: 400, detail: "1115 - attendance week or date is invalid"}
                 invalidUserIds:
                   summary: "1111 - userIds must contain between 1 and 50 identifiers"
                   value: {status: 400, detail: "1111 - userIds must contain between 1 and 50 identifiers"}
@@ -398,7 +416,7 @@ attendance:
                 businessNotFound:
                   summary: "1006 - business does not exist"
                   value: {status: 404, detail: "1006 - business does not exist"}
-      x-functional-errors: [1006, 1015, 1020, 1111]
+      x-functional-errors: [1006, 1015, 1020, 1111, 1115]
 
   shift-detail:
     get:
@@ -541,12 +559,18 @@ attendance:
     get:
       summary: Get the tab badge
       description: |
-        Open attendance incidents of today (business time zone), for the red badge of the tab, OWNER only.
+        What needs attention today (business time zone), for the red badge of the tab, OWNER only. It
+        takes no `date`: it is always today. The front shows `attentionCount`: the rows of today whose
+        severity is not OK (`counts.incidents` of `getAttendanceDay` for today without filters), so the
+        CRITICAL alerts MISSING_CLOCK_IN and LONG_OPEN count. `openIncidentCount` (Main API, incidents
+        only) is kept. Whether alerts belong in the badge is still Sergio's open question 4; until he
+        decides, `attentionCount` is the field to paint.
 
         Main API calls (sequential, today depends on the zone):
         1. Stage 0: `getUserBusinesses` (`GET /api/v1/businesses`), for the caller's role (OWNER required, otherwise 403 1020; not a member: 403 1015) and the business time zone.
         2. `getDailyAttendance` (`GET /api/v1/businesses/{businessId}/attendance?date={today}`) →
-           `summary.openIncidentCount`.
+           `summary.openIncidentCount`, and the rows' severity with the fixed table of
+           `AttendanceSeverityDTO` for `attentionCount`. No other call.
 
         The BFF may cache the result per business for up to 60 seconds. Concurrency: independent Main API calls of one stage run with Arrow `parZip`; fan-outs are bounded by `Semaphore(8)`, so at most 8 Main API calls are in flight per request. The BFF never filters rows in memory: every filter (date, week, users) is a Main API parameter.
       tags:
@@ -566,6 +590,7 @@ attendance:
               example:
                 date: "2026-10-30"
                 openIncidentCount: 4
+                attentionCount: 6
         '401':
           description: No authenticated session
         '403':
@@ -643,6 +668,13 @@ attendance:
               examples:
                 attendanceShiftDetail:
                   $ref: '../../components/attendance/components.yml#/components/examples/AttendanceShiftDetail'
+        '400':
+          description: >
+            Approval request is invalid: the same 400 as the Main API `approveShiftAttendance`, which has no functional code (request validation, e.g. `expectedRevision` empty or `reason` over 500 characters). The BFF validates the same rules and answers the same 400 before calling the Main API.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
         '401':
           description: No authenticated session
         '403':
@@ -701,7 +733,7 @@ attendance:
                   value: {status: 409, detail: "1083 - attendance has unresolved structural incidents"}
       x-functional-errors: [1006, 1015, 1020, 1049, 1076, 1079, 1080, 1081, 1082, 1083]
 
-  shift-no-show-acknowledgement:
+  shift-no-show-acknowledge:
     post:
       summary: Acknowledge a no-show
       description: |
@@ -810,7 +842,7 @@ attendance:
         Main API calls, in sequence:
         1. `getUserBusinesses` (role).
         2. Pre-read `getShiftAttendance` to check that `worklogId` is one of the shift's `worklogs` (otherwise 404 1017, without calling the action).
-        3. `correctBusinessWorklog` (`PUT /api/v1/businesses/{businessId}/worklogs/{worklogId}/correction`) with `clockIn`, `clockOut` and `reason`. The worklog is approved at once; reconciliation later records CORRECTED on its incidents. This is how an AUTOMATIC_CLOSE is resolved, together with the rejection.
+        3. `correctBusinessWorklog` (`PUT /api/v1/businesses/{businessId}/worklogs/{worklogId}/correction`) with `clockIn`, `clockOut` and `reason`. The worklog is approved at once; reconciliation later records CORRECTED on its incidents. This is how an AUTOMATIC_CLOSE is resolved, together with the rejection; for that worklog (`provisionalClockOut: true`) `clockOut` is required (400 1025).
         4. Re-read as in `getAttendanceShiftDetail`: `getShiftAttendance` (`GET /api/v1/businesses/{businessId}/scheduled-shifts/{scheduledShiftId}/attendance`),
              `getBusinessUsers` (`includeRemoved=true`, names of justification and change authors and of
              resolvers) and `getBusinessJobRoles`, in one `parZip`; then `getWorklogHistory`
@@ -848,12 +880,15 @@ attendance:
                   $ref: '../../components/attendance/components.yml#/components/examples/AttendanceShiftDetail'
         '400':
           description: >
-            The reason is blank (1068), or neither `clockIn` nor `clockOut` is sent.
+            The reason is blank (1068); or the correction is not valid (1025): neither `clockIn` nor `clockOut` is sent, `clockOut` is missing for a worklog with `provisionalClockOut` (open AUTOMATIC_CLOSE), or the Main API rejects the interval (it changes nothing, ends in the future or is not a valid interval). The BFF checks the first two rules after the pre-read and before calling `correctBusinessWorklog`.
           content:
             application/problem+json:
               schema:
                 $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
               examples:
+                worklogNotValid:
+                  summary: "1025 - worklog is not valid"
+                  value: {status: 400, detail: "1025 - worklog is not valid"}
                 reasonRequired:
                   summary: "1068 - worklog correction requires a non-blank reason"
                   value: {status: 400, detail: "1068 - worklog correction requires a non-blank reason"}
@@ -904,7 +939,7 @@ attendance:
                 concurrentModification:
                   summary: "1049 - resource was modified concurrently"
                   value: {status: 409, detail: "1049 - resource was modified concurrently"}
-      x-functional-errors: [1006, 1015, 1017, 1020, 1022, 1049, 1068, 1076]
+      x-functional-errors: [1006, 1015, 1017, 1020, 1022, 1025, 1049, 1068, 1076]
 
   shift-rejection:
     post:
@@ -1067,7 +1102,7 @@ attendance:
                   $ref: '../../components/attendance/components.yml#/components/examples/AttendanceShiftDetail'
         '400':
           description: >
-            The reason is blank (1068) or the interval is not valid (1073).
+            The reason is blank (1068) or the interval is not valid (1073), which today includes overlapping another effective break (follow-up: the Main API needs its own overlap code).
           content:
             application/problem+json:
               schema:
@@ -1117,7 +1152,7 @@ attendance:
                   value: {status: 404, detail: "1076 - scheduled shift not found"}
         '409':
           description: >
-            The break changed concurrently or overlaps another break (1049).
+            The break changed concurrently (1049). An overlap that the Main API only detects when saving (a concurrent change) also surfaces as 1049, so 1049 does not tell overlap from concurrency; follow-up for a Main API overlap code.
           content:
             application/problem+json:
               schema:
@@ -1517,12 +1552,15 @@ attendance:
                   $ref: '../../components/attendance/components.yml#/components/examples/AttendanceMatchDetail'
         '400':
           description: >
-            The reason is blank (1068), or neither `clockIn` nor `clockOut` is sent.
+            The reason is blank (1068); or the correction is not valid (1025): neither `clockIn` nor `clockOut` is sent, `clockOut` is missing for a worklog with `provisionalClockOut` (open AUTOMATIC_CLOSE), or the Main API rejects the interval (it changes nothing, ends in the future or is not a valid interval). The BFF checks the first two rules after the pre-read and before calling `correctBusinessWorklog`.
           content:
             application/problem+json:
               schema:
                 $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
               examples:
+                worklogNotValid:
+                  summary: "1025 - worklog is not valid"
+                  value: {status: 400, detail: "1025 - worklog is not valid"}
                 reasonRequired:
                   summary: "1068 - worklog correction requires a non-blank reason"
                   value: {status: 400, detail: "1068 - worklog correction requires a non-blank reason"}
@@ -1573,7 +1611,7 @@ attendance:
                 concurrentModification:
                   summary: "1049 - resource was modified concurrently"
                   value: {status: 409, detail: "1049 - resource was modified concurrently"}
-      x-functional-errors: [1006, 1015, 1017, 1020, 1022, 1049, 1068, 1074]
+      x-functional-errors: [1006, 1015, 1017, 1020, 1022, 1025, 1049, 1068, 1074]
 
   match-rejection:
     post:
@@ -1738,7 +1776,7 @@ attendance:
                   $ref: '../../components/attendance/components.yml#/components/examples/AttendanceMatchDetail'
         '400':
           description: >
-            The reason is blank (1068) or the interval is not valid (1073).
+            The reason is blank (1068) or the interval is not valid (1073), which today includes overlapping another effective break (follow-up: the Main API needs its own overlap code).
           content:
             application/problem+json:
               schema:
@@ -1788,7 +1826,7 @@ attendance:
                   value: {status: 404, detail: "1074 - attendance match not found"}
         '409':
           description: >
-            The break changed concurrently or overlaps another break (1049).
+            The break changed concurrently (1049). An overlap that the Main API only detects when saving (a concurrent change) also surfaces as 1049, so 1049 does not tell overlap from concurrency; follow-up for a Main API overlap code.
           content:
             application/problem+json:
               schema:

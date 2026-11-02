@@ -148,7 +148,7 @@ paths:
   "/api/v1/businesses/{businessId}/attendance/shifts/{scheduledShiftId}/accept":
     $ref: "v1/services/attendance/attendance-operations.yml#/attendance/shift-accept"
   "/api/v1/businesses/{businessId}/attendance/shifts/{scheduledShiftId}/no-show/acknowledge":
-    $ref: "v1/services/attendance/attendance-operations.yml#/attendance/shift-no-show-acknowledgement"
+    $ref: "v1/services/attendance/attendance-operations.yml#/attendance/shift-no-show-acknowledge"
   "/api/v1/businesses/{businessId}/attendance/shifts/{scheduledShiftId}/correction":
     $ref: "v1/services/attendance/attendance-operations.yml#/attendance/shift-correction"
   "/api/v1/businesses/{businessId}/attendance/shifts/{scheduledShiftId}/rejection":

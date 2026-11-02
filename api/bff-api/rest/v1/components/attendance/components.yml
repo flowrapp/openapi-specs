@@ -103,7 +103,10 @@ components:
       name: date
       in: query
       required: false
-      description: Business-local date (YYYY-MM-DD). Defaults to today in the business time zone.
+      description: >
+        Business-local date (YYYY-MM-DD). Defaults to today in the business time zone. An
+        invalid date returns 400 1115. In `getAttendanceHours`, a `date` outside `week` also
+        returns 400 1115 (it is never moved into the week).
       schema:
         type: string
         format: date
@@ -114,7 +117,8 @@ components:
       required: false
       description: >
         ISO week (YYYY-Www), Monday to Sunday in the business time zone. Defaults to the week
-        of `date` when sent, otherwise the current week.
+        of `date` when sent, otherwise the current week. An invalid week (bad format, or a
+        week 53 in a year that has 52) returns 400 1115.
       schema:
         type: string
         pattern: '^[0-9]{4}-W(0[1-9]|[1-4][0-9]|5[0-3])$'
@@ -133,7 +137,7 @@ components:
           date: "2026-10-30"
           status: IN_PROGRESS
         planned: {startAt: "2026-10-30T09:00:00+01:00", endAt: "2026-10-30T17:00:00+01:00", netSeconds: 27000, breakMinutes: 30}
-        clocked: {start: "2026-10-30T09:18:00+01:00", end: null, workedSeconds: 14520, open: true}
+        clocked: {start: "2026-10-30T09:18:00+01:00", end: null, workedSeconds: 0, openElapsedSeconds: 14520, open: true}
         clockIns:
           - worklogId: 3051
             clockIn: "2026-10-30T09:18:00+01:00"
@@ -192,7 +196,7 @@ components:
           date: "2026-10-29"
           status: FINISHED
         planned: null
-        clocked: {start: "2026-10-29T06:00:00+01:00", end: "2026-10-30T06:00:00+01:00", workedSeconds: 0, open: false}
+        clocked: {start: "2026-10-29T06:00:00+01:00", end: "2026-10-30T06:00:00+01:00", workedSeconds: 0, openElapsedSeconds: null, open: false}
         clockIns:
           - worklogId: 3077
             clockIn: "2026-10-29T06:00:00+01:00"
@@ -369,13 +373,32 @@ components:
 
     AttendanceWeekCellStateDTO:
       type: string
-      description: >
-        State of one person-day cell, decided by the BFF in this order: CRITICAL when the
-        highest open severity of the day is CRITICAL; IN_PROGRESS when a shift is EXPECTED,
-        IN_PROGRESS or INTERRUPTED (with `warningDot` when it also has an open WARNING);
-        WARNING when an open WARNING remains; UPCOMING when every shift of the day is
-        UPCOMING; OFF when the person has nothing that day; ON_TIME otherwise. New values may
-        be added.
+      description: |
+        State of one person-day cell, decided by the BFF. New values may be added.
+
+        REJECTED worklogs are ignored for the cell (they stay in the detail for audit). The
+        person's attendances that day are their shifts and their worklogs without a shift.
+
+        1. OFF: no shift and no worklog without a shift. A day with only REJECTED worklogs is OFF.
+        2. UPCOMING: at least one shift, every shift UPCOMING, and no worklog at all that day.
+        3. Otherwise the BFF evaluates the non-UPCOMING shifts plus the worklogs without a shift
+           (so FINISHED + UPCOMING is decided by the FINISHED shift, and a shift that is still
+           UPCOMING never hides work already done), in this order:
+           - CRITICAL: an open CRITICAL incident or alert (NO_SHOW, AUTOMATIC_CLOSE,
+             MISSING_CLOCK_IN, LONG_OPEN).
+           - IN_PROGRESS: a shift EXPECTED, IN_PROGRESS or INTERRUPTED, or an open worklog
+             without a shift; `warningDot` when an open WARNING also remains.
+           - WARNING: an open WARNING incident, or a NO_SHOW resolved as ACKNOWLEDGED (an
+             acknowledged absence is still an absence, as `kpis.missingClockIn` counts it; no
+             `warningDot`).
+           - ON_TIME otherwise; `warningDot` when a counted incident other than NO_SHOW was
+             resolved as ACCEPTED.
+
+        A day with no shift and a closed worklog without a shift (unplanned work) follows the
+        UNMATCHED rules of the severity table: WARNING while its UNSCHEDULED_WORK (or
+        AMBIGUOUS_MATCH) incident is open, CRITICAL while an AUTOMATIC_CLOSE is open, and
+        ON_TIME with `warningDot` once the unplanned work is accepted. It is never UPCOMING or
+        OFF.
       enum: [ON_TIME, WARNING, CRITICAL, IN_PROGRESS, UPCOMING, OFF]
       example: ON_TIME
 
@@ -488,7 +511,8 @@ components:
       description: >
         Options of the header filter, so the filter sheet needs no other call. `people` is
         the Main API roster with removed members (`includeRemoved=true`), ordered by name
-        and then userId as the Main API returns it; `jobRoles` are the active job roles.
+        and then userId as the Main API returns it; `jobRoles` are the active job roles only
+        (names elsewhere are resolved from all job roles, inactive included).
       properties:
         people:
           type: array
@@ -577,6 +601,10 @@ components:
         breaks. Open worklogs count in no figure (shown as `open` on the row). A worklog with
         an open AUTOMATIC_CLOSE incident counts 0 until it is corrected or rejected. Planned
         seconds are `metrics.plannedSeconds` of the published plan from `getDailyAttendance`.
+        `plannedSeconds` is null when the week has no published plan (`getPlannings` returns
+        no planning in PUBLISHED or ARCHIVED for it) and 0 when there is a plan with 0 h for
+        the filtered people. Plans are weekly, so the totals and the seven days are either
+        all null or all numbers.
       properties:
         week:
           $ref: "#/components/schemas/AttendanceWeekRangeDTO"
@@ -599,9 +627,10 @@ components:
               minimum: 0
               example: 302400
             plannedSeconds:
-              type: integer
+              type: [integer, "null"]
               format: int64
               minimum: 0
+              description: Null without a published plan for the week; 0 means a plan with 0 h
               example: 345600
           required: [clockedSeconds, pendingReviewSeconds, reportableSeconds, plannedSeconds]
         days:
@@ -646,9 +675,10 @@ components:
           minimum: 0
           example: 9000
         plannedSeconds:
-          type: integer
+          type: [integer, "null"]
           format: int64
           minimum: 0
+          description: Null without a published plan for the week; 0 means a plan with 0 h that day
           example: 57600
         people:
           type: array
@@ -1113,13 +1143,14 @@ components:
           type: boolean
           description: >
             True on an IN_PROGRESS cell with an open WARNING, or on an ON_TIME cell with a
-            counted incident that was accepted
+            counted incident other than NO_SHOW resolved as ACCEPTED. Always false on WARNING,
+            CRITICAL, UPCOMING and OFF (see `AttendanceWeekCellStateDTO`).
           example: false
         attendanceCount:
           type: integer
           format: int32
           minimum: 0
-          description: Attendances of the person that day (0 when OFF)
+          description: Attendances of the person that day, REJECTED-only worklogs excluded (0 when OFF)
           example: 1
         detailRef:
           oneOf:
@@ -1200,14 +1231,24 @@ components:
               format: int64
               minimum: 0
               description: >
-                SHIFT: Main API `metrics.recordedWorkedSeconds` (net of breaks). UNMATCHED:
-                the worklog's seconds net of effective breaks. 0 while an AUTOMATIC_CLOSE
-                incident is open.
+                Seconds of the CLOSED worklogs of `clockIns`, REJECTED excluded, net of
+                effective breaks, computed by the BFF from `clockIns`. Open worklogs count 0,
+                as in Hours (D3 default), and so does a worklog with an open AUTOMATIC_CLOSE
+                (`provisionalClockOut`). The same figure for SHIFT and UNMATCHED.
+              example: 0
+            openElapsedSeconds:
+              type: [integer, "null"]
+              format: int64
+              minimum: 0
+              description: >
+                Elapsed seconds of the open worklogs up to the response time, net of effective
+                breaks (an open break counts up to now as a break). Null when no worklog is
+                open. Informative only: it is never added to `workedSeconds` or to Hours.
               example: 14520
             open:
               type: boolean
               example: true
-          required: [start, end, workedSeconds, open]
+          required: [start, end, workedSeconds, openElapsedSeconds, open]
         clockIns:
           type: array
           description: >
@@ -1277,7 +1318,10 @@ components:
           minLength: 1
           description: >
             Opaque revision of the shift (Main API `ShiftAttendance.revision`), sent back as
-            `expectedRevision` when accepting. Compare it, never parse it. Null for UNMATCHED.
+            `expectedRevision` when accepting. Compare it, never parse it. Always a non-empty
+            string when `kind` is SHIFT (enforced by the `anyOf` of this schema); null only
+            when `kind` is UNMATCHED. A client that gets null on a SHIFT must treat it as an
+            error and never send an empty `expectedRevision`.
           example: 4f8f1f6f3a1d5f2e7c9e5c0b6f2a8a7f6d4e1c9b8a7f6e5d4c3b2a1908171615
         reconciliationPending:
           type: boolean
@@ -1288,6 +1332,19 @@ components:
         actions:
           $ref: "#/components/schemas/AttendanceDetailActionsDTO"
       required: [kind, detailRef, header, planned, clocked, clockIns, timeline, incidents, candidateShifts, revision, reconciliationPending, actions]
+      anyOf:
+        - description: SHIFT carries a non-empty revision
+          properties:
+            kind:
+              const: SHIFT
+            revision:
+              type: string
+              minLength: 1
+        - description: UNMATCHED (or a future kind) may have a null revision
+          properties:
+            kind:
+              not:
+                const: SHIFT
 
     AttendanceClockInDTO:
       type: object
@@ -1621,9 +1678,22 @@ components:
           description: >
             Main API `getDailyAttendance(today).summary.openIncidentCount`: open incidents of
             today's shifts and of today's worklogs without a shift. Alerts (MISSING_CLOCK_IN,
-            LONG_OPEN) are not incidents and are not counted.
+            LONG_OPEN) are not incidents and are not counted. Kept for compatibility and
+            reporting; the tab badge uses `attentionCount`.
           example: 4
-      required: [date, openIncidentCount]
+        attentionCount:
+          type: integer
+          format: int32
+          minimum: 0
+          description: >
+            What the front shows on the tab badge. Equals `counts.incidents` of
+            `getAttendanceDay` for today without filters: today's rows (shifts and worklogs
+            without a shift) whose severity is not OK, so it includes the CRITICAL alerts
+            MISSING_CLOCK_IN and LONG_OPEN. Computed from the same `getDailyAttendance(today)`
+            with the same severity rules, at no extra Main API call. Pending Sergio's open
+            question 4 (whether alerts belong in the badge).
+          example: 6
+      required: [date, openIncidentCount, attentionCount]
 
     # ── Requests ───────────────────────────────────────────────────────────────
     AttendanceShiftAcceptRequestDTO:
@@ -1657,9 +1727,16 @@ components:
     AttendanceWorklogCorrectionRequestDTO:
       type: object
       description: >
-        Correction of one existing worklog of this attendance. At least one of `clockIn` and
-        `clockOut` is required; an omitted field keeps its value. `clockOut` cannot be null:
-        the owner does not reopen a closed worklog from here.
+        Correction of one existing worklog of this attendance. An omitted field keeps its
+        value. `clockOut` cannot be null: the owner does not reopen a closed worklog from here.
+        Rules, each answered with 400 1025 (`WORKLOG_NOT_VALID`, the code the Main API uses
+        when a correction changes nothing) before any Main API action is called:
+        (1) at least one of `clockIn` and `clockOut` is required;
+        (2) when the worklog has `provisionalClockOut: true` (open AUTOMATIC_CLOSE),
+        `clockOut` is required: the Main API would otherwise resolve the AUTOMATIC_CLOSE and
+        approve the worklog keeping the 24 h placeholder as its clock-out.
+        The BFF forwards the worklog's current note unchanged (the Main API treats an omitted
+        note as clearing it).
       additionalProperties: false
       properties:
         worklogId:

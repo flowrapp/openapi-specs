@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- Functional error catalog: `1115` `INVALID_ATTENDANCE_PERIOD` (400, `attendance week or date is invalid`). It is raised by the BFF attendance screens (BFF 0.0.66: invalid `week` or `date`, or a `date` outside `week` in Hours); no Main API operation returns it, so the Main API contract and version do not change.
+
 ## 0.0.86
 
 ### Changed
