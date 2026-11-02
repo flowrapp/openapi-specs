@@ -1,0 +1,188 @@
+planning:
+  generations:
+    post:
+      summary: Request automatic generation of draft plans for a period
+      description: |
+        «Generar horario automáticamente». OWNER only: the BFF checks the role with
+        `getUserBusinesses` first; the Main API enforces it again. Every rule lives in the Main API
+        (explicit period of whole weeks, at most 4, not in the past; no plan in the period; no
+        generation in progress, double click included; members with a contract and staffing
+        demand) and its functional errors are propagated unchanged. The result is one DRAFT plan
+        per week, never published automatically. Poll `getPlanGeneration` until COMPLETED or
+        FAILED.
+
+        Main API calls, in sequence:
+        1. `getUserBusinesses` (role).
+        2. `requestPlanningGeneration` (`POST /api/v1/businesses/{businessId}/planning-generations`).
+      tags:
+        - Planning
+      operationId: requestPlanGeneration
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '../../components/planning/components.yml#/components/parameters/BusinessId'
+      requestBody:
+        required: true
+        description: Period to generate, whole weeks
+        content:
+          application/json:
+            schema:
+              $ref: '../../components/planning/components.yml#/components/schemas/PlanningGenerationRequestDTO'
+            example:
+              from: "2026-11-09"
+              to: "2026-11-22"
+      responses:
+        '202':
+          description: Generation accepted
+          headers:
+            Location:
+              description: BFF generation job resource
+              schema:
+                type: string
+                format: uri-reference
+                example: "/api/v1/businesses/101/planning-generations/42"
+          content:
+            application/json:
+              schema:
+                $ref: '../../components/planning/components.yml#/components/schemas/PlanningGenerationDTO'
+              example:
+                id: 42
+                businessId: 101
+                from: "2026-11-09"
+                to: "2026-11-22"
+                status: PENDING
+                requestedBy: 1
+                requestedAt: "2026-11-02T18:45:00+01:00"
+                finishedAt: null
+                failureReason: null
+                weeks:
+                  - {weekStart: "2026-11-09", weekEnd: "2026-11-15", planningId: 501, planningStatus: CREATED, failureReason: null}
+                  - {weekStart: "2026-11-16", weekEnd: "2026-11-22", planningId: 502, planningStatus: CREATED, failureReason: null}
+        '400':
+          description: Invalid period (1120) or a period starting in the past (1098)
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              examples:
+                invalidPeriod:
+                  summary: "1120 - planning generation period is invalid"
+                  value: {status: 400, detail: "1120 - planning generation period is invalid"}
+                past:
+                  summary: "1098 - Planning week creation cannot be in the past"
+                  value: {status: 400, detail: "1098 - Planning week creation cannot be in the past"}
+        '401':
+          description: No authenticated session
+        '403':
+          description: The caller is not the OWNER of the business (1020), or not a member of it (1015)
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              examples:
+                notOwner:
+                  summary: "1020 - user is not the owner of business"
+                  value: {status: 403, detail: "1020 - user is not the owner of business"}
+                notMember:
+                  summary: "1015 - user is not member of business"
+                  value: {status: 403, detail: "1015 - user is not member of business"}
+        '404':
+          description: Business not found (1006)
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              examples:
+                businessNotFound:
+                  summary: "1006 - business does not exist"
+                  value: {status: 404, detail: "1006 - business does not exist"}
+        '409':
+          description: A plan already exists in the period (1121) or a generation is in progress (1122)
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              examples:
+                planExists:
+                  summary: "1121 - a planning already exists in the generation period"
+                  value: {status: 409, detail: "1121 - a planning already exists in the generation period"}
+                inProgress:
+                  summary: "1122 - a planning generation is already in progress for the period"
+                  value: {status: 409, detail: "1122 - a planning generation is already in progress for the period"}
+        '422':
+          description: No active member with a contract in the period (1123), or a week without staffing demand (1124)
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              examples:
+                noMembers:
+                  summary: "1123 - no active member has a contract in the generation period"
+                  value: {status: 422, detail: "1123 - no active member has a contract in the generation period"}
+                noDemand:
+                  summary: "1124 - a week of the generation period has no shift with staffing demand"
+                  value: {status: 422, detail: "1124 - a week of the generation period has no shift with staffing demand"}
+      x-functional-errors: [1006, 1015, 1020, 1098, 1120, 1121, 1122, 1123, 1124]
+  generation:
+    get:
+      summary: Get the status of a planning generation
+      description: |
+        OWNER only (`getUserBusinesses` first). Forwards the Main API job unchanged.
+
+        Main API calls, in sequence:
+        1. `getUserBusinesses` (role).
+        2. `getPlanningGeneration` (`GET /api/v1/businesses/{businessId}/planning-generations/{generationId}`).
+      tags:
+        - Planning
+      operationId: getPlanGeneration
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '../../components/planning/components.yml#/components/parameters/BusinessId'
+        - $ref: '../../components/planning/components.yml#/components/parameters/GenerationId'
+      responses:
+        '200':
+          description: Generation job
+          content:
+            application/json:
+              schema:
+                $ref: '../../components/planning/components.yml#/components/schemas/PlanningGenerationDTO'
+              example:
+                id: 42
+                businessId: 101
+                from: "2026-11-09"
+                to: "2026-11-22"
+                status: RUNNING
+                requestedBy: 1
+                requestedAt: "2026-11-02T18:45:00+01:00"
+                finishedAt: null
+                failureReason: null
+                weeks:
+                  - {weekStart: "2026-11-09", weekEnd: "2026-11-15", planningId: 501, planningStatus: DRAFT, failureReason: null}
+                  - {weekStart: "2026-11-16", weekEnd: "2026-11-22", planningId: 502, planningStatus: SOLVING, failureReason: null}
+        '401':
+          description: No authenticated session
+        '403':
+          description: The caller is not the OWNER of the business (1020), or not a member of it (1015)
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              examples:
+                notOwner:
+                  summary: "1020 - user is not the owner of business"
+                  value: {status: 403, detail: "1020 - user is not the owner of business"}
+        '404':
+          description: Business (1006) or generation job (1125) not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              examples:
+                businessNotFound:
+                  summary: "1006 - business does not exist"
+                  value: {status: 404, detail: "1006 - business does not exist"}
+                generationNotFound:
+                  summary: "1125 - planning generation not found"
+                  value: {status: 404, detail: "1125 - planning generation not found"}
+      x-functional-errors: [1006, 1015, 1020, 1125]

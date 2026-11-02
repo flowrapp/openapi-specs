@@ -787,8 +787,8 @@ planning:
       description: >
         Creates an empty manually editable planning for the requested Monday `weekStart`. The
         planning starts in `DRAFT` and has no automatic-solver requirements. Only one planning
-        may exist for a business and week; automatic generation is an internal operation and is
-        not exposed through this endpoint.
+        may exist for a business and week; automatic generation is not exposed through this
+        endpoint: the OWNER requests it with requestPlanningGeneration.
       security: [{ bearerAuth: [] }]
       parameters:
         - $ref: '../../components/scheduling/components.yml#/components/parameters/BusinessId'
@@ -1125,3 +1125,181 @@ planning:
                   summary: Non-member boundary is deliberately non-disclosing
                   value: {status: 404, detail: "1046 - planning not found"}
       x-functional-errors: [1045, 1046]
+
+  generations:
+    post:
+      tags: [Planning]
+      operationId: requestPlanningGeneration
+      summary: Request automatic generation of draft plannings for a period
+      description: >
+        The OWNER asks the automatic generator (the existing Timefold solver flow that the weekly
+        planning settings already trigger) to build the plannings of an explicit period of whole
+        business-local ISO weeks, `from` (a Monday) to `to` (a Sunday), at most 4 weeks. The
+        result is one DRAFT planning per week, never published automatically; the OWNER reviews
+        and publishes it with publishPlanning.
+
+
+        Checks, in this order: `from` is a Monday, `to` is a Sunday, `to` is not before `from` and
+        the period is at most 4 weeks (400 1120); `from` is not before today in the business time
+        zone (400 1098); no generation is in progress for an overlapping period, including a
+        planning of the period in CREATED or SOLVING created by the weekly settings (409 1122);
+        no DRAFT, PUBLISHED or ARCHIVED planning exists in the period (409 1121); at least one
+        active member has a contract that intersects the period (422 1123); and the recurring
+        schedules and schedule exceptions give every week of the period at least one shift with a
+        staffing demand (422 1124). A FAILED planning of the period does not block: it is
+        generated again.
+
+
+        Idempotency: two requests for overlapping periods cannot both be accepted; the database
+        enforces it (one in-progress generation per business and overlapping period, and one
+        planning per business and week), so a double click returns 409 1122. The response is 202
+        with the generation job; poll getPlanningGeneration until its status is COMPLETED or
+        FAILED. When a week is solved the OWNER also gets the existing «Borrador del horario
+        disponible» push.
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '../../components/scheduling/components.yml#/components/parameters/BusinessId'
+      requestBody:
+        required: true
+        description: Period to generate, whole weeks
+        content:
+          application/json:
+            schema:
+              $ref: '../../components/scheduling/components.yml#/components/schemas/PlanningGenerationRequestDTO'
+            example:
+              from: "2026-11-09"
+              to: "2026-11-22"
+      responses:
+        '202':
+          description: Generation accepted; the plannings are created in CREATED and solved asynchronously.
+          headers:
+            Location:
+              description: Generation job resource.
+              schema:
+                type: string
+                format: uri-reference
+                example: "/api/v1/businesses/101/planning-generations/42"
+          content:
+            application/json:
+              schema:
+                $ref: '../../components/scheduling/components.yml#/components/schemas/PlanningGenerationDTO'
+              example:
+                id: 42
+                businessId: 101
+                from: "2026-11-09"
+                to: "2026-11-22"
+                status: PENDING
+                requestedBy: 1
+                requestedAt: "2026-11-02T18:45:00+01:00"
+                finishedAt: null
+                failureReason: null
+                weeks:
+                  - weekStart: "2026-11-09"
+                    weekEnd: "2026-11-15"
+                    planningId: 501
+                    planningStatus: CREATED
+                    failureReason: null
+                  - weekStart: "2026-11-16"
+                    weekEnd: "2026-11-22"
+                    planningId: 502
+                    planningStatus: CREATED
+                    failureReason: null
+        '400':
+          description: Invalid period, or a period that starts in the past.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+              examples:
+                INVALID_PERIOD:
+                  value: {status: 400, detail: "1120 - planning generation period is invalid"}
+                PAST:
+                  value: {status: 400, detail: "1098 - Planning week creation cannot be in the past"}
+        '401':
+          description: Unauthorized.
+        '403':
+          description: The authenticated user is not the owner of the business. A MANAGER receives 403 too.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+              example: {status: 403, detail: "1020 - user is not the owner of business"}
+        '404': {$ref: '../../components/scheduling/components.yml#/components/responses/NotFound'}
+        '409':
+          description: A planning already exists in the period, or a generation is already in progress for it.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+              examples:
+                PLAN_EXISTS:
+                  value: {status: 409, detail: "1121 - a planning already exists in the generation period"}
+                IN_PROGRESS:
+                  value: {status: 409, detail: "1122 - a planning generation is already in progress for the period"}
+        '422':
+          description: The generator has no input for the period.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+              examples:
+                NO_ELIGIBLE_MEMBERS:
+                  value: {status: 422, detail: "1123 - no active member has a contract in the generation period"}
+                NO_DEMAND:
+                  value: {status: 422, detail: "1124 - a week of the generation period has no shift with staffing demand"}
+      x-functional-errors: [1006, 1020, 1098, 1120, 1121, 1122, 1123, 1124]
+  generation:
+    get:
+      tags: [Planning]
+      operationId: getPlanningGeneration
+      summary: Get the status of a planning generation
+      description: >
+        Returns one generation job of the business with the current status of each week. OWNER
+        only; a MANAGER receives 403 (1020). A job id of another business returns 404 1125.
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '../../components/scheduling/components.yml#/components/parameters/BusinessId'
+        - $ref: '../../components/scheduling/components.yml#/components/parameters/PlanningGenerationId'
+      responses:
+        '200':
+          description: Generation job
+          content:
+            application/json:
+              schema:
+                $ref: '../../components/scheduling/components.yml#/components/schemas/PlanningGenerationDTO'
+              example:
+                id: 42
+                businessId: 101
+                from: "2026-11-09"
+                to: "2026-11-22"
+                status: FAILED
+                requestedBy: 1
+                requestedAt: "2026-11-02T18:45:00+01:00"
+                finishedAt: "2026-11-02T18:47:10+01:00"
+                failureReason: One or more weeks could not be generated.
+                weeks:
+                  - weekStart: "2026-11-09"
+                    weekEnd: "2026-11-15"
+                    planningId: 501
+                    planningStatus: DRAFT
+                    failureReason: null
+                  - weekStart: "2026-11-16"
+                    weekEnd: "2026-11-22"
+                    planningId: 502
+                    planningStatus: FAILED
+                    failureReason: The solver could not find a valid schedule.
+        '401':
+          description: Unauthorized.
+        '403': {$ref: '../../components/scheduling/components.yml#/components/responses/Forbidden'}
+        '404':
+          description: Business or generation job not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+              examples:
+                BUSINESS_NOT_FOUND:
+                  value: {status: 404, detail: "1006 - business does not exist"}
+                GENERATION_NOT_FOUND:
+                  value: {status: 404, detail: "1125 - planning generation not found"}
+      x-functional-errors: [1006, 1020, 1125]

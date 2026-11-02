@@ -154,8 +154,20 @@ components:
         | 1113 | 400 | ATTENDANCE_JUSTIFICATION_REQUIRED | attendance justification text is required |
         | 1114 | 400 | REPORT_PERIOD_TYPE_MISMATCH | from and to do not match periodType |
         | 1115 | 400 | INVALID_ATTENDANCE_PERIOD | attendance week or date is invalid |
+        | 1116 | 409 | CLOCK_IN_NOTICE_OUTSIDE_WINDOW | shift is outside the clock-in notice window |
+        | 1117 | 409 | CLOCK_IN_NOTICE_ALREADY_CLOCKED_IN | worker already clocked in for this shift |
+        | 1118 | 409 | CLOCK_IN_NOTICE_MEMBER_NOT_ELIGIBLE | worker is not an active member with a contract in force for this shift |
+        | 1119 | 429 | CLOCK_IN_NOTICE_TOO_SOON | a clock-in notice was sent for this shift too recently |
+        | 1120 | 400 | INVALID_PLANNING_GENERATION_PERIOD | planning generation period is invalid |
+        | 1121 | 409 | PLANNING_GENERATION_PLAN_EXISTS | a planning already exists in the generation period |
+        | 1122 | 409 | PLANNING_GENERATION_IN_PROGRESS | a planning generation is already in progress for the period |
+        | 1123 | 422 | PLANNING_GENERATION_NO_ELIGIBLE_MEMBERS | no active member has a contract in the generation period |
+        | 1124 | 422 | PLANNING_GENERATION_NO_DEMAND | a week of the generation period has no shift with staffing demand |
+        | 1125 | 404 | PLANNING_GENERATION_NOT_FOUND | planning generation not found |
 
         Codes 1086, 1087 and 1088 are the backend enum: SESSION_EXPIRED, PLANNING_ALREADY_EXISTS and PLANNING_VERSION_MISMATCH. Codes 1089–1092 belonged to weekly attendance periods, which were never implemented, and are removed with those routes. Code 1095 remains a separate PLANNING_ALREADY_EXISTS entry and is unchanged here. Code 1115 is raised by the BFF attendance screens (invalid `week` or `date`, or a `date` outside `week`); no Main API operation returns it.
+
+        Codes 1116–1119 belong to notifyShiftClockIn and 1120–1125 to the planning generation operations (Main API 0.0.88). Codes 1099, 1100, 1101 and 1104 are used by the backend enum but are not documented here yet; they are not free and must not be reused.
 
         Code 1020 (`USER_NOT_OWNER_OF_BUSINESS`) stays in the catalog. Owner-only operations keep the message `user is not the owner of business`. An operation that allows an OWNER or a MANAGER uses the same code with the message `user is not an owner or manager of the business`.
       enum:
@@ -267,3 +279,13 @@ components:
         - 1113
         - 1114
         - 1115
+        - 1116
+        - 1117
+        - 1118
+        - 1119
+        - 1120
+        - 1121
+        - 1122
+        - 1123
+        - 1124
+        - 1125

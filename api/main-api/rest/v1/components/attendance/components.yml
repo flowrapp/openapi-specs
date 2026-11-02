@@ -526,6 +526,11 @@ components:
           oneOf:
             - $ref: '#/components/schemas/ShiftAttendanceApprovalBlockerDTO'
             - type: 'null'
+        clockInNotice:
+          $ref: '#/components/schemas/ShiftClockInNoticeDTO'
+          description: >
+            Clock-in notice state of the shift (notifyShiftClockIn). Always returned from 0.0.88;
+            not listed as required so that clients generated from earlier versions keep working.
         revision:
           type: string
           minLength: 1
@@ -737,3 +742,70 @@ components:
           type: string
           enum: [ATTENDANCE_REVISION_CONFLICT]
       required: [currentRevision, code]
+
+    ClockInNoticeBlockerDTO:
+      type: string
+      enum: [OUTSIDE_WINDOW, ALREADY_CLOCKED_IN, MEMBER_NOT_ELIGIBLE, TOO_SOON]
+      description: >
+        Why notifyShiftClockIn would refuse the shift right now, evaluated in the same order as
+        the operation: OUTSIDE_WINDOW (409 1116), ALREADY_CLOCKED_IN (409 1117),
+        MEMBER_NOT_ELIGIBLE (409 1118), TOO_SOON (429 1119). Derived by the backend from the
+        same rule as the operation; clients must not recompute it. New values may be added;
+        clients must tolerate unknown values.
+      example: TOO_SOON
+
+    ClockInNoticeDTO:
+      type: object
+      description: One clock-in notice sent by the OWNER to the worker of a scheduled shift.
+      properties:
+        id:
+          type: integer
+          format: int64
+          minimum: 1
+          example: 7001
+        scheduledShiftId:
+          type: integer
+          format: int64
+          minimum: 1
+          example: 900
+        userId:
+          type: integer
+          format: int64
+          minimum: 1
+          description: Worker of the shift who receives the notice.
+          example: 3
+        notifiedBy:
+          type: integer
+          format: int64
+          minimum: 1
+          description: OWNER who sent the notice.
+          example: 1
+        notifiedAt:
+          type: string
+          format: date-time
+          example: "2026-11-02T09:07:00+01:00"
+        nextAllowedAt:
+          type: string
+          format: date-time
+          description: notifiedAt plus the cooldown (10 minutes); no other notice for this shift is accepted before it.
+          example: "2026-11-02T09:17:00+01:00"
+      required: [id, scheduledShiftId, userId, notifiedBy, notifiedAt, nextAllowedAt]
+
+    ShiftClockInNoticeDTO:
+      type: object
+      description: >
+        Clock-in notice state of one shift: the latest notice, if any, and whether a new one
+        would be accepted now. Lets the client show «avisado hace X min» and enable the button
+        without another call.
+      properties:
+        lastNotice:
+          description: Latest notice of the shift; null when none was sent.
+          oneOf:
+            - $ref: '#/components/schemas/ClockInNoticeDTO'
+            - type: 'null'
+        blocker:
+          description: Null when notifyShiftClockIn would accept a notice now; otherwise the first reason it would refuse it.
+          oneOf:
+            - $ref: '#/components/schemas/ClockInNoticeBlockerDTO'
+            - type: 'null'
+      required: [lastNotice, blocker]
