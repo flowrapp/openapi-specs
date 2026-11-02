@@ -1140,8 +1140,9 @@ planning:
 
 
         Checks, in this order: `from` is a Monday, `to` is a Sunday, `to` is not before `from` and
-        the period is at most 4 weeks (400 1120); `from` is not before today in the business time
-        zone (400 1098); no generation is in progress for an overlapping period, including a
+        the period is at most 4 weeks (400 1120); `from` is not before the Monday of the current
+        week in the business time zone, so the current week can be generated even when today is
+        not Monday, while any earlier week returns 400 1098; no generation is in progress for an overlapping period, including a
         planning of the period in CREATED or SOLVING created by the weekly settings (409 1122);
         no DRAFT, PUBLISHED or ARCHIVED planning exists in the period (409 1121); at least one
         active member has a contract that intersects the period (422 1123); and the recurring
@@ -1166,9 +1167,13 @@ planning:
           application/json:
             schema:
               $ref: '../../components/scheduling/components.yml#/components/schemas/PlanningGenerationRequestDTO'
-            example:
-              from: "2026-11-09"
-              to: "2026-11-22"
+            examples:
+              nextTwoWeeks:
+                summary: The next two weeks
+                value: {from: "2026-11-09", to: "2026-11-22"}
+              currentWeek:
+                summary: The current week, requested on Wednesday 2026-11-04 (allowed)
+                value: {from: "2026-11-02", to: "2026-11-08"}
       responses:
         '202':
           description: Generation accepted; the plannings are created in CREATED and solved asynchronously.
@@ -1205,7 +1210,7 @@ planning:
                     planningStatus: CREATED
                     failureReason: null
         '400':
-          description: Invalid period, or a period that starts in the past.
+          description: Invalid period, or a period that starts before the current business-local week.
           content:
             application/problem+json:
               schema:

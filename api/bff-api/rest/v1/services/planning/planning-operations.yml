@@ -5,7 +5,7 @@ planning:
       description: |
         «Generar horario automáticamente». OWNER only: the BFF checks the role with
         `getUserBusinesses` first; the Main API enforces it again. Every rule lives in the Main API
-        (explicit period of whole weeks, at most 4, not in the past; no plan in the period; no
+        (explicit period of whole weeks, at most 4, starting at the current week or later; no plan in the period; no
         generation in progress, double click included; members with a contract and staffing
         demand) and its functional errors are propagated unchanged. The result is one DRAFT plan
         per week, never published automatically. Poll `getPlanGeneration` until COMPLETED or
@@ -28,9 +28,13 @@ planning:
           application/json:
             schema:
               $ref: '../../components/planning/components.yml#/components/schemas/PlanningGenerationRequestDTO'
-            example:
-              from: "2026-11-09"
-              to: "2026-11-22"
+            examples:
+              nextTwoWeeks:
+                summary: The next two weeks
+                value: {from: "2026-11-09", to: "2026-11-22"}
+              currentWeek:
+                summary: The current week, requested on Wednesday 2026-11-04 (allowed)
+                value: {from: "2026-11-02", to: "2026-11-08"}
       responses:
         '202':
           description: Generation accepted
@@ -59,7 +63,7 @@ planning:
                   - {weekStart: "2026-11-09", weekEnd: "2026-11-15", planningId: 501, planningStatus: CREATED, failureReason: null}
                   - {weekStart: "2026-11-16", weekEnd: "2026-11-22", planningId: 502, planningStatus: CREATED, failureReason: null}
         '400':
-          description: Invalid period (1120) or a period starting in the past (1098)
+          description: Invalid period (1120) or a period starting before the current week (1098)
           content:
             application/problem+json:
               schema:

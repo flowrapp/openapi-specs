@@ -1270,7 +1270,7 @@ components:
         from:
           type: string
           format: date
-          description: Monday of the first week, in the business-local calendar; not before today.
+          description: Monday of the first week, in the business-local calendar; the Monday of the current week or later (the current week can be generated).
           example: "2026-11-09"
         to:
           type: string

@@ -29,7 +29,7 @@ components:
         from:
           type: string
           format: date
-          description: Monday of the first week; not before today in the business time zone
+          description: Monday of the first week; the Monday of the current week in the business time zone or later
           example: "2026-11-09"
         to:
           type: string
