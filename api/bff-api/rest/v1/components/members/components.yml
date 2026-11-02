@@ -166,7 +166,7 @@ components:
         (5) `FINISHED`: a worklog of today is closed and no shift of today is still to start;
         (6) `NO_SHOW`: a shift of today ended without any clock-in and nothing was worked today;
         (7) `OFF`: anything else. Open enum: clients must tolerate unknown values.
-      enum: [WORKING, ON_BREAK, NOT_CLOCKED_IN, NOT_STARTED, FINISHED, NO_SHOW, OFF]
+      enum: [WORKING, ON_BREAK, NOT_CLOCKED_IN, NOT_STARTED, FINISHED, NO_SHOW, "OFF"]
       example: WORKING
 
     MemberLiveStatusDTO:

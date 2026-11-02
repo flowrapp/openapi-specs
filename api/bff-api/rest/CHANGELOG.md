@@ -7,6 +7,12 @@
 - `getAttendanceWeek` examples: `state: "OFF"` is quoted in the three week-cell examples, so YAML 1.1 parsers no longer read it as `false`. Examples only; no contract change and no version bump.
 - Settings `businessUserId` (geofencing and auto-clocking lists and the two member PATCH path parameters) is described as the user id (`userId`), as the Main API fills it, not the membership row id. Mirrors the Main API doc fix; documentation only, no contract change and no version bump.
 
+## 0.0.70
+
+### Fixed
+
+- `MemberLiveStatusStateDTO` (`getBusinessMemberProfile` `liveStatus.state`): the enum value `OFF` is now quoted, so YAML 1.1 parsers (such as the one OpenAPI Generator 7.24 uses; Redocly and oasdiff already read YAML 1.2) read it as the string `OFF` instead of the boolean `false`. The generated enum had a `false` constant and the response would have said `"state": "false"`. The endpoint was not implemented yet (BFF answered 501), so no client depends on the old value.
+
 ## 0.0.69
 
 ### Added
