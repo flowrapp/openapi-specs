@@ -347,7 +347,7 @@ attendance:
   shift-approval:
     post:
       summary: Approve shift attendance
-      description: Approves one completed ShiftAttendance using an opaque expected revision. Approval is atomic and rejects stale or unreconciled attendance.
+      description: Approves one completed ShiftAttendance using an opaque expected revision. Approval is atomic and rejects stale or unreconciled attendance. An open AUTOMATIC_CLOSE incident (a worklog closed automatically after 24 hours without a clock-out) blocks approval like any unresolved structural incident and returns 409 1083 until a manager corrects the clock-out or rejects the worklog.
       tags: [Attendance]
       operationId: approveShiftAttendance
       security:
@@ -396,7 +396,7 @@ attendance:
               schema:
                 $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
         '409':
-          description: Approval is stale, pending reconciliation, unfinished, open, or structurally unresolved.
+          description: Approval is stale, pending reconciliation, unfinished, open, or structurally unresolved (including an open AUTOMATIC_CLOSE incident).
           content:
             application/problem+json:
               schema:

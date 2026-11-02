@@ -794,7 +794,7 @@ worklogs:
   approval:
     post:
       summary: Approve a business worklog
-      description: Allows an owner or manager of the business to approve a pending or confirmed worklog without changing its data.
+      description: Allows an owner or manager of the business to approve a pending or confirmed worklog without changing its data. A worklog with an open AUTOMATIC_CLOSE attendance incident cannot be approved until a manager corrects its clock-out or rejects it.
       tags:
         - Worklogs
       operationId: approveWorklog
@@ -838,7 +838,7 @@ worklogs:
               schema:
                 $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
         '409':
-          description: The worklog cannot transition to approved
+          description: The worklog cannot transition to approved, including while it has an open AUTOMATIC_CLOSE attendance incident (1067)
           content:
             application/problem+json:
               schema:
