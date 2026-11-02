@@ -3,7 +3,7 @@ openapi: 3.1.0
 info:
   title: Flowrapp API
   description: REST API for Flowrapp Backend
-  version: 0.0.84
+  version: 0.0.85
   contact:
     name: Flowrapp Team
     url: https://flowrapp.github.io
@@ -286,6 +286,9 @@ paths:
   "/api/v1/businesses/{businessId}/scheduled-shifts/{scheduledShiftId}/no-show/acknowledge":
     $ref: "v1/services/attendance/attendance-operations.yml#/attendance/no-s\
       how-acknowledgment"
+  "/api/v1/businesses/{businessId}/scheduled-shifts/{scheduledShiftId}/attendance":
+    $ref: "v1/services/attendance/attendance-operations.yml#/attendance/shif\
+      t-attendance"
   "/api/v1/businesses/{businessId}/scheduled-shifts/{scheduledShiftId}/attendance/approve":
     $ref: "v1/services/attendance/attendance-operations.yml#/attendance/shif\
       t-approval"
@@ -394,6 +397,9 @@ components:
     NoShowAcknowledgementRequest:
       $ref: "v1/components/attendance/components.yml#/components/schemas/NoSho\
         wAcknowledgementRequestDTO"
+    ShiftAttendanceApprovalBlocker:
+      $ref: "v1/components/attendance/components.yml#/components/schemas/Shift\
+        AttendanceApprovalBlockerDTO"
     ShiftAttendanceApprovalRequest:
       $ref: "v1/components/attendance/components.yml#/components/schemas/Shift\
         AttendanceApprovalRequestDTO"

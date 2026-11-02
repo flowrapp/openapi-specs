@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.0.85
+
+Released after 0.0.84 (PR #40, `periodType` on worked-hours reports).
+
+### Added
+
+- `GET /api/v1/businesses/{businessId}/reports` (`getBusinessReports`) accepts optional repeated `userIds` and `reviewStatus`. Each closed worklog is attributed to the business-local date of its clock-in, with seconds net of effective breaks. Without `reviewStatus`, only `CONFIRMED` and `APPROVED` count, as before.
+- `GET /api/v1/businesses/{businessId}/attendance` (`getDailyAttendance`) accepts optional repeated `userIds`, restricting shifts, unmatched worklogs and the summary to those users.
+- `ShiftAttendanceDTO.worklogs` lists the current worklogs of the shift with their `breaks`. `ShiftAttendanceDTO.approvalBlocker` is the nullable first reason `approveShiftAttendance` would refuse the shift, typed by the new `ShiftAttendanceApprovalBlockerDTO` (`SHIFT_NOT_FINISHED`, `RECONCILIATION_PENDING`, `OPEN_WORKLOGS`, `STRUCTURAL_INCIDENTS`).
+- `GET /api/v1/businesses/{businessId}/scheduled-shifts/{scheduledShiftId}/attendance` (`getShiftAttendance`) returns the read-only `ShiftAttendance` of one shift. Errors: `403` `1020`, `404` `1006` or `1076`.
+- `TeamScheduleShiftDTO.plannedSeconds` is the optional planned net seconds of the shift.
+
+### Changed
+
+- `getBusinessReports` documents OWNER or MANAGER access, matching the backend: anyone else receives `403` `1020` with the message `user is not an owner or manager of the business`, as the error catalog prescribes for OWNER-or-MANAGER operations. `getShiftAttendance` uses the same message.
+- `AUTOMATIC_CLOSE` descriptions say the owner (not a manager) corrects or rejects the worklog, in line with the OWNER-only review below.
+- `DailyAttendanceSummaryDTO.recordedWorkedSeconds` and `reportableWorkedSeconds` are documented as net of breaks.
+- Review operations are OWNER-only across the app (M7): `approveShiftAttendance`, `acceptUnplannedAttendance`, `resolveAttendanceMatch`, `acknowledgeNoShow`, `approveWorklog`, `rejectWorklog`, `correctBusinessWorklog`, `correctBusinessWorklogBreak` and `voidBusinessWorklogBreak` now document that only the OWNER may call them; a MANAGER receives `403` `1020` (`user is not the owner of business`). Previously the descriptions allowed an OWNER or MANAGER. The schema does not change, so oasdiff does not report it, but it narrows who may call these operations: the backend must enforce it. `rejectWorklog` is included because rejecting is part of the same review.
+
 ## 0.0.84
 
 ### Added
