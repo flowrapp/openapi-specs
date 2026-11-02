@@ -350,7 +350,7 @@ settings:
         - name: businessUserId
           in: path
           required: true
-          description: ID of the user's membership in this business
+          description: User identifier of the business user (`userId`), not the id of the business_users membership row
           schema:
             type: integer
             format: int64
@@ -574,7 +574,7 @@ settings:
           in: path
           required: true
           description: >-
-            ID of the user's membership in this business.
+            User identifier of the business user (`userId`, the same id as `employeeId`), not the id of the business_users membership row. The individual PATCH operations take this value as `{businessUserId}`.
           schema:
             type: integer
             format: int64

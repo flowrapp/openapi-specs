@@ -5,14 +5,12 @@
 ### Added
 
 - Functional error catalog: `1115` `INVALID_ATTENDANCE_PERIOD` (400, `attendance week or date is invalid`). It is raised by the BFF attendance screens (BFF 0.0.66: invalid `week` or `date`, or a `date` outside `week` in Hours); no Main API operation returns it, so the Main API contract and version do not change.
+- Functional error catalog: `1126` `BUSINESS_MEMBER_NOT_FOUND` (404, `user is not an active member of the business`). It is raised by the BFF member profile (BFF 0.0.69, `getBusinessMemberProfile`); no Main API operation returns it, so the Main API contract and version do not change.
 
-## 0.0.89
+### Fixed
 
-### Added
-
-- `POST /api/v1/businesses/{businessId}/invitations/{invitationId}/resend` (`resendBusinessInvitation`): the OWNER sends a PENDING invitation email again («Reenviar invitación»). An already expired PENDING invitation can be resent. The token is kept (every link already sent keeps working) and `expiresAt` moves to now plus 7 days. At most one email per invitation every 10 minutes, counting the creation (`429` `1127` with `Retry-After`). Not PENDING: `409` `1126`. Missing or of another business: `404` `1005`. OWNER only: `403` `1020`. `lastSentAt` and the resend count are stored with an outbox event in the same transaction; the email (same templates as the creation) goes out asynchronously through RabbitMQ, so the response is `202` with the updated `InvitationResponseDTO`.
-- `InvitationResponseDTO.lastSentAt` (`createdAt` until the first resend) and `InvitationResponseDTO.nextResendAllowedAt` (null when the status is not PENDING), returned by every invitation operation. Always returned, not listed as required.
-- Functional error catalog: `1126` `INVITATION_RESEND_NOT_PENDING`, `1127` `INVITATION_RESEND_TOO_SOON` and `1128` `BUSINESS_MEMBER_NOT_FOUND`. `1128` is raised by the BFF member profile (BFF 0.0.69); no Main API operation returns it.
+- Documentation only, no contract or behaviour change and no version bump: `createBusinessInvitation`, `getBusinessInvitations` and `deleteBusinessInvitation` document `403` `1020` (`user is not the owner of business`), which is what the backend returns (`BusinessRoleService`), instead of `1011`. `1011` stays in the catalog.
+- Documentation only: `businessUserId` in the geofencing and auto-clocking settings (`GeofencingUserSettingDTO`, `AutoClockingUserSettingDTO` and the path parameter of the two individual PATCH operations) is described as the user id, which is what the backend reads and returns (mapper source `businessUser.user.id`; `findByUserAndBusinessId(userId, …)`), not as the id of the membership row.
 
 ## 0.0.88
 

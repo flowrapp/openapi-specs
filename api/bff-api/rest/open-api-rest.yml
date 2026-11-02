@@ -50,11 +50,6 @@ tags:
       Business membership operations. Removal and the member profile («ficha de
       persona») are owner-only. Name search is limited to an OWNER or MANAGER of
       the business.
-  - name: Invitations
-    description: >
-      Owner-only invitation fichas and actions under
-      /api/v1/businesses/{businessId}/invitations: the pending-invitation ficha and
-      «Reenviar invitación».
   - name: Attendance
     description: >
       Owner-only «Asistencia» tab: one endpoint per screen (Hours, Today, Week,
@@ -145,12 +140,6 @@ paths:
     $ref: "v1/services/members/members-operations.yml#/members/remove-business-member"
   "/api/v1/businesses/{businessId}/members/{userId}/profile":
     $ref: "v1/services/members/members-operations.yml#/members/member-profile"
-
-  # ── Invitations (owner-only) ────────────────────────────────────────────
-  "/api/v1/businesses/{businessId}/invitations/{invitationId}":
-    $ref: "v1/services/invitations/invitations-operations.yml#/invitations/invitation-profile"
-  "/api/v1/businesses/{businessId}/invitations/{invitationId}/resend":
-    $ref: "v1/services/invitations/invitations-operations.yml#/invitations/resend"
 
   # ── Attendance (owner-only) ─────────────────────────────────────────────
   "/api/v1/businesses/{businessId}/attendance/hours":

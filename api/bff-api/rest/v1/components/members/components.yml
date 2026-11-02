@@ -78,6 +78,7 @@ components:
         «Ficha de persona» of one active member, OWNER view, ready to paint. Identity comes from
         `getBusinessUsers`; every other block lists its Main API source. Instants carry the business
         offset; local dates are business-local (`zone`). Enums are open: clients must tolerate unknown values.
+        The current contract (job role, weekly hours, end date) has a single source: `contracts.current`.
       properties:
         userId:
           type: integer
@@ -92,8 +93,8 @@ components:
           description: >
             Identifier to send as `{businessUserId}` to the geofencing and auto-clocking PATCHes
             (`updateManagerBusinessUserGeofencingPolicy`, `updateManagerBusinessUserAutoClockingPreference`).
-            Taken from `businessUserId` of the settings lists; today the Main API fills it with the user id
-            (mapper source `businessUser.user.id`), so it equals `userId`. Use this field, not `userId`, for those calls.
+            Taken from `businessUserId` of the settings lists, which the Main API fills with the user id, so
+            today it equals `userId`. Use this field for those calls.
           example: 41
         name:
           type: string
@@ -113,14 +114,6 @@ components:
           type: boolean
           description: True when the member is the caller (`getUser` id equals `userId`)
           example: false
-        jobRole:
-          description: >
-            Job role of the contract in force today (`getBusinessUsers.currentContract.jobRole`), or null
-            without a current contract.
-          oneOf:
-            - $ref: "../manager/components.yml#/components/schemas/ManagerJobRoleSummaryDTO"
-            - type: "null"
-          example: {id: 10, code: WAITER, name: Sala, color: "#3494FB", icon: front-of-house, active: true}
         asOf:
           type: string
           format: date-time
@@ -139,15 +132,17 @@ components:
           $ref: "#/components/schemas/MemberLiveStatusDTO"
         week:
           $ref: "#/components/schemas/MemberWeekHoursDTO"
-        todayShifts:
+        today:
           type: array
           example: []
           description: >
-            Today's shifts of the person in the published planning, ordered by `startAt`
-            (`getDailyAttendance.shiftAttendances`, filtered by the Main API with `userIds`). Empty on a day off
-            or without a published planning; more than one on a split shift.
+            «Hoy» rows, the same split as the Attendance Day rows: one `SHIFT` row per shift of today in the
+            published planning (`getDailyAttendance.shiftAttendances`) and one `UNMATCHED` row per clock-in of
+            today without a shift or with an ambiguous match (`getDailyAttendance.unmatchedAttendances`, chip
+            `UNSCHEDULED_WORK` or `AMBIGUOUS_MATCH`). Ordered by `startAt` (SHIFT) or `clockIn` (UNMATCHED).
+            Empty on a day off without clock-ins; several rows on a split shift.
           items:
-            $ref: "#/components/schemas/MemberTodayShiftDTO"
+            $ref: "#/components/schemas/MemberTodayRowDTO"
         clockInRules:
           $ref: "#/components/schemas/MemberClockInRulesDTO"
         employment:
@@ -156,25 +151,29 @@ components:
           $ref: "#/components/schemas/MemberContractsDTO"
         actions:
           $ref: "#/components/schemas/MemberProfileActionsDTO"
-      required: [userId, businessUserId, name, email, role, isSelf, jobRole, asOf, zone, date, liveStatus, week, todayShifts, clockInRules, employment, contracts, actions]
+      required: [userId, businessUserId, name, email, role, isSelf, asOf, zone, date, liveStatus, week, today, clockInRules, employment, contracts, actions]
 
     MemberLiveStatusStateDTO:
       type: string
       description: >
-        Live state of the header, first match wins: `WORKING` (an open worklog whose `operationalState` is
-        WORKING); `ON_BREAK` (an open worklog ON_BREAK); `NOT_CLOCKED_IN` (a shift of today has started more
-        than `attendanceToleranceMinutes` ago, has not ended, and has no clock-in); `NO_SHOW` (a shift of today
-        has ended without any clock-in); `FINISHED` (every shift of today with a clock-in is closed, or, without
-        shifts, a worklog of today is closed); `NOT_STARTED` (a shift of today has not started yet); `OFF`
-        (anything else). Open enum: clients must tolerate unknown values.
-      enum: [WORKING, ON_BREAK, NOT_CLOCKED_IN, NO_SHOW, FINISHED, NOT_STARTED, OFF]
+        Live state of the header, first match wins:
+        (1) `WORKING`: an open worklog whose `operationalState` is WORKING;
+        (2) `ON_BREAK`: an open worklog ON_BREAK;
+        (3) `NOT_CLOCKED_IN`: a shift of today started more than `attendanceToleranceMinutes` ago, has not
+        ended and has no clock-in;
+        (4) `NOT_STARTED`: a shift of today has not started yet, so on a split shift the gap between the two
+        shifts is NOT_STARTED, never FINISHED;
+        (5) `FINISHED`: a worklog of today is closed and no shift of today is still to start;
+        (6) `NO_SHOW`: a shift of today ended without any clock-in and nothing was worked today;
+        (7) `OFF`: anything else. Open enum: clients must tolerate unknown values.
+      enum: [WORKING, ON_BREAK, NOT_CLOCKED_IN, NOT_STARTED, FINISHED, NO_SHOW, OFF]
       example: WORKING
 
     MemberLiveStatusDTO:
       type: object
       description: >
-        Header chip («Trabajando · desde 10:14 · 14 min tarde»). Source: the open worklog of `getWorklogs`
-        and today's shifts of `getDailyAttendance`; tolerance from `getUserBusinesses.attendanceToleranceMinutes`.
+        Header pill («Trabajando · desde 10:14 · 14 min tarde»). Source: the open worklog of `getWorklogs`
+        and today's rows of `getDailyAttendance`; tolerance from `getUserBusinesses.attendanceToleranceMinutes`.
       properties:
         state:
           $ref: "#/components/schemas/MemberLiveStatusStateDTO"
@@ -182,8 +181,8 @@ components:
           type: [string, "null"]
           format: date-time
           description: >
-            WORKING and ON_BREAK: clock-in of the open worklog. FINISHED: the last clock-out of today.
-            NOT_STARTED: start of the next shift. Null otherwise.
+            WORKING and ON_BREAK: clock-in of the open worklog. NOT_STARTED: start of the next shift.
+            FINISHED: the last clock-out of today. Null otherwise.
           example: "2026-11-19T10:14:00+01:00"
         breakStartedAt:
           type: [string, "null"]
@@ -199,25 +198,30 @@ components:
           type: [integer, "null"]
           format: int64
           description: >
-            Today's shift the state refers to: the shift whose attendance contains the open worklog, or the
-            shift of NOT_CLOCKED_IN, NO_SHOW or NOT_STARTED (the earliest one when several); null when none
+            Shift the state refers to: the shift whose attendance contains the open worklog (null when it is
+            an UNMATCHED clock-in), the shift of NOT_CLOCKED_IN or NO_SHOW, or the next shift for NOT_STARTED
+            (the earliest one when several); null otherwise
           example: 900
         lateSeconds:
           type: [integer, "null"]
           format: int64
           minimum: 1
           description: >
-            Seconds late, only when beyond the tolerance: for WORKING and ON_BREAK, the shift's
-            `entryDeviationSeconds` when it exceeds `attendanceToleranceMinutes × 60`; for NOT_CLOCKED_IN,
-            `asOf − startAt`. Null otherwise.
+            Seconds late for the header text («14 min tarde»), only beyond the tolerance: for WORKING and
+            ON_BREAK, the shift's `entryDeviationSeconds` when it exceeds `attendanceToleranceMinutes × 60`;
+            for NOT_CLOCKED_IN, `asOf − startAt`. Null otherwise. The «Tarde» chip of a «Hoy» row comes only
+            from that row's `chips`.
           example: 840
       required: [state, since, breakStartedAt, worklogId, scheduledShiftId, lateSeconds]
 
     MemberWeekHoursDTO:
       type: object
       description: >
-        «Esta semana»: the business-local ISO week (Monday to Sunday in `zone`) that contains `date`.
-        `workedSeconds + openElapsedSeconds` is the big figure, `plannedSeconds` the «de N h planificadas».
+        «Esta semana»: the business-local ISO week (Monday to Sunday in `zone`) that contains `date`. Every
+        worklog, closed or open, counts in the week of the business-local day of its clock-in (business
+        `ZoneId`, as Attendance), so a worklog that crosses midnight from Sunday to Monday counts in the
+        week of its clock-in, open and after closing. `workedSeconds + openElapsedSeconds` is the big
+        figure, `plannedSeconds` the «de N h planificadas».
       properties:
         week:
           type: string
@@ -238,18 +242,19 @@ components:
           format: int64
           minimum: 0
           description: >
-            Closed worklogs of the week, CONFIRMED and APPROVED, net of effective breaks, by business-local
-            day of the clock-in (`getBusinessReports`, summed). The open worklog is not included. Same rule
-            as Attendance «Horas».
+            Closed worklogs of the week, net of effective breaks: reportable (CONFIRMED + APPROVED) plus
+            pending (PENDING_RECONCILIATION + PENDING_REVIEW); REJECTED never counts. Two `getBusinessReports`
+            calls, summed. The same figure as `clockedSeconds` of Attendance «Horas» for this person and week,
+            so «Su histórico» shows the same number. The open worklog is not included.
           example: 68700
         openElapsedSeconds:
           type: integer
           format: int64
           minimum: 0
           description: >
-            «Hoy en curso»: elapsed seconds of the open worklog until `asOf`, minus its effective breaks (an
-            open break counts until `asOf`), only the part inside the week. 0 without an open worklog. Same
-            name as `AttendanceClockedDTO.openElapsedSeconds`.
+            «Hoy en curso»: seconds of the open worklog from its clock-in until `asOf`, minus its effective
+            breaks (an open break counts until `asOf`), when its clock-in falls in the week; 0 otherwise or
+            without an open worklog. Same name as `AttendanceClockedDTO.openElapsedSeconds`.
           example: 1560
         plannedSeconds:
           type: [integer, "null"]
@@ -270,59 +275,79 @@ components:
           example: 44940
       required: [week, from, to, workedSeconds, openElapsedSeconds, plannedSeconds, remainingPlannedSeconds]
 
-    MemberTodayShiftDTO:
+    MemberTodayRowDTO:
       type: object
       description: >
-        One shift of today with its clock-in («Hoy · Sala 10:00–16:00 · Entrada 10:14»), from one
-        `getDailyAttendance.shiftAttendances[]` entry. The job role name comes from `getBusinessJobRoles`.
+        One «Hoy» row. `SHIFT`: one `getDailyAttendance.shiftAttendances[]` entry («Hoy · Sala 10:00–16:00 ·
+        Entrada 10:14»). `UNMATCHED`: one `getDailyAttendance.unmatchedAttendances[]` entry («Sin turno ·
+        Entrada 10:14»); its shift fields are null. Job role names come from `getBusinessJobRoles`. The chips
+        are the only source of «Tarde», «Sin turno» and the other badges of the row.
       properties:
+        kind:
+          $ref: "../attendance/components.yml#/components/schemas/AttendanceRowKindDTO"
         scheduledShiftId:
-          type: integer
+          type: [integer, "null"]
           format: int64
+          description: SHIFT only; null for UNMATCHED
           example: 900
+        attendanceMatchId:
+          type: [integer, "null"]
+          format: int64
+          description: UNMATCHED only (the match of the worklog); null for SHIFT
+          example: null
         shiftName:
-          type: string
+          type: [string, "null"]
+          description: SHIFT only
           example: "Mañana"
         shiftColor:
-          type: string
+          type: [string, "null"]
+          description: SHIFT only
           example: "#3494FB"
         jobRole:
           example: {id: 10, code: WAITER, name: Sala, color: "#3494FB", icon: front-of-house, active: true}
-          description: Job role stored on the scheduled shift; null only if the id is not in the catalog
+          description: >
+            SHIFT: the job role stored on the scheduled shift. UNMATCHED: the job role of `contracts.current`.
+            Null when there is none.
           oneOf:
             - $ref: "../manager/components.yml#/components/schemas/ManagerJobRoleSummaryDTO"
             - type: "null"
         startAt:
-          type: string
+          type: [string, "null"]
           format: date-time
+          description: SHIFT only
           example: "2026-11-19T10:00:00+01:00"
         endAt:
-          type: string
+          type: [string, "null"]
           format: date-time
+          description: SHIFT only
           example: "2026-11-19T16:00:00+01:00"
         plannedSeconds:
-          type: integer
+          type: [integer, "null"]
           format: int64
           minimum: 0
-          description: "`metrics.plannedSeconds`"
+          description: SHIFT only (`metrics.plannedSeconds`)
           example: 21600
         lifecycle:
-          type: string
-          description: Main API `ShiftAttendanceLifecycleDTO`, unchanged. Open enum.
-          enum: [UPCOMING, EXPECTED, IN_PROGRESS, INTERRUPTED, FINISHED]
+          description: SHIFT only, Main API `ShiftAttendanceLifecycleDTO` unchanged (open enum); null for UNMATCHED
+          oneOf:
+            - type: string
+              enum: [UPCOMING, EXPECTED, IN_PROGRESS, INTERRUPTED, FINISHED]
+            - type: "null"
           example: IN_PROGRESS
         clockIn:
           type: [string, "null"]
           format: date-time
-          description: Earliest clock-in among the non-rejected worklogs of the shift; null without one
+          description: >
+            SHIFT: earliest clock-in among the non-rejected worklogs of the shift, null without one.
+            UNMATCHED: the clock-in of its worklog (never null).
           example: "2026-11-19T10:14:00+01:00"
         clockOut:
           type: [string, "null"]
           format: date-time
-          description: Clock-out of the latest worklog of the shift when every worklog is closed; null otherwise («sin salida aún»)
+          description: Clock-out of the latest worklog of the row when every worklog is closed; null otherwise («sin salida aún»)
           example: null
         clockInOrigin:
-          description: Origin of the earliest clock-in (Main API `WorklogOriginDTO`); null without a clock-in
+          description: Origin of the clock-in of `clockIn` (Main API `WorklogOriginDTO`); null without a clock-in
           oneOf:
             - type: string
               enum: [MANUAL, GEOFENCE, QR, AUTOMATIC, ADMIN, UNKNOWN]
@@ -331,29 +356,24 @@ components:
         entryDeviationSeconds:
           type: [integer, "null"]
           format: int64
-          description: "`metrics.entryDeviationSeconds` (positive = late) when there is a clock-in; null otherwise"
+          description: "SHIFT with a clock-in: `metrics.entryDeviationSeconds` (positive = late); null otherwise"
           example: 840
-        late:
-          type: boolean
-          description: >
-            True when `entryDeviationSeconds` exceeds the tolerance, or when there is no clock-in and
-            `startAt` plus the tolerance is before `asOf` («Tarde»)
-          example: true
         chips:
           type: array
           example: []
           description: >
             Same chips and rules as the Attendance Day rows (`AttendanceChipDTO`): one per OPEN incident and
-            one per current alert of this shift attendance, in Main API order
+            one per current alert of the row, in Main API order. «Tarde» is the `LATE_ENTRY` chip (or
+            `MISSING_CLOCK_IN` without a clock-in), «Sin turno» the `UNSCHEDULED_WORK` chip.
           items:
             $ref: "../attendance/components.yml#/components/schemas/AttendanceChipDTO"
-      required: [scheduledShiftId, shiftName, shiftColor, jobRole, startAt, endAt, plannedSeconds, lifecycle, clockIn, clockOut, clockInOrigin, entryDeviationSeconds, late, chips]
+      required: [kind, scheduledShiftId, attendanceMatchId, shiftName, shiftColor, jobRole, startAt, endAt, plannedSeconds, lifecycle, clockIn, clockOut, clockInOrigin, entryDeviationSeconds, chips]
 
     MemberClockInRulesDTO:
       type: object
       description: >
         Segment «Fichaje» and the row «Reglas de fichaje» of Resumen («Sigue al negocio» or «N propias»).
-        Sources: `getBusinessGeofencingSettings` and `getBusinessAutoClockingSettings` (OWNER only).
+        Sources: `getBusinessGeofencingSettings` and `getBusinessAutoClockingSettings`.
       properties:
         geofencing:
           $ref: "#/components/schemas/MemberGeofencingRuleDTO"
@@ -363,7 +383,6 @@ components:
           type: integer
           format: int32
           minimum: 0
-          maximum: 2
           description: Number of rules whose `source` is MEMBER; drives «N propias» and the dot on the «Fichaje» segment
           example: 1
         followsBusiness:
@@ -384,8 +403,14 @@ components:
       type: object
       description: >
         Clock-in and clock-out outside the geofence. The Main API applies the stricter policy of the
-        business and the member (ALLOW < WARN < BLOCK), at clock-in and at clock-out; a member policy
-        can never relax the business one and is kept when the business policy changes.
+        business and the member (ALLOW < WARN < BLOCK), at clock-in and at clock-out; the member value is
+        kept when the business policy changes. The selected option of the segmented control is
+        `effectivePolicy`. The member PATCH (`updateManagerBusinessUserGeofencingPolicy`) stores the value
+        sent as is: it never deletes the member value and does not compare it with the business one; a
+        member without a stored value reads as ALLOW. ALLOW is therefore «no rule of its own»: to go back
+        to «Como el negocio», send `policy: ALLOW`. Choosing the business value itself (for example WARN
+        while the business is WARN) also shows «Como el negocio» today, but stays WARN if the business
+        later relaxes, so the front sends ALLOW for «Como el negocio».
       properties:
         businessPolicy:
           $ref: "../settings/components.yml#/components/schemas/GeofencingPolicy"
@@ -398,8 +423,8 @@ components:
         selectablePolicies:
           type: array
           description: >
-            Policies the OWNER can pick for this member, ordered ALLOW, WARN, BLOCK: those at least as strict
-            as `businessPolicy`. The others are shown disabled («Lo exige el negocio»).
+            Policies that change or keep what applies, ordered ALLOW, WARN, BLOCK: those at least as strict as
+            `businessPolicy`. The others are shown disabled («Lo exige el negocio»).
           items:
             $ref: "../settings/components.yml#/components/schemas/GeofencingPolicy"
           example: [WARN, BLOCK]
@@ -413,9 +438,10 @@ components:
     MemberAutoClockingRuleDTO:
       type: object
       description: >
-        Automatic clock-in and clock-out on entering and leaving the geofence. It applies when the
-        business switch AND the member's preference are on; the preference is kept when the business
-        switches it off.
+        Automatic clock-in and clock-out on entering and leaving the geofence. It applies when the business
+        switch AND the member's preference are on; the preference is kept when the business switches it off.
+        The member PATCH (`updateManagerBusinessUserAutoClockingPreference`) stores the value sent as is; a
+        member without a stored value reads as enabled. `enabled: true` is therefore «Como el negocio».
       properties:
         businessEnabled:
           type: boolean
@@ -434,19 +460,16 @@ components:
     MemberEmploymentDTO:
       type: object
       description: >
-        Tiles Alta, Antigüedad, Horas/semana and Fin de contrato, and «En el equipo desde» in Ajustes.
-        Hire date and seniority come from the contract history (`getUserContracts`), hours and end from
-        the current contract.
+        Tiles Alta and Antigüedad, and «En el equipo desde» in Ajustes, from the contract history
+        (`getUserContracts`). Horas/semana and Fin de contrato are `contracts.current.totalWeekHours` and
+        `contracts.current.endDate`.
       properties:
-        hasCurrentContract:
-          type: boolean
-          example: true
         hireDate:
           type: [string, "null"]
           format: date
           description: >
-            Earliest `startDate` of the contract history (the current front rule; the Main API exposes no
-            membership date); null without contracts. A future first contract gives a future date.
+            Earliest `startDate` of the contract history; null without contracts. A future first contract
+            gives a future date.
           example: "2026-03-01"
         seniority:
           example: {years: 0, months: 8, totalMonths: 8}
@@ -456,17 +479,7 @@ components:
           oneOf:
             - $ref: "#/components/schemas/MemberSeniorityDTO"
             - type: "null"
-        weeklyHours:
-          type: [number, "null"]
-          format: double
-          description: "`totalWeekHours` of the current contract; null without one"
-          example: 32
-        contractEndDate:
-          type: [string, "null"]
-          format: date
-          description: End date of the current contract; null for an open-ended contract or without one («Sin fecha»)
-          example: null
-      required: [hasCurrentContract, hireDate, seniority, weeklyHours, contractEndDate]
+      required: [hireDate, seniority]
 
     MemberSeniorityDTO:
       type: object
@@ -536,7 +549,9 @@ components:
 
     MemberContractsDTO:
       type: object
-      description: Segment «Contratos». The whole history, split by state
+      description: >
+        Segment «Contratos», the whole history split by state. `current` is the only source of the current
+        contract on the screen: header job role, Horas/semana, Fin de contrato and «Puesto actual».
       properties:
         current:
           example: null
@@ -568,18 +583,12 @@ components:
 
     MemberProfileActionsDTO:
       type: object
-      description: >
-        Which actions the screen enables. The endpoint is OWNER only, so the permission part is always
-        granted; the flags still carry the state rules so the front never computes them.
+      description: State rules of the actions of the screen, so the front never computes them.
       properties:
-        canEditContracts:
-          type: boolean
-          description: True for the OWNER («Nuevo contrato», edit a contract)
-          example: true
         canEndContract:
           type: boolean
           description: >
-            «Dar de baja»: true when there is a current contract whose `endDate` is null or after today
+            «Dar de baja»: true when `contracts.current` exists and its `endDate` is null or after today
             (`updateUserContract` with an end date)
           example: true
         canRemove:
@@ -591,8 +600,4 @@ components:
           oneOf:
             - $ref: "#/components/schemas/MemberRemoveBlockedReasonDTO"
             - type: "null"
-        canEditClockRules:
-          type: boolean
-          description: True for the OWNER (the geofencing and auto-clocking PATCHes are OWNER only)
-          example: true
-      required: [canEditContracts, canEndContract, canRemove, removeBlockedReason, canEditClockRules]
+      required: [canEndContract, canRemove, removeBlockedReason]

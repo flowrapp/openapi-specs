@@ -245,11 +245,11 @@ invitations:
               schema:
                 $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
               examples:
-                USER_INVITATION_NOT_OWNER:
-                  summary: "1011 - user not authorized for invitation"
+                USER_NOT_OWNER_OF_BUSINESS:
+                  summary: "1020 - user is not the owner of business"
                   value:
                     status: 403
-                    detail: "1011 - user not authorized for invitation"
+                    detail: "1020 - user is not the owner of business"
         '404':
           description: Business not found
           content:
@@ -283,7 +283,7 @@ invitations:
         - 1006
         - 1007
         - 1008
-        - 1011
+        - 1020
     get:
       summary: Get invitations for a business
       description: Retrieves a list of all pending invitations for the specified business.
@@ -344,11 +344,11 @@ invitations:
               schema:
                 $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
               examples:
-                USER_INVITATION_NOT_OWNER:
-                  summary: "1011 - user not authorized for invitation"
+                USER_NOT_OWNER_OF_BUSINESS:
+                  summary: "1020 - user is not the owner of business"
                   value:
                     status: 403
-                    detail: "1011 - user not authorized for invitation"
+                    detail: "1020 - user is not the owner of business"
         '404':
           description: Business not found
           content:
@@ -363,7 +363,7 @@ invitations:
                     detail: "1006 - business does not exist"
       x-functional-errors:
         - 1006
-        - 1011
+        - 1020
 
   delete-business-invitation:
     delete:
@@ -400,11 +400,11 @@ invitations:
               schema:
                 $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
               examples:
-                USER_INVITATION_NOT_OWNER:
-                  summary: "1011 - user not authorized for invitation"
+                USER_NOT_OWNER_OF_BUSINESS:
+                  summary: "1020 - user is not the owner of business"
                   value:
                     status: 403
-                    detail: "1011 - user not authorized for invitation"
+                    detail: "1020 - user is not the owner of business"
                 INVITATION_NOT_PENDING:
                   summary: "1013 - invitation not pending"
                   value:
@@ -430,8 +430,8 @@ invitations:
       x-functional-errors:
         - 1005
         - 1006
-        - 1011
         - 1013
+        - 1020
 
   get-invitations:
     get:
@@ -481,131 +481,3 @@ invitations:
                   expiresAt: "2023-06-23T10:15:00+00:00"
         '401':
           description: Unauthorized
-
-  resend-business-invitation:
-    post:
-      summary: Resend a pending business invitation
-      description: >
-        The OWNER sends the invitation email again. Only a PENDING invitation can be resent
-        (ACCEPTED, DECLINED or EXPIRED returns 409 1126); an invitation of another business,
-        or one that was deleted, returns 404 1005. A PENDING invitation whose `expiresAt` has
-        already passed can be resent: that is the main use case. The resend keeps the same
-        token, so the link of every email already sent keeps working, and moves `expiresAt` to
-        now plus 7 days (the same validity as a new invitation). At most one email per
-        invitation every 10 minutes, counting the creation as the first send: otherwise 429
-        1127 with a `Retry-After` header in seconds. `lastSentAt` and the resend count are
-        stored on the invitation in the same transaction as an outbox event; the email (the
-        same templates as the creation, registration link included when the invitee is not
-        registered) is sent asynchronously through RabbitMQ, so the response is 202 and does
-        not confirm delivery. Two concurrent resends of the same invitation cannot both be
-        accepted: the loser gets 429 1127. Only the OWNER of the business may call this
-        operation; anyone else receives 403 (1020).
-      tags:
-        - Invitations
-      operationId: resendBusinessInvitation
-      security:
-        - basicAuth: []
-        - bearerAuth: []
-      parameters:
-        - name: businessId
-          in: path
-          required: true
-          description: Unique identifier of the business
-          schema:
-            type: integer
-            format: int64
-            minimum: 1
-        - name: invitationId
-          in: path
-          required: true
-          description: Unique identifier of the invitation
-          schema:
-            type: integer
-            minimum: 1
-      responses:
-        '202':
-          description: Resend accepted; the email is sent asynchronously. Returns the updated invitation.
-          content:
-            application/json:
-              schema:
-                $ref: '../../components/invitations/components.yml#/components/schemas/InvitationResponseDTO'
-              example:
-                id: 123
-                businessId: 101
-                businessName: "Café Aurora"
-                email: "lucia.ramos@example.com"
-                role: "EMPLOYEE"
-                contract: null
-                status: "PENDING"
-                createdAt: "2026-11-16T09:00:00+01:00"
-                expiresAt: "2026-11-26T10:40:00+01:00"
-                lastSentAt: "2026-11-19T10:40:00+01:00"
-                nextResendAllowedAt: "2026-11-19T10:50:00+01:00"
-        '401':
-          description: Unauthorized
-        '403':
-          description: The authenticated user is not the owner of the business. A MANAGER receives 403 too.
-          content:
-            application/problem+json:
-              schema:
-                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
-              examples:
-                USER_NOT_OWNER_OF_BUSINESS:
-                  summary: "1020 - user is not the owner of business"
-                  value:
-                    status: 403
-                    detail: "1020 - user is not the owner of business"
-        '404':
-          description: Business not found, or invitation not found in the business
-          content:
-            application/problem+json:
-              schema:
-                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
-              examples:
-                BUSINESS_NOT_FOUND:
-                  summary: "1006 - business does not exist"
-                  value:
-                    status: 404
-                    detail: "1006 - business does not exist"
-                INVITATION_NOT_FOUND:
-                  summary: "1005 - invitation not found"
-                  value:
-                    status: 404
-                    detail: "1005 - invitation not found"
-        '409':
-          description: The invitation is not PENDING (ACCEPTED, DECLINED or EXPIRED)
-          content:
-            application/problem+json:
-              schema:
-                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
-              examples:
-                INVITATION_RESEND_NOT_PENDING:
-                  summary: "1126 - only a pending invitation can be resent"
-                  value:
-                    status: 409
-                    detail: "1126 - only a pending invitation can be resent"
-        '429':
-          description: The invitation email was already sent within the cooldown (10 minutes)
-          headers:
-            Retry-After:
-              description: Seconds until the next resend of this invitation is allowed.
-              schema:
-                type: integer
-                minimum: 1
-                example: 420
-          content:
-            application/problem+json:
-              schema:
-                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
-              examples:
-                INVITATION_RESEND_TOO_SOON:
-                  summary: "1127 - the invitation was sent too recently"
-                  value:
-                    status: 429
-                    detail: "1127 - the invitation was sent too recently"
-      x-functional-errors:
-        - 1005
-        - 1006
-        - 1020
-        - 1126
-        - 1127

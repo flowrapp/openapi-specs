@@ -90,23 +90,6 @@ components:
           format: date-time
           description: Date and time when the invitation expires
           example: "2023-06-22T14:30:00+00:00"
-        lastSentAt:
-          type: string
-          format: date-time
-          description: >
-            When the invitation email was last queued: `createdAt` until the first
-            resend, then the time of the latest accepted `resendBusinessInvitation`.
-            Always returned, not listed as required.
-          example: "2023-06-15T14:30:00+00:00"
-        nextResendAllowedAt:
-          type: [string, "null"]
-          format: date-time
-          description: >
-            Earliest instant at which `resendBusinessInvitation` is accepted for this
-            invitation (`lastSentAt` plus the 10-minute cooldown). Null when the status is
-            not PENDING, because such an invitation can never be resent. A value in the past
-            means the resend is available now. Always returned, not listed as required.
-          example: "2023-06-15T14:40:00+00:00"
       required:
         - id
         - businessId
