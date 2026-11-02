@@ -10,6 +10,7 @@
 ### Changed
 
 - Worked-hours reports are owner-only. `GET /api/v1/businesses/{businessId}/reports/worked-hours.pdf` no longer allows a MANAGER: like `POST /api/v1/businesses/{businessId}/reports/worked-hours`, only the business OWNER may call it, and anyone else receives `403` `1020` (`user is not the owner of business`).
+- Worked-hours reports accept a period that ends after today for every `periodType` (for example the current month or year sent in full); the server truncates the effective end to today in the business time zone. A period whose `from` is after today returns `400`.
 
 ## 0.0.83
 

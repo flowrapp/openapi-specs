@@ -665,7 +665,9 @@ manager:
         to the requested business. The type parameter selects the output format and defaults
         to PDF. This endpoint forwards type, periodType and userIds to the main API. Only the
         business OWNER may export the report; a MANAGER or EMPLOYEE receives 403 (1020). When
-        periodType is omitted the request behaves exactly as before (RANGE).
+        periodType is omitted the request behaves exactly as before (RANGE). A period that ends
+        after today is accepted and truncated by the server to today in the business time zone;
+        a period whose from is after today returns 400.
         A PDF report that covers several employees, for any periodType including YEAR, is
         delivered as one single PDF document, not as a ZIP.
       tags:
@@ -744,7 +746,7 @@ manager:
                 type: string
                 example: 'attachment; filename="worked-hours-report-2025-01-01-2025-12-31.pdf"'
         '400':
-          description: Invalid date range, period type (from and to do not match periodType), report type, or user IDs (including users outside the requested business)
+          description: Invalid date range (including from after today), period type (from and to do not match periodType), report type, or user IDs (including users outside the requested business)
           content:
             application/problem+json:
               schema:

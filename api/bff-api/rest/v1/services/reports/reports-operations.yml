@@ -8,6 +8,7 @@ reports:
         The report is generated asynchronously; this response only confirms that the request was
         accepted. Only the business OWNER may request report generation. A MANAGER or EMPLOYEE receives 403 (1020).
         The optional periodType (MONTH, YEAR or RANGE, default RANGE) is forwarded to the main API; when it is omitted the request behaves exactly as before (RANGE).
+        A period that ends after today is accepted and truncated by the server to today in the business time zone; a period whose from is after today returns 400.
         A PDF report that covers several employees, for any periodType including YEAR, is delivered as one single PDF document, not as a ZIP.
       tags:
         - Reports
@@ -65,7 +66,7 @@ reports:
         '202':
           description: Report generation request accepted; no report is returned in this response
         '400':
-          description: Invalid date range, period type (from and to do not match periodType), report type, or user IDs (including users outside the requested business)
+          description: Invalid date range (including from after today), period type (from and to do not match periodType), report type, or user IDs (including users outside the requested business)
           content:
             application/problem+json:
               schema:
