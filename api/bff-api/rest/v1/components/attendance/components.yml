@@ -79,7 +79,8 @@ components:
         Restricts the screen to these users (`userIds=3&userIds=7`). Forwarded as `userIds`
         to every Main API call that returns attendance or hours, so the Main API filters;
         the BFF never filters rows in memory. Omit it for the whole team. More than 50 ids
-        returns 400 1111.
+        returns 400 1111. It does not narrow `filterOptions.people`: the filtered people are
+        always listed there (see `AttendanceFilterOptionsDTO`).
       schema:
         type: array
         uniqueItems: true
@@ -521,6 +522,12 @@ components:
         the Main API roster with removed members (`includeRemoved=true`), ordered by name
         and then userId as the Main API returns it; `jobRoles` are the active job roles only
         (names elsewhere are resolved from all job roles, inactive included).
+        `people` never depends on `userIds`, `jobRoleId`, the period or the rows: every
+        requested `userIds` value that is or was a member of the business (removed members
+        included, with `removed: true`) is always in `people` with its name, even when that
+        person has no shift, worklog or hours in the period. A filter chip can always take
+        the name of a filtered person from here. A requested id that was never a member of
+        the business is not added (there is no name to show) and simply matches no rows.
       properties:
         people:
           type: array

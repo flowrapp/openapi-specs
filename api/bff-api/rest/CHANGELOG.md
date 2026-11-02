@@ -1,6 +1,10 @@
 # Changelog
 
-## Unreleased
+## 0.0.71
+
+### Changed
+
+- Attendance `filterOptions.people` (`getAttendanceHours`, `getAttendanceDay`, `getAttendanceWeek`): documented guarantee that it never depends on `userIds`, `jobRoleId`, the period or the rows. Every filtered person who is or was a member of the business (removed members included, `removed: true`) is always listed with their name, even without shifts, worklogs or hours in the period, so the member profile's shortcut to Attendance filtered by person can label its filter chip. A requested id that was never a member is not added. Documentation of the current behaviour (the list is the full `getBusinessUsers?includeRemoved=true` roster); no schema change.
 
 ### Fixed
 
