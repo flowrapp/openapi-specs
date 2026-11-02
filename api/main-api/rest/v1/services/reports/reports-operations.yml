@@ -101,10 +101,10 @@ reports:
                 $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
               examples:
                 USER_NOT_OWNER_OF_BUSINESS:
-                  summary: "1020 - user is not the owner of business"
+                  summary: "1020 - user is not an owner or manager of the business"
                   value:
                     status: 403
-                    detail: "1020 - user is not the owner of business"
+                    detail: "1020 - user is not an owner or manager of the business"
         '404':
           description: Business not found
           content:

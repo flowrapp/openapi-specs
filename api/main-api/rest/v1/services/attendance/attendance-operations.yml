@@ -417,7 +417,7 @@ attendance:
             application/problem+json:
               schema:
                 $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
-              example: {status: 403, detail: '1020 - user is not the owner of business'}
+              example: {status: 403, detail: '1020 - user is not an owner or manager of the business'}
         '404':
           description: Business or scheduled shift not found.
           content:
