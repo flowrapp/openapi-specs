@@ -1686,19 +1686,18 @@ components:
             Main API `getDailyAttendance(today).summary.openIncidentCount`: open incidents of
             today's shifts and of today's worklogs without a shift. Alerts (MISSING_CLOCK_IN,
             LONG_OPEN) are not incidents and are not counted. Kept for compatibility and
-            reporting; the tab badge uses `attentionCount`.
+            What the front shows on the tab badge, as Sergio decided.
           example: 4
         attentionCount:
           type: integer
           format: int32
           minimum: 0
           description: >
-            What the front shows on the tab badge. Equals `counts.incidents` of
+            Not the tab badge (the front shows `openIncidentCount`); kept in the response. Equals `counts.incidents` of
             `getAttendanceDay` for today without filters: today's rows (shifts and worklogs
             without a shift) whose severity is not OK, so it includes the CRITICAL alerts
             MISSING_CLOCK_IN and LONG_OPEN. Computed from the same `getDailyAttendance(today)`
-            with the same severity rules, at no extra Main API call. Pending Sergio's open
-            question 4 (whether alerts belong in the badge).
+            with the same severity rules, at no extra Main API call.
           example: 6
       required: [date, openIncidentCount, attentionCount]
 

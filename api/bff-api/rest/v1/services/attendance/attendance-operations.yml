@@ -558,11 +558,11 @@ attendance:
       summary: Get the tab badge
       description: |
         What needs attention today (business time zone), for the red badge of the tab, OWNER only. It
-        takes no `date`: it is always today. The front shows `attentionCount`: the rows of today whose
-        severity is not OK (`counts.incidents` of `getAttendanceDay` for today without filters), so the
-        CRITICAL alerts MISSING_CLOCK_IN and LONG_OPEN count. `openIncidentCount` (Main API, incidents
-        only) is kept. Whether alerts belong in the badge is still Sergio's open question 4; until he
-        decides, `attentionCount` is the field to paint.
+        takes no `date`: it is always today. The front shows `openIncidentCount` (Main API, open
+        incidents only; alerts are not counted), as Sergio decided. `attentionCount` (the rows of today
+        whose severity is not OK, `counts.incidents` of `getAttendanceDay` for today without filters, so
+        the CRITICAL alerts MISSING_CLOCK_IN and LONG_OPEN count) stays in the response but is not the
+        badge.
 
         Main API calls (sequential, today depends on the zone):
         1. Stage 0: `getUserBusinesses` (`GET /api/v1/businesses`), for the caller's role (OWNER required, otherwise 403 1020; not a member: 403 1015) and the business time zone.
@@ -1399,7 +1399,7 @@ attendance:
              `getBusinessUsers` (`includeRemoved=true`) and `getBusinessJobRoles`, in one `parZip`. Not found:
              404 1074. The deprecated `date` and `userId` are ignored.
         3. `resolveAttendanceMatch` (`POST /api/v1/businesses/{businessId}/attendance-matches/{attendanceMatchId}/resolution`) with the body unchanged: ASSIGN_SHIFT to one of `candidateShifts`, or DECLARE_UNPLANNED.
-        4. ASSIGN_SHIFT: read the assigned shift as in `getAttendanceShiftDetail` (`getShiftAttendance` of `scheduledShiftId`) and return it (`kind: SHIFT`); DECLARE_UNPLANNED: re-read the same `date` as in `getAttendanceMatchDetail`.
+        4. ASSIGN_SHIFT: read the assigned shift as in `getAttendanceShiftDetail` (`getShiftAttendance` of `scheduledShiftId`) and return it (`kind: SHIFT`); DECLARE_UNPLANNED: re-read the match by its id as in `getAttendanceMatchDetail` (`getBusinessAttendanceMatch`).
 
         Concurrency: independent Main API calls of one stage run with Arrow `parZip`; fan-outs are bounded by `Semaphore(8)`, so at most 8 Main API calls are in flight per request. The BFF never filters rows in memory: every filter (date, week, users) is a Main API parameter.
       tags:
@@ -1514,7 +1514,7 @@ attendance:
              `getBusinessUsers` (`includeRemoved=true`) and `getBusinessJobRoles`, in one `parZip`. Not found:
              404 1074. The deprecated `date` and `userId` are ignored.
         3. `correctBusinessWorklog` (`PUT /api/v1/businesses/{businessId}/worklogs/{worklogId}/correction`). `worklogId` must be the match's worklog (otherwise 404 1017, without calling the action).
-        4. Re-read as in `getAttendanceMatchDetail`, on the business-local date of the worklog's current clock-in (business time zone from step 1); if the match is now assigned to a shift, the response is that shift's detail.
+        4. Re-read the match by its id as in `getAttendanceMatchDetail` (`getBusinessAttendanceMatch`); if the match is now assigned to a shift, the response is that shift's detail.
 
         Concurrency: independent Main API calls of one stage run with Arrow `parZip`; fan-outs are bounded by `Semaphore(8)`, so at most 8 Main API calls are in flight per request. The BFF never filters rows in memory: every filter (date, week, users) is a Main API parameter.
       tags:
