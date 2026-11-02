@@ -263,16 +263,18 @@ members:
         The shortcuts «Su histórico» and «Su horario» need no data: the front opens Attendance with
         `userIds=<userId>` and the schedule with `userIds=<userId>` (or `employeeId`) for `week.from`.
 
-        Main API calls (12, never one per contract, day or worklog; full lists are read and the member is
-        picked in Kotlin):
-        1. Stage 0, one `parZip` (3 calls):
+        The caller's id (for `isSelf`) is the JWT `sub`, read before any Main API call, the same source
+        as the BFF `GET /api/v1/me`; the BFF does not call the Main API `getUser`. A `sub` that is not
+        a numeric user id returns 401 1003 and makes no Main API call.
+
+        Main API calls (11, with one page each of contracts and job roles; never one per contract, day
+        or worklog; full lists are read and the member is picked in Kotlin; at most 8 in flight):
+        1. Stage 0, one `parZip` (2 calls):
            - `getUserBusinesses` (`GET /api/v1/businesses`): the caller's role (OWNER required, otherwise
              403 1020; not a member: 403 1015), `zone`, `attendanceToleranceMinutes` and `location.area`;
            - `getBusinessUsers` (`GET /api/v1/businesses/{businessId}/users`, active members only): name,
              email and role of `userId`. When `userId` is not in the response, the BFF returns 404 1126 and
-             makes no other call;
-           - `getUser` (`POST /api/v1/users`, the caller's own profile, as the BFF `GET /api/v1/me` reads it
-             today): its id gives `isSelf`.
+             makes no other call.
         2. Stage 1, one `parZip` (9 calls, at most 8 in flight):
            - `getUserContracts` (`GET /api/v1/businesses/{businessId}/users/{userId}/contracts?size=100`),
              the contract history and the only source of the current contract; further pages only while
@@ -482,7 +484,7 @@ members:
                       canRemove: true
                       removeBlockedReason: null
         '401':
-          description: No authenticated session
+          description: No authenticated session, or a JWT `sub` that is not a numeric user id (1003)
         '403':
           description: >
             The caller is not the OWNER of the business (1020), or not a member of it (1015).
@@ -512,4 +514,4 @@ members:
                 businessNotFound:
                   summary: "1006 - business does not exist"
                   value: {status: 404, detail: "1006 - business does not exist"}
-      x-functional-errors: [1006, 1015, 1020, 1126]
+      x-functional-errors: [1003, 1006, 1015, 1020, 1126]

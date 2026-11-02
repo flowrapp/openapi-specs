@@ -8,6 +8,7 @@
 
 ### Fixed
 
+- Correction to the 0.0.69 `getBusinessMemberProfile` description: the BFF does not call the Main API `getUser` (`POST /api/v1/users`). The caller's id for `isSelf` is the JWT `sub`, the same source as BFF `GET /api/v1/me` (which never called `getUser` either). Stage 0 is 2 calls (`getUserBusinesses` and `getBusinessUsers`), 11 Main API calls in total with one page each of contracts and job roles, at most 8 in flight. A `sub` that is not a numeric user id returns 401 1003 before any Main API call (1003 added to the operation's `x-functional-errors`). Documentation only; no schema change.
 - `getAttendanceWeek` examples: `state: "OFF"` is quoted in the three week-cell examples, so YAML 1.1 parsers no longer read it as `false`. Examples only; no contract change and no version bump.
 - Settings `businessUserId` (geofencing and auto-clocking lists and the two member PATCH path parameters) is described as the user id (`userId`), as the Main API fills it, not the membership row id. Mirrors the Main API doc fix; documentation only, no contract change and no version bump.
 
