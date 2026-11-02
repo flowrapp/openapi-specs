@@ -43,10 +43,13 @@ components:
     MatchDate:
       name: date
       in: query
-      required: true
+      required: false
+      deprecated: true
       description: >
-        Business-local date of the attendance, as in `detailRef.date`. Sent to the Main API
-        as the `date` of `getDailyAttendance`; the Main API has no owner read of one match.
+        Deprecated and optional since BFF 0.0.67: the BFF reads the match by id with the
+        Main API owner read `getBusinessAttendanceMatch` (Main API 0.0.87) and ignores this
+        value. It stays optional and deprecated until the front stops sending it; only
+        then will it be dropped. Formerly the `date` of `getDailyAttendance`, as in `detailRef.date`.
       schema:
         type: string
         format: date
@@ -54,10 +57,13 @@ components:
     MatchUserId:
       name: userId
       in: query
-      required: true
+      required: false
+      deprecated: true
       description: >
-        Worker of the attendance, as in `detailRef.userId`. Sent to the Main API as the only
-        `userIds` of `getDailyAttendance`, so the Main API returns only that worker's day.
+        Deprecated and optional since BFF 0.0.67: the BFF reads the match by id with the
+        Main API owner read `getBusinessAttendanceMatch` (Main API 0.0.87) and ignores this
+        value. It stays optional and deprecated until the front stops sending it; only
+        then will it be dropped. Formerly the only `userIds` of `getDailyAttendance`, as in `detailRef.userId`.
       schema:
         type: integer
         format: int64
@@ -88,12 +94,14 @@ components:
       in: query
       required: false
       description: >
-        Restricts the screen to the members whose current contract has this job role. The
-        Main API has no job-role filter, so the BFF resolves it once to a list of user ids
-        from the roster it already reads (`getBusinessUsers`, `currentContract.jobRoleId`)
-        and sends that list as `userIds`; attendance and hours are still filtered by the
-        Main API. With `userIds` too, both apply (AND). When no member matches, the BFF
-        answers with an empty screen and does not call the Main API for attendance.
+        Restricts the screen to this job role: the job role stored on each scheduled shift
+        (Main API semantics, so a past day keeps the job role in force that day); worklogs
+        without a shift use the job role of the member's contract in force that day. The
+        BFF forwards it unchanged as `jobRoleId` to the Main API calls that back the screen
+        (`getBusinessReports` and `getDailyAttendance`, Main API 0.0.87), which filter it
+        server-side; it no longer resolves the job role to `userIds`. With `userIds` too,
+        both are forwarded and apply (AND). When no member matches, the Main API returns
+        empty data and the BFF answers with an empty screen.
       schema:
         type: integer
         format: int64
@@ -1679,19 +1687,18 @@ components:
             Main API `getDailyAttendance(today).summary.openIncidentCount`: open incidents of
             today's shifts and of today's worklogs without a shift. Alerts (MISSING_CLOCK_IN,
             LONG_OPEN) are not incidents and are not counted. Kept for compatibility and
-            reporting; the tab badge uses `attentionCount`.
+            What the front shows on the tab badge, as Sergio decided.
           example: 4
         attentionCount:
           type: integer
           format: int32
           minimum: 0
           description: >
-            What the front shows on the tab badge. Equals `counts.incidents` of
+            Not the tab badge (the front shows `openIncidentCount`); kept in the response. Equals `counts.incidents` of
             `getAttendanceDay` for today without filters: today's rows (shifts and worklogs
             without a shift) whose severity is not OK, so it includes the CRITICAL alerts
             MISSING_CLOCK_IN and LONG_OPEN. Computed from the same `getDailyAttendance(today)`
-            with the same severity rules, at no extra Main API call. Pending Sergio's open
-            question 4 (whether alerts belong in the badge).
+            with the same severity rules, at no extra Main API call.
           example: 6
       required: [date, openIncidentCount, attentionCount]
 

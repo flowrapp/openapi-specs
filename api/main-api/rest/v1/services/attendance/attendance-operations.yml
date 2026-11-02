@@ -49,7 +49,7 @@ attendance:
         attendances, and unmatched unscheduled or ambiguous worklogs. An OWNER
         or a MANAGER receives the whole business day. An EMPLOYEE is allowed and
         receives the same schema restricted to their own shifts and worklogs.
-        The optional userIds filter restricts the day to the given users.
+        The optional userIds and jobRoleId filters restrict the day to the given users (AND).
         A caller who is not a member of the business receives 403.
       tags: [Attendance]
       operationId: getDailyAttendance
@@ -93,6 +93,16 @@ attendance:
               format: int64
               minimum: 1
             example: [3, 7]
+        - name: jobRoleId
+          in: query
+          required: false
+          description: >
+            Restricts the day to the shift attendances and unmatched worklogs of this job role, filtered server-side; the summary is computed over the restricted set. The job role of a scheduled shift is the one stored on the shift when it was created (scheduled_shifts.job_role_id), so a past day keeps the job role in force that day even if the member's contract changed later. Worklogs count under the job role of the scheduled shift they are matched to; worklogs without a scheduled shift (unscheduled or ambiguous) count under the job role of the member's contract in force on that business-local day. Combined with userIds using AND. A job role with no match, or not of this business, returns an empty day.
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+            example: 10
       responses:
         '200':
           description: Daily attendance retrieved successfully.
@@ -181,6 +191,64 @@ attendance:
                 $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
               example: {status: 404, detail: '1006 - business does not exist'}
       x-functional-errors: [1006, 1020, 1077]
+
+  business-match-detail:
+    get:
+      summary: Get one attendance match of a business (owner)
+      description: >
+        Returns one attendance match of the business by id, in the same shape as an
+        entry of `unmatchedAttendances` in `getDailyAttendance`: the match, its current
+        worklog and the incidents of that match. The match is returned whatever its
+        current state: a match already assigned to a shift is still returned with 200
+        (never 404 or 409), `match` shows that shift, and the shift's attendance stays in
+        `getShiftAttendance`. Only the OWNER of
+        the business may call this operation; anyone else, MANAGER and EMPLOYEE included,
+        receives 403 (1020). A match that does not exist or belongs to another business
+        returns 404 (1074).
+      tags: [Attendance]
+      operationId: getBusinessAttendanceMatch
+      security:
+        - basicAuth: []
+        - bearerAuth: []
+      parameters:
+        - name: businessId
+          in: path
+          required: true
+          description: Business that owns the match.
+          schema: {type: integer, format: int64, minimum: 1}
+        - name: attendanceMatchId
+          in: path
+          required: true
+          description: Attendance-match identifier, as in `match.id` of the daily attendance.
+          schema: {type: integer, format: int64, minimum: 1}
+      responses:
+        '200':
+          description: Attendance match retrieved successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '../../../open-api-rest.yml#/components/schemas/UnmatchedAttendance'
+        '401':
+          description: Unauthorized.
+        '403':
+          description: The authenticated user is not the owner of the business. A MANAGER receives 403 too.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+              example: {status: 403, detail: '1020 - user is not the owner of business'}
+        '404':
+          description: Business or match not found, or the match belongs to another business.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+              examples:
+                BUSINESS_NOT_FOUND:
+                  value: {status: 404, detail: '1006 - business does not exist'}
+                ATTENDANCE_MATCH_NOT_FOUND:
+                  value: {status: 404, detail: '1074 - attendance match not found'}
+      x-functional-errors: [1006, 1020, 1074]
 
   match-resolution:
     post:

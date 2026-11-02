@@ -69,6 +69,16 @@ reports:
               format: int64
               minimum: 1
             example: [12, 34]
+        - name: jobRoleId
+          in: query
+          required: false
+          description: >
+            Restricts the seconds to work under this job role, filtered server-side. The job role of a scheduled shift is the one stored on the shift when it was created (scheduled_shifts.job_role_id), so a past day keeps the job role in force that day even if the member's contract changed later. Worklogs count under the job role of the scheduled shift they are matched to; worklogs without a scheduled shift (unscheduled or ambiguous) count under the job role of the member's contract in force on that business-local day. Combined with userId and userIds using AND. A job role with no match, or not of this business, returns no rows.
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+            example: 10
         - name: reviewStatus
           in: query
           required: false

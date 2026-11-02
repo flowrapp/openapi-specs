@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.0.67
+
+### Changed
+
+- Attendance `jobRoleId` (`getAttendanceHours`, `getAttendanceDay`, `getAttendanceWeek`): the BFF forwards it unchanged to the Main API (`getBusinessReports`, `getDailyAttendance`, Main API 0.0.87), which filters it server-side with `userIds` (AND), instead of resolving it to `userIds` from the roster. The job role is the one stored on each scheduled shift; worklogs without a shift use the member's contract in force that day (Main API semantics). The parameter itself does not change.
+- Attendance match routes (`getAttendanceMatchDetail` and the six `…/matches/{attendanceMatchId}/…` actions) read the match with the Main API owner read `getBusinessAttendanceMatch`. The `date` and `userId` query parameters are now optional and deprecated: they are ignored and stay optional and deprecated until the front stops sending them. Non-breaking for existing clients.
+- Badge (`getAttendanceBadge`): the front shows `openIncidentCount` (open incidents only), as Sergio decided; `attentionCount` stays in the response. Documentation only.
+- Match resolution (`DECLARE_UNPLANNED`) and match correction re-read the match by its id (`getBusinessAttendanceMatch`), no longer by date.
+
 ## 0.0.66
 
 ### Added
