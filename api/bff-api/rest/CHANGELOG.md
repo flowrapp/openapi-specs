@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.0.67
+
+### Changed
+
+- Attendance `jobRoleId` (`getAttendanceHours`, `getAttendanceDay`, `getAttendanceWeek`): the BFF forwards it unchanged to the Main API (`getBusinessReports`, `getDailyAttendance`, Main API 0.0.87), which filters it server-side with `userIds` (AND), instead of resolving it to `userIds` from the roster. The parameter itself does not change.
+- Attendance match routes (`getAttendanceMatchDetail` and the six `…/matches/{attendanceMatchId}/…` actions) read the match with the Main API owner read `getBusinessAttendanceMatch`. The `date` and `userId` query parameters are now optional and deprecated: they are ignored and will be dropped in a later version. Non-breaking for existing clients.
+
 ## 0.0.66
 
 ### Added

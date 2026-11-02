@@ -25,10 +25,9 @@ attendance:
              each row: a current contract may point to a role that is no longer active;
            - `getBusinessJobRoles` (`active=true`), for `filterOptions.jobRoles` (the Main API filters it).
 
-        With `jobRoleId`, `getBusinessUsers` runs first, alone, to resolve the job role to user ids; the
-        other twelve calls then run as one `parZip` with those `userIds`. When `userIds` resolves to no one,
-        the response has zeros (or null planned seconds without a plan) and no rows, and no attendance or
-        report call is made. clocked = reportable + pending, per person, day and week.
+        `jobRoleId` is forwarded to `getBusinessReports` and `getDailyAttendance` (Main API 0.0.87), which
+        filter it server-side together with `userIds` (AND), so all thirteen calls run in the one `parZip`.
+        When no member matches, the response has zeros (or null planned seconds without a plan) and no rows. clocked = reportable + pending, per person, day and week.
 
         Validation before any Main API call: an invalid `week` or `date`, or a `date` outside `week`, returns
         400 1115. The BFF never moves `date` into the week: the front sends a `date` of the week it shows.
@@ -186,7 +185,7 @@ attendance:
              `filterOptions.people`;
            - `getBusinessJobRoles` (`active=true`), for `filterOptions.jobRoles` (the Main API filters it).
 
-        With `jobRoleId` the roster call runs first and the attendance call uses the resolved `userIds`.
+        `jobRoleId` is forwarded to `getDailyAttendance` (Main API 0.0.87), which filters it server-side with `userIds` (AND).
         Worklogs of a business without a published plan (NOT_APPLICABLE matches) are not part of the
         daily view, so they have no row here.
 
@@ -324,10 +323,10 @@ attendance:
         2. Stage 1, one `parZip` (9 calls, at most 8 in flight):
            - 7 × `getDailyAttendance` (`GET /api/v1/businesses/{businessId}/attendance?date&userIds`), one
              per day; future days return their shifts as UPCOMING;
-           - `getBusinessUsers` (`includeRemoved=true`), for `filterOptions` and the `jobRoleId` filter;
+           - `getBusinessUsers` (`includeRemoved=true`), for `filterOptions`;
            - `getBusinessJobRoles` (`active=true`), for `filterOptions.jobRoles`.
 
-        With `jobRoleId` the roster call runs first. There is no Main API range read; 7 daily calls are the
+        `jobRoleId` is forwarded to each `getDailyAttendance` (Main API 0.0.87), filtered server-side with `userIds` (AND). There is no Main API range read; 7 daily calls are the
         approved approach until metrics ask for one.
 
         Concurrency: independent Main API calls of one stage run with Arrow `parZip`; fan-outs are bounded by `Semaphore(8)`, so at most 8 Main API calls are in flight per request. The BFF never filters rows in memory: every filter (date, week, users) is a Main API parameter.
@@ -490,17 +489,16 @@ attendance:
       summary: Get the detail of a worklog without a shift
       description: |
         Detail sheet of one attendance match without a shift (UNSCHEDULED or AMBIGUOUS), OWNER only.
-        `date` and `userId` come from `detailRef`: the Main API has no owner read of a single match
-        (`getAttendanceMatch` answers only to the worker), so the BFF asks the Main API for that worker's
-        day and locates the match by id. If reconciliation has meanwhile assigned the match to a shift,
-        the response is that shift's detail (`kind: SHIFT`), built from the same daily response.
+        The BFF reads the match by id with the Main API owner read `getBusinessAttendanceMatch`
+        (Main API 0.0.87); the `date` and `userId` query parameters are deprecated, optional and
+        ignored. If reconciliation has meanwhile assigned the match to a shift, the response is that
+        shift's detail (`kind: SHIFT`), read with `getShiftAttendance`.
 
         Main API calls:
         1. Stage 0: `getUserBusinesses` (`GET /api/v1/businesses`), for the caller's role (OWNER required, otherwise 403 1020; not a member: 403 1015) and the business time zone.
-        2. Stage 1: `getDailyAttendance` (`GET /api/v1/businesses/{businessId}/attendance?date&userIds={userId}`),
-             `getBusinessUsers` (`includeRemoved=true`) and `getBusinessJobRoles`, in one `parZip`; the BFF
-             locates the match by id in that one-person, one-day response; then `getWorklogHistory` for its
-             worklog.
+        2. Stage 1: `getBusinessAttendanceMatch` (`GET /api/v1/businesses/{businessId}/attendance-matches/{attendanceMatchId}`,
+             404 1074 when missing), `getBusinessUsers` (`includeRemoved=true`) and `getBusinessJobRoles`, in
+             one `parZip`; then `getWorklogHistory` for its worklog.
 
         Concurrency: independent Main API calls of one stage run with Arrow `parZip`; fan-outs are bounded by `Semaphore(8)`, so at most 8 Main API calls are in flight per request. The BFF never filters rows in memory: every filter (date, week, users) is a Main API parameter.
       tags:
@@ -1287,11 +1285,11 @@ attendance:
 
         Main API calls, in sequence:
         1. `getUserBusinesses` (role and business time zone).
-        2. Locate the match: `getDailyAttendance` (`GET /api/v1/businesses/{businessId}/attendance?date&userIds={userId}`),
-             `getBusinessUsers` (`includeRemoved=true`) and `getBusinessJobRoles`, in one `parZip`; the BFF
-             locates the match by id in that one-person, one-day response. Not found: 404 1074.
+        2. Locate the match: `getBusinessAttendanceMatch` (`GET /api/v1/businesses/{businessId}/attendance-matches/{attendanceMatchId}`),
+             `getBusinessUsers` (`includeRemoved=true`) and `getBusinessJobRoles`, in one `parZip`. Not found:
+             404 1074. The deprecated `date` and `userId` are ignored.
         3. `acceptUnplannedAttendance` (`POST /api/v1/businesses/{businessId}/attendance-matches/{attendanceMatchId}/accept-unplanned`) with `reason`: resolves UNSCHEDULED_WORK as ACCEPTED and approves the worklog.
-        4. Re-read the same `date` as in `getAttendanceMatchDetail`.
+        4. Re-read the match as in `getAttendanceMatchDetail`.
 
         Concurrency: independent Main API calls of one stage run with Arrow `parZip`; fan-outs are bounded by `Semaphore(8)`, so at most 8 Main API calls are in flight per request. The BFF never filters rows in memory: every filter (date, week, users) is a Main API parameter.
       tags:
@@ -1397,9 +1395,9 @@ attendance:
 
         Main API calls, in sequence:
         1. `getUserBusinesses` (role and business time zone).
-        2. Locate the match: `getDailyAttendance` (`GET /api/v1/businesses/{businessId}/attendance?date&userIds={userId}`),
-             `getBusinessUsers` (`includeRemoved=true`) and `getBusinessJobRoles`, in one `parZip`; the BFF
-             locates the match by id in that one-person, one-day response. Not found: 404 1074.
+        2. Locate the match: `getBusinessAttendanceMatch` (`GET /api/v1/businesses/{businessId}/attendance-matches/{attendanceMatchId}`),
+             `getBusinessUsers` (`includeRemoved=true`) and `getBusinessJobRoles`, in one `parZip`. Not found:
+             404 1074. The deprecated `date` and `userId` are ignored.
         3. `resolveAttendanceMatch` (`POST /api/v1/businesses/{businessId}/attendance-matches/{attendanceMatchId}/resolution`) with the body unchanged: ASSIGN_SHIFT to one of `candidateShifts`, or DECLARE_UNPLANNED.
         4. ASSIGN_SHIFT: read the assigned shift as in `getAttendanceShiftDetail` (`getShiftAttendance` of `scheduledShiftId`) and return it (`kind: SHIFT`); DECLARE_UNPLANNED: re-read the same `date` as in `getAttendanceMatchDetail`.
 
@@ -1512,9 +1510,9 @@ attendance:
 
         Main API calls, in sequence:
         1. `getUserBusinesses` (role and business time zone).
-        2. Locate the match: `getDailyAttendance` (`GET /api/v1/businesses/{businessId}/attendance?date&userIds={userId}`),
-             `getBusinessUsers` (`includeRemoved=true`) and `getBusinessJobRoles`, in one `parZip`; the BFF
-             locates the match by id in that one-person, one-day response. Not found: 404 1074.
+        2. Locate the match: `getBusinessAttendanceMatch` (`GET /api/v1/businesses/{businessId}/attendance-matches/{attendanceMatchId}`),
+             `getBusinessUsers` (`includeRemoved=true`) and `getBusinessJobRoles`, in one `parZip`. Not found:
+             404 1074. The deprecated `date` and `userId` are ignored.
         3. `correctBusinessWorklog` (`PUT /api/v1/businesses/{businessId}/worklogs/{worklogId}/correction`). `worklogId` must be the match's worklog (otherwise 404 1017, without calling the action).
         4. Re-read as in `getAttendanceMatchDetail`, on the business-local date of the worklog's current clock-in (business time zone from step 1); if the match is now assigned to a shift, the response is that shift's detail.
 
@@ -1627,11 +1625,11 @@ attendance:
 
         Main API calls, in sequence:
         1. `getUserBusinesses` (role and business time zone).
-        2. Locate the match: `getDailyAttendance` (`GET /api/v1/businesses/{businessId}/attendance?date&userIds={userId}`),
-             `getBusinessUsers` (`includeRemoved=true`) and `getBusinessJobRoles`, in one `parZip`; the BFF
-             locates the match by id in that one-person, one-day response. Not found: 404 1074.
+        2. Locate the match: `getBusinessAttendanceMatch` (`GET /api/v1/businesses/{businessId}/attendance-matches/{attendanceMatchId}`),
+             `getBusinessUsers` (`includeRemoved=true`) and `getBusinessJobRoles`, in one `parZip`. Not found:
+             404 1074. The deprecated `date` and `userId` are ignored.
         3. `rejectWorklog` (`POST /api/v1/businesses/{businessId}/worklogs/{worklogId}/reject`). `worklogId` must be the match's worklog (otherwise 404 1017, without calling the action).
-        4. Re-read the same `date` as in `getAttendanceMatchDetail`.
+        4. Re-read the match as in `getAttendanceMatchDetail`.
 
         Concurrency: independent Main API calls of one stage run with Arrow `parZip`; fan-outs are bounded by `Semaphore(8)`, so at most 8 Main API calls are in flight per request. The BFF never filters rows in memory: every filter (date, week, users) is a Main API parameter.
       tags:
@@ -1735,11 +1733,11 @@ attendance:
 
         Main API calls, in sequence:
         1. `getUserBusinesses` (role and business time zone).
-        2. Locate the match: `getDailyAttendance` (`GET /api/v1/businesses/{businessId}/attendance?date&userIds={userId}`),
-             `getBusinessUsers` (`includeRemoved=true`) and `getBusinessJobRoles`, in one `parZip`; the BFF
-             locates the match by id in that one-person, one-day response. Not found: 404 1074.
+        2. Locate the match: `getBusinessAttendanceMatch` (`GET /api/v1/businesses/{businessId}/attendance-matches/{attendanceMatchId}`),
+             `getBusinessUsers` (`includeRemoved=true`) and `getBusinessJobRoles`, in one `parZip`. Not found:
+             404 1074. The deprecated `date` and `userId` are ignored.
         3. `correctBusinessWorklogBreak` (`PUT /api/v1/businesses/{businessId}/worklogs/{worklogId}/breaks/{breakId}/correction`) on the match's worklog. A `breakId` that is not one of its breaks returns 404 1069 without calling the action.
-        4. Re-read the same `date` as in `getAttendanceMatchDetail`.
+        4. Re-read the match as in `getAttendanceMatchDetail`.
 
         Concurrency: independent Main API calls of one stage run with Arrow `parZip`; fan-outs are bounded by `Semaphore(8)`, so at most 8 Main API calls are in flight per request. The BFF never filters rows in memory: every filter (date, week, users) is a Main API parameter.
       tags:
@@ -1851,11 +1849,11 @@ attendance:
 
         Main API calls, in sequence:
         1. `getUserBusinesses` (role and business time zone).
-        2. Locate the match: `getDailyAttendance` (`GET /api/v1/businesses/{businessId}/attendance?date&userIds={userId}`),
-             `getBusinessUsers` (`includeRemoved=true`) and `getBusinessJobRoles`, in one `parZip`; the BFF
-             locates the match by id in that one-person, one-day response. Not found: 404 1074.
+        2. Locate the match: `getBusinessAttendanceMatch` (`GET /api/v1/businesses/{businessId}/attendance-matches/{attendanceMatchId}`),
+             `getBusinessUsers` (`includeRemoved=true`) and `getBusinessJobRoles`, in one `parZip`. Not found:
+             404 1074. The deprecated `date` and `userId` are ignored.
         3. `voidBusinessWorklogBreak` (`POST /api/v1/businesses/{businessId}/worklogs/{worklogId}/breaks/{breakId}/void`) on the match's worklog. A `breakId` that is not one of its breaks returns 404 1069 without calling the action.
-        4. Re-read the same `date` as in `getAttendanceMatchDetail`.
+        4. Re-read the match as in `getAttendanceMatchDetail`.
 
         Concurrency: independent Main API calls of one stage run with Arrow `parZip`; fan-outs are bounded by `Semaphore(8)`, so at most 8 Main API calls are in flight per request. The BFF never filters rows in memory: every filter (date, week, users) is a Main API parameter.
       tags:

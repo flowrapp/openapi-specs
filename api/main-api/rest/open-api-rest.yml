@@ -3,7 +3,7 @@ openapi: 3.1.0
 info:
   title: Flowrapp API
   description: REST API for Flowrapp Backend
-  version: 0.0.86
+  version: 0.0.87
   contact:
     name: Flowrapp Team
     url: https://flowrapp.github.io
@@ -277,6 +277,9 @@ paths:
   "/api/v1/businesses/{businessId}/attendance-tolerance":
     $ref: "v1/services/attendance/attendance-operations.yml#/attendance/tole\
       rance"
+  "/api/v1/businesses/{businessId}/attendance-matches/{attendanceMatchId}":
+    $ref: "v1/services/attendance/attendance-operations.yml#/attendance/busi\
+      ness-match-detail"
   "/api/v1/businesses/{businessId}/attendance-matches/{attendanceMatchId}/resolution":
     $ref: "v1/services/attendance/attendance-operations.yml#/attendance/matc\
       h-resolution"

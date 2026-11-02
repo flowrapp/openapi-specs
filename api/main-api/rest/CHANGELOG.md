@@ -6,6 +6,14 @@
 
 - Functional error catalog: `1115` `INVALID_ATTENDANCE_PERIOD` (400, `attendance week or date is invalid`). It is raised by the BFF attendance screens (BFF 0.0.66: invalid `week` or `date`, or a `date` outside `week` in Hours); no Main API operation returns it, so the Main API contract and version do not change.
 
+## 0.0.87
+
+### Added
+
+- `GET /api/v1/businesses/{businessId}/reports` (`getBusinessReports`) and `GET /api/v1/businesses/{businessId}/attendance` (`getDailyAttendance`) accept an optional `jobRoleId` (int64) query parameter: only users whose current contract has that job role are included, filtered server-side and combined with `userId`/`userIds` using AND (M8).
+- `GET /api/v1/businesses/{businessId}/attendance-matches/{attendanceMatchId}` (`getBusinessAttendanceMatch`): OWNER read of one attendance match of the business, returning `UnmatchedAttendance` (match, worklog and incidents), the same shape as an entry of `getDailyAttendance.unmatchedAttendances`. Errors: `403` `1020` for anyone but the OWNER, `404` `1006` or `1074`.
+- `GET /api/v1/businesses/{businessId}/team-schedules/{weekStart}` (`getBusinessTeamSchedule`) accepts optional repeated `userIds`, filtered server-side.
+
 ## 0.0.86
 
 ### Changed
