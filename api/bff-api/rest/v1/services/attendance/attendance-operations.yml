@@ -363,12 +363,12 @@ attendance:
                     name: Pablo Ruiz
                     cells:
                       - {date: "2026-10-26", state: ON_TIME, start: "2026-10-26T15:58:00+01:00", end: "2026-10-26T23:02:00+01:00", warningDot: false, attendanceCount: 1, detailRef: {date: "2026-10-26", userId: 106, scheduledShiftId: 886, attendanceMatchId: null}}
-                      - {date: "2026-10-27", state: OFF, start: null, end: null, warningDot: false, attendanceCount: 0, detailRef: null}
+                      - {date: "2026-10-27", state: "OFF", start: null, end: null, warningDot: false, attendanceCount: 0, detailRef: null}
                       - {date: "2026-10-28", state: WARNING, start: "2026-10-28T16:12:00+01:00", end: "2026-10-28T23:00:00+01:00", warningDot: false, attendanceCount: 1, detailRef: {date: "2026-10-28", userId: 106, scheduledShiftId: 891, attendanceMatchId: null}}
-                      - {date: "2026-10-29", state: OFF, start: null, end: null, warningDot: false, attendanceCount: 0, detailRef: null}
+                      - {date: "2026-10-29", state: "OFF", start: null, end: null, warningDot: false, attendanceCount: 0, detailRef: null}
                       - {date: "2026-10-30", state: UPCOMING, start: "2026-10-30T16:00:00+01:00", end: "2026-10-30T23:00:00+01:00", warningDot: false, attendanceCount: 1, detailRef: {date: "2026-10-30", userId: 106, scheduledShiftId: 906, attendanceMatchId: null}}
                       - {date: "2026-10-31", state: UPCOMING, start: "2026-10-31T16:00:00+01:00", end: "2026-10-31T23:00:00+01:00", warningDot: false, attendanceCount: 1, detailRef: {date: "2026-10-31", userId: 106, scheduledShiftId: 913, attendanceMatchId: null}}
-                      - {date: "2026-11-01", state: OFF, start: null, end: null, warningDot: false, attendanceCount: 0, detailRef: null}
+                      - {date: "2026-11-01", state: "OFF", start: null, end: null, warningDot: false, attendanceCount: 0, detailRef: null}
                 filterOptions:
                   people:
                     - {userId: 106, name: Pablo Ruiz, jobRoleId: 1, removed: false}
