@@ -8,6 +8,10 @@
 - `clockInNotice` (`AttendanceClockInNoticeStateDTO`: `lastNotice` and `blocker`) in `AttendanceDayRowDTO` and `AttendanceDetailDTO`, from Main API `ShiftAttendanceDTO.clockInNotice`; null for UNMATCHED. The action is enabled when `blocker` is null. Not listed as required.
 - New tag `Planning`, OWNER only: `POST /api/v1/businesses/{businessId}/planning-generations` (`requestPlanGeneration`) and `GET /api/v1/businesses/{businessId}/planning-generations/{generationId}` (`getPlanGeneration`), pass-through to Main API `requestPlanningGeneration` and `getPlanningGeneration`. `202` with the job and `Location`; the result is one DRAFT plan per week. Errors propagated unchanged: `400` `1098`/`1120`, `409` `1121`/`1122`, `422` `1123`/`1124`, `404` `1006`/`1125`, `403` `1015`/`1020`.
 
+### Fixed
+
+- `AttendanceWeekCellStateDTO`: `OFF` is quoted, so YAML no longer parses it as `false`. Same change as tag `v0.0.90` (290ebc4), which is not on `main`; without it the next tag cut from `main` would bring the bug back.
+
 ## 0.0.67
 
 ### Changed
