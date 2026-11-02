@@ -934,8 +934,14 @@ worklogs:
 
   history:
     get:
-      summary: Get worklog audit history
-      description: Returns immutable audit entries for a worklog in chronological order. The worker owning the worklog and owners or managers of its business may access this history.
+      summary: Get worklog change history
+      description: >
+        Returns the change history of a worklog (corrections, rejection, break corrections and
+        voids, automatic close and close on member removal), ordered by occurredAt ascending and
+        then by id ascending. The list is not paginated: a worklog has a handful of changes.
+        A worklog without changes returns an empty list.
+        The worker who owns the worklog and the OWNER of its business may read it; anyone else,
+        including a MANAGER, receives 403 (1020).
       tags:
         - Worklogs
       operationId: getWorklogHistory
@@ -952,30 +958,42 @@ worklogs:
             format: int64
       responses:
         '200':
-          description: Worklog audit history in chronological order
+          description: Worklog changes ordered by occurredAt ascending
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '../../components/worklogs/components.yml#/components/schemas/WorklogAuditEntryDTO'
+                  $ref: '../../components/worklogs/components.yml#/components/schemas/WorklogChangeDTO'
         '401':
           description: Unauthorized
         '403':
-          description: The authenticated user is not authorized to view this worklog
+          description: The authenticated user is neither the worker of the worklog nor the OWNER of its business
           content:
             application/problem+json:
               schema:
                 $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+              examples:
+                USER_NOT_OWNER_OF_BUSINESS:
+                  summary: "1020 - user is not the owner of business"
+                  value:
+                    status: 403
+                    detail: "1020 - user is not the owner of business"
         '404':
           description: Worklog not found
           content:
             application/problem+json:
               schema:
                 $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+              examples:
+                WORKLOG_NOT_FOUND:
+                  summary: "1017 - worklog not found"
+                  value:
+                    status: 404
+                    detail: "1017 - worklog not found"
       x-functional-errors:
         - 1017
-        - 1019
+        - 1020
 
   settings:
     put:
