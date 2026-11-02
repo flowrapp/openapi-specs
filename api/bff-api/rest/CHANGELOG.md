@@ -7,6 +7,7 @@
 - Owner-only `DELETE /api/v1/businesses/{businessId}/members/{userId}` under the new `Members` tag forwards membership removal to the Main API and returns `204` without a response body. Historical data is preserved.
 - Removing an OWNER returns `403` with functional code `1106` (`CANNOT_REMOVE_OWNER_FROM_BUSINESS`).
 - `GET /api/v1/businesses/{businessId}/members/search` (`searchBusinessMembers`), under the `Members` tag, returns a keyset page for the hub. It calls `GET /api/v2/businesses/{businessId}/users` once, then, for the whole page, `GET /api/v1/businesses/{businessId}/contracts/current?userIds=` and `GET /api/v1/businesses/{businessId}/worklogs/open?userIds=`. Each item has `userId`, `name`, `role`, `jobRole` or null, `currentContractId` or null, and `workingNow`. Access is OWNER or MANAGER (`403` `1020`, `404` `1006`). There is no per-user call and no email.
+- Optional `periodType` (`MONTH`, `YEAR`, `RANGE`; default `RANGE`) in the body of `POST /api/v1/businesses/{businessId}/reports/worked-hours`, defined as `WorkedHoursReportPeriodTypeDTO` and forwarded to the Main API (0.0.84). Omitting it behaves exactly as before (`RANGE`).
 
 ### Changed
 

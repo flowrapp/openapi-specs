@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.0.84
+
+### Added
+
+- Optional `periodType` (`MONTH`, `YEAR`, `RANGE`; default `RANGE`) on `GET /api/v1/businesses/{businessId}/reports/worked-hours.pdf` (query) and `POST /api/v1/businesses/{businessId}/reports/worked-hours` (request body), defined once as `WorkedHoursReportPeriodTypeDTO`. `MONTH` requires `from`/`to` to cover exactly one calendar month, `YEAR` exactly one calendar year, and `RANGE` accepts any valid range as before. A mismatch returns `400`. Omitting it behaves exactly as before (`RANGE`); nothing is inferred from the dates.
+
 ## 0.0.83
 
 ### Added

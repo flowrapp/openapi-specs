@@ -98,6 +98,7 @@ reports:
         If userIds is omitted or empty, all employees in the business are included. Every supplied user ID must belong to the requested business.
         The type parameter selects the output format and defaults to PDF. The .pdf URL suffix is retained for compatibility, including when Excel is requested.
         The range is day-based and inclusive. This endpoint is intended for annual reports, but supports any valid date range.
+        The optional periodType (MONTH, YEAR or RANGE, default RANGE) selects the report layout and how from and to are validated; when it is omitted the request behaves exactly as before (RANGE).
         Seconds include only worklogs whose reviewStatus is CONFIRMED or APPROVED.
         A closed worklog in PENDING_RECONCILIATION does not count until attendance
         reconciliation moves it to CONFIRMED or PENDING_REVIEW. PENDING_REVIEW does not count either.
@@ -133,6 +134,12 @@ reports:
             type: string
             format: date
             example: "2025-12-31"
+        - name: periodType
+          in: query
+          required: false
+          description: Period type of the report. Omit it to keep the previous behavior (RANGE). MONTH requires from and to to cover exactly one calendar month and YEAR exactly one calendar year.
+          schema:
+            $ref: '../../components/reports/components.yml#/components/schemas/WorkedHoursReportPeriodTypeDTO'
         - name: type
           in: query
           required: false
@@ -174,7 +181,7 @@ reports:
                 type: string
                 example: 'attachment; filename="worked-hours-report-2025-01-01-2025-12-31.pdf"'
         '400':
-          description: Invalid date range, report type, or user IDs (including users outside the requested business)
+          description: Invalid date range, period type (from and to do not match periodType), report type, or user IDs (including users outside the requested business)
         '401':
           description: Unauthorized
         '403':
@@ -206,6 +213,7 @@ reports:
         employees in the business. If userIds is omitted or empty, all employees in the business
         are included. Every supplied user ID must belong to the requested business. The report is
         generated asynchronously; this response only confirms that the request was accepted.
+        The optional periodType (MONTH, YEAR or RANGE, default RANGE) selects the report layout and how from and to are validated; when it is omitted the request behaves exactly as before (RANGE).
         Seconds include only worklogs whose reviewStatus is CONFIRMED or APPROVED.
         A closed worklog in PENDING_RECONCILIATION does not count until attendance
         reconciliation moves it to CONFIRMED or PENDING_REVIEW. PENDING_REVIEW does not count either.
@@ -242,6 +250,9 @@ reports:
                   format: date
                   description: End date of the report range, inclusive
                   example: "2025-12-31"
+                periodType:
+                  $ref: '../../components/reports/components.yml#/components/schemas/WorkedHoursReportPeriodTypeDTO'
+                  description: Period type of the report. Omit it to keep the previous behavior (RANGE).
                 type:
                   type: string
                   enum: [PDF, EXCEL]
@@ -264,7 +275,7 @@ reports:
         '202':
           description: Report generation request accepted; no report is returned in this response
         '400':
-          description: Invalid date range, report type, or user IDs (including users outside the requested business)
+          description: Invalid date range, period type (from and to do not match periodType), report type, or user IDs (including users outside the requested business)
         '401':
           description: Unauthorized
         '403':
