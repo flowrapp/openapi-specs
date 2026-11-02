@@ -248,3 +248,183 @@ members:
                 status: 404
                 detail: "1006 - business does not exist"
       x-functional-errors: [1006, 1020, 1107, 1108, 1109, 1110]
+
+  member-profile:
+    get:
+      summary: Get the profile screen of one member («ficha de persona»)
+      description: |
+        Everything the owner's «ficha de persona» (design A: header, Resumen, Contratos, Fichaje and
+        Ajustes) needs, in one response that is ready to paint: the front computes nothing. OWNER only.
+        Every value comes from Main API operations that already exist; the BFF only aggregates them
+        and derives the fields described in each schema. All instants are returned with the business
+        offset, and every local date (today, the week, contract states, seniority) is computed in
+        Kotlin with the business `ZoneId` (`getUserBusinesses.zone`), never in SQL.
+
+        The shortcuts «Su histórico» and «Su horario» need no data: the front opens Attendance with
+        `userIds=<userId>` and the schedule with `userIds=<userId>` (or `employeeId`) for `week.weekStart`.
+
+        Main API calls (10, never one per contract, day or worklog):
+        1. Stage 0, one `parZip` (2 calls):
+           - `getUserBusinesses` (`GET /api/v1/businesses`): the caller's role (OWNER required, otherwise
+             403 1020; not a member: 403 1015), `zone`, `attendanceToleranceMinutes` and `location.area`;
+           - `getBusinessUsers` (`GET /api/v1/businesses/{businessId}/users`, active members only): name,
+             email, role and current contract (with its job role) of `userId`. When `userId` is not in
+             the response, the BFF returns 404 1128 and makes no other call.
+        2. Stage 1, one `parZip` (8 calls, at most 8 in flight):
+           - `getUserContracts` (`GET /api/v1/businesses/{businessId}/users/{userId}/contracts?size=100`),
+             the contract history; further pages only while `hasNext` is true;
+           - `getBusinessJobRoles` without `active` (`size=100`, every page): names of the job roles of
+             past contracts and of today's shifts, inactive roles included;
+           - `getWorklogs` (`GET /api/v1/businesses/{businessId}/worklogs?userId&from&to`), with `from` the
+             UTC date of the business-local Monday 00:00 minus one day and `to` the UTC date of now: the open
+             worklog (live status, in-progress seconds). Worklogs are then filtered by instant in Kotlin;
+           - `getBusinessReports` (`GET /api/v1/businesses/{businessId}/reports?from&to&userId`), Monday to
+             Sunday of the business-local week: worked seconds (closed worklogs, CONFIRMED + APPROVED, net of
+             breaks, the same rule as Attendance «Horas»);
+           - `getBusinessTeamSchedule` (`GET /api/v1/businesses/{businessId}/team-schedules/{weekStart}?userIds`):
+             planned seconds of the week. A 404 1046 (no published planning) is not an error here: it
+             gives `week.plannedSeconds: null`;
+           - `getDailyAttendance` (`GET /api/v1/businesses/{businessId}/attendance?date&userIds`), today in
+             the business time zone: today's shifts, their lifecycle, clock-in and entry deviation;
+           - `getBusinessGeofencingSettings` (`GET /api/v1/businesses/{businessId}/settings/geofencing`): the
+             business policy and this person's `policy` and `effectivePolicy`;
+           - `getBusinessAutoClockingSettings` (`GET /api/v1/businesses/{businessId}/settings/auto-clocking`):
+             the business switch and this person's `enabled` and `effectiveEnabled`.
+           In both settings responses, `businessUserId` carries the user id (Main API mapper source
+           `businessUser.user.id`), so the BFF matches it with `userId`. A person missing from a settings
+           list gets the Main API defaults (ALLOW, enabled).
+
+        Errors: any other Main API failure fails the whole request and is propagated unchanged (no partial
+        response), like the Attendance screens.
+      tags:
+        - Members
+      operationId: getBusinessMemberProfile
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: businessId
+          in: path
+          required: true
+          description: ID of the business
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+            example: 101
+        - name: userId
+          in: path
+          required: true
+          description: User ID of the member (the same id as `MemberSearchItemDTO.userId`), not the membership ID
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+            example: 41
+      responses:
+        '200':
+          description: The member's profile, ready to paint
+          content:
+            application/json:
+              schema:
+                $ref: '../../components/members/components.yml#/components/schemas/MemberProfileDTO'
+              example:
+                userId: 41
+                name: "Lucía Ramos"
+                email: "lucia.ramos@example.com"
+                role: EMPLOYEE
+                jobRole: {id: 10, code: WAITER, name: Sala, color: "#3494FB", icon: front-of-house, active: true}
+                asOf: "2026-11-19T10:40:00+01:00"
+                zone: "Europe/Madrid"
+                date: "2026-11-19"
+                liveStatus:
+                  state: WORKING
+                  since: "2026-11-19T10:14:00+01:00"
+                  breakStartedAt: null
+                  worklogId: 9001
+                  scheduledShiftId: 900
+                  lateSeconds: 840
+                week:
+                  week: "2026-W47"
+                  weekStart: "2026-11-16"
+                  weekEnd: "2026-11-22"
+                  workedSeconds: 68700
+                  inProgressSeconds: 1560
+                  plannedSeconds: 115200
+                  remainingSeconds: 44940
+                todayShifts:
+                  - scheduledShiftId: 900
+                    shiftName: "Mañana"
+                    shiftColor: "#3494FB"
+                    jobRole: {id: 10, code: WAITER, name: Sala, color: "#3494FB", icon: front-of-house, active: true}
+                    startAt: "2026-11-19T10:00:00+01:00"
+                    endAt: "2026-11-19T16:00:00+01:00"
+                    plannedSeconds: 21600
+                    lifecycle: IN_PROGRESS
+                    clockIn: "2026-11-19T10:14:00+01:00"
+                    clockOut: null
+                    clockInOrigin: GEOFENCE
+                    entryDeviationSeconds: 840
+                    late: true
+                clockInRules:
+                  geofencing:
+                    businessPolicy: WARN
+                    personalPolicy: BLOCK
+                    effectivePolicy: BLOCK
+                    customized: true
+                    selectablePolicies: [WARN, BLOCK]
+                    radiusMeters: 150
+                  autoClocking:
+                    businessEnabled: true
+                    personalEnabled: true
+                    effectiveEnabled: true
+                    customized: false
+                  customRuleCount: 1
+                  followsBusiness: false
+                employment:
+                  hasCurrentContract: true
+                  hireDate: "2026-03-01"
+                  seniority: {years: 0, months: 8, totalMonths: 8}
+                  weeklyHours: 32
+                  contractEndDate: null
+                contracts:
+                  current: {id: 501, jobRole: {id: 10, code: WAITER, name: Sala, color: "#3494FB", icon: front-of-house, active: true}, totalWeekHours: 32, startDate: "2026-06-01", endDate: null, state: CURRENT}
+                  upcoming: []
+                  previous:
+                    - {id: 480, jobRole: {id: 10, code: WAITER, name: Sala, color: "#3494FB", icon: front-of-house, active: true}, totalWeekHours: 20, startDate: "2026-03-01", endDate: "2026-05-31", state: ENDED}
+                actions:
+                  canRemove: true
+                  removeBlocker: null
+        '401':
+          description: No authenticated session
+        '403':
+          description: >
+            The caller is not the OWNER of the business (1020), or not a member of it (1015). A MANAGER
+            receives 1020.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              examples:
+                notOwner:
+                  summary: "1020 - user is not the owner of business"
+                  value: {status: 403, detail: "1020 - user is not the owner of business"}
+                notMember:
+                  summary: "1015 - user is not member of business"
+                  value: {status: 403, detail: "1015 - user is not member of business"}
+        '404':
+          description: >
+            `userId` is not an active member of the business (1128, raised by the BFF: unknown user, removed
+            member, or a pending invitee, whose ficha is `getBusinessInvitationProfile`), or the business does
+            not exist (1006, propagated).
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              examples:
+                memberNotFound:
+                  summary: "1128 - user is not an active member of the business"
+                  value: {status: 404, detail: "1128 - user is not an active member of the business"}
+                businessNotFound:
+                  summary: "1006 - business does not exist"
+                  value: {status: 404, detail: "1006 - business does not exist"}
+      x-functional-errors: [1006, 1015, 1020, 1128]

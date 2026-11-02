@@ -1,0 +1,164 @@
+invitations:
+  invitation-profile:
+    get:
+      summary: Get the ficha of one invitation («invitación pendiente»)
+      description: |
+        The ficha of an invitee who has not accepted yet, ready to paint, OWNER only. An invitee is not a
+        member (the Main API rejects inviting a member with 409 1007, and acceptance creates the
+        membership), so this ficha is addressed by `invitationId` and is never part of
+        `getBusinessMemberProfile`. «Copiar enlace» is out of scope.
+
+        Main API calls, one `parZip` (2 calls):
+        - `getBusinessInvitations` (`GET /api/v1/businesses/{businessId}/invitations`, without `status`), then
+          the entry with `id = invitationId`; missing: 404 1005. OWNER only in the Main API (403 1020);
+        - `getBusinessJobRoles` without `active` (`size=100`, every page), for the job role of the proposed contract.
+      tags:
+        - Invitations
+      operationId: getBusinessInvitationProfile
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '../../components/invitations/components.yml#/components/parameters/BusinessId'
+        - $ref: '../../components/invitations/components.yml#/components/parameters/InvitationId'
+      responses:
+        '200':
+          description: The invitation ficha
+          content:
+            application/json:
+              schema:
+                $ref: '../../components/invitations/components.yml#/components/schemas/InvitationProfileDTO'
+              example:
+                invitationId: 123
+                email: "lucia.ramos@example.com"
+                role: EMPLOYEE
+                status: PENDING
+                expired: false
+                createdAt: "2026-11-16T09:00:00+01:00"
+                expiresAt: "2026-11-23T09:00:00+01:00"
+                lastSentAt: "2026-11-16T09:00:00+01:00"
+                contract:
+                  jobRole: {id: 10, code: WAITER, name: Sala, color: "#3494FB", icon: front-of-house, active: true}
+                  totalWeekHours: 32
+                  startDate: "2026-11-23"
+                  endDate: null
+                resend:
+                  allowed: true
+                  nextAllowedAt: "2026-11-16T09:10:00+01:00"
+                  blocker: null
+                canCancel: true
+        '401':
+          description: No authenticated session
+        '403':
+          description: The caller is not the OWNER of the business (propagated from the Main API)
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              examples:
+                notOwner:
+                  summary: "1020 - user is not the owner of business"
+                  value: {status: 403, detail: "1020 - user is not the owner of business"}
+        '404':
+          description: Business not found (1006), or no invitation with this id in the business (1005)
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              examples:
+                businessNotFound:
+                  summary: "1006 - business does not exist"
+                  value: {status: 404, detail: "1006 - business does not exist"}
+                invitationNotFound:
+                  summary: "1005 - invitation not found"
+                  value: {status: 404, detail: "1005 - invitation not found"}
+      x-functional-errors: [1005, 1006, 1020]
+
+  resend:
+    post:
+      summary: Resend a pending invitation («Reenviar invitación»)
+      description: |
+        OWNER only. Forwards to the Main API, which queues the invitation email again (asynchronously,
+        through the outbox and RabbitMQ, so the response is 202 and does not confirm delivery), keeps the
+        same token and renews `expiresAt` to now plus 7 days. Only a PENDING invitation, an already
+        expired one included (409 1126 otherwise); at most one email per invitation every 10 minutes,
+        counting the creation (429 1127 with `Retry-After`, forwarded unchanged). Returns the refreshed
+        ficha, like the Attendance actions.
+
+        Main API calls, one `parZip` (2 calls):
+        - `resendBusinessInvitation` (`POST /api/v1/businesses/{businessId}/invitations/{invitationId}/resend`);
+        - `getBusinessJobRoles` without `active` (every page), to rebuild the ficha.
+        If `resendBusinessInvitation` fails, its error is propagated unchanged and the job-role read is discarded.
+      tags:
+        - Invitations
+      operationId: resendPendingInvitation
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '../../components/invitations/components.yml#/components/parameters/BusinessId'
+        - $ref: '../../components/invitations/components.yml#/components/parameters/InvitationId'
+      responses:
+        '202':
+          description: Resend accepted; returns the refreshed ficha. The email is sent asynchronously.
+          content:
+            application/json:
+              schema:
+                $ref: '../../components/invitations/components.yml#/components/schemas/InvitationProfileDTO'
+              example:
+                invitationId: 123
+                email: "lucia.ramos@example.com"
+                role: EMPLOYEE
+                status: PENDING
+                expired: false
+                createdAt: "2026-11-16T09:00:00+01:00"
+                expiresAt: "2026-11-26T10:40:00+01:00"
+                lastSentAt: "2026-11-19T10:40:00+01:00"
+                contract: null
+                resend:
+                  allowed: false
+                  nextAllowedAt: "2026-11-19T10:50:00+01:00"
+                  blocker: TOO_SOON
+                canCancel: true
+        '401':
+          description: No authenticated session
+        '403':
+          description: The caller is not the OWNER of the business (propagated)
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              example: {status: 403, detail: "1020 - user is not the owner of business"}
+        '404':
+          description: Business not found (1006), or no invitation with this id in the business (1005)
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              examples:
+                businessNotFound:
+                  summary: "1006 - business does not exist"
+                  value: {status: 404, detail: "1006 - business does not exist"}
+                invitationNotFound:
+                  summary: "1005 - invitation not found"
+                  value: {status: 404, detail: "1005 - invitation not found"}
+        '409':
+          description: The invitation is not PENDING (ACCEPTED, DECLINED or EXPIRED)
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              example: {status: 409, detail: "1126 - only a pending invitation can be resent"}
+        '429':
+          description: The invitation email was sent less than 10 minutes ago
+          headers:
+            Retry-After:
+              description: Seconds until the next resend is allowed, forwarded from the Main API
+              schema:
+                type: integer
+                minimum: 1
+                example: 420
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              example: {status: 429, detail: "1127 - the invitation was sent too recently"}
+      x-functional-errors: [1005, 1006, 1020, 1126, 1127]

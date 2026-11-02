@@ -7,7 +7,7 @@ info:
     This BFF aggregates and shapes data from the Flowrapp main API to serve
     the specific needs of the mobile frontend, providing role-based endpoints
     for workers and managers.
-  version: 0.0.68
+  version: 0.0.69
   contact:
     name: Flowrapp Team
     url: https://flowrapp.github.io
@@ -47,8 +47,14 @@ tags:
     description: Owner-only contract management operations.
   - name: Members
     description: >
-      Business membership operations. Removal is owner-only. Name search is
-      limited to an OWNER or MANAGER of the business.
+      Business membership operations. Removal and the member profile («ficha de
+      persona») are owner-only. Name search is limited to an OWNER or MANAGER of
+      the business.
+  - name: Invitations
+    description: >
+      Owner-only invitation fichas and actions under
+      /api/v1/businesses/{businessId}/invitations: the pending-invitation ficha and
+      «Reenviar invitación».
   - name: Attendance
     description: >
       Owner-only «Asistencia» tab: one endpoint per screen (Hours, Today, Week,
@@ -137,6 +143,14 @@ paths:
     $ref: "v1/services/members/members-operations.yml#/members/search-business-members"
   "/api/v1/businesses/{businessId}/members/{userId}":
     $ref: "v1/services/members/members-operations.yml#/members/remove-business-member"
+  "/api/v1/businesses/{businessId}/members/{userId}/profile":
+    $ref: "v1/services/members/members-operations.yml#/members/member-profile"
+
+  # ── Invitations (owner-only) ────────────────────────────────────────────
+  "/api/v1/businesses/{businessId}/invitations/{invitationId}":
+    $ref: "v1/services/invitations/invitations-operations.yml#/invitations/invitation-profile"
+  "/api/v1/businesses/{businessId}/invitations/{invitationId}/resend":
+    $ref: "v1/services/invitations/invitations-operations.yml#/invitations/resend"
 
   # ── Attendance (owner-only) ─────────────────────────────────────────────
   "/api/v1/businesses/{businessId}/attendance/hours":

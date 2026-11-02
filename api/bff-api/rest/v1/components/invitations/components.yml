@@ -1,0 +1,132 @@
+components:
+  parameters:
+    BusinessId:
+      name: businessId
+      in: path
+      required: true
+      description: ID of the business
+      schema:
+        type: integer
+        format: int64
+        minimum: 1
+        example: 101
+    InvitationId:
+      name: invitationId
+      in: path
+      required: true
+      description: ID of the invitation (`InvitationResponseDTO.id` of the invitations list)
+      schema:
+        type: integer
+        format: int64
+        minimum: 1
+        example: 123
+  schemas:
+    InvitationProfileDTO:
+      type: object
+      description: >
+        Ficha of a pending invitation («Invitación pendiente · enviada el 16 nov»), OWNER view. An invitee
+        is not a member yet, so this ficha is addressed by `invitationId`, not by `userId`. Source:
+        `getBusinessInvitations` (one entry) and `getBusinessJobRoles` (job role of the proposed contract).
+      properties:
+        invitationId:
+          type: integer
+          format: int64
+          example: 123
+        email:
+          type: string
+          format: email
+          description: Email of the invitee. The Main API stores no name for an invitee.
+          example: "lucia.ramos@example.com"
+        role:
+          type: string
+          description: Role the invitee gets on acceptance («Invitada como Empleado»)
+          enum: [OWNER, MANAGER, EMPLOYEE]
+          example: EMPLOYEE
+        status:
+          type: string
+          description: Main API status, unchanged
+          enum: [PENDING, ACCEPTED, DECLINED, EXPIRED]
+          example: PENDING
+        expired:
+          type: boolean
+          description: >
+            True when `expiresAt` is before now: the link no longer works, but a PENDING invitation can
+            still be resent, which renews it
+          example: false
+        createdAt:
+          type: string
+          format: date-time
+          example: "2026-11-16T09:00:00+01:00"
+        expiresAt:
+          type: string
+          format: date-time
+          example: "2026-11-23T09:00:00+01:00"
+        lastSentAt:
+          type: string
+          format: date-time
+          description: Main API `lastSentAt` (`createdAt` until the first resend)
+          example: "2026-11-16T09:00:00+01:00"
+        contract:
+          description: Proposed contract, or null when acceptance creates the default GENERAL contract
+          oneOf:
+            - $ref: "#/components/schemas/InvitationProfileContractDTO"
+            - type: "null"
+          example: null
+        resend:
+          $ref: "#/components/schemas/InvitationResendStateDTO"
+        canCancel:
+          type: boolean
+          description: True for PENDING («Cancelar invitación», `managerDeleteInvitation`)
+          example: true
+      required: [invitationId, email, role, status, expired, createdAt, expiresAt, lastSentAt, contract, resend, canCancel]
+
+    InvitationProfileContractDTO:
+      type: object
+      properties:
+        jobRole:
+          example: {id: 10, code: WAITER, name: Sala, color: "#3494FB", icon: front-of-house, active: true}
+          description: Job role of the proposal (`getBusinessJobRoles`, inactive included); null only if missing from the catalog
+          oneOf:
+            - $ref: "../manager/components.yml#/components/schemas/ManagerJobRoleSummaryDTO"
+            - type: "null"
+        totalWeekHours:
+          type: number
+          format: double
+          example: 32
+        startDate:
+          type: string
+          format: date
+          example: "2026-11-23"
+        endDate:
+          type: [string, "null"]
+          format: date
+          example: null
+      required: [jobRole, totalWeekHours, startDate, endDate]
+
+    InvitationResendBlockerDTO:
+      type: string
+      description: >
+        Why «Reenviar invitación» is disabled: NOT_PENDING (the invitation is not PENDING, Main API 409 1126)
+        or TOO_SOON (inside the 10-minute cooldown, Main API 429 1127). Open enum.
+      enum: [NOT_PENDING, TOO_SOON]
+      example: TOO_SOON
+
+    InvitationResendStateDTO:
+      type: object
+      description: State of the «Reenviar invitación» button, computed from the Main API `status` and `nextResendAllowedAt`
+      properties:
+        allowed:
+          type: boolean
+          description: True when `blocker` is null
+          example: false
+        nextAllowedAt:
+          type: [string, "null"]
+          format: date-time
+          description: Main API `nextResendAllowedAt`; null when the invitation is not PENDING
+          example: "2026-11-16T09:10:00+01:00"
+        blocker:
+          example: TOO_SOON
+          oneOf:
+            - $ref: "#/components/schemas/InvitationResendBlockerDTO"
+            - type: "null"
+      required: [allowed, nextAllowedAt, blocker]

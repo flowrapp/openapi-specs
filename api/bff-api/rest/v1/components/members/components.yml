@@ -71,3 +71,471 @@ components:
             False when it does not. Always present.
           example: true
       required: [userId, name, role, jobRole, currentContractId, workingNow]
+
+    MemberProfileDTO:
+      type: object
+      description: >
+        «Ficha de persona» of one active member, OWNER view, ready to paint. Identity comes from
+        `getBusinessUsers`; every other block lists its Main API source. Instants carry the business
+        offset; local dates are business-local (`zone`).
+      properties:
+        userId:
+          type: integer
+          format: int64
+          minimum: 1
+          description: User identifier; the filter for «Su histórico» (`userIds`) and «Su horario» (`userIds`/`employeeId`)
+          example: 41
+        name:
+          type: string
+          description: Display name (`getBusinessUsers.name`)
+          example: "Lucía Ramos"
+        email:
+          type: string
+          format: email
+          description: Email (`getBusinessUsers.email`)
+          example: "lucia.ramos@example.com"
+        role:
+          type: string
+          description: Role in the business (`getBusinessUsers.role`). Read only on this screen.
+          enum: [OWNER, MANAGER, EMPLOYEE]
+          example: EMPLOYEE
+        jobRole:
+          description: >
+            Job role of the contract in force today (`getBusinessUsers.currentContract.jobRole`), or null
+            without a current contract.
+          oneOf:
+            - $ref: "../manager/components.yml#/components/schemas/ManagerJobRoleSummaryDTO"
+            - type: "null"
+          example: {id: 10, code: WAITER, name: Sala, color: "#3494FB", icon: front-of-house, active: true}
+        asOf:
+          type: string
+          format: date-time
+          description: Instant the profile was computed, with the business offset. Every «now» below is this instant.
+          example: "2026-11-19T10:40:00+01:00"
+        zone:
+          type: string
+          description: IANA time zone of the business (`getUserBusinesses.zone`)
+          example: "Europe/Madrid"
+        date:
+          type: string
+          format: date
+          description: Business-local date of `asOf` («today»)
+          example: "2026-11-19"
+        liveStatus:
+          $ref: "#/components/schemas/MemberLiveStatusDTO"
+        week:
+          $ref: "#/components/schemas/MemberWeekHoursDTO"
+        todayShifts:
+          example: []
+          type: array
+          description: >
+            Today's shifts of the person in the published planning, ordered by `startAt`
+            (`getDailyAttendance.shiftAttendances`, filtered by the Main API with `userIds`). Empty on a day off
+            or without a published planning.
+          items:
+            $ref: "#/components/schemas/MemberTodayShiftDTO"
+        clockInRules:
+          $ref: "#/components/schemas/MemberClockInRulesDTO"
+        employment:
+          $ref: "#/components/schemas/MemberEmploymentDTO"
+        contracts:
+          $ref: "#/components/schemas/MemberContractsDTO"
+        actions:
+          $ref: "#/components/schemas/MemberProfileActionsDTO"
+      required: [userId, name, email, role, jobRole, asOf, zone, date, liveStatus, week, todayShifts, clockInRules, employment, contracts, actions]
+
+    MemberLiveStatusStateDTO:
+      type: string
+      description: >
+        Live state of the header, in this order of precedence: `WORKING` (an open worklog whose
+        `operationalState` is WORKING), `ON_BREAK` (an open worklog ON_BREAK), `NOT_CLOCKED_IN` (no open
+        worklog, and a shift of today has started more than `attendanceToleranceMinutes` ago without any
+        clock-in: lifecycle EXPECTED or alert MISSING_CLOCK_IN), `NOT_WORKING` (anything else). Open enum:
+        clients must tolerate unknown values.
+      enum: [WORKING, ON_BREAK, NOT_CLOCKED_IN, NOT_WORKING]
+      example: WORKING
+
+    MemberLiveStatusDTO:
+      type: object
+      description: >
+        Header chip («Trabajando · desde 10:14 · 14 min tarde»). Source: the open worklog of `getWorklogs`
+        and today's shifts of `getDailyAttendance`; tolerance from `getUserBusinesses.attendanceToleranceMinutes`.
+      properties:
+        state:
+          $ref: "#/components/schemas/MemberLiveStatusStateDTO"
+        since:
+          type: [string, "null"]
+          format: date-time
+          description: Clock-in of the open worklog for WORKING and ON_BREAK; null otherwise
+          example: "2026-11-19T10:14:00+01:00"
+        breakStartedAt:
+          type: [string, "null"]
+          format: date-time
+          description: Start of the open effective break for ON_BREAK; null otherwise
+          example: null
+        worklogId:
+          type: [integer, "null"]
+          format: int64
+          description: Open worklog for WORKING and ON_BREAK; null otherwise
+          example: 9001
+        scheduledShiftId:
+          type: [integer, "null"]
+          format: int64
+          description: >
+            Today's shift the state refers to: the shift whose attendance contains the open worklog, or the
+            shift not clocked in for NOT_CLOCKED_IN (the earliest one when several); null when none
+          example: 900
+        lateSeconds:
+          type: [integer, "null"]
+          format: int64
+          minimum: 1
+          description: >
+            Seconds late, only when beyond the tolerance: for WORKING and ON_BREAK, the shift's
+            `entryDeviationSeconds` when it exceeds `attendanceToleranceMinutes × 60`; for NOT_CLOCKED_IN,
+            `asOf − startAt`. Null when not late or without a shift.
+          example: 840
+      required: [state, since, breakStartedAt, worklogId, scheduledShiftId, lateSeconds]
+
+    MemberWeekHoursDTO:
+      type: object
+      description: >
+        «Esta semana»: the business-local ISO week (Monday to Sunday in `zone`) that contains `date`.
+        `workedSeconds + inProgressSeconds` is the big figure, `plannedSeconds` the «de N h planificadas».
+      properties:
+        week:
+          type: string
+          pattern: "^[0-9]{4}-W(0[1-9]|[1-4][0-9]|5[0-3])$"
+          example: "2026-W47"
+        weekStart:
+          type: string
+          format: date
+          description: Monday of the week; also the `weekStart` of «Su horario»
+          example: "2026-11-16"
+        weekEnd:
+          type: string
+          format: date
+          example: "2026-11-22"
+        workedSeconds:
+          type: integer
+          format: int64
+          minimum: 0
+          description: >
+            Closed worklogs of the week, CONFIRMED and APPROVED, net of effective breaks, by business-local
+            day of the clock-in (`getBusinessReports`, summed). Same rule as Attendance «Horas».
+          example: 68700
+        inProgressSeconds:
+          type: integer
+          format: int64
+          minimum: 0
+          description: >
+            Elapsed seconds of the open worklog until `asOf`, minus its effective breaks (an open break
+            counts until `asOf`), counting only the part inside the week. 0 without an open worklog.
+          example: 1560
+        plannedSeconds:
+          type: [integer, "null"]
+          format: int64
+          minimum: 0
+          description: >
+            Sum of `plannedSeconds` of the person's shifts in the published planning of the week
+            (`getBusinessTeamSchedule`). Null when the week has no published planning (Main API 404 1046);
+            0 for a published planning without shifts for this person.
+          example: 115200
+        remainingSeconds:
+          type: [integer, "null"]
+          format: int64
+          minimum: 0
+          description: >
+            «Por hacer»: `max(0, plannedSeconds − workedSeconds − inProgressSeconds)`; null when
+            `plannedSeconds` is null.
+          example: 44940
+      required: [week, weekStart, weekEnd, workedSeconds, inProgressSeconds, plannedSeconds, remainingSeconds]
+
+    MemberTodayShiftDTO:
+      type: object
+      description: >
+        One shift of today with its clock-in («Hoy · Sala 10:00–16:00 · Entrada 10:14»), from one
+        `getDailyAttendance.shiftAttendances[]` entry. The job role name comes from `getBusinessJobRoles`.
+      properties:
+        scheduledShiftId:
+          type: integer
+          format: int64
+          example: 900
+        shiftName:
+          type: string
+          example: "Mañana"
+        shiftColor:
+          type: string
+          example: "#3494FB"
+        jobRole:
+          example: {id: 10, code: WAITER, name: Sala, color: "#3494FB", icon: front-of-house, active: true}
+          description: Job role stored on the scheduled shift; null only if the id is not in the catalog
+          oneOf:
+            - $ref: "../manager/components.yml#/components/schemas/ManagerJobRoleSummaryDTO"
+            - type: "null"
+        startAt:
+          type: string
+          format: date-time
+          example: "2026-11-19T10:00:00+01:00"
+        endAt:
+          type: string
+          format: date-time
+          example: "2026-11-19T16:00:00+01:00"
+        plannedSeconds:
+          type: integer
+          format: int64
+          minimum: 0
+          description: "`metrics.plannedSeconds`"
+          example: 21600
+        lifecycle:
+          type: string
+          description: Main API `ShiftAttendanceLifecycleDTO`, unchanged. Open enum.
+          enum: [UPCOMING, EXPECTED, IN_PROGRESS, INTERRUPTED, FINISHED]
+          example: IN_PROGRESS
+        clockIn:
+          type: [string, "null"]
+          format: date-time
+          description: Earliest clock-in among the non-rejected worklogs of the shift; null without one
+          example: "2026-11-19T10:14:00+01:00"
+        clockOut:
+          type: [string, "null"]
+          format: date-time
+          description: Clock-out of the latest worklog of the shift when every worklog is closed; null otherwise («sin salida aún»)
+          example: null
+        clockInOrigin:
+          description: Origin of the earliest clock-in (Main API `WorklogOriginDTO`); null without a clock-in
+          oneOf:
+            - type: string
+              enum: [MANUAL, GEOFENCE, QR, AUTOMATIC, ADMIN, UNKNOWN]
+            - type: "null"
+          example: GEOFENCE
+        entryDeviationSeconds:
+          type: [integer, "null"]
+          format: int64
+          description: "`metrics.entryDeviationSeconds` (positive = late) when there is a clock-in; null otherwise"
+          example: 840
+        late:
+          type: boolean
+          description: >
+            True when `entryDeviationSeconds` exceeds the tolerance, or when there is no clock-in and
+            `startAt` plus the tolerance is before `asOf` («Tarde»)
+          example: true
+      required: [scheduledShiftId, shiftName, shiftColor, jobRole, startAt, endAt, plannedSeconds, lifecycle, clockIn, clockOut, clockInOrigin, entryDeviationSeconds, late]
+
+    MemberClockInRulesDTO:
+      type: object
+      description: >
+        Segment «Fichaje» and the row «Reglas de fichaje» of Resumen («Sigue al negocio» or «N propias»).
+        Sources: `getBusinessGeofencingSettings` and `getBusinessAutoClockingSettings` (OWNER only).
+      properties:
+        geofencing:
+          $ref: "#/components/schemas/MemberGeofencingRuleDTO"
+        autoClocking:
+          $ref: "#/components/schemas/MemberAutoClockingRuleDTO"
+        customRuleCount:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 2
+          description: Number of rules with `customized` true; drives «N propias» and the dot on the «Fichaje» segment
+          example: 1
+        followsBusiness:
+          type: boolean
+          description: True when `customRuleCount` is 0 («Sigue al negocio»)
+          example: false
+      required: [geofencing, autoClocking, customRuleCount, followsBusiness]
+
+    MemberGeofencingRuleDTO:
+      type: object
+      description: >
+        Clock-in and clock-out outside the geofence. The Main API applies the stricter policy of the
+        business and the person (ALLOW < WARN < BLOCK), at clock-in and at clock-out; a personal policy
+        can never relax the business one and is kept when the business policy changes.
+      properties:
+        businessPolicy:
+          $ref: "../settings/components.yml#/components/schemas/GeofencingPolicy"
+        personalPolicy:
+          $ref: "../settings/components.yml#/components/schemas/GeofencingPolicy"
+        effectivePolicy:
+          $ref: "../settings/components.yml#/components/schemas/GeofencingPolicy"
+        customized:
+          type: boolean
+          description: >
+            True when the person's policy changes what applies: `effectivePolicy` is stricter than
+            `businessPolicy` («Personalizado»). A personal ALLOW or one equal to the business is not customized.
+          example: true
+        selectablePolicies:
+          type: array
+          description: >
+            Policies the OWNER can pick for this person, ordered ALLOW, WARN, BLOCK: those at least as strict
+            as `businessPolicy`. The others are shown disabled («Lo exige el negocio»).
+          items:
+            $ref: "../settings/components.yml#/components/schemas/GeofencingPolicy"
+          example: [WARN, BLOCK]
+        radiusMeters:
+          type: number
+          format: double
+          description: Geofence radius (`getUserBusinesses.location.area`), for «Fuera de los 150 m»
+          example: 150
+      required: [businessPolicy, personalPolicy, effectivePolicy, customized, selectablePolicies, radiusMeters]
+
+    MemberAutoClockingRuleDTO:
+      type: object
+      description: >
+        Automatic clock-in and clock-out on entering and leaving the geofence. It applies when the
+        business switch AND the person's preference are on; the preference is kept when the business
+        switches it off.
+      properties:
+        businessEnabled:
+          type: boolean
+          example: true
+        personalEnabled:
+          type: boolean
+          example: true
+        effectiveEnabled:
+          type: boolean
+          description: Main API `effectiveEnabled` (business AND person)
+          example: true
+        customized:
+          type: boolean
+          description: >
+            True when the person's preference changes what applies: the business has it on and the person
+            off. With the business off, the preference is kept but is not customized.
+          example: false
+      required: [businessEnabled, personalEnabled, effectiveEnabled, customized]
+
+    MemberEmploymentDTO:
+      type: object
+      description: >
+        Tiles Alta, Antigüedad, Horas/semana and Fin de contrato. Hire date and seniority come from the
+        contract history (`getUserContracts`), hours and end from the current contract.
+      properties:
+        hasCurrentContract:
+          type: boolean
+          example: true
+        hireDate:
+          type: [string, "null"]
+          format: date
+          description: >
+            Earliest `startDate` of the contract history (the current front rule); null without
+            contracts. A future first contract gives a future date.
+          example: "2026-03-01"
+        seniority:
+          example: {years: 0, months: 8, totalMonths: 8}
+          description: >
+            Whole months from `hireDate` to `date`, never negative, split into years and months;
+            null when `hireDate` is null
+          oneOf:
+            - $ref: "#/components/schemas/MemberSeniorityDTO"
+            - type: "null"
+        weeklyHours:
+          type: [number, "null"]
+          format: double
+          description: "`totalWeekHours` of the current contract; null without one"
+          example: 32
+        contractEndDate:
+          type: [string, "null"]
+          format: date
+          description: End date of the current contract; null for an open-ended contract or without one («Sin fecha»)
+          example: null
+      required: [hasCurrentContract, hireDate, seniority, weeklyHours, contractEndDate]
+
+    MemberSeniorityDTO:
+      type: object
+      properties:
+        years:
+          type: integer
+          format: int32
+          minimum: 0
+          example: 0
+        months:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 11
+          example: 8
+        totalMonths:
+          type: integer
+          format: int32
+          minimum: 0
+          example: 8
+      required: [years, months, totalMonths]
+
+    MemberContractStateDTO:
+      type: string
+      description: >
+        Business-local state of a contract on `date`: CURRENT (startDate ≤ date and endDate null or ≥ date),
+        UPCOMING (startDate > date), ENDED (endDate < date)
+      enum: [CURRENT, UPCOMING, ENDED]
+      example: CURRENT
+
+    MemberContractDTO:
+      type: object
+      description: One contract of the history (`getUserContracts`) with its job role (`getBusinessJobRoles`, inactive included)
+      properties:
+        id:
+          type: integer
+          format: int64
+          example: 501
+        jobRole:
+          example: {id: 10, code: WAITER, name: Sala, color: "#3494FB", icon: front-of-house, active: true}
+          description: Job role of the contract; null only if the id is missing from the catalog
+          oneOf:
+            - $ref: "../manager/components.yml#/components/schemas/ManagerJobRoleSummaryDTO"
+            - type: "null"
+        totalWeekHours:
+          type: number
+          format: double
+          example: 32
+        startDate:
+          type: string
+          format: date
+          example: "2026-06-01"
+        endDate:
+          type: [string, "null"]
+          format: date
+          example: null
+        state:
+          $ref: "#/components/schemas/MemberContractStateDTO"
+      required: [id, jobRole, totalWeekHours, startDate, endDate, state]
+
+    MemberContractsDTO:
+      type: object
+      description: Segment «Contratos». The whole history, split by state
+      properties:
+        current:
+          example: null
+          description: The contract in force today, or null
+          oneOf:
+            - $ref: "#/components/schemas/MemberContractDTO"
+            - type: "null"
+        upcoming:
+          example: []
+          type: array
+          description: Contracts that start after today, by startDate ascending
+          items:
+            $ref: "#/components/schemas/MemberContractDTO"
+        previous:
+          example: []
+          type: array
+          description: Ended contracts, by startDate descending
+          items:
+            $ref: "#/components/schemas/MemberContractDTO"
+      required: [current, upcoming, previous]
+
+    MemberProfileActionsDTO:
+      type: object
+      description: >
+        Segment «Ajustes». Removal follows `removeBusinessMember`: OWNER only (always true here) and an
+        OWNER cannot be removed. Since the caller is the OWNER, «never yourself» is covered by the same rule.
+      properties:
+        canRemove:
+          type: boolean
+          example: true
+        removeBlocker:
+          description: Why removal is not available, or null when `canRemove` is true. Open enum.
+          oneOf:
+            - type: string
+              enum: [TARGET_IS_OWNER]
+            - type: "null"
+          example: null
+      required: [canRemove, removeBlocker]
