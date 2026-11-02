@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.0.86
+
+### Changed
+
+- `GET /api/v1/worklogs/{worklogId}/history` (`getWorklogHistory`) returns the worklog change history read from the append-only `worklog_changes` table: a plain array of `WorklogChangeDTO` ordered by `occurredAt` ascending (then `id`). Each change has `id`, `worklogId`, `userId`, `businessId`, `action` (`WorklogChangeActionDTO`: `CORRECTED`, `REJECTED`, `BREAK_CORRECTED`, `BREAK_VOIDED`, `AUTO_CLOSED`, `MEMBER_REMOVED_CLOSE`), old and new clock-in and clock-out, a nullable `breakChange` (`WorklogBreakChangeDTO`), a nullable `authorId` (null for system actions), `reason` and `occurredAt`. Access: the worker of the worklog and the OWNER of its business; anyone else, MANAGER included, receives `403` `1019`. `404` `1017` when the worklog does not exist. This is a breaking change accepted in `.oasdiff-err-ignore.md`: the operation was never implemented.
+
+### Removed
+
+- `WorklogAuditEntryDTO`, `WorklogAuditSnapshotDTO`, `WorklogBreakAuditSnapshotDTO` and `WorklogAuditActorTypeDTO`, used only by the old `getWorklogHistory` response.
+
 ## 0.0.85
 
 Released after 0.0.84 (PR #40, `periodType` on worked-hours reports).

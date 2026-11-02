@@ -152,42 +152,6 @@ components:
       required:
         - reason
 
-    WorklogBreakAuditSnapshotDTO:
-      type: object
-      description: Scalar break state captured before or after an audited mutation.
-      properties:
-        breakId:
-          type: integer
-          format: int64
-        worklogId:
-          type: integer
-          format: int64
-        version:
-          type: integer
-          format: int64
-        startedAt:
-          type: string
-          format: date-time
-        endedAt:
-          type: ['string', 'null']
-          format: date-time
-        status:
-          $ref: '#/components/schemas/WorklogBreakStatusDTO'
-        createdAt:
-          type: string
-          format: date-time
-        updatedAt:
-          type: string
-          format: date-time
-      required:
-        - breakId
-        - worklogId
-        - version
-        - startedAt
-        - status
-        - createdAt
-        - updatedAt
-
     WorklogLocationDTO:
       type: object
       description: Device location captured when clocking in or out.
@@ -388,117 +352,6 @@ components:
       enum: [CONFIRMED, PENDING_RECONCILIATION, PENDING_REVIEW, APPROVED, REJECTED]
       example: CONFIRMED
 
-    WorklogAuditActorTypeDTO:
-      type: string
-      description: Actor category that produced an audit event.
-      enum: [USER, SYSTEM]
-      example: USER
-
-    WorklogAuditSnapshotDTO:
-      type: object
-      description: Scalar worklog state captured before or after an audited mutation.
-      properties:
-        worklogId:
-          type: integer
-          format: int64
-        version:
-          type: integer
-          format: int64
-        userId:
-          type: integer
-          format: int64
-        businessId:
-          type: integer
-          format: int64
-        clockIn:
-          type: string
-          format: date-time
-        clockOut:
-          type: ['string', 'null']
-          format: date-time
-        clockInOrigin:
-          $ref: '#/components/schemas/WorklogOriginDTO'
-        clockOutOrigin:
-          oneOf:
-            - $ref: '#/components/schemas/WorklogOriginDTO'
-            - type: 'null'
-        reviewStatus:
-          $ref: '#/components/schemas/WorklogReviewStatusDTO'
-        note:
-          type: ['string', 'null']
-          maxLength: 500
-        createdAt:
-          type: string
-          format: date-time
-        updatedAt:
-          type: string
-          format: date-time
-      required:
-        - worklogId
-        - version
-        - userId
-        - businessId
-        - clockIn
-        - clockInOrigin
-        - reviewStatus
-        - createdAt
-        - updatedAt
-
-    WorklogAuditEntryDTO:
-      type: object
-      description: One immutable worklog audit event.
-      properties:
-        eventId:
-          type: string
-          format: uuid
-        action:
-          type: string
-          example: CLOCK_IN
-        occurredAt:
-          type: string
-          format: date-time
-        actorType:
-          oneOf:
-            - $ref: '#/components/schemas/WorklogAuditActorTypeDTO'
-            - type: 'null'
-        actorId:
-          type: ['integer', 'null']
-          format: int64
-        actorRole:
-          type: ['string', 'null']
-          enum: [OWNER, MANAGER, EMPLOYEE, null]
-        reason:
-          type: ['string', 'null']
-          maxLength: 500
-        before:
-          oneOf:
-            - $ref: '#/components/schemas/WorklogAuditSnapshotDTO'
-            - type: 'null'
-        after:
-          oneOf:
-            - $ref: '#/components/schemas/WorklogAuditSnapshotDTO'
-            - type: 'null'
-        breakBefore:
-          oneOf:
-            - $ref: '#/components/schemas/WorklogBreakAuditSnapshotDTO'
-            - type: 'null'
-        breakAfter:
-          oneOf:
-            - $ref: '#/components/schemas/WorklogBreakAuditSnapshotDTO'
-            - type: 'null'
-      required:
-        - eventId
-        - action
-        - occurredAt
-        - actorType
-        - actorId
-        - actorRole
-        - reason
-        - before
-        - after
-        - breakBefore
-        - breakAfter
-
     WorkLogResponseDTO:
       type: object
       description: Response object containing worklog information
@@ -574,3 +427,123 @@ components:
         - updatedAt
         - breaks
         - operationalState
+
+    WorklogChangeActionDTO:
+      type: string
+      description: >
+        Kind of change recorded in the worklog history. CORRECTED is a correction of clock-in
+        or clock-out (by the worker or the owner). REJECTED is the owner's rejection (old and new
+        times are equal). BREAK_CORRECTED and BREAK_VOIDED change exactly one break. AUTO_CLOSED is
+        the system closing a worklog left open for 24 hours. MEMBER_REMOVED_CLOSE is the close of an
+        open worklog when its worker is removed from the business. Clients must tolerate unknown values.
+      enum: [CORRECTED, REJECTED, BREAK_CORRECTED, BREAK_VOIDED, AUTO_CLOSED, MEMBER_REMOVED_CLOSE]
+      example: CORRECTED
+
+    WorklogBreakChangeDTO:
+      type: object
+      description: >
+        The one break touched by a BREAK_CORRECTED or BREAK_VOIDED change. In BREAK_VOIDED the new
+        start and end are null.
+      properties:
+        breakId:
+          type: integer
+          format: int64
+          minimum: 1
+          description: Identifier of the changed break
+          example: 77
+        oldStartedAt:
+          type: string
+          format: date-time
+          description: Break start before the change
+          example: "2026-10-30T11:00:00Z"
+        oldEndedAt:
+          type: ['string', 'null']
+          format: date-time
+          description: Break end before the change
+          example: "2026-10-30T11:30:00Z"
+        newStartedAt:
+          type: ['string', 'null']
+          format: date-time
+          description: Break start after the change; null when the break was voided
+          example: "2026-10-30T11:05:00Z"
+        newEndedAt:
+          type: ['string', 'null']
+          format: date-time
+          description: Break end after the change; null when the break was voided
+          example: "2026-10-30T11:20:00Z"
+      required: [breakId, oldStartedAt, oldEndedAt, newStartedAt, newEndedAt]
+
+    WorklogChangeDTO:
+      type: object
+      description: >
+        One immutable entry of a worklog's change history, read from the append-only
+        worklog_changes table. All times are instants in UTC.
+      properties:
+        id:
+          type: integer
+          format: int64
+          minimum: 1
+          description: Identifier of the change
+          example: 1201
+        worklogId:
+          type: integer
+          format: int64
+          minimum: 1
+          description: Worklog the change belongs to
+          example: 3051
+        userId:
+          type: integer
+          format: int64
+          minimum: 1
+          description: Worker who owns the worklog
+          example: 41
+        businessId:
+          type: integer
+          format: int64
+          minimum: 1
+          description: Business of the worklog
+          example: 7
+        action:
+          $ref: '#/components/schemas/WorklogChangeActionDTO'
+        oldClockIn:
+          type: string
+          format: date-time
+          description: Clock-in before the change
+          example: "2026-10-30T08:00:00Z"
+        newClockIn:
+          type: string
+          format: date-time
+          description: Clock-in after the change
+          example: "2026-10-30T08:15:00Z"
+        oldClockOut:
+          type: ['string', 'null']
+          format: date-time
+          description: Clock-out before the change; null when the worklog was still open (AUTO_CLOSED, MEMBER_REMOVED_CLOSE)
+          example: "2026-10-30T16:00:00Z"
+        newClockOut:
+          type: ['string', 'null']
+          format: date-time
+          description: Clock-out after the change
+          example: "2026-10-30T16:00:00Z"
+        breakChange:
+          description: The changed break; present only for BREAK_CORRECTED and BREAK_VOIDED, null otherwise
+          oneOf:
+            - $ref: '#/components/schemas/WorklogBreakChangeDTO'
+            - type: 'null'
+        authorId:
+          type: ['integer', 'null']
+          format: int64
+          minimum: 1
+          description: User who made the change; null for system actions such as AUTO_CLOSED
+          example: 12
+        reason:
+          type: ['string', 'null']
+          maxLength: 500
+          description: Reason given for the change; required for user actions, may be null for system actions
+          example: "Forgot to clock in on arrival."
+        occurredAt:
+          type: string
+          format: date-time
+          description: When the change was recorded
+          example: "2026-10-30T18:02:11Z"
+      required: [id, worklogId, userId, businessId, action, oldClockIn, newClockIn, oldClockOut, newClockOut, breakChange, authorId, reason, occurredAt]
