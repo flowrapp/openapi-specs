@@ -1,7 +1,9 @@
 #!/usr/bin/env node
 /**
  * Validates that all x-functional-errors codes referenced in operation files
- * exist in the error-components.yml catalog.
+ * exist in the error-components.yml catalog. Both the Main API and the BFF
+ * operation files are checked: the BFF propagates Main API functional codes,
+ * so it may only use codes of the same catalog.
  *
  * Usage: node scripts/validate-error-codes.js
  *
@@ -21,7 +23,10 @@ const CATALOG_PATH = path.join(
   ROOT,
   'api/main-api/rest/v1/components/common/error-components.yml'
 );
-const OPERATIONS_GLOB_BASE = path.join(ROOT, 'api/main-api/rest/v1/services');
+const OPERATIONS_DIRS = [
+  path.join(ROOT, 'api/main-api/rest/v1/services'),
+  path.join(ROOT, 'api/bff-api/rest/v1/services'),
+];
 
 // ---------------------------------------------------------------------------
 // 1. Load valid codes from the catalog
@@ -80,7 +85,7 @@ function extractFunctionalErrors(doc) {
 // Main
 // ---------------------------------------------------------------------------
 const validCodes = loadValidCodes(CATALOG_PATH);
-const yamlFiles = collectYamlFiles(OPERATIONS_GLOB_BASE);
+const yamlFiles = OPERATIONS_DIRS.flatMap(collectYamlFiles);
 
 let hasErrors = false;
 

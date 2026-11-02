@@ -1,0 +1,1822 @@
+components:
+  parameters:
+    BusinessId:
+      name: businessId
+      in: path
+      required: true
+      description: ID of the business
+      schema:
+        type: integer
+        format: int64
+        minimum: 1
+        example: 101
+    ScheduledShiftId:
+      name: scheduledShiftId
+      in: path
+      required: true
+      description: Scheduled shift of the published plan, as in `detailRef.scheduledShiftId`
+      schema:
+        type: integer
+        format: int64
+        minimum: 1
+        example: 900
+    AttendanceMatchId:
+      name: attendanceMatchId
+      in: path
+      required: true
+      description: Attendance match of a worklog without a shift, as in `detailRef.attendanceMatchId`
+      schema:
+        type: integer
+        format: int64
+        minimum: 1
+        example: 700
+    BreakId:
+      name: breakId
+      in: path
+      required: true
+      description: Break of one of the worklogs of this attendance, as in `clockIns[].breaks[].id`
+      schema:
+        type: integer
+        format: int64
+        minimum: 1
+        example: 456
+    MatchDate:
+      name: date
+      in: query
+      required: true
+      description: >
+        Business-local date of the attendance, as in `detailRef.date`. Sent to the Main API
+        as the `date` of `getDailyAttendance`; the Main API has no owner read of one match.
+      schema:
+        type: string
+        format: date
+        example: "2026-10-30"
+    MatchUserId:
+      name: userId
+      in: query
+      required: true
+      description: >
+        Worker of the attendance, as in `detailRef.userId`. Sent to the Main API as the only
+        `userIds` of `getDailyAttendance`, so the Main API returns only that worker's day.
+      schema:
+        type: integer
+        format: int64
+        minimum: 1
+        example: 107
+    UserIds:
+      name: userIds
+      in: query
+      required: false
+      style: form
+      explode: true
+      description: >
+        Restricts the screen to these users (`userIds=3&userIds=7`). Forwarded as `userIds`
+        to every Main API call that returns attendance or hours, so the Main API filters;
+        the BFF never filters rows in memory. Omit it for the whole team. More than 50 ids
+        returns 400 1111.
+      schema:
+        type: array
+        uniqueItems: true
+        maxItems: 50
+        items:
+          type: integer
+          format: int64
+          minimum: 1
+        example: [3, 7]
+    JobRoleId:
+      name: jobRoleId
+      in: query
+      required: false
+      description: >
+        Restricts the screen to the members whose current contract has this job role. The
+        Main API has no job-role filter, so the BFF resolves it once to a list of user ids
+        from the roster it already reads (`getBusinessUsers`, `currentContract.jobRoleId`)
+        and sends that list as `userIds`; attendance and hours are still filtered by the
+        Main API. With `userIds` too, both apply (AND). When no member matches, the BFF
+        answers with an empty screen and does not call the Main API for attendance.
+      schema:
+        type: integer
+        format: int64
+        minimum: 1
+        example: 10
+    Date:
+      name: date
+      in: query
+      required: false
+      description: >
+        Business-local date (YYYY-MM-DD). Defaults to today in the business time zone. An
+        invalid date returns 400 1115. In `getAttendanceHours`, a `date` outside `week` also
+        returns 400 1115 (it is never moved into the week).
+      schema:
+        type: string
+        format: date
+        example: "2026-10-30"
+    Week:
+      name: week
+      in: query
+      required: false
+      description: >
+        ISO week (YYYY-Www), Monday to Sunday in the business time zone. Defaults to the week
+        of `date` when sent, otherwise the current week. An invalid week (bad format, or a
+        week 53 in a year that has 52) returns 400 1115.
+      schema:
+        type: string
+        pattern: '^[0-9]{4}-W(0[1-9]|[1-4][0-9]|5[0-3])$'
+        example: "2026-W44"
+
+  examples:
+    AttendanceShiftDetail:
+      summary: Shift in progress with a justified late entry; accept blocked until it ends
+      value:
+        kind: SHIFT
+        detailRef: {date: "2026-10-30", userId: 103, scheduledShiftId: 900, attendanceMatchId: null}
+        header:
+          worker: {userId: 103, name: Carlos Vega}
+          jobRole: {id: 3, name: Barra}
+          shiftName: Partido
+          date: "2026-10-30"
+          status: IN_PROGRESS
+        planned: {startAt: "2026-10-30T09:00:00+01:00", endAt: "2026-10-30T17:00:00+01:00", netSeconds: 27000, breakMinutes: 30}
+        clocked: {start: "2026-10-30T09:18:00+01:00", end: null, workedSeconds: 0, openElapsedSeconds: 14520, open: true}
+        clockIns:
+          - worklogId: 3051
+            clockIn: "2026-10-30T09:18:00+01:00"
+            clockOut: null
+            provisionalClockOut: false
+            reviewStatus: PENDING_REVIEW
+            version: 0
+            breaks: []
+            segments:
+              - {start: "2026-10-30T09:18:00+01:00", end: null}
+            correctable: false
+            rejectable: false
+            changes: []
+        timeline:
+          from: "2026-10-30T09:00:00+01:00"
+          to: "2026-10-30T17:00:00+01:00"
+          plannedRange: {start: "2026-10-30T09:00:00+01:00", end: "2026-10-30T17:00:00+01:00"}
+          segments:
+            - {start: "2026-10-30T09:18:00+01:00", end: null}
+          deviationRanges:
+            - {start: "2026-10-30T09:00:00+01:00", end: "2026-10-30T09:18:00+01:00", severity: WARNING}
+        incidents:
+          - id: 880
+            type: LATE_ENTRY
+            severity: WARNING
+            lifecycle: OPEN
+            resolution: null
+            measuredSeconds: 1080
+            toleranceSeconds: 300
+            justification:
+              text: The bus was late.
+              justifiedAt: "2026-10-30T09:40:00+01:00"
+              by: {userId: 103, name: Carlos Vega}
+            resolvedAt: null
+            resolvedBy: null
+            reason: null
+        candidateShifts: []
+        revision: 4f8f1f6f3a1d5f2e7c9e5c0b6f2a8a7f6d4e1c9b8a7f6e5d4c3b2a1908171615
+        reconciliationPending: false
+        actions:
+          accept: {enabled: false, disabledReason: SHIFT_NOT_FINISHED}
+          correct: {enabled: false, worklogId: 3051, disabledReason: OPEN_WORKLOGS}
+          reject: {enabled: false, worklogId: null}
+          acknowledgeNoShow: {enabled: false}
+          resolveMatch: {enabled: false}
+          viewInSchedule: {enabled: true, date: "2026-10-30", scheduledShiftId: 900}
+    AttendanceMatchDetail:
+      summary: Worklog without a shift closed automatically after 24 h; only correction or rejection resolve it
+      value:
+        kind: UNMATCHED
+        detailRef: {date: "2026-10-29", userId: 110, scheduledShiftId: null, attendanceMatchId: 712}
+        header:
+          worker: {userId: 110, name: Nuria Campos}
+          jobRole: {id: 2, name: Cocina}
+          shiftName: null
+          date: "2026-10-29"
+          status: FINISHED
+        planned: null
+        clocked: {start: "2026-10-29T06:00:00+01:00", end: "2026-10-30T06:00:00+01:00", workedSeconds: 0, openElapsedSeconds: null, open: false}
+        clockIns:
+          - worklogId: 3077
+            clockIn: "2026-10-29T06:00:00+01:00"
+            clockOut: "2026-10-30T06:00:00+01:00"
+            provisionalClockOut: true
+            reviewStatus: PENDING_REVIEW
+            version: 1
+            breaks: []
+            segments:
+              - {start: "2026-10-29T06:00:00+01:00", end: "2026-10-30T06:00:00+01:00"}
+            correctable: true
+            rejectable: true
+            changes:
+              - id: 1301
+                action: AUTO_CLOSED
+                oldClockIn: "2026-10-29T06:00:00+01:00"
+                newClockIn: "2026-10-29T06:00:00+01:00"
+                oldClockOut: null
+                newClockOut: "2026-10-30T06:00:00+01:00"
+                breakChange: null
+                author: null
+                reason: null
+                occurredAt: "2026-10-30T06:00:05+01:00"
+        timeline:
+          from: "2026-10-29T06:00:00+01:00"
+          to: "2026-10-30T07:00:00+01:00"
+          plannedRange: null
+          segments:
+            - {start: "2026-10-29T06:00:00+01:00", end: "2026-10-30T06:00:00+01:00"}
+          deviationRanges: []
+        incidents:
+          - id: 951
+            type: AUTOMATIC_CLOSE
+            severity: CRITICAL
+            lifecycle: OPEN
+            resolution: null
+            measuredSeconds: null
+            toleranceSeconds: null
+            justification: null
+            resolvedAt: null
+            resolvedBy: null
+            reason: null
+          - id: 950
+            type: UNSCHEDULED_WORK
+            severity: WARNING
+            lifecycle: OPEN
+            resolution: null
+            measuredSeconds: null
+            toleranceSeconds: null
+            justification: null
+            resolvedAt: null
+            resolvedBy: null
+            reason: null
+        candidateShifts: []
+        revision: null
+        reconciliationPending: false
+        actions:
+          accept: {enabled: false, disabledReason: STRUCTURAL_INCIDENTS}
+          correct: {enabled: true, worklogId: 3077, disabledReason: null}
+          reject: {enabled: true, worklogId: 3077}
+          acknowledgeNoShow: {enabled: false}
+          resolveMatch: {enabled: false}
+          viewInSchedule: {enabled: false, date: "2026-10-29", scheduledShiftId: null}
+
+  schemas:
+    # ── Shared enums (open: clients must tolerate unknown values) ─────────────
+    AttendanceSeverityDTO:
+      type: string
+      description: |
+        Severity computed by the BFF with this fixed table. The Main API has no severity; the
+        front only paints it. New values may be added; clients must tolerate unknown values.
+
+        | Source | Value | Severity |
+        |---|---|---|
+        | Open incident | `NO_SHOW` | CRITICAL |
+        | Open incident | `AUTOMATIC_CLOSE` | CRITICAL |
+        | Alert | `MISSING_CLOCK_IN` | CRITICAL |
+        | Alert | `LONG_OPEN` | CRITICAL |
+        | Open incident | `LATE_ENTRY`, `EARLY_ENTRY`, `EARLY_EXIT`, `LATE_EXIT`, `UNEXPLAINED_GAP` | WARNING |
+        | Open incident | `UNSCHEDULED_WORK`, `AMBIGUOUS_MATCH` | WARNING |
+        | Open incident or alert | any value unknown to the BFF | WARNING |
+        | Nothing open | — | OK |
+
+        Rules:
+        - CRITICAL is a missing or invalid time that needs an action today: nobody came, nobody
+          clocked in, a worklog is still open past its threshold, or the clock-out is only a
+          placeholder from the 24-hour automatic close.
+        - WARNING is a time that exists and is only off-plan. `UNSCHEDULED_WORK` and
+          `AMBIGUOUS_MATCH` block approval (structural), but the hours are real, so they are
+          WARNING; the block itself is shown by `actions.accept.disabledReason`.
+        - A row's or cell's severity is the highest among its OPEN incidents and its current
+          alerts. RESOLVED incidents never raise it.
+        - A justification does not lower the severity: the incident stays OPEN until the owner acts.
+        - An unknown incident type or alert is WARNING: never hidden as OK, never a false alarm.
+        - In the detail, a RESOLVED incident keeps the severity of its type, so its icon does
+          not change after it is resolved.
+      enum: [CRITICAL, WARNING, OK]
+      example: WARNING
+
+    AttendanceChipTypeDTO:
+      type: string
+      description: >
+        Incident type (Main API `AttendanceIncidentTypeDTO`) or shift alert (Main API
+        `ShiftAttendanceAlertDTO`), passed through unchanged. New values may be added; clients
+        must tolerate unknown values.
+      enum: [EARLY_ENTRY, LATE_ENTRY, EARLY_EXIT, LATE_EXIT, UNEXPLAINED_GAP, UNSCHEDULED_WORK, AMBIGUOUS_MATCH, NO_SHOW, AUTOMATIC_CLOSE, MISSING_CLOCK_IN, LONG_OPEN]
+      example: LATE_ENTRY
+
+    AttendanceRowKindDTO:
+      type: string
+      description: SHIFT is a scheduled shift of the published plan; UNMATCHED is a worklog without a shift (UNSCHEDULED or AMBIGUOUS match).
+      enum: [SHIFT, UNMATCHED]
+      example: SHIFT
+
+    AttendanceSectionDTO:
+      type: string
+      description: >
+        Section of the day list. INCIDENTS when the row's severity is not OK; otherwise from
+        the status: UPCOMING → UPCOMING; EXPECTED, IN_PROGRESS and INTERRUPTED → IN_PROGRESS;
+        FINISHED → FINISHED. New values may be added.
+      enum: [INCIDENTS, IN_PROGRESS, UPCOMING, FINISHED]
+      example: INCIDENTS
+
+    AttendanceStatusDTO:
+      type: string
+      description: >
+        For a SHIFT, the Main API `ShiftAttendance.lifecycle` unchanged. For an UNMATCHED
+        attendance, IN_PROGRESS while its worklog is open and FINISHED once it is closed.
+        New values may be added; clients must tolerate unknown values.
+      enum: [UPCOMING, EXPECTED, IN_PROGRESS, INTERRUPTED, FINISHED]
+      example: IN_PROGRESS
+
+    AttendanceReviewStatusDTO:
+      type: string
+      description: Main API `WorklogReviewStatusDTO`, passed through. New values may be added.
+      enum: [CONFIRMED, PENDING_RECONCILIATION, PENDING_REVIEW, APPROVED, REJECTED]
+      example: PENDING_REVIEW
+
+    AttendanceAcceptBlockerDTO:
+      type: string
+      description: >
+        Why «Aceptar» is disabled. For a SHIFT it is the Main API
+        `ShiftAttendance.approvalBlocker`, forwarded without translation (SHIFT_NOT_FINISHED
+        1081, RECONCILIATION_PENDING 1080, OPEN_WORKLOGS 1082, STRUCTURAL_INCIDENTS 1083); the
+        BFF does not recompute it. For an UNMATCHED attendance the Main API exposes no blocker,
+        so the BFF reads it from three Main API fields, in this order: RECONCILIATION_PENDING
+        when `match.reconciliation.state` is PENDING, OPEN_WORKLOGS when the worklog has no
+        clock-out, STRUCTURAL_INCIDENTS when an AUTOMATIC_CLOSE or AMBIGUOUS_MATCH incident is
+        open (an AUTOMATIC_CLOSE is resolved only by correcting or rejecting the worklog; an
+        ambiguity only with the resolution action). New values may be added; clients must
+        tolerate unknown values.
+      enum: [SHIFT_NOT_FINISHED, RECONCILIATION_PENDING, OPEN_WORKLOGS, STRUCTURAL_INCIDENTS]
+      example: SHIFT_NOT_FINISHED
+
+    AttendanceActionCodeDTO:
+      type: string
+      description: >
+        Action offered on a day row. Each code matches an enabled action of the detail
+        (`actions.*.enabled`). New values may be added; clients must tolerate unknown values.
+      enum: [VIEW_DETAIL, ACCEPT, CORRECT, REJECT, ACKNOWLEDGE_NO_SHOW, RESOLVE_MATCH]
+      example: ACCEPT
+
+    AttendanceIncidentLifecycleDTO:
+      type: string
+      description: Main API `IncidentLifecycleDTO`.
+      enum: [OPEN, RESOLVED]
+      example: OPEN
+
+    AttendanceIncidentResolutionDTO:
+      type: string
+      description: Main API `IncidentResolutionDTO`. New values may be added.
+      enum: [ACCEPTED, CORRECTED, REASSIGNED, WORKLOG_REJECTED, ACKNOWLEDGED, NO_LONGER_APPLICABLE]
+      example: ACCEPTED
+
+    AttendanceWeekCellStateDTO:
+      type: string
+      description: |
+        State of one person-day cell, decided by the BFF. New values may be added.
+
+        REJECTED worklogs are ignored for the cell (they stay in the detail for audit). The
+        person's attendances that day are their shifts and their worklogs without a shift.
+
+        1. OFF: no shift and no worklog without a shift. A day with only REJECTED worklogs is OFF.
+        2. UPCOMING: at least one shift, every shift UPCOMING, and no worklog at all that day.
+        3. Otherwise the BFF evaluates the non-UPCOMING shifts plus the worklogs without a shift
+           (so FINISHED + UPCOMING is decided by the FINISHED shift, and a shift that is still
+           UPCOMING never hides work already done), in this order:
+           - CRITICAL: an open CRITICAL incident or alert (NO_SHOW, AUTOMATIC_CLOSE,
+             MISSING_CLOCK_IN, LONG_OPEN).
+           - IN_PROGRESS: a shift EXPECTED, IN_PROGRESS or INTERRUPTED, or an open worklog
+             without a shift; `warningDot` when an open WARNING also remains.
+           - WARNING: an open WARNING incident, or a NO_SHOW resolved as ACKNOWLEDGED (an
+             acknowledged absence is still an absence, as `kpis.missingClockIn` counts it; no
+             `warningDot`).
+           - ON_TIME otherwise; `warningDot` when a counted incident other than NO_SHOW was
+             resolved as ACCEPTED.
+
+        A day with no shift and a closed worklog without a shift (unplanned work) follows the
+        UNMATCHED rules of the severity table: WARNING while its UNSCHEDULED_WORK (or
+        AMBIGUOUS_MATCH) incident is open, CRITICAL while an AUTOMATIC_CLOSE is open, and
+        ON_TIME with `warningDot` once the unplanned work is accepted. It is never UPCOMING or
+        OFF.
+      enum: [ON_TIME, WARNING, CRITICAL, IN_PROGRESS, UPCOMING, OFF]
+      example: ON_TIME
+
+    AttendanceWorklogChangeActionDTO:
+      type: string
+      description: Main API `WorklogChangeActionDTO`, passed through. New values may be added.
+      enum: [CORRECTED, REJECTED, BREAK_CORRECTED, BREAK_VOIDED, AUTO_CLOSED, MEMBER_REMOVED_CLOSE]
+      example: CORRECTED
+
+    # ── Shared objects ─────────────────────────────────────────────────────────
+    AttendanceWorkerDTO:
+      type: object
+      description: >
+        Worker identity. `name` comes from the Main API as is and may be an email when the
+        user has no name; clients show it unchanged.
+      properties:
+        userId:
+          type: integer
+          format: int64
+          minimum: 1
+          example: 103
+        name:
+          type: string
+          example: Carlos Vega
+      required: [userId, name]
+
+    AttendanceJobRoleDTO:
+      type: object
+      description: Job role identity.
+      properties:
+        id:
+          type: integer
+          format: int64
+          minimum: 1
+          example: 3
+        name:
+          type: string
+          example: Barra
+      required: [id, name]
+
+    AttendanceDetailRefDTO:
+      type: object
+      description: >
+        How to open the detail sheet. With `scheduledShiftId`, call
+        `GET …/attendance/shifts/{scheduledShiftId}`; otherwise
+        `GET …/attendance/matches/{attendanceMatchId}?date={date}&userId={userId}`.
+        Exactly one of the two ids is set.
+      properties:
+        date:
+          type: string
+          format: date
+          description: Business-local date of the attendance
+          example: "2026-10-30"
+        userId:
+          type: integer
+          format: int64
+          minimum: 1
+          description: Worker of the attendance
+          example: 103
+        scheduledShiftId:
+          type: [integer, "null"]
+          format: int64
+          minimum: 1
+          example: 900
+        attendanceMatchId:
+          type: [integer, "null"]
+          format: int64
+          minimum: 1
+          example: null
+      required: [date, userId, scheduledShiftId, attendanceMatchId]
+
+    AttendanceWeekRangeDTO:
+      type: object
+      properties:
+        week:
+          type: string
+          description: ISO week
+          example: "2026-W44"
+        from:
+          type: string
+          format: date
+          description: Monday, inclusive
+          example: "2026-10-26"
+        to:
+          type: string
+          format: date
+          description: Sunday, inclusive
+          example: "2026-11-01"
+      required: [week, from, to]
+
+    AttendanceSegmentDTO:
+      type: object
+      description: >
+        Worked interval drawn on a timeline: a worklog cut by its EFFECTIVE breaks. Voided
+        breaks do not cut it. REJECTED worklogs are not drawn.
+      properties:
+        start:
+          type: string
+          format: date-time
+          example: "2026-10-30T09:18:00+01:00"
+        end:
+          type: [string, "null"]
+          format: date-time
+          description: Null while the worklog is open
+          example: null
+      required: [start, end]
+
+    AttendanceFilterOptionsDTO:
+      type: object
+      description: >
+        Options of the header filter, so the filter sheet needs no other call. `people` is
+        the Main API roster with removed members (`includeRemoved=true`), ordered by name
+        and then userId as the Main API returns it; `jobRoles` are the active job roles only
+        (names elsewhere are resolved from all job roles, inactive included).
+      properties:
+        people:
+          type: array
+          items:
+            type: object
+            properties:
+              userId:
+                type: integer
+                format: int64
+                minimum: 1
+                example: 103
+              name:
+                type: string
+                example: Carlos Vega
+              jobRoleId:
+                type: [integer, "null"]
+                format: int64
+                minimum: 1
+                description: Job role of the current contract, or null without one
+                example: 3
+              removed:
+                type: boolean
+                description: True when the membership ended by removal (Main API `removedAt` is set)
+                example: false
+            required: [userId, name, jobRoleId, removed]
+        jobRoles:
+          type: array
+          items:
+            $ref: "#/components/schemas/AttendanceJobRoleDTO"
+      required: [people, jobRoles]
+
+    AttendanceWarningDTO:
+      type: object
+      description: >
+        One open incident or current alert. `seconds` is the Main API
+        `evidence.measuredSeconds`: null when nothing is measured (structural incidents,
+        NO_SHOW, AUTOMATIC_CLOSE, alerts); clients show «—», never 0.
+      properties:
+        type:
+          $ref: "#/components/schemas/AttendanceChipTypeDTO"
+        severity:
+          $ref: "#/components/schemas/AttendanceSeverityDTO"
+        seconds:
+          type: [integer, "null"]
+          format: int64
+          minimum: 0
+          example: 1080
+      required: [type, severity, seconds]
+
+    AttendanceChipDTO:
+      type: object
+      description: >
+        Chip of a day row: one per OPEN incident and one per current alert, in Main API order
+        (incidents, then alerts). `seconds` is `evidence.measuredSeconds` (null when nothing
+        is measured, never 0). `sinceSeconds` is how long the alert has lasted at `now`:
+        since the planned start for MISSING_CLOCK_IN and since the clock-in for LONG_OPEN;
+        null for incidents. `justified` is true when the employee wrote a justification.
+      properties:
+        type:
+          $ref: "#/components/schemas/AttendanceChipTypeDTO"
+        severity:
+          $ref: "#/components/schemas/AttendanceSeverityDTO"
+        seconds:
+          type: [integer, "null"]
+          format: int64
+          minimum: 0
+          example: 1080
+        sinceSeconds:
+          type: [integer, "null"]
+          format: int64
+          minimum: 0
+          example: null
+        justified:
+          type: boolean
+          example: false
+      required: [type, severity, seconds, sinceSeconds, justified]
+
+    # ── Hours ──────────────────────────────────────────────────────────────────
+    AttendanceHoursDTO:
+      type: object
+      description: >
+        «Horas» screen for one ISO week, already filtered. Definitions: reportable =
+        CONFIRMED + APPROVED; pending = PENDING_RECONCILIATION + PENDING_REVIEW; clocked =
+        reportable + pending (closed, not REJECTED). Every figure comes from
+        `getBusinessReports`: business-local day of the clock-in and seconds net of effective
+        breaks. Open worklogs count in no figure (shown as `open` on the row). A worklog with
+        an open AUTOMATIC_CLOSE incident counts 0 until it is corrected or rejected. Planned
+        seconds are `metrics.plannedSeconds` of the published plan from `getDailyAttendance`.
+        `plannedSeconds` is null when the week has no published plan (`getPlannings` returns
+        no planning in PUBLISHED or ARCHIVED for it) and 0 when there is a plan with 0 h for
+        the filtered people. Plans are weekly, so the totals and the seven days are either
+        all null or all numbers.
+      properties:
+        week:
+          $ref: "#/components/schemas/AttendanceWeekRangeDTO"
+        totals:
+          type: object
+          properties:
+            clockedSeconds:
+              type: integer
+              format: int64
+              minimum: 0
+              example: 324000
+            pendingReviewSeconds:
+              type: integer
+              format: int64
+              minimum: 0
+              example: 21600
+            reportableSeconds:
+              type: integer
+              format: int64
+              minimum: 0
+              example: 302400
+            plannedSeconds:
+              type: [integer, "null"]
+              format: int64
+              minimum: 0
+              description: Null without a published plan for the week; 0 means a plan with 0 h
+              example: 345600
+          required: [clockedSeconds, pendingReviewSeconds, reportableSeconds, plannedSeconds]
+        days:
+          type: array
+          minItems: 7
+          maxItems: 7
+          description: Monday to Sunday
+          items:
+            $ref: "#/components/schemas/AttendanceHoursDayDTO"
+        legend:
+          type: array
+          description: >
+            People with clocked seconds in the week, in a stable order (name, then userId).
+            The front assigns colours by index.
+          items:
+            $ref: "#/components/schemas/AttendanceWorkerDTO"
+        selectedDay:
+          $ref: "#/components/schemas/AttendanceHoursSelectedDayDTO"
+        filterOptions:
+          $ref: "#/components/schemas/AttendanceFilterOptionsDTO"
+      required: [week, totals, days, legend, selectedDay, filterOptions]
+
+    AttendanceHoursDayDTO:
+      type: object
+      properties:
+        date:
+          type: string
+          format: date
+          example: "2026-10-30"
+        isToday:
+          type: boolean
+          description: Today in the business time zone
+          example: true
+        clockedSeconds:
+          type: integer
+          format: int64
+          minimum: 0
+          example: 50400
+        pendingReviewSeconds:
+          type: integer
+          format: int64
+          minimum: 0
+          example: 9000
+        plannedSeconds:
+          type: [integer, "null"]
+          format: int64
+          minimum: 0
+          description: Null without a published plan for the week; 0 means a plan with 0 h that day
+          example: 57600
+        people:
+          type: array
+          description: Clocked seconds per person that day, in legend order (chart accessibility)
+          items:
+            type: object
+            properties:
+              userId:
+                type: integer
+                format: int64
+                minimum: 1
+                example: 103
+              name:
+                type: string
+                example: Carlos Vega
+              clockedSeconds:
+                type: integer
+                format: int64
+                minimum: 0
+                example: 14400
+            required: [userId, name, clockedSeconds]
+      required: [date, isToday, clockedSeconds, pendingReviewSeconds, plannedSeconds, people]
+
+    AttendanceHoursSelectedDayDTO:
+      type: object
+      properties:
+        date:
+          type: string
+          format: date
+          example: "2026-10-30"
+        clockedSeconds:
+          type: integer
+          format: int64
+          minimum: 0
+          example: 50400
+        pendingReviewSeconds:
+          type: integer
+          format: int64
+          minimum: 0
+          example: 9000
+        peopleCount:
+          type: integer
+          format: int32
+          minimum: 0
+          description: Number of rows
+          example: 6
+        averageSecondsPerPerson:
+          type: integer
+          format: int64
+          minimum: 0
+          description: clockedSeconds / peopleCount, rounded; 0 without rows
+          example: 8400
+        rows:
+          type: array
+          description: >
+            One row per person with clocked or pending seconds that day or with an open
+            worklog, ordered by first clock-in, then name.
+          items:
+            $ref: "#/components/schemas/AttendanceHoursRowDTO"
+      required: [date, clockedSeconds, pendingReviewSeconds, peopleCount, averageSecondsPerPerson, rows]
+
+    AttendanceHoursRowDTO:
+      type: object
+      properties:
+        userId:
+          type: integer
+          format: int64
+          minimum: 1
+          example: 103
+        name:
+          type: string
+          example: Carlos Vega
+        jobRole:
+          description: Job role of the current contract, or null
+          oneOf:
+            - $ref: "#/components/schemas/AttendanceJobRoleDTO"
+            - type: "null"
+        firstClockIn:
+          type: [string, "null"]
+          format: date-time
+          description: >
+            Earliest clock-in of the day among the person's non-rejected worklogs of
+            `getDailyAttendance`. Null when that view does not list the worklog (a business
+            with no published plan: NOT_APPLICABLE matches); the seconds still count.
+          example: "2026-10-30T09:18:00+01:00"
+        lastClockOut:
+          type: [string, "null"]
+          format: date-time
+          description: Latest clock-out of the day, or null when a worklog is open or not listed
+          example: "2026-10-30T13:02:00+01:00"
+        open:
+          type: boolean
+          description: The person has an open worklog that day; its time is not counted yet
+          example: false
+        clockedSeconds:
+          type: integer
+          format: int64
+          minimum: 0
+          example: 13440
+        pendingReviewSeconds:
+          type: integer
+          format: int64
+          minimum: 0
+          example: 13440
+        warnings:
+          type: array
+          description: Open incidents and alerts of the person's attendances that day
+          items:
+            $ref: "#/components/schemas/AttendanceWarningDTO"
+        detailRef:
+          description: >
+            Attendance to open: the first one with an open incident or alert, otherwise the
+            first of the day by start. Null when `getDailyAttendance` lists none.
+          oneOf:
+            - $ref: "#/components/schemas/AttendanceDetailRefDTO"
+            - type: "null"
+      required: [userId, name, jobRole, firstClockIn, lastClockOut, open, clockedSeconds, pendingReviewSeconds, warnings, detailRef]
+
+    # ── Day ────────────────────────────────────────────────────────────────────
+    AttendanceDayDTO:
+      type: object
+      description: >
+        «Hoy» screen (List and Timeline share this payload) for one business-local date,
+        already filtered, ordered and counted by the BFF.
+      properties:
+        date:
+          type: string
+          format: date
+          example: "2026-10-30"
+        now:
+          type: string
+          format: date-time
+          description: Server time, with the business offset
+          example: "2026-10-30T13:20:00+01:00"
+        timeline:
+          type: object
+          description: >
+            Window of the Timeline view: from the earliest planned start or clock-in, floored
+            to the hour, to the latest planned end, clock-out or `now` for open worklogs,
+            ceiled to the hour. Without rows, the whole business-local day.
+          properties:
+            from:
+              type: string
+              format: date-time
+              example: "2026-10-30T06:00:00+01:00"
+            to:
+              type: string
+              format: date-time
+              example: "2026-10-31T00:00:00+01:00"
+          required: [from, to]
+        counts:
+          $ref: "#/components/schemas/AttendanceDayCountsDTO"
+        rows:
+          type: array
+          description: >
+            Ordered by section (INCIDENTS, IN_PROGRESS, UPCOMING, FINISHED), then severity
+            (CRITICAL, WARNING, OK), then planned start or first clock-in, then name, then rowId.
+          items:
+            $ref: "#/components/schemas/AttendanceDayRowDTO"
+        filterOptions:
+          $ref: "#/components/schemas/AttendanceFilterOptionsDTO"
+      required: [date, now, timeline, counts, rows, filterOptions]
+
+    AttendanceDayCountsDTO:
+      type: object
+      description: Chip counters of the list and summary of the Timeline, over `rows`
+      properties:
+        all:
+          type: integer
+          format: int32
+          minimum: 0
+          example: 10
+        incidents:
+          type: integer
+          format: int32
+          minimum: 0
+          example: 5
+        inProgress:
+          type: integer
+          format: int32
+          minimum: 0
+          example: 1
+        upcoming:
+          type: integer
+          format: int32
+          minimum: 0
+          example: 2
+        finished:
+          type: integer
+          format: int32
+          minimum: 0
+          example: 2
+        critical:
+          type: integer
+          format: int32
+          minimum: 0
+          example: 2
+        warning:
+          type: integer
+          format: int32
+          minimum: 0
+          example: 3
+        ok:
+          type: integer
+          format: int32
+          minimum: 0
+          example: 5
+      required: [all, incidents, inProgress, upcoming, finished, critical, warning, ok]
+
+    AttendanceDayRowDTO:
+      type: object
+      description: >
+        One `ShiftAttendance` (kind SHIFT) or one `UnmatchedAttendance` (kind UNMATCHED) of
+        `getDailyAttendance`.
+      properties:
+        rowId:
+          type: string
+          description: Stable key, `shift-{scheduledShiftId}` or `match-{attendanceMatchId}`
+          example: shift-900
+        kind:
+          $ref: "#/components/schemas/AttendanceRowKindDTO"
+        section:
+          $ref: "#/components/schemas/AttendanceSectionDTO"
+        severity:
+          $ref: "#/components/schemas/AttendanceSeverityDTO"
+        status:
+          $ref: "#/components/schemas/AttendanceStatusDTO"
+        worker:
+          $ref: "#/components/schemas/AttendanceWorkerDTO"
+        jobRole:
+          description: >
+            SHIFT: the job role of the scheduled shift. UNMATCHED: the job role of the
+            worker's current contract. Null when there is none.
+          oneOf:
+            - $ref: "#/components/schemas/AttendanceJobRoleDTO"
+            - type: "null"
+        planned:
+          description: Planned shift; null for UNMATCHED
+          oneOf:
+            - $ref: "#/components/schemas/AttendancePlannedDTO"
+            - type: "null"
+        clocked:
+          $ref: "#/components/schemas/AttendanceClockedDTO"
+        deviations:
+          type: object
+          description: >
+            Main API `metrics.entryDeviationSeconds` and `exitDeviationSeconds`, signed
+            (positive = late). Null for UNMATCHED and while there is no clock-in or clock-out.
+          properties:
+            entrySeconds:
+              type: [integer, "null"]
+              format: int64
+              example: 1080
+            exitSeconds:
+              type: [integer, "null"]
+              format: int64
+              example: null
+          required: [entrySeconds, exitSeconds]
+        chips:
+          type: array
+          items:
+            $ref: "#/components/schemas/AttendanceChipDTO"
+        actions:
+          type: array
+          description: Codes of the actions enabled in the detail; always includes VIEW_DETAIL
+          items:
+            $ref: "#/components/schemas/AttendanceActionCodeDTO"
+        detailRef:
+          $ref: "#/components/schemas/AttendanceDetailRefDTO"
+      required: [rowId, kind, section, severity, status, worker, jobRole, planned, clocked, deviations, chips, actions, detailRef]
+
+    AttendancePlannedDTO:
+      type: object
+      description: Planned scheduled shift (Main API `ScheduledShiftResponseDTO` and `metrics.plannedSeconds`)
+      properties:
+        shiftId:
+          type: integer
+          format: int64
+          minimum: 1
+          description: Shift template id
+          example: 12
+        shiftName:
+          type: string
+          example: Partido
+        shiftColor:
+          type: [string, "null"]
+          example: "#8B5CF6"
+        startAt:
+          type: string
+          format: date-time
+          example: "2026-10-30T09:00:00+01:00"
+        endAt:
+          type: string
+          format: date-time
+          example: "2026-10-30T17:00:00+01:00"
+        breakMinutes:
+          type: integer
+          format: int32
+          minimum: 0
+          example: 30
+        plannedSeconds:
+          type: integer
+          format: int64
+          minimum: 0
+          description: Net planned seconds, from the Main API (end − start − break)
+          example: 27000
+      required: [shiftId, shiftName, shiftColor, startAt, endAt, breakMinutes, plannedSeconds]
+
+    AttendanceClockedDTO:
+      type: object
+      description: What was clocked, from the non-rejected worklogs of the attendance
+      properties:
+        firstClockIn:
+          type: [string, "null"]
+          format: date-time
+          example: "2026-10-30T09:18:00+01:00"
+        lastClockOut:
+          type: [string, "null"]
+          format: date-time
+          description: Null while a worklog is open or before any clock-in
+          example: null
+        open:
+          type: boolean
+          example: true
+        segments:
+          type: array
+          items:
+            $ref: "#/components/schemas/AttendanceSegmentDTO"
+      required: [firstClockIn, lastClockOut, open, segments]
+
+    # ── Week ───────────────────────────────────────────────────────────────────
+    AttendanceWeekDTO:
+      type: object
+      description: «Semana» screen, people × 7 days, already filtered.
+      properties:
+        week:
+          $ref: "#/components/schemas/AttendanceWeekRangeDTO"
+        kpis:
+          $ref: "#/components/schemas/AttendanceWeekKpisDTO"
+        days:
+          type: array
+          minItems: 7
+          maxItems: 7
+          items:
+            type: object
+            properties:
+              date:
+                type: string
+                format: date
+                example: "2026-10-26"
+              isToday:
+                type: boolean
+                example: false
+            required: [date, isToday]
+        people:
+          type: array
+          description: >
+            Every worker who appears in the 7 daily views (shift or unmatched worklog), ordered
+            by name, then userId.
+          items:
+            $ref: "#/components/schemas/AttendanceWeekPersonDTO"
+        filterOptions:
+          $ref: "#/components/schemas/AttendanceFilterOptionsDTO"
+      required: [week, kpis, days, people, filterOptions]
+
+    AttendanceWeekKpisDTO:
+      type: object
+      description: |
+        KPIs of the week. «Done» shifts are those whose status is not UPCOMING. A «counted»
+        incident is OPEN, or RESOLVED as ACCEPTED or ACKNOWLEDGED: it happened and the owner
+        accepted it. Incidents resolved as CORRECTED, REASSIGNED, WORKLOG_REJECTED or
+        NO_LONGER_APPLICABLE are not counted, because the data that caused them changed. So
+        accepting a late entry does not turn it into «on time»: the KPIs measure punctuality,
+        not review progress.
+      properties:
+        shifts:
+          type: integer
+          format: int32
+          minimum: 0
+          description: Scheduled shifts of the week
+          example: 49
+        upcoming:
+          type: integer
+          format: int32
+          minimum: 0
+          description: Shifts with status UPCOMING
+          example: 12
+        done:
+          type: integer
+          format: int32
+          minimum: 0
+          example: 37
+        onTime:
+          type: integer
+          format: int32
+          minimum: 0
+          description: Done shifts without counted incidents and without alerts
+          example: 28
+        late:
+          type: integer
+          format: int32
+          minimum: 0
+          description: Done shifts with a counted LATE_ENTRY
+          example: 4
+        otherIncidents:
+          type: integer
+          format: int32
+          minimum: 0
+          description: Counted incidents of the week (shifts and unmatched) other than LATE_ENTRY and NO_SHOW
+          example: 3
+        missingClockIn:
+          type: integer
+          format: int32
+          minimum: 0
+          description: Done shifts with a counted NO_SHOW or a MISSING_CLOCK_IN alert
+          example: 2
+      required: [shifts, upcoming, done, onTime, late, otherIncidents, missingClockIn]
+
+    AttendanceWeekPersonDTO:
+      type: object
+      properties:
+        userId:
+          type: integer
+          format: int64
+          minimum: 1
+          example: 106
+        name:
+          type: string
+          example: Pablo Ruiz
+        cells:
+          type: array
+          minItems: 7
+          maxItems: 7
+          items:
+            $ref: "#/components/schemas/AttendanceWeekCellDTO"
+      required: [userId, name, cells]
+
+    AttendanceWeekCellDTO:
+      type: object
+      description: >
+        One person-day. When the person has several attendances that day, `start` is the
+        earliest, `end` the latest, and `detailRef` points to the one that decided `state`
+        (the first by start on ties).
+      properties:
+        date:
+          type: string
+          format: date
+          example: "2026-10-30"
+        state:
+          $ref: "#/components/schemas/AttendanceWeekCellStateDTO"
+        start:
+          type: [string, "null"]
+          format: date-time
+          description: First clock-in, or the planned start before any clock-in
+          example: "2026-10-30T16:00:00+01:00"
+        end:
+          type: [string, "null"]
+          format: date-time
+          description: Last clock-out, or the planned end while there is none
+          example: "2026-10-30T23:00:00+01:00"
+        warningDot:
+          type: boolean
+          description: >
+            True on an IN_PROGRESS cell with an open WARNING, or on an ON_TIME cell with a
+            counted incident other than NO_SHOW resolved as ACCEPTED. Always false on WARNING,
+            CRITICAL, UPCOMING and OFF (see `AttendanceWeekCellStateDTO`).
+          example: false
+        attendanceCount:
+          type: integer
+          format: int32
+          minimum: 0
+          description: Attendances of the person that day, REJECTED-only worklogs excluded (0 when OFF)
+          example: 1
+        detailRef:
+          oneOf:
+            - $ref: "#/components/schemas/AttendanceDetailRefDTO"
+            - type: "null"
+      required: [date, state, start, end, warningDot, attendanceCount, detailRef]
+
+    # ── Detail ─────────────────────────────────────────────────────────────────
+    AttendanceDetailDTO:
+      type: object
+      description: >
+        Detail sheet of one attendance. Every action returns it refreshed. After an action on a
+        match, `kind` may be SHIFT (the match was assigned to a shift): open the returned
+        `detailRef` from then on.
+      properties:
+        kind:
+          $ref: "#/components/schemas/AttendanceRowKindDTO"
+        detailRef:
+          $ref: "#/components/schemas/AttendanceDetailRefDTO"
+        header:
+          type: object
+          properties:
+            worker:
+              $ref: "#/components/schemas/AttendanceWorkerDTO"
+            jobRole:
+              oneOf:
+                - $ref: "#/components/schemas/AttendanceJobRoleDTO"
+                - type: "null"
+            shiftName:
+              type: [string, "null"]
+              example: Partido
+            date:
+              type: string
+              format: date
+              example: "2026-10-30"
+            status:
+              $ref: "#/components/schemas/AttendanceStatusDTO"
+          required: [worker, jobRole, shiftName, date, status]
+        planned:
+          description: Null for UNMATCHED
+          oneOf:
+            - type: object
+              properties:
+                startAt:
+                  type: string
+                  format: date-time
+                  example: "2026-10-30T09:00:00+01:00"
+                endAt:
+                  type: string
+                  format: date-time
+                  example: "2026-10-30T17:00:00+01:00"
+                netSeconds:
+                  type: integer
+                  format: int64
+                  minimum: 0
+                  description: Main API `metrics.plannedSeconds`
+                  example: 27000
+                breakMinutes:
+                  type: integer
+                  format: int32
+                  minimum: 0
+                  example: 30
+              required: [startAt, endAt, netSeconds, breakMinutes]
+            - type: "null"
+        clocked:
+          type: object
+          properties:
+            start:
+              type: [string, "null"]
+              format: date-time
+              example: "2026-10-30T09:18:00+01:00"
+            end:
+              type: [string, "null"]
+              format: date-time
+              example: null
+            workedSeconds:
+              type: integer
+              format: int64
+              minimum: 0
+              description: >
+                Seconds of the CLOSED worklogs of `clockIns`, REJECTED excluded, net of
+                effective breaks, computed by the BFF from `clockIns`. Open worklogs count 0,
+                as in Hours (D3 default), and so does a worklog with an open AUTOMATIC_CLOSE
+                (`provisionalClockOut`). The same figure for SHIFT and UNMATCHED.
+              example: 0
+            openElapsedSeconds:
+              type: [integer, "null"]
+              format: int64
+              minimum: 0
+              description: >
+                Elapsed seconds of the open worklogs up to the response time, net of effective
+                breaks (an open break counts up to now as a break). Null when no worklog is
+                open. Informative only: it is never added to `workedSeconds` or to Hours.
+              example: 14520
+            open:
+              type: boolean
+              example: true
+          required: [start, end, workedSeconds, openElapsedSeconds, open]
+        clockIns:
+          type: array
+          description: >
+            Main API `ShiftAttendance.worklogs` (or the worklog of the match), ordered by
+            clock-in, REJECTED included for audit, each with its breaks and change history.
+          items:
+            $ref: "#/components/schemas/AttendanceClockInDTO"
+        timeline:
+          type: object
+          properties:
+            from:
+              type: string
+              format: date-time
+              example: "2026-10-30T08:00:00+01:00"
+            to:
+              type: string
+              format: date-time
+              example: "2026-10-30T18:00:00+01:00"
+            plannedRange:
+              oneOf:
+                - type: object
+                  properties:
+                    start:
+                      type: string
+                      format: date-time
+                    end:
+                      type: string
+                      format: date-time
+                  required: [start, end]
+                - type: "null"
+            segments:
+              type: array
+              items:
+                $ref: "#/components/schemas/AttendanceSegmentDTO"
+            deviationRanges:
+              type: array
+              description: >
+                Intervals to hatch: planned start → first clock-in (LATE_ENTRY), last clock-out
+                → planned end (EARLY_EXIT), planned end → last clock-out (LATE_EXIT), first
+                clock-in → planned start (EARLY_ENTRY), the planned shift (NO_SHOW) and the
+                worklog (UNSCHEDULED_WORK), for OPEN incidents only.
+              items:
+                type: object
+                properties:
+                  start:
+                    type: string
+                    format: date-time
+                  end:
+                    type: string
+                    format: date-time
+                  severity:
+                    $ref: "#/components/schemas/AttendanceSeverityDTO"
+                required: [start, end, severity]
+          required: [from, to, plannedRange, segments, deviationRanges]
+        incidents:
+          type: array
+          description: Open and resolved incidents, open first, then by creation
+          items:
+            $ref: "#/components/schemas/AttendanceIncidentDTO"
+        candidateShifts:
+          type: array
+          description: Candidate shifts of an AMBIGUOUS match (for the resolution action); empty otherwise
+          items:
+            $ref: "#/components/schemas/AttendanceCandidateShiftDTO"
+        revision:
+          type: [string, "null"]
+          minLength: 1
+          description: >
+            Opaque revision of the shift (Main API `ShiftAttendance.revision`), sent back as
+            `expectedRevision` when accepting. Compare it, never parse it. Always a non-empty
+            string when `kind` is SHIFT (enforced by the `anyOf` of this schema); null only
+            when `kind` is UNMATCHED. A client that gets null on a SHIFT must treat it as an
+            error and never send an empty `expectedRevision`.
+          example: 4f8f1f6f3a1d5f2e7c9e5c0b6f2a8a7f6d4e1c9b8a7f6e5d4c3b2a1908171615
+        reconciliationPending:
+          type: boolean
+          description: >
+            True while the Main API is still reconciling this attendance (after a clock-out or
+            a correction). Incidents may change shortly; refetch the detail.
+          example: false
+        actions:
+          $ref: "#/components/schemas/AttendanceDetailActionsDTO"
+      required: [kind, detailRef, header, planned, clocked, clockIns, timeline, incidents, candidateShifts, revision, reconciliationPending, actions]
+      anyOf:
+        - description: SHIFT carries a non-empty revision
+          properties:
+            kind:
+              const: SHIFT
+            revision:
+              type: string
+              minLength: 1
+        - description: UNMATCHED (or a future kind) may have a null revision
+          properties:
+            kind:
+              not:
+                const: SHIFT
+
+    AttendanceClockInDTO:
+      type: object
+      properties:
+        worklogId:
+          type: integer
+          format: int64
+          minimum: 1
+          example: 3051
+        clockIn:
+          type: string
+          format: date-time
+          example: "2026-10-30T09:18:00+01:00"
+        clockOut:
+          type: [string, "null"]
+          format: date-time
+          description: Null while open. With an open AUTOMATIC_CLOSE it is only a placeholder (`provisionalClockOut`)
+          example: null
+        provisionalClockOut:
+          type: boolean
+          description: >
+            True while an AUTOMATIC_CLOSE incident of this worklog is open: the clock-out is
+            not valid and the worklog counts 0 until it is corrected or rejected
+          example: false
+        reviewStatus:
+          $ref: "#/components/schemas/AttendanceReviewStatusDTO"
+        version:
+          type: integer
+          format: int64
+          minimum: 0
+          example: 0
+        breaks:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: integer
+                format: int64
+                minimum: 1
+                example: 456
+              startedAt:
+                type: string
+                format: date-time
+                example: "2026-10-30T11:00:00+01:00"
+              endedAt:
+                type: [string, "null"]
+                format: date-time
+                example: "2026-10-30T11:30:00+01:00"
+              status:
+                type: string
+                description: EFFECTIVE or VOIDED (Main API `WorklogBreakStatusDTO`); new values may be added
+                enum: [EFFECTIVE, VOIDED]
+                example: EFFECTIVE
+            required: [id, startedAt, endedAt, status]
+        segments:
+          type: array
+          items:
+            $ref: "#/components/schemas/AttendanceSegmentDTO"
+        correctable:
+          type: boolean
+          description: Closed and not REJECTED; can be sent as `worklogId` of the correction
+          example: false
+        rejectable:
+          type: boolean
+          description: Closed and neither REJECTED nor APPROVED; can be sent as `worklogId` of the rejection
+          example: false
+        changes:
+          type: array
+          description: >
+            Change history of the worklog (Main API `getWorklogHistory`), ordered by
+            `occurredAt` ascending: corrections, rejection, break corrections and voids,
+            automatic close and close on member removal. Empty when unchanged.
+          items:
+            $ref: "#/components/schemas/AttendanceWorklogChangeDTO"
+      required: [worklogId, clockIn, clockOut, provisionalClockOut, reviewStatus, version, breaks, segments, correctable, rejectable, changes]
+
+    AttendanceWorklogChangeDTO:
+      type: object
+      description: One entry of Main API `WorklogChangeDTO`, with the author's name resolved
+      properties:
+        id:
+          type: integer
+          format: int64
+          minimum: 1
+          example: 1201
+        action:
+          $ref: "#/components/schemas/AttendanceWorklogChangeActionDTO"
+        oldClockIn:
+          type: string
+          format: date-time
+          example: "2026-10-30T09:18:00+01:00"
+        newClockIn:
+          type: string
+          format: date-time
+          example: "2026-10-30T09:00:00+01:00"
+        oldClockOut:
+          type: [string, "null"]
+          format: date-time
+          example: "2026-10-30T17:00:00+01:00"
+        newClockOut:
+          type: [string, "null"]
+          format: date-time
+          example: "2026-10-30T17:00:00+01:00"
+        breakChange:
+          description: Present only for BREAK_CORRECTED and BREAK_VOIDED
+          oneOf:
+            - type: object
+              properties:
+                breakId:
+                  type: integer
+                  format: int64
+                  minimum: 1
+                oldStartedAt:
+                  type: string
+                  format: date-time
+                oldEndedAt:
+                  type: [string, "null"]
+                  format: date-time
+                newStartedAt:
+                  type: [string, "null"]
+                  format: date-time
+                newEndedAt:
+                  type: [string, "null"]
+                  format: date-time
+              required: [breakId, oldStartedAt, oldEndedAt, newStartedAt, newEndedAt]
+            - type: "null"
+        author:
+          description: Who made the change; null for system actions such as AUTO_CLOSED
+          oneOf:
+            - $ref: "#/components/schemas/AttendanceWorkerDTO"
+            - type: "null"
+        reason:
+          type: [string, "null"]
+          maxLength: 500
+          example: The worker was at the door at 9:00; the tablet was off.
+        occurredAt:
+          type: string
+          format: date-time
+          example: "2026-10-30T18:02:11+01:00"
+      required: [id, action, oldClockIn, newClockIn, oldClockOut, newClockOut, breakChange, author, reason, occurredAt]
+
+    AttendanceIncidentDTO:
+      type: object
+      description: >
+        Main API `AttendanceIncidentDTO` with the BFF severity and names resolved. Evidence
+        is in seconds; `measuredSeconds` and `toleranceSeconds` are null when nothing is
+        measured (structural incidents, NO_SHOW, AUTOMATIC_CLOSE): show «—», never 0.
+      properties:
+        id:
+          type: integer
+          format: int64
+          minimum: 1
+          example: 880
+        type:
+          $ref: "#/components/schemas/AttendanceChipTypeDTO"
+        severity:
+          $ref: "#/components/schemas/AttendanceSeverityDTO"
+        lifecycle:
+          $ref: "#/components/schemas/AttendanceIncidentLifecycleDTO"
+        resolution:
+          oneOf:
+            - $ref: "#/components/schemas/AttendanceIncidentResolutionDTO"
+            - type: "null"
+        measuredSeconds:
+          type: [integer, "null"]
+          format: int64
+          minimum: 0
+          example: 1080
+        toleranceSeconds:
+          type: [integer, "null"]
+          format: int64
+          minimum: 0
+          example: 300
+        justification:
+          oneOf:
+            - type: object
+              properties:
+                text:
+                  type: string
+                  maxLength: 500
+                  example: The bus was late.
+                justifiedAt:
+                  type: string
+                  format: date-time
+                  example: "2026-10-30T09:40:00+01:00"
+                by:
+                  $ref: "#/components/schemas/AttendanceWorkerDTO"
+              required: [text, justifiedAt, by]
+            - type: "null"
+        resolvedAt:
+          type: [string, "null"]
+          format: date-time
+          example: null
+        resolvedBy:
+          oneOf:
+            - $ref: "#/components/schemas/AttendanceWorkerDTO"
+            - type: "null"
+        reason:
+          type: [string, "null"]
+          maxLength: 500
+          description: Reason recorded with the resolution
+          example: null
+      required: [id, type, severity, lifecycle, resolution, measuredSeconds, toleranceSeconds, justification, resolvedAt, resolvedBy, reason]
+
+    AttendanceCandidateShiftDTO:
+      type: object
+      properties:
+        scheduledShiftId:
+          type: integer
+          format: int64
+          minimum: 1
+          example: 901
+        shiftName:
+          type: string
+          example: Mañana
+        startAt:
+          type: string
+          format: date-time
+          example: "2026-10-30T07:00:00+01:00"
+        endAt:
+          type: string
+          format: date-time
+          example: "2026-10-30T12:00:00+01:00"
+      required: [scheduledShiftId, shiftName, startAt, endAt]
+
+    AttendanceDetailActionsDTO:
+      type: object
+      description: >
+        What the owner can do now. The Main API remains the authority: an enabled action can
+        still fail with the documented 409 when the data changed in between.
+      properties:
+        accept:
+          type: object
+          description: >
+            SHIFT: approve the shift (enabled when `approvalBlocker` is null and the shift is
+            not APPROVED). UNMATCHED: accept the unplanned work (enabled when an
+            UNSCHEDULED_WORK incident is open and there is no blocker).
+          properties:
+            enabled:
+              type: boolean
+              example: false
+            disabledReason:
+              description: Null when enabled or when there is nothing to accept
+              oneOf:
+                - $ref: "#/components/schemas/AttendanceAcceptBlockerDTO"
+                - type: "null"
+          required: [enabled, disabledReason]
+        correct:
+          type: object
+          description: >
+            Correct an existing worklog. `worklogId` is the suggested one: the worklog of an
+            open AUTOMATIC_CLOSE first, otherwise the latest correctable one. There is no
+            correction without a worklog (nobody creates a worklog for someone else).
+          properties:
+            enabled:
+              type: boolean
+              example: true
+            worklogId:
+              type: [integer, "null"]
+              format: int64
+              minimum: 1
+              example: 3051
+            disabledReason:
+              type: [string, "null"]
+              description: OPEN_WORKLOGS (the worklog is still open) or NO_WORKLOG (nothing was clocked); open set
+              enum: [OPEN_WORKLOGS, NO_WORKLOG, null]
+              example: null
+          required: [enabled, worklogId, disabledReason]
+        reject:
+          type: object
+          description: Reject an existing worklog; `worklogId` is chosen as for `correct` among rejectable worklogs
+          properties:
+            enabled:
+              type: boolean
+              example: false
+            worklogId:
+              type: [integer, "null"]
+              format: int64
+              minimum: 1
+              example: null
+          required: [enabled, worklogId]
+        acknowledgeNoShow:
+          type: object
+          description: Enabled when a NO_SHOW incident is open
+          properties:
+            enabled:
+              type: boolean
+              example: false
+          required: [enabled]
+        resolveMatch:
+          type: object
+          description: Enabled for an UNMATCHED attendance with an open AMBIGUOUS_MATCH incident
+          properties:
+            enabled:
+              type: boolean
+              example: false
+          required: [enabled]
+        viewInSchedule:
+          type: object
+          properties:
+            enabled:
+              type: boolean
+              description: True for SHIFT
+              example: true
+            date:
+              type: string
+              format: date
+              example: "2026-10-30"
+            scheduledShiftId:
+              type: [integer, "null"]
+              format: int64
+              minimum: 1
+              example: 900
+          required: [enabled, date, scheduledShiftId]
+      required: [accept, correct, reject, acknowledgeNoShow, resolveMatch, viewInSchedule]
+
+    # ── Badge ──────────────────────────────────────────────────────────────────
+    AttendanceBadgeDTO:
+      type: object
+      properties:
+        date:
+          type: string
+          format: date
+          description: Today in the business time zone
+          example: "2026-10-30"
+        openIncidentCount:
+          type: integer
+          format: int32
+          minimum: 0
+          description: >
+            Main API `getDailyAttendance(today).summary.openIncidentCount`: open incidents of
+            today's shifts and of today's worklogs without a shift. Alerts (MISSING_CLOCK_IN,
+            LONG_OPEN) are not incidents and are not counted. Kept for compatibility and
+            reporting; the tab badge uses `attentionCount`.
+          example: 4
+        attentionCount:
+          type: integer
+          format: int32
+          minimum: 0
+          description: >
+            What the front shows on the tab badge. Equals `counts.incidents` of
+            `getAttendanceDay` for today without filters: today's rows (shifts and worklogs
+            without a shift) whose severity is not OK, so it includes the CRITICAL alerts
+            MISSING_CLOCK_IN and LONG_OPEN. Computed from the same `getDailyAttendance(today)`
+            with the same severity rules, at no extra Main API call. Pending Sergio's open
+            question 4 (whether alerts belong in the badge).
+          example: 6
+      required: [date, openIncidentCount, attentionCount]
+
+    # ── Requests ───────────────────────────────────────────────────────────────
+    AttendanceShiftAcceptRequestDTO:
+      type: object
+      additionalProperties: false
+      properties:
+        expectedRevision:
+          type: string
+          minLength: 1
+          description: The detail's `revision`, unchanged
+          example: 4f8f1f6f3a1d5f2e7c9e5c0b6f2a8a7f6d4e1c9b8a7f6e5d4c3b2a1908171615
+        reason:
+          type: [string, "null"]
+          maxLength: 500
+          description: Optional, recorded with the accepted temporal incidents
+          example: Approved after confirming the closing handover.
+      required: [expectedRevision]
+
+    AttendanceReasonRequestDTO:
+      type: object
+      additionalProperties: false
+      properties:
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 500
+          description: Mandatory non-blank reason
+          example: Worker reported absence by phone.
+      required: [reason]
+
+    AttendanceWorklogCorrectionRequestDTO:
+      type: object
+      description: >
+        Correction of one existing worklog of this attendance. An omitted field keeps its
+        value. `clockOut` cannot be null: the owner does not reopen a closed worklog from here.
+        Rules, each answered with 400 1025 (`WORKLOG_NOT_VALID`, the code the Main API uses
+        when a correction changes nothing) before any Main API action is called:
+        (1) at least one of `clockIn` and `clockOut` is required;
+        (2) when the worklog has `provisionalClockOut: true` (open AUTOMATIC_CLOSE),
+        `clockOut` is required: the Main API would otherwise resolve the AUTOMATIC_CLOSE and
+        approve the worklog keeping the 24 h placeholder as its clock-out.
+        The BFF forwards the worklog's current note unchanged (the Main API treats an omitted
+        note as clearing it).
+      additionalProperties: false
+      properties:
+        worklogId:
+          type: integer
+          format: int64
+          minimum: 1
+          description: A worklog of `clockIns` of this attendance
+          example: 3051
+        clockIn:
+          type: string
+          format: date-time
+          example: "2026-10-30T09:00:00+01:00"
+        clockOut:
+          type: string
+          format: date-time
+          example: "2026-10-30T17:00:00+01:00"
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 500
+          example: The worker was at the door at 9:00; the tablet was off.
+      required: [worklogId, reason]
+      anyOf:
+        - required: [clockIn]
+        - required: [clockOut]
+
+    AttendanceWorklogRejectionRequestDTO:
+      type: object
+      additionalProperties: false
+      properties:
+        worklogId:
+          type: integer
+          format: int64
+          minimum: 1
+          description: A worklog of `clockIns` of this attendance
+          example: 3051
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 500
+          example: Duplicate clock-in from the kitchen tablet.
+      required: [worklogId, reason]
+
+    AttendanceBreakCorrectionRequestDTO:
+      type: object
+      additionalProperties: false
+      properties:
+        startedAt:
+          type: string
+          format: date-time
+          example: "2026-10-30T11:00:00+01:00"
+        endedAt:
+          type: string
+          format: date-time
+          example: "2026-10-30T11:30:00+01:00"
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 500
+          example: The break started five minutes earlier than recorded.
+      required: [startedAt, endedAt, reason]
+
+    AttendanceMatchResolutionRequestDTO:
+      type: object
+      description: Main API `AttendanceMatchResolutionRequestDTO`, forwarded unchanged
+      additionalProperties: false
+      properties:
+        action:
+          type: string
+          enum: [ASSIGN_SHIFT, DECLARE_UNPLANNED]
+          example: ASSIGN_SHIFT
+        scheduledShiftId:
+          type: [integer, "null"]
+          format: int64
+          minimum: 1
+          description: One of `candidateShifts` for ASSIGN_SHIFT; null for DECLARE_UNPLANNED
+          example: 901
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 500
+          example: The worker covered the morning service.
+      required: [action, scheduledShiftId, reason]

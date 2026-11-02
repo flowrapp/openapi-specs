@@ -1,0 +1,1949 @@
+attendance:
+  hours:
+    get:
+      summary: Get the Hours screen
+      description: |
+        «Horas» for one ISO week, OWNER only, ready to paint: totals, 7 days, legend, the selected day's
+        rows and the filter options. All seconds are net of effective breaks and attributed to the
+        business-local day of the clock-in. Open worklogs count in no figure (D3 default).
+
+        Main API calls:
+        1. Stage 0: `getUserBusinesses` (`GET /api/v1/businesses`), for the caller's role (OWNER required, otherwise 403 1020; not a member: 403 1015) and the business time zone.
+        2. Stage 1, one `parZip` (13 calls, at most 8 in flight):
+           - `getBusinessReports` (`GET /api/v1/businesses/{businessId}/reports?from&to&userIds`), the
+             reportable seconds (CONFIRMED + APPROVED) per person and day;
+           - `getBusinessReports` with `reviewStatus=PENDING_RECONCILIATION&reviewStatus=PENDING_REVIEW`, the
+             pending seconds per person and day;
+           - 7 × `getDailyAttendance` (`GET /api/v1/businesses/{businessId}/attendance?date&userIds`), one per
+             day, for the planned seconds (`metrics.plannedSeconds`), the clock-in and clock-out of the
+             selected day's rows, their warnings and their `detailRef`;
+           - `getPlannings` (`GET /api/v1/businesses/{businessId}/plannings?from&to`, the week), to tell
+             «no published plan» (`plannedSeconds: null`) from «a plan with 0 h» (`0`): only a planning in
+             PUBLISHED or ARCHIVED counts as published;
+           - `getBusinessUsers` (`includeRemoved=true`), for names, current job roles and `filterOptions.people`;
+           - `getBusinessJobRoles` without `active` (all roles, inactive included), for the job-role name of
+             each row: a current contract may point to a role that is no longer active;
+           - `getBusinessJobRoles` (`active=true`), for `filterOptions.jobRoles` (the Main API filters it).
+
+        With `jobRoleId`, `getBusinessUsers` runs first, alone, to resolve the job role to user ids; the
+        other twelve calls then run as one `parZip` with those `userIds`. When `userIds` resolves to no one,
+        the response has zeros (or null planned seconds without a plan) and no rows, and no attendance or
+        report call is made. clocked = reportable + pending, per person, day and week.
+
+        Validation before any Main API call: an invalid `week` or `date`, or a `date` outside `week`, returns
+        400 1115. The BFF never moves `date` into the week: the front sends a `date` of the week it shows.
+
+        Concurrency: independent Main API calls of one stage run with Arrow `parZip`; fan-outs are bounded by `Semaphore(8)`, so at most 8 Main API calls are in flight per request. The BFF never filters rows in memory: every filter (date, week, users) is a Main API parameter.
+      tags:
+        - Attendance
+      operationId: getAttendanceHours
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '../../components/attendance/components.yml#/components/parameters/BusinessId'
+        - $ref: '../../components/attendance/components.yml#/components/parameters/Week'
+        - $ref: '../../components/attendance/components.yml#/components/parameters/Date'
+        - $ref: '../../components/attendance/components.yml#/components/parameters/UserIds'
+        - $ref: '../../components/attendance/components.yml#/components/parameters/JobRoleId'
+      responses:
+        '200':
+          description: Hours of the week, already filtered
+          content:
+            application/json:
+              schema:
+                $ref: '../../components/attendance/components.yml#/components/schemas/AttendanceHoursDTO'
+              example:
+                week: {week: "2026-W44", from: "2026-10-26", to: "2026-11-01"}
+                totals: {clockedSeconds: 50400, pendingReviewSeconds: 13440, reportableSeconds: 36960, plannedSeconds: 57600}
+                days:
+                  - {date: "2026-10-26", isToday: false, clockedSeconds: 0, pendingReviewSeconds: 0, plannedSeconds: 0, people: []}
+                  - {date: "2026-10-27", isToday: false, clockedSeconds: 0, pendingReviewSeconds: 0, plannedSeconds: 0, people: []}
+                  - {date: "2026-10-28", isToday: false, clockedSeconds: 0, pendingReviewSeconds: 0, plannedSeconds: 0, people: []}
+                  - {date: "2026-10-29", isToday: false, clockedSeconds: 0, pendingReviewSeconds: 0, plannedSeconds: 0, people: []}
+                  - date: "2026-10-30"
+                    isToday: true
+                    clockedSeconds: 50400
+                    pendingReviewSeconds: 13440
+                    plannedSeconds: 57600
+                    people:
+                      - {userId: 102, name: Lucía Martín, clockedSeconds: 18180}
+                      - {userId: 103, name: Carlos Vega, clockedSeconds: 13440}
+                      - {userId: 109, name: irene.navas@example.com, clockedSeconds: 18780}
+                  - {date: "2026-10-31", isToday: false, clockedSeconds: 0, pendingReviewSeconds: 0, plannedSeconds: 0, people: []}
+                  - {date: "2026-11-01", isToday: false, clockedSeconds: 0, pendingReviewSeconds: 0, plannedSeconds: 0, people: []}
+                legend:
+                  - {userId: 103, name: Carlos Vega}
+                  - {userId: 109, name: irene.navas@example.com}
+                  - {userId: 102, name: Lucía Martín}
+                selectedDay:
+                  date: "2026-10-30"
+                  clockedSeconds: 50400
+                  pendingReviewSeconds: 13440
+                  peopleCount: 3
+                  averageSecondsPerPerson: 16800
+                  rows:
+                    - userId: 102
+                      name: Lucía Martín
+                      jobRole: {id: 2, name: Cocina}
+                      firstClockIn: "2026-10-30T07:00:00+01:00"
+                      lastClockOut: "2026-10-30T12:03:00+01:00"
+                      open: false
+                      clockedSeconds: 18180
+                      pendingReviewSeconds: 0
+                      warnings: []
+                      detailRef: {date: "2026-10-30", userId: 102, scheduledShiftId: 902, attendanceMatchId: null}
+                    - userId: 103
+                      name: Carlos Vega
+                      jobRole: {id: 3, name: Barra}
+                      firstClockIn: "2026-10-30T09:18:00+01:00"
+                      lastClockOut: "2026-10-30T13:02:00+01:00"
+                      open: false
+                      clockedSeconds: 13440
+                      pendingReviewSeconds: 13440
+                      warnings:
+                        - {type: LATE_ENTRY, severity: WARNING, seconds: 1080}
+                      detailRef: {date: "2026-10-30", userId: 103, scheduledShiftId: 900, attendanceMatchId: null}
+                    - userId: 109
+                      name: irene.navas@example.com
+                      jobRole: {id: 1, name: Sala}
+                      firstClockIn: "2026-10-30T07:31:00+01:00"
+                      lastClockOut: "2026-10-30T12:44:00+01:00"
+                      open: false
+                      clockedSeconds: 18780
+                      pendingReviewSeconds: 0
+                      warnings: []
+                      detailRef: {date: "2026-10-30", userId: 109, scheduledShiftId: 909, attendanceMatchId: null}
+                filterOptions:
+                  people:
+                    - {userId: 103, name: Carlos Vega, jobRoleId: 3, removed: false}
+                    - {userId: 109, name: irene.navas@example.com, jobRoleId: 1, removed: false}
+                    - {userId: 102, name: Lucía Martín, jobRoleId: 2, removed: false}
+                  jobRoles:
+                    - {id: 1, name: Sala}
+                    - {id: 2, name: Cocina}
+                    - {id: 3, name: Barra}
+        '400':
+          description: >
+            Invalid `week` or `date`, or `date` outside `week` (1115); or more than 50 `userIds` (1111).
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              examples:
+                invalidAttendancePeriod:
+                  summary: "1115 - attendance week or date is invalid"
+                  value: {status: 400, detail: "1115 - attendance week or date is invalid"}
+                invalidUserIds:
+                  summary: "1111 - userIds must contain between 1 and 50 identifiers"
+                  value: {status: 400, detail: "1111 - userIds must contain between 1 and 50 identifiers"}
+        '401':
+          description: No authenticated session
+        '403':
+          description: >
+            The caller is not the OWNER of the business (1020; the BFF checks the role with `getUserBusinesses` because the Main API reads also admit a MANAGER), or not a member of it (1015).
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              examples:
+                notOwner:
+                  summary: "1020 - user is not the owner of business"
+                  value: {status: 403, detail: "1020 - user is not the owner of business"}
+                notMember:
+                  summary: "1015 - user is not member of business"
+                  value: {status: 403, detail: "1015 - user is not member of business"}
+        '404':
+          description: >
+            Business not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              examples:
+                businessNotFound:
+                  summary: "1006 - business does not exist"
+                  value: {status: 404, detail: "1006 - business does not exist"}
+      x-functional-errors: [1006, 1015, 1020, 1111, 1115]
+
+  day:
+    get:
+      summary: Get the Today screen (List and Timeline)
+      description: |
+        «Hoy» for one business-local date, OWNER only: one row per scheduled shift and per worklog without
+        a shift, with section, severity (fixed table in `AttendanceSeverityDTO`), status, planned and
+        clocked times, segments, chips, enabled action codes and the detail reference, plus the counters
+        of the filter chips. Order, sections and counts are decided by the BFF.
+
+        Main API calls:
+        1. Stage 0: `getUserBusinesses` (`GET /api/v1/businesses`), for the caller's role (OWNER required, otherwise 403 1020; not a member: 403 1015) and the business time zone.
+        2. Stage 1, one `parZip` (4 calls):
+           - `getDailyAttendance` (`GET /api/v1/businesses/{businessId}/attendance?date&userIds`), the
+             rows: `shiftAttendances` (kind SHIFT) and `unmatchedAttendances` (kind UNMATCHED), with
+             metrics, alerts, incidents and worklogs with breaks;
+           - `getBusinessJobRoles` (all, active or not), for the job-role name of each scheduled shift
+             (`ScheduledShiftResponseDTO` has only `jobRoleId`);
+           - `getBusinessUsers` (`includeRemoved=true`), for the job role of UNMATCHED rows and
+             `filterOptions.people`;
+           - `getBusinessJobRoles` (`active=true`), for `filterOptions.jobRoles` (the Main API filters it).
+
+        With `jobRoleId` the roster call runs first and the attendance call uses the resolved `userIds`.
+        Worklogs of a business without a published plan (NOT_APPLICABLE matches) are not part of the
+        daily view, so they have no row here.
+
+        Concurrency: independent Main API calls of one stage run with Arrow `parZip`; fan-outs are bounded by `Semaphore(8)`, so at most 8 Main API calls are in flight per request. The BFF never filters rows in memory: every filter (date, week, users) is a Main API parameter.
+      tags:
+        - Attendance
+      operationId: getAttendanceDay
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '../../components/attendance/components.yml#/components/parameters/BusinessId'
+        - $ref: '../../components/attendance/components.yml#/components/parameters/Date'
+        - $ref: '../../components/attendance/components.yml#/components/parameters/UserIds'
+        - $ref: '../../components/attendance/components.yml#/components/parameters/JobRoleId'
+      responses:
+        '200':
+          description: Rows of the day, already filtered, ordered and counted
+          content:
+            application/json:
+              schema:
+                $ref: '../../components/attendance/components.yml#/components/schemas/AttendanceDayDTO'
+              example:
+                date: "2026-10-30"
+                now: "2026-10-30T13:20:00+01:00"
+                timeline: {from: "2026-10-30T07:00:00+01:00", to: "2026-10-30T23:00:00+01:00"}
+                counts: {all: 3, incidents: 2, inProgress: 0, upcoming: 1, finished: 0, critical: 1, warning: 1, ok: 1}
+                rows:
+                  - rowId: shift-904
+                    kind: SHIFT
+                    section: INCIDENTS
+                    severity: CRITICAL
+                    status: FINISHED
+                    worker: {userId: 104, name: Diego Sanz}
+                    jobRole: {id: 2, name: Cocina}
+                    planned: {shiftId: 11, shiftName: Mañana, shiftColor: "#4F8EF7", startAt: "2026-10-30T08:00:00+01:00", endAt: "2026-10-30T13:00:00+01:00", breakMinutes: 0, plannedSeconds: 18000}
+                    clocked: {firstClockIn: null, lastClockOut: null, open: false, segments: []}
+                    deviations: {entrySeconds: null, exitSeconds: null}
+                    chips:
+                      - {type: NO_SHOW, severity: CRITICAL, seconds: null, sinceSeconds: null, justified: false}
+                    actions: [VIEW_DETAIL, ACKNOWLEDGE_NO_SHOW]
+                    detailRef: {date: "2026-10-30", userId: 104, scheduledShiftId: 904, attendanceMatchId: null}
+                  - rowId: shift-900
+                    kind: SHIFT
+                    section: INCIDENTS
+                    severity: WARNING
+                    status: IN_PROGRESS
+                    worker: {userId: 103, name: Carlos Vega}
+                    jobRole: {id: 3, name: Barra}
+                    planned: {shiftId: 12, shiftName: Partido, shiftColor: "#8B5CF6", startAt: "2026-10-30T09:00:00+01:00", endAt: "2026-10-30T17:00:00+01:00", breakMinutes: 30, plannedSeconds: 27000}
+                    clocked:
+                      firstClockIn: "2026-10-30T09:18:00+01:00"
+                      lastClockOut: null
+                      open: true
+                      segments:
+                        - {start: "2026-10-30T09:18:00+01:00", end: null}
+                    deviations: {entrySeconds: 1080, exitSeconds: null}
+                    chips:
+                      - {type: LATE_ENTRY, severity: WARNING, seconds: 1080, sinceSeconds: null, justified: true}
+                    actions: [VIEW_DETAIL]
+                    detailRef: {date: "2026-10-30", userId: 103, scheduledShiftId: 900, attendanceMatchId: null}
+                  - rowId: shift-906
+                    kind: SHIFT
+                    section: UPCOMING
+                    severity: OK
+                    status: UPCOMING
+                    worker: {userId: 106, name: Pablo Ruiz}
+                    jobRole: {id: 1, name: Sala}
+                    planned: {shiftId: 13, shiftName: Tarde, shiftColor: "#F59E0B", startAt: "2026-10-30T16:00:00+01:00", endAt: "2026-10-30T23:00:00+01:00", breakMinutes: 0, plannedSeconds: 25200}
+                    clocked: {firstClockIn: null, lastClockOut: null, open: false, segments: []}
+                    deviations: {entrySeconds: null, exitSeconds: null}
+                    chips: []
+                    actions: [VIEW_DETAIL]
+                    detailRef: {date: "2026-10-30", userId: 106, scheduledShiftId: 906, attendanceMatchId: null}
+                filterOptions:
+                  people:
+                    - {userId: 103, name: Carlos Vega, jobRoleId: 3, removed: false}
+                    - {userId: 104, name: Diego Sanz, jobRoleId: 2, removed: false}
+                    - {userId: 106, name: Pablo Ruiz, jobRoleId: 1, removed: false}
+                  jobRoles:
+                    - {id: 1, name: Sala}
+                    - {id: 2, name: Cocina}
+                    - {id: 3, name: Barra}
+        '400':
+          description: >
+            Invalid `date` (1115), or more than 50 `userIds` (1111).
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              examples:
+                invalidAttendancePeriod:
+                  summary: "1115 - attendance week or date is invalid"
+                  value: {status: 400, detail: "1115 - attendance week or date is invalid"}
+                invalidUserIds:
+                  summary: "1111 - userIds must contain between 1 and 50 identifiers"
+                  value: {status: 400, detail: "1111 - userIds must contain between 1 and 50 identifiers"}
+        '401':
+          description: No authenticated session
+        '403':
+          description: >
+            The caller is not the OWNER of the business (1020; the BFF checks the role with `getUserBusinesses` because the Main API reads also admit a MANAGER), or not a member of it (1015).
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              examples:
+                notOwner:
+                  summary: "1020 - user is not the owner of business"
+                  value: {status: 403, detail: "1020 - user is not the owner of business"}
+                notMember:
+                  summary: "1015 - user is not member of business"
+                  value: {status: 403, detail: "1015 - user is not member of business"}
+        '404':
+          description: >
+            Business not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              examples:
+                businessNotFound:
+                  summary: "1006 - business does not exist"
+                  value: {status: 404, detail: "1006 - business does not exist"}
+      x-functional-errors: [1006, 1015, 1020, 1111, 1115]
+
+  week:
+    get:
+      summary: Get the Week screen
+      description: |
+        «Semana» for one ISO week, OWNER only: KPIs and a people × 7 days grid. Cell state and KPI rules
+        are in `AttendanceWeekCellStateDTO` and `AttendanceWeekKpisDTO`.
+
+        Main API calls:
+        1. Stage 0: `getUserBusinesses` (`GET /api/v1/businesses`), for the caller's role (OWNER required, otherwise 403 1020; not a member: 403 1015) and the business time zone.
+        2. Stage 1, one `parZip` (9 calls, at most 8 in flight):
+           - 7 × `getDailyAttendance` (`GET /api/v1/businesses/{businessId}/attendance?date&userIds`), one
+             per day; future days return their shifts as UPCOMING;
+           - `getBusinessUsers` (`includeRemoved=true`), for `filterOptions` and the `jobRoleId` filter;
+           - `getBusinessJobRoles` (`active=true`), for `filterOptions.jobRoles`.
+
+        With `jobRoleId` the roster call runs first. There is no Main API range read; 7 daily calls are the
+        approved approach until metrics ask for one.
+
+        Concurrency: independent Main API calls of one stage run with Arrow `parZip`; fan-outs are bounded by `Semaphore(8)`, so at most 8 Main API calls are in flight per request. The BFF never filters rows in memory: every filter (date, week, users) is a Main API parameter.
+      tags:
+        - Attendance
+      operationId: getAttendanceWeek
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '../../components/attendance/components.yml#/components/parameters/BusinessId'
+        - $ref: '../../components/attendance/components.yml#/components/parameters/Week'
+        - $ref: '../../components/attendance/components.yml#/components/parameters/UserIds'
+        - $ref: '../../components/attendance/components.yml#/components/parameters/JobRoleId'
+      responses:
+        '200':
+          description: People × days of the week, already filtered
+          content:
+            application/json:
+              schema:
+                $ref: '../../components/attendance/components.yml#/components/schemas/AttendanceWeekDTO'
+              example:
+                week: {week: "2026-W44", from: "2026-10-26", to: "2026-11-01"}
+                kpis: {shifts: 49, upcoming: 12, done: 37, onTime: 28, late: 4, otherIncidents: 3, missingClockIn: 2}
+                days:
+                  - {date: "2026-10-26", isToday: false}
+                  - {date: "2026-10-27", isToday: false}
+                  - {date: "2026-10-28", isToday: false}
+                  - {date: "2026-10-29", isToday: false}
+                  - {date: "2026-10-30", isToday: true}
+                  - {date: "2026-10-31", isToday: false}
+                  - {date: "2026-11-01", isToday: false}
+                people:
+                  - userId: 106
+                    name: Pablo Ruiz
+                    cells:
+                      - {date: "2026-10-26", state: ON_TIME, start: "2026-10-26T15:58:00+01:00", end: "2026-10-26T23:02:00+01:00", warningDot: false, attendanceCount: 1, detailRef: {date: "2026-10-26", userId: 106, scheduledShiftId: 886, attendanceMatchId: null}}
+                      - {date: "2026-10-27", state: OFF, start: null, end: null, warningDot: false, attendanceCount: 0, detailRef: null}
+                      - {date: "2026-10-28", state: WARNING, start: "2026-10-28T16:12:00+01:00", end: "2026-10-28T23:00:00+01:00", warningDot: false, attendanceCount: 1, detailRef: {date: "2026-10-28", userId: 106, scheduledShiftId: 891, attendanceMatchId: null}}
+                      - {date: "2026-10-29", state: OFF, start: null, end: null, warningDot: false, attendanceCount: 0, detailRef: null}
+                      - {date: "2026-10-30", state: UPCOMING, start: "2026-10-30T16:00:00+01:00", end: "2026-10-30T23:00:00+01:00", warningDot: false, attendanceCount: 1, detailRef: {date: "2026-10-30", userId: 106, scheduledShiftId: 906, attendanceMatchId: null}}
+                      - {date: "2026-10-31", state: UPCOMING, start: "2026-10-31T16:00:00+01:00", end: "2026-10-31T23:00:00+01:00", warningDot: false, attendanceCount: 1, detailRef: {date: "2026-10-31", userId: 106, scheduledShiftId: 913, attendanceMatchId: null}}
+                      - {date: "2026-11-01", state: OFF, start: null, end: null, warningDot: false, attendanceCount: 0, detailRef: null}
+                filterOptions:
+                  people:
+                    - {userId: 106, name: Pablo Ruiz, jobRoleId: 1, removed: false}
+                  jobRoles:
+                    - {id: 1, name: Sala}
+        '400':
+          description: >
+            Invalid `week` (1115), or more than 50 `userIds` (1111).
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              examples:
+                invalidAttendancePeriod:
+                  summary: "1115 - attendance week or date is invalid"
+                  value: {status: 400, detail: "1115 - attendance week or date is invalid"}
+                invalidUserIds:
+                  summary: "1111 - userIds must contain between 1 and 50 identifiers"
+                  value: {status: 400, detail: "1111 - userIds must contain between 1 and 50 identifiers"}
+        '401':
+          description: No authenticated session
+        '403':
+          description: >
+            The caller is not the OWNER of the business (1020; the BFF checks the role with `getUserBusinesses` because the Main API reads also admit a MANAGER), or not a member of it (1015).
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              examples:
+                notOwner:
+                  summary: "1020 - user is not the owner of business"
+                  value: {status: 403, detail: "1020 - user is not the owner of business"}
+                notMember:
+                  summary: "1015 - user is not member of business"
+                  value: {status: 403, detail: "1015 - user is not member of business"}
+        '404':
+          description: >
+            Business not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              examples:
+                businessNotFound:
+                  summary: "1006 - business does not exist"
+                  value: {status: 404, detail: "1006 - business does not exist"}
+      x-functional-errors: [1006, 1015, 1020, 1111, 1115]
+
+  shift-detail:
+    get:
+      summary: Get the detail of a shift attendance
+      description: |
+        Detail sheet of one scheduled shift, OWNER only: planned and clocked, the shift's worklogs with
+        breaks, segments and change history, incidents with severity and justification, the opaque
+        `revision` and the enabled actions. `actions.accept.disabledReason` is the Main API
+        `approvalBlocker`, forwarded unchanged.
+
+        Main API calls:
+        1. Stage 0: `getUserBusinesses` (`GET /api/v1/businesses`), for the caller's role (OWNER required, otherwise 403 1020; not a member: 403 1015) and the business time zone.
+        2. Stage 1: `getShiftAttendance` (`GET /api/v1/businesses/{businessId}/scheduled-shifts/{scheduledShiftId}/attendance`),
+             `getBusinessUsers` (`includeRemoved=true`, names of justification and change authors and of
+             resolvers) and `getBusinessJobRoles`, in one `parZip`; then `getWorklogHistory`
+             (`GET /api/v1/worklogs/{worklogId}/history`) once per worklog of the shift, at most 8 in flight.
+
+        Concurrency: independent Main API calls of one stage run with Arrow `parZip`; fan-outs are bounded by `Semaphore(8)`, so at most 8 Main API calls are in flight per request. The BFF never filters rows in memory: every filter (date, week, users) is a Main API parameter.
+      tags:
+        - Attendance
+      operationId: getAttendanceShiftDetail
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '../../components/attendance/components.yml#/components/parameters/BusinessId'
+        - $ref: '../../components/attendance/components.yml#/components/parameters/ScheduledShiftId'
+      responses:
+        '200':
+          description: Detail of the shift
+          content:
+            application/json:
+              schema:
+                $ref: '../../components/attendance/components.yml#/components/schemas/AttendanceDetailDTO'
+              examples:
+                attendanceShiftDetail:
+                  $ref: '../../components/attendance/components.yml#/components/examples/AttendanceShiftDetail'
+        '401':
+          description: No authenticated session
+        '403':
+          description: >
+            The caller is not the OWNER of the business (1020; the BFF checks the role with `getUserBusinesses` because the Main API reads also admit a MANAGER), or not a member of it (1015).
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              examples:
+                notOwner:
+                  summary: "1020 - user is not the owner of business"
+                  value: {status: 403, detail: "1020 - user is not the owner of business"}
+                notMember:
+                  summary: "1015 - user is not member of business"
+                  value: {status: 403, detail: "1015 - user is not member of business"}
+        '404':
+          description: >
+            Business or scheduled shift not found (the shift must belong to the published plan of this business).
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              examples:
+                businessNotFound:
+                  summary: "1006 - business does not exist"
+                  value: {status: 404, detail: "1006 - business does not exist"}
+                shiftNotFound:
+                  summary: "1076 - scheduled shift not found"
+                  value: {status: 404, detail: "1076 - scheduled shift not found"}
+      x-functional-errors: [1006, 1015, 1020, 1076]
+
+  match-detail:
+    get:
+      summary: Get the detail of a worklog without a shift
+      description: |
+        Detail sheet of one attendance match without a shift (UNSCHEDULED or AMBIGUOUS), OWNER only.
+        `date` and `userId` come from `detailRef`: the Main API has no owner read of a single match
+        (`getAttendanceMatch` answers only to the worker), so the BFF asks the Main API for that worker's
+        day and locates the match by id. If reconciliation has meanwhile assigned the match to a shift,
+        the response is that shift's detail (`kind: SHIFT`), built from the same daily response.
+
+        Main API calls:
+        1. Stage 0: `getUserBusinesses` (`GET /api/v1/businesses`), for the caller's role (OWNER required, otherwise 403 1020; not a member: 403 1015) and the business time zone.
+        2. Stage 1: `getDailyAttendance` (`GET /api/v1/businesses/{businessId}/attendance?date&userIds={userId}`),
+             `getBusinessUsers` (`includeRemoved=true`) and `getBusinessJobRoles`, in one `parZip`; the BFF
+             locates the match by id in that one-person, one-day response; then `getWorklogHistory` for its
+             worklog.
+
+        Concurrency: independent Main API calls of one stage run with Arrow `parZip`; fan-outs are bounded by `Semaphore(8)`, so at most 8 Main API calls are in flight per request. The BFF never filters rows in memory: every filter (date, week, users) is a Main API parameter.
+      tags:
+        - Attendance
+      operationId: getAttendanceMatchDetail
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '../../components/attendance/components.yml#/components/parameters/BusinessId'
+        - $ref: '../../components/attendance/components.yml#/components/parameters/AttendanceMatchId'
+        - $ref: '../../components/attendance/components.yml#/components/parameters/MatchDate'
+        - $ref: '../../components/attendance/components.yml#/components/parameters/MatchUserId'
+      responses:
+        '200':
+          description: Detail of the attendance
+          content:
+            application/json:
+              schema:
+                $ref: '../../components/attendance/components.yml#/components/schemas/AttendanceDetailDTO'
+              examples:
+                attendanceMatchDetail:
+                  $ref: '../../components/attendance/components.yml#/components/examples/AttendanceMatchDetail'
+        '401':
+          description: No authenticated session
+        '403':
+          description: >
+            The caller is not the OWNER of the business (1020; the BFF checks the role with `getUserBusinesses` because the Main API reads also admit a MANAGER), or not a member of it (1015).
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              examples:
+                notOwner:
+                  summary: "1020 - user is not the owner of business"
+                  value: {status: 403, detail: "1020 - user is not the owner of business"}
+                notMember:
+                  summary: "1015 - user is not member of business"
+                  value: {status: 403, detail: "1015 - user is not member of business"}
+        '404':
+          description: >
+            Business not found, or no attendance match with this id for this worker on this date.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              examples:
+                businessNotFound:
+                  summary: "1006 - business does not exist"
+                  value: {status: 404, detail: "1006 - business does not exist"}
+                matchNotFound:
+                  summary: "1074 - attendance match not found"
+                  value: {status: 404, detail: "1074 - attendance match not found"}
+      x-functional-errors: [1006, 1015, 1020, 1074]
+
+  badge:
+    get:
+      summary: Get the tab badge
+      description: |
+        What needs attention today (business time zone), for the red badge of the tab, OWNER only. It
+        takes no `date`: it is always today. The front shows `attentionCount`: the rows of today whose
+        severity is not OK (`counts.incidents` of `getAttendanceDay` for today without filters), so the
+        CRITICAL alerts MISSING_CLOCK_IN and LONG_OPEN count. `openIncidentCount` (Main API, incidents
+        only) is kept. Whether alerts belong in the badge is still Sergio's open question 4; until he
+        decides, `attentionCount` is the field to paint.
+
+        Main API calls (sequential, today depends on the zone):
+        1. Stage 0: `getUserBusinesses` (`GET /api/v1/businesses`), for the caller's role (OWNER required, otherwise 403 1020; not a member: 403 1015) and the business time zone.
+        2. `getDailyAttendance` (`GET /api/v1/businesses/{businessId}/attendance?date={today}`) →
+           `summary.openIncidentCount`, and the rows' severity with the fixed table of
+           `AttendanceSeverityDTO` for `attentionCount`. No other call.
+
+        The BFF may cache the result per business for up to 60 seconds. Concurrency: independent Main API calls of one stage run with Arrow `parZip`; fan-outs are bounded by `Semaphore(8)`, so at most 8 Main API calls are in flight per request. The BFF never filters rows in memory: every filter (date, week, users) is a Main API parameter.
+      tags:
+        - Attendance
+      operationId: getAttendanceBadge
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '../../components/attendance/components.yml#/components/parameters/BusinessId'
+      responses:
+        '200':
+          description: Badge of today
+          content:
+            application/json:
+              schema:
+                $ref: '../../components/attendance/components.yml#/components/schemas/AttendanceBadgeDTO'
+              example:
+                date: "2026-10-30"
+                openIncidentCount: 4
+                attentionCount: 6
+        '401':
+          description: No authenticated session
+        '403':
+          description: >
+            The caller is not the OWNER of the business (1020; the BFF checks the role with `getUserBusinesses` because the Main API reads also admit a MANAGER), or not a member of it (1015).
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              examples:
+                notOwner:
+                  summary: "1020 - user is not the owner of business"
+                  value: {status: 403, detail: "1020 - user is not the owner of business"}
+                notMember:
+                  summary: "1015 - user is not member of business"
+                  value: {status: 403, detail: "1015 - user is not member of business"}
+        '404':
+          description: >
+            Business not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              examples:
+                businessNotFound:
+                  summary: "1006 - business does not exist"
+                  value: {status: 404, detail: "1006 - business does not exist"}
+      x-functional-errors: [1006, 1015, 1020]
+
+  shift-accept:
+    post:
+      summary: Accept a shift attendance
+      description: |
+        Accept a shift attendance on `…/attendance/shifts/{scheduledShiftId}/accept`.
+
+        OWNER only. The BFF checks the role with `getUserBusinesses` before anything else; the Main API
+        enforces it again (M7). Main API functional errors are propagated unchanged. The response is the
+        detail re-read after the action. Reconciliation is asynchronous: right after a correction or a
+        rejection the detail may show `reconciliationPending: true` and `accept.disabledReason:
+        RECONCILIATION_PENDING`; refetch it shortly.
+
+        Approves the whole shift: every non-rejected worklog and the non-structural incidents. Allowed only when `actions.accept.enabled`.
+
+        Main API calls, in sequence:
+        1. `getUserBusinesses` (role).
+        2. `approveShiftAttendance` (`POST /api/v1/businesses/{businessId}/scheduled-shifts/{scheduledShiftId}/attendance/approve`) with `expectedRevision` and `reason`.
+        3. The `ShiftAttendance` returned by `approveShiftAttendance` is the refreshed shift; `getBusinessUsers` and `getBusinessJobRoles` in one `parZip`, then `getWorklogHistory` per worklog (at most 8 in flight).
+
+        Concurrency: independent Main API calls of one stage run with Arrow `parZip`; fan-outs are bounded by `Semaphore(8)`, so at most 8 Main API calls are in flight per request. The BFF never filters rows in memory: every filter (date, week, users) is a Main API parameter.
+      tags:
+        - Attendance
+      operationId: acceptAttendanceShift
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '../../components/attendance/components.yml#/components/parameters/BusinessId'
+        - $ref: '../../components/attendance/components.yml#/components/parameters/ScheduledShiftId'
+      requestBody:
+        required: true
+        description: Revision read in the detail and optional reason
+        content:
+          application/json:
+            schema:
+              $ref: '../../components/attendance/components.yml#/components/schemas/AttendanceShiftAcceptRequestDTO'
+            example:
+              expectedRevision: 4f8f1f6f3a1d5f2e7c9e5c0b6f2a8a7f6d4e1c9b8a7f6e5d4c3b2a1908171615
+              reason: Approved after confirming the closing handover.
+      responses:
+        '200':
+          description: Refreshed detail
+          content:
+            application/json:
+              schema:
+                $ref: '../../components/attendance/components.yml#/components/schemas/AttendanceDetailDTO'
+              examples:
+                attendanceShiftDetail:
+                  $ref: '../../components/attendance/components.yml#/components/examples/AttendanceShiftDetail'
+        '400':
+          description: >
+            Approval request is invalid: the same 400 as the Main API `approveShiftAttendance`, which has no functional code (request validation, e.g. `expectedRevision` empty or `reason` over 500 characters). The BFF validates the same rules and answers the same 400 before calling the Main API.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+        '401':
+          description: No authenticated session
+        '403':
+          description: >
+            The caller is not the OWNER of the business. The BFF checks the role first with `getUserBusinesses`; the Main API enforces the same rule (M7) and its 403 1020 is propagated unchanged. A non-member receives 1015.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              examples:
+                notOwner:
+                  summary: "1020 - user is not the owner of business"
+                  value: {status: 403, detail: "1020 - user is not the owner of business"}
+                notMember:
+                  summary: "1015 - user is not member of business"
+                  value: {status: 403, detail: "1015 - user is not member of business"}
+        '404':
+          description: >
+            Business or scheduled shift not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              examples:
+                businessNotFound:
+                  summary: "1006 - business does not exist"
+                  value: {status: 404, detail: "1006 - business does not exist"}
+                shiftNotFound:
+                  summary: "1076 - scheduled shift not found"
+                  value: {status: 404, detail: "1076 - scheduled shift not found"}
+        '409':
+          description: >
+            The revision is stale (1079: re-read the detail and retry with its `revision`), reconciliation is pending (1080), the shift is not finished (1081), a worklog or break is open (1082), a structural incident is open (1083: resolve UNSCHEDULED_WORK, AMBIGUOUS_MATCH or NO_SHOW with their action, and AUTOMATIC_CLOSE by correcting or rejecting the worklog), or the shift changed concurrently (1049).
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              examples:
+                concurrentModification:
+                  summary: "1049 - resource was modified concurrently"
+                  value: {status: 409, detail: "1049 - resource was modified concurrently"}
+                revisionConflict:
+                  summary: "1079 - attendance changed since it was read"
+                  value: {status: 409, detail: "1079 - attendance changed since it was read"}
+                reconciliationPending:
+                  summary: "1080 - attendance reconciliation is still pending"
+                  value: {status: 409, detail: "1080 - attendance reconciliation is still pending"}
+                shiftNotFinished:
+                  summary: "1081 - scheduled shift is not finished"
+                  value: {status: 409, detail: "1081 - scheduled shift is not finished"}
+                openWorklogs:
+                  summary: "1082 - attendance has an open worklog or break"
+                  value: {status: 409, detail: "1082 - attendance has an open worklog or break"}
+                structuralIncidents:
+                  summary: "1083 - attendance has unresolved structural incidents"
+                  value: {status: 409, detail: "1083 - attendance has unresolved structural incidents"}
+      x-functional-errors: [1006, 1015, 1020, 1049, 1076, 1079, 1080, 1081, 1082, 1083]
+
+  shift-no-show-acknowledge:
+    post:
+      summary: Acknowledge a no-show
+      description: |
+        Acknowledge a no-show on `…/attendance/shifts/{scheduledShiftId}/no-show/acknowledge`.
+
+        OWNER only. The BFF checks the role with `getUserBusinesses` before anything else; the Main API
+        enforces it again (M7). Main API functional errors are propagated unchanged. The response is the
+        detail re-read after the action. Reconciliation is asynchronous: right after a correction or a
+        rejection the detail may show `reconciliationPending: true` and `accept.disabledReason:
+        RECONCILIATION_PENDING`; refetch it shortly.
+
+        Main API calls, in sequence:
+        1. `getUserBusinesses` (role).
+        2. `acknowledgeNoShow` (`POST /api/v1/businesses/{businessId}/scheduled-shifts/{scheduledShiftId}/no-show/acknowledge`) with `reason`. It creates no worklog.
+        3. Re-read as in `getAttendanceShiftDetail`: `getShiftAttendance` (`GET /api/v1/businesses/{businessId}/scheduled-shifts/{scheduledShiftId}/attendance`),
+             `getBusinessUsers` (`includeRemoved=true`, names of justification and change authors and of
+             resolvers) and `getBusinessJobRoles`, in one `parZip`; then `getWorklogHistory`
+             (`GET /api/v1/worklogs/{worklogId}/history`) once per worklog of the shift, at most 8 in flight.
+
+        Concurrency: independent Main API calls of one stage run with Arrow `parZip`; fan-outs are bounded by `Semaphore(8)`, so at most 8 Main API calls are in flight per request. The BFF never filters rows in memory: every filter (date, week, users) is a Main API parameter.
+      tags:
+        - Attendance
+      operationId: acknowledgeAttendanceNoShow
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '../../components/attendance/components.yml#/components/parameters/BusinessId'
+        - $ref: '../../components/attendance/components.yml#/components/parameters/ScheduledShiftId'
+      requestBody:
+        required: true
+        description: Mandatory reason
+        content:
+          application/json:
+            schema:
+              $ref: '../../components/attendance/components.yml#/components/schemas/AttendanceReasonRequestDTO'
+            example:
+              reason: Worker reported absence by phone.
+      responses:
+        '200':
+          description: Refreshed detail
+          content:
+            application/json:
+              schema:
+                $ref: '../../components/attendance/components.yml#/components/schemas/AttendanceDetailDTO'
+              examples:
+                attendanceShiftDetail:
+                  $ref: '../../components/attendance/components.yml#/components/examples/AttendanceShiftDetail'
+        '400':
+          description: >
+            The reason is blank (1078).
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              examples:
+                attendanceReasonRequired:
+                  summary: "1078 - attendance resolution requires a non-blank reason"
+                  value: {status: 400, detail: "1078 - attendance resolution requires a non-blank reason"}
+        '401':
+          description: No authenticated session
+        '403':
+          description: >
+            The caller is not the OWNER of the business. The BFF checks the role first with `getUserBusinesses`; the Main API enforces the same rule (M7) and its 403 1020 is propagated unchanged. A non-member receives 1015.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              examples:
+                notOwner:
+                  summary: "1020 - user is not the owner of business"
+                  value: {status: 403, detail: "1020 - user is not the owner of business"}
+                notMember:
+                  summary: "1015 - user is not member of business"
+                  value: {status: 403, detail: "1015 - user is not member of business"}
+        '404':
+          description: >
+            Business, shift, or open NO_SHOW incident not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              examples:
+                businessNotFound:
+                  summary: "1006 - business does not exist"
+                  value: {status: 404, detail: "1006 - business does not exist"}
+                shiftNotFound:
+                  summary: "1076 - scheduled shift not found"
+                  value: {status: 404, detail: "1076 - scheduled shift not found"}
+                incidentNotFound:
+                  summary: "1085 - attendance incident not found"
+                  value: {status: 404, detail: "1085 - attendance incident not found"}
+      x-functional-errors: [1006, 1015, 1020, 1076, 1078, 1085]
+
+  shift-correction:
+    post:
+      summary: Correct a worklog of a shift
+      description: |
+        Correct a worklog of a shift on `…/attendance/shifts/{scheduledShiftId}/correction`.
+
+        OWNER only. The BFF checks the role with `getUserBusinesses` before anything else; the Main API
+        enforces it again (M7). Main API functional errors are propagated unchanged. The response is the
+        detail re-read after the action. Reconciliation is asynchronous: right after a correction or a
+        rejection the detail may show `reconciliationPending: true` and `accept.disabledReason:
+        RECONCILIATION_PENDING`; refetch it shortly.
+
+        Main API calls, in sequence:
+        1. `getUserBusinesses` (role).
+        2. Pre-read `getShiftAttendance` to check that `worklogId` is one of the shift's `worklogs` (otherwise 404 1017, without calling the action).
+        3. `correctBusinessWorklog` (`PUT /api/v1/businesses/{businessId}/worklogs/{worklogId}/correction`) with `clockIn`, `clockOut` and `reason`. The worklog is approved at once; reconciliation later records CORRECTED on its incidents. This is how an AUTOMATIC_CLOSE is resolved, together with the rejection; for that worklog (`provisionalClockOut: true`) `clockOut` is required (400 1025).
+        4. Re-read as in `getAttendanceShiftDetail`: `getShiftAttendance` (`GET /api/v1/businesses/{businessId}/scheduled-shifts/{scheduledShiftId}/attendance`),
+             `getBusinessUsers` (`includeRemoved=true`, names of justification and change authors and of
+             resolvers) and `getBusinessJobRoles`, in one `parZip`; then `getWorklogHistory`
+             (`GET /api/v1/worklogs/{worklogId}/history`) once per worklog of the shift, at most 8 in flight.
+
+        Concurrency: independent Main API calls of one stage run with Arrow `parZip`; fan-outs are bounded by `Semaphore(8)`, so at most 8 Main API calls are in flight per request. The BFF never filters rows in memory: every filter (date, week, users) is a Main API parameter.
+      tags:
+        - Attendance
+      operationId: correctAttendanceShiftWorklog
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '../../components/attendance/components.yml#/components/parameters/BusinessId'
+        - $ref: '../../components/attendance/components.yml#/components/parameters/ScheduledShiftId'
+      requestBody:
+        required: true
+        description: Worklog to correct, new times and mandatory reason
+        content:
+          application/json:
+            schema:
+              $ref: '../../components/attendance/components.yml#/components/schemas/AttendanceWorklogCorrectionRequestDTO'
+            example:
+              worklogId: 3051
+              clockIn: "2026-10-30T09:00:00+01:00"
+              reason: The worker was at the door at 9:00; the tablet was off.
+      responses:
+        '200':
+          description: Refreshed detail
+          content:
+            application/json:
+              schema:
+                $ref: '../../components/attendance/components.yml#/components/schemas/AttendanceDetailDTO'
+              examples:
+                attendanceShiftDetail:
+                  $ref: '../../components/attendance/components.yml#/components/examples/AttendanceShiftDetail'
+        '400':
+          description: >
+            The reason is blank (1068); or the correction is not valid (1025): neither `clockIn` nor `clockOut` is sent, `clockOut` is missing for a worklog with `provisionalClockOut` (open AUTOMATIC_CLOSE), or the Main API rejects the interval (it changes nothing, ends in the future or is not a valid interval). The BFF checks the first two rules after the pre-read and before calling `correctBusinessWorklog`.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              examples:
+                worklogNotValid:
+                  summary: "1025 - worklog is not valid"
+                  value: {status: 400, detail: "1025 - worklog is not valid"}
+                reasonRequired:
+                  summary: "1068 - worklog correction requires a non-blank reason"
+                  value: {status: 400, detail: "1068 - worklog correction requires a non-blank reason"}
+        '401':
+          description: No authenticated session
+        '403':
+          description: >
+            The caller is not the OWNER of the business. The BFF checks the role first with `getUserBusinesses`; the Main API enforces the same rule (M7) and its 403 1020 is propagated unchanged. A non-member receives 1015.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              examples:
+                notOwner:
+                  summary: "1020 - user is not the owner of business"
+                  value: {status: 403, detail: "1020 - user is not the owner of business"}
+                notMember:
+                  summary: "1015 - user is not member of business"
+                  value: {status: 403, detail: "1015 - user is not member of business"}
+        '404':
+          description: >
+            Business or shift not found, or the worklog is not one of the shift's worklogs.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              examples:
+                businessNotFound:
+                  summary: "1006 - business does not exist"
+                  value: {status: 404, detail: "1006 - business does not exist"}
+                worklogNotFound:
+                  summary: "1017 - worklog not found"
+                  value: {status: 404, detail: "1017 - worklog not found"}
+                shiftNotFound:
+                  summary: "1076 - scheduled shift not found"
+                  value: {status: 404, detail: "1076 - scheduled shift not found"}
+        '409':
+          description: >
+            The correction overlaps another worklog (1022) or the worklog changed concurrently (1049).
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              examples:
+                worklogOverlap:
+                  summary: "1022 - worklog overlaps with existing worklog"
+                  value: {status: 409, detail: "1022 - worklog overlaps with existing worklog"}
+                concurrentModification:
+                  summary: "1049 - resource was modified concurrently"
+                  value: {status: 409, detail: "1049 - resource was modified concurrently"}
+      x-functional-errors: [1006, 1015, 1017, 1020, 1022, 1025, 1049, 1068, 1076]
+
+  shift-rejection:
+    post:
+      summary: Reject a worklog of a shift
+      description: |
+        Reject a worklog of a shift on `…/attendance/shifts/{scheduledShiftId}/rejection`.
+
+        OWNER only. The BFF checks the role with `getUserBusinesses` before anything else; the Main API
+        enforces it again (M7). Main API functional errors are propagated unchanged. The response is the
+        detail re-read after the action. Reconciliation is asynchronous: right after a correction or a
+        rejection the detail may show `reconciliationPending: true` and `accept.disabledReason:
+        RECONCILIATION_PENDING`; refetch it shortly.
+
+        Main API calls, in sequence:
+        1. `getUserBusinesses` (role).
+        2. Pre-read `getShiftAttendance` to check that `worklogId` is one of the shift's `worklogs` (otherwise 404 1017, without calling the action).
+        3. `rejectWorklog` (`POST /api/v1/businesses/{businessId}/worklogs/{worklogId}/reject`) with `reason`. The worklog is kept for audit and stops counting; reconciliation later records WORKLOG_REJECTED. Resolves an AUTOMATIC_CLOSE, as the correction does.
+        4. Re-read as in `getAttendanceShiftDetail`: `getShiftAttendance` (`GET /api/v1/businesses/{businessId}/scheduled-shifts/{scheduledShiftId}/attendance`),
+             `getBusinessUsers` (`includeRemoved=true`, names of justification and change authors and of
+             resolvers) and `getBusinessJobRoles`, in one `parZip`; then `getWorklogHistory`
+             (`GET /api/v1/worklogs/{worklogId}/history`) once per worklog of the shift, at most 8 in flight.
+
+        Concurrency: independent Main API calls of one stage run with Arrow `parZip`; fan-outs are bounded by `Semaphore(8)`, so at most 8 Main API calls are in flight per request. The BFF never filters rows in memory: every filter (date, week, users) is a Main API parameter.
+      tags:
+        - Attendance
+      operationId: rejectAttendanceShiftWorklog
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '../../components/attendance/components.yml#/components/parameters/BusinessId'
+        - $ref: '../../components/attendance/components.yml#/components/parameters/ScheduledShiftId'
+      requestBody:
+        required: true
+        description: Worklog to reject and mandatory reason
+        content:
+          application/json:
+            schema:
+              $ref: '../../components/attendance/components.yml#/components/schemas/AttendanceWorklogRejectionRequestDTO'
+            example:
+              worklogId: 3051
+              reason: Duplicate clock-in from the kitchen tablet.
+      responses:
+        '200':
+          description: Refreshed detail
+          content:
+            application/json:
+              schema:
+                $ref: '../../components/attendance/components.yml#/components/schemas/AttendanceDetailDTO'
+              examples:
+                attendanceShiftDetail:
+                  $ref: '../../components/attendance/components.yml#/components/examples/AttendanceShiftDetail'
+        '400':
+          description: >
+            The reason is blank (1068).
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              examples:
+                reasonRequired:
+                  summary: "1068 - worklog correction requires a non-blank reason"
+                  value: {status: 400, detail: "1068 - worklog correction requires a non-blank reason"}
+        '401':
+          description: No authenticated session
+        '403':
+          description: >
+            The caller is not the OWNER of the business. The BFF checks the role first with `getUserBusinesses`; the Main API enforces the same rule (M7) and its 403 1020 is propagated unchanged. A non-member receives 1015.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              examples:
+                notOwner:
+                  summary: "1020 - user is not the owner of business"
+                  value: {status: 403, detail: "1020 - user is not the owner of business"}
+                notMember:
+                  summary: "1015 - user is not member of business"
+                  value: {status: 403, detail: "1015 - user is not member of business"}
+        '404':
+          description: >
+            Business or shift not found, or the worklog is not one of the shift's worklogs.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              examples:
+                businessNotFound:
+                  summary: "1006 - business does not exist"
+                  value: {status: 404, detail: "1006 - business does not exist"}
+                worklogNotFound:
+                  summary: "1017 - worklog not found"
+                  value: {status: 404, detail: "1017 - worklog not found"}
+                shiftNotFound:
+                  summary: "1076 - scheduled shift not found"
+                  value: {status: 404, detail: "1076 - scheduled shift not found"}
+        '409':
+          description: >
+            The worklog cannot move to REJECTED from its current review state (1067).
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              examples:
+                invalidReviewTransition:
+                  summary: "1067 - worklog review transition is not allowed"
+                  value: {status: 409, detail: "1067 - worklog review transition is not allowed"}
+      x-functional-errors: [1006, 1015, 1017, 1020, 1067, 1068, 1076]
+
+  shift-break-correction:
+    post:
+      summary: Correct a break of a shift worklog
+      description: |
+        Correct a break of a shift worklog on `…/attendance/shifts/{scheduledShiftId}/breaks/{breakId}/correction`.
+
+        OWNER only. The BFF checks the role with `getUserBusinesses` before anything else; the Main API
+        enforces it again (M7). Main API functional errors are propagated unchanged. The response is the
+        detail re-read after the action. Reconciliation is asynchronous: right after a correction or a
+        rejection the detail may show `reconciliationPending: true` and `accept.disabledReason:
+        RECONCILIATION_PENDING`; refetch it shortly.
+
+        Main API calls, in sequence:
+        1. `getUserBusinesses` (role).
+        2. Pre-read `getShiftAttendance` to find the worklog of the shift that owns `breakId` (none: 404 1069, without calling the action).
+        3. `correctBusinessWorklogBreak` (`PUT /api/v1/businesses/{businessId}/worklogs/{worklogId}/breaks/{breakId}/correction`) with `startedAt`, `endedAt` and `reason`.
+        4. Re-read as in `getAttendanceShiftDetail`: `getShiftAttendance` (`GET /api/v1/businesses/{businessId}/scheduled-shifts/{scheduledShiftId}/attendance`),
+             `getBusinessUsers` (`includeRemoved=true`, names of justification and change authors and of
+             resolvers) and `getBusinessJobRoles`, in one `parZip`; then `getWorklogHistory`
+             (`GET /api/v1/worklogs/{worklogId}/history`) once per worklog of the shift, at most 8 in flight.
+
+        Concurrency: independent Main API calls of one stage run with Arrow `parZip`; fan-outs are bounded by `Semaphore(8)`, so at most 8 Main API calls are in flight per request. The BFF never filters rows in memory: every filter (date, week, users) is a Main API parameter.
+      tags:
+        - Attendance
+      operationId: correctAttendanceShiftBreak
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '../../components/attendance/components.yml#/components/parameters/BusinessId'
+        - $ref: '../../components/attendance/components.yml#/components/parameters/ScheduledShiftId'
+        - $ref: '../../components/attendance/components.yml#/components/parameters/BreakId'
+      requestBody:
+        required: true
+        description: New break interval and mandatory reason
+        content:
+          application/json:
+            schema:
+              $ref: '../../components/attendance/components.yml#/components/schemas/AttendanceBreakCorrectionRequestDTO'
+            example:
+              startedAt: "2026-10-30T11:00:00+01:00"
+              endedAt: "2026-10-30T11:30:00+01:00"
+              reason: The break started five minutes earlier than recorded.
+      responses:
+        '200':
+          description: Refreshed detail
+          content:
+            application/json:
+              schema:
+                $ref: '../../components/attendance/components.yml#/components/schemas/AttendanceDetailDTO'
+              examples:
+                attendanceShiftDetail:
+                  $ref: '../../components/attendance/components.yml#/components/examples/AttendanceShiftDetail'
+        '400':
+          description: >
+            The reason is blank (1068) or the interval is not valid (1073), which today includes overlapping another effective break (follow-up: the Main API needs its own overlap code).
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              examples:
+                reasonRequired:
+                  summary: "1068 - worklog correction requires a non-blank reason"
+                  value: {status: 400, detail: "1068 - worklog correction requires a non-blank reason"}
+                breakNotValid:
+                  summary: "1073 - worklog break interval is not valid"
+                  value: {status: 400, detail: "1073 - worklog break interval is not valid"}
+        '401':
+          description: No authenticated session
+        '403':
+          description: >
+            The caller is not the OWNER of the business. The BFF checks the role first with `getUserBusinesses`; the Main API enforces the same rule (M7) and its 403 1020 is propagated unchanged. A non-member receives 1015.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              examples:
+                notOwner:
+                  summary: "1020 - user is not the owner of business"
+                  value: {status: 403, detail: "1020 - user is not the owner of business"}
+                notMember:
+                  summary: "1015 - user is not member of business"
+                  value: {status: 403, detail: "1015 - user is not member of business"}
+        '404':
+          description: >
+            Business, shift, worklog or break not found, or the break is not in this shift.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              examples:
+                businessNotFound:
+                  summary: "1006 - business does not exist"
+                  value: {status: 404, detail: "1006 - business does not exist"}
+                worklogNotFound:
+                  summary: "1017 - worklog not found"
+                  value: {status: 404, detail: "1017 - worklog not found"}
+                breakNotFound:
+                  summary: "1069 - worklog break not found"
+                  value: {status: 404, detail: "1069 - worklog break not found"}
+                shiftNotFound:
+                  summary: "1076 - scheduled shift not found"
+                  value: {status: 404, detail: "1076 - scheduled shift not found"}
+        '409':
+          description: >
+            The break changed concurrently (1049). An overlap that the Main API only detects when saving (a concurrent change) also surfaces as 1049, so 1049 does not tell overlap from concurrency; follow-up for a Main API overlap code.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              examples:
+                concurrentModification:
+                  summary: "1049 - resource was modified concurrently"
+                  value: {status: 409, detail: "1049 - resource was modified concurrently"}
+      x-functional-errors: [1006, 1015, 1017, 1020, 1049, 1068, 1069, 1073, 1076]
+
+  shift-break-void:
+    post:
+      summary: Void a break of a shift worklog
+      description: |
+        Void a break of a shift worklog on `…/attendance/shifts/{scheduledShiftId}/breaks/{breakId}/void`.
+
+        OWNER only. The BFF checks the role with `getUserBusinesses` before anything else; the Main API
+        enforces it again (M7). Main API functional errors are propagated unchanged. The response is the
+        detail re-read after the action. Reconciliation is asynchronous: right after a correction or a
+        rejection the detail may show `reconciliationPending: true` and `accept.disabledReason:
+        RECONCILIATION_PENDING`; refetch it shortly.
+
+        Main API calls, in sequence:
+        1. `getUserBusinesses` (role).
+        2. Pre-read `getShiftAttendance` to find the worklog of the shift that owns `breakId` (none: 404 1069, without calling the action).
+        3. `voidBusinessWorklogBreak` (`POST /api/v1/businesses/{businessId}/worklogs/{worklogId}/breaks/{breakId}/void`) with `reason`. The break stays in the history as VOIDED and stops deducting time.
+        4. Re-read as in `getAttendanceShiftDetail`: `getShiftAttendance` (`GET /api/v1/businesses/{businessId}/scheduled-shifts/{scheduledShiftId}/attendance`),
+             `getBusinessUsers` (`includeRemoved=true`, names of justification and change authors and of
+             resolvers) and `getBusinessJobRoles`, in one `parZip`; then `getWorklogHistory`
+             (`GET /api/v1/worklogs/{worklogId}/history`) once per worklog of the shift, at most 8 in flight.
+
+        Concurrency: independent Main API calls of one stage run with Arrow `parZip`; fan-outs are bounded by `Semaphore(8)`, so at most 8 Main API calls are in flight per request. The BFF never filters rows in memory: every filter (date, week, users) is a Main API parameter.
+      tags:
+        - Attendance
+      operationId: voidAttendanceShiftBreak
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '../../components/attendance/components.yml#/components/parameters/BusinessId'
+        - $ref: '../../components/attendance/components.yml#/components/parameters/ScheduledShiftId'
+        - $ref: '../../components/attendance/components.yml#/components/parameters/BreakId'
+      requestBody:
+        required: true
+        description: Mandatory reason
+        content:
+          application/json:
+            schema:
+              $ref: '../../components/attendance/components.yml#/components/schemas/AttendanceReasonRequestDTO'
+            example:
+              reason: The break was recorded accidentally.
+      responses:
+        '200':
+          description: Refreshed detail
+          content:
+            application/json:
+              schema:
+                $ref: '../../components/attendance/components.yml#/components/schemas/AttendanceDetailDTO'
+              examples:
+                attendanceShiftDetail:
+                  $ref: '../../components/attendance/components.yml#/components/examples/AttendanceShiftDetail'
+        '400':
+          description: >
+            The reason is blank (1068) or the break cannot be voided in its state (1073).
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              examples:
+                reasonRequired:
+                  summary: "1068 - worklog correction requires a non-blank reason"
+                  value: {status: 400, detail: "1068 - worklog correction requires a non-blank reason"}
+                breakNotValid:
+                  summary: "1073 - worklog break interval is not valid"
+                  value: {status: 400, detail: "1073 - worklog break interval is not valid"}
+        '401':
+          description: No authenticated session
+        '403':
+          description: >
+            The caller is not the OWNER of the business. The BFF checks the role first with `getUserBusinesses`; the Main API enforces the same rule (M7) and its 403 1020 is propagated unchanged. A non-member receives 1015.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              examples:
+                notOwner:
+                  summary: "1020 - user is not the owner of business"
+                  value: {status: 403, detail: "1020 - user is not the owner of business"}
+                notMember:
+                  summary: "1015 - user is not member of business"
+                  value: {status: 403, detail: "1015 - user is not member of business"}
+        '404':
+          description: >
+            Business, shift or break not found, or the break is not in this shift.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              examples:
+                businessNotFound:
+                  summary: "1006 - business does not exist"
+                  value: {status: 404, detail: "1006 - business does not exist"}
+                breakNotFound:
+                  summary: "1069 - worklog break not found"
+                  value: {status: 404, detail: "1069 - worklog break not found"}
+                shiftNotFound:
+                  summary: "1076 - scheduled shift not found"
+                  value: {status: 404, detail: "1076 - scheduled shift not found"}
+        '409':
+          description: >
+            The break changed concurrently (1049).
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              examples:
+                concurrentModification:
+                  summary: "1049 - resource was modified concurrently"
+                  value: {status: 409, detail: "1049 - resource was modified concurrently"}
+      x-functional-errors: [1006, 1015, 1020, 1049, 1068, 1069, 1073, 1076]
+
+  match-accept:
+    post:
+      summary: Accept work without a shift
+      description: |
+        Accept work without a shift on `…/attendance/matches/{attendanceMatchId}/accept`.
+
+        OWNER only. The BFF checks the role with `getUserBusinesses` before anything else; the Main API
+        enforces it again (M7). Main API functional errors are propagated unchanged. The response is the
+        detail re-read after the action. Reconciliation is asynchronous: right after a correction or a
+        rejection the detail may show `reconciliationPending: true` and `accept.disabledReason:
+        RECONCILIATION_PENDING`; refetch it shortly.
+
+        Main API calls, in sequence:
+        1. `getUserBusinesses` (role and business time zone).
+        2. Locate the match: `getDailyAttendance` (`GET /api/v1/businesses/{businessId}/attendance?date&userIds={userId}`),
+             `getBusinessUsers` (`includeRemoved=true`) and `getBusinessJobRoles`, in one `parZip`; the BFF
+             locates the match by id in that one-person, one-day response. Not found: 404 1074.
+        3. `acceptUnplannedAttendance` (`POST /api/v1/businesses/{businessId}/attendance-matches/{attendanceMatchId}/accept-unplanned`) with `reason`: resolves UNSCHEDULED_WORK as ACCEPTED and approves the worklog.
+        4. Re-read the same `date` as in `getAttendanceMatchDetail`.
+
+        Concurrency: independent Main API calls of one stage run with Arrow `parZip`; fan-outs are bounded by `Semaphore(8)`, so at most 8 Main API calls are in flight per request. The BFF never filters rows in memory: every filter (date, week, users) is a Main API parameter.
+      tags:
+        - Attendance
+      operationId: acceptAttendanceMatch
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '../../components/attendance/components.yml#/components/parameters/BusinessId'
+        - $ref: '../../components/attendance/components.yml#/components/parameters/AttendanceMatchId'
+        - $ref: '../../components/attendance/components.yml#/components/parameters/MatchDate'
+        - $ref: '../../components/attendance/components.yml#/components/parameters/MatchUserId'
+      requestBody:
+        required: true
+        description: Mandatory reason
+        content:
+          application/json:
+            schema:
+              $ref: '../../components/attendance/components.yml#/components/schemas/AttendanceReasonRequestDTO'
+            example:
+              reason: Emergency cover approved by the owner.
+      responses:
+        '200':
+          description: Refreshed detail; `kind` may be SHIFT if the match is now assigned to a shift
+          content:
+            application/json:
+              schema:
+                $ref: '../../components/attendance/components.yml#/components/schemas/AttendanceDetailDTO'
+              examples:
+                attendanceMatchDetail:
+                  $ref: '../../components/attendance/components.yml#/components/examples/AttendanceMatchDetail'
+        '400':
+          description: >
+            The reason is blank (1078).
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              examples:
+                attendanceReasonRequired:
+                  summary: "1078 - attendance resolution requires a non-blank reason"
+                  value: {status: 400, detail: "1078 - attendance resolution requires a non-blank reason"}
+        '401':
+          description: No authenticated session
+        '403':
+          description: >
+            The caller is not the OWNER of the business. The BFF checks the role first with `getUserBusinesses`; the Main API enforces the same rule (M7) and its 403 1020 is propagated unchanged. A non-member receives 1015.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              examples:
+                notOwner:
+                  summary: "1020 - user is not the owner of business"
+                  value: {status: 403, detail: "1020 - user is not the owner of business"}
+                notMember:
+                  summary: "1015 - user is not member of business"
+                  value: {status: 403, detail: "1015 - user is not member of business"}
+        '404':
+          description: >
+            Business or match not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              examples:
+                businessNotFound:
+                  summary: "1006 - business does not exist"
+                  value: {status: 404, detail: "1006 - business does not exist"}
+                matchNotFound:
+                  summary: "1074 - attendance match not found"
+                  value: {status: 404, detail: "1074 - attendance match not found"}
+        '409':
+          description: >
+            The match cannot be accepted in its state (1084), the worklog cannot be approved, for example while an AUTOMATIC_CLOSE is open (1067), or it changed concurrently (1049).
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              examples:
+                concurrentModification:
+                  summary: "1049 - resource was modified concurrently"
+                  value: {status: 409, detail: "1049 - resource was modified concurrently"}
+                invalidReviewTransition:
+                  summary: "1067 - worklog review transition is not allowed"
+                  value: {status: 409, detail: "1067 - worklog review transition is not allowed"}
+                invalidResolution:
+                  summary: "1084 - attendance resolution is not allowed for the current state"
+                  value: {status: 409, detail: "1084 - attendance resolution is not allowed for the current state"}
+      x-functional-errors: [1006, 1015, 1020, 1049, 1067, 1074, 1078, 1084]
+
+  match-resolution:
+    post:
+      summary: Resolve an ambiguous match
+      description: |
+        Resolve an ambiguous match on `…/attendance/matches/{attendanceMatchId}/resolution`.
+
+        OWNER only. The BFF checks the role with `getUserBusinesses` before anything else; the Main API
+        enforces it again (M7). Main API functional errors are propagated unchanged. The response is the
+        detail re-read after the action. Reconciliation is asynchronous: right after a correction or a
+        rejection the detail may show `reconciliationPending: true` and `accept.disabledReason:
+        RECONCILIATION_PENDING`; refetch it shortly.
+
+        Main API calls, in sequence:
+        1. `getUserBusinesses` (role and business time zone).
+        2. Locate the match: `getDailyAttendance` (`GET /api/v1/businesses/{businessId}/attendance?date&userIds={userId}`),
+             `getBusinessUsers` (`includeRemoved=true`) and `getBusinessJobRoles`, in one `parZip`; the BFF
+             locates the match by id in that one-person, one-day response. Not found: 404 1074.
+        3. `resolveAttendanceMatch` (`POST /api/v1/businesses/{businessId}/attendance-matches/{attendanceMatchId}/resolution`) with the body unchanged: ASSIGN_SHIFT to one of `candidateShifts`, or DECLARE_UNPLANNED.
+        4. ASSIGN_SHIFT: read the assigned shift as in `getAttendanceShiftDetail` (`getShiftAttendance` of `scheduledShiftId`) and return it (`kind: SHIFT`); DECLARE_UNPLANNED: re-read the same `date` as in `getAttendanceMatchDetail`.
+
+        Concurrency: independent Main API calls of one stage run with Arrow `parZip`; fan-outs are bounded by `Semaphore(8)`, so at most 8 Main API calls are in flight per request. The BFF never filters rows in memory: every filter (date, week, users) is a Main API parameter.
+      tags:
+        - Attendance
+      operationId: resolveAttendanceMatchAmbiguity
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '../../components/attendance/components.yml#/components/parameters/BusinessId'
+        - $ref: '../../components/attendance/components.yml#/components/parameters/AttendanceMatchId'
+        - $ref: '../../components/attendance/components.yml#/components/parameters/MatchDate'
+        - $ref: '../../components/attendance/components.yml#/components/parameters/MatchUserId'
+      requestBody:
+        required: true
+        description: Structural resolution and mandatory reason
+        content:
+          application/json:
+            schema:
+              $ref: '../../components/attendance/components.yml#/components/schemas/AttendanceMatchResolutionRequestDTO'
+            example:
+              action: ASSIGN_SHIFT
+              scheduledShiftId: 901
+              reason: The worker covered the morning service.
+      responses:
+        '200':
+          description: Refreshed detail; `kind` may be SHIFT if the match is now assigned to a shift
+          content:
+            application/json:
+              schema:
+                $ref: '../../components/attendance/components.yml#/components/schemas/AttendanceDetailDTO'
+              examples:
+                attendanceMatchDetail:
+                  $ref: '../../components/attendance/components.yml#/components/examples/AttendanceMatchDetail'
+        '400':
+          description: >
+            The reason is blank (1078) or the resolution is invalid (1075).
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              examples:
+                invalidMatch:
+                  summary: "1075 - attendance match is invalid"
+                  value: {status: 400, detail: "1075 - attendance match is invalid"}
+                attendanceReasonRequired:
+                  summary: "1078 - attendance resolution requires a non-blank reason"
+                  value: {status: 400, detail: "1078 - attendance resolution requires a non-blank reason"}
+        '401':
+          description: No authenticated session
+        '403':
+          description: >
+            The caller is not the OWNER of the business. The BFF checks the role first with `getUserBusinesses`; the Main API enforces the same rule (M7) and its 403 1020 is propagated unchanged. A non-member receives 1015.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              examples:
+                notOwner:
+                  summary: "1020 - user is not the owner of business"
+                  value: {status: 403, detail: "1020 - user is not the owner of business"}
+                notMember:
+                  summary: "1015 - user is not member of business"
+                  value: {status: 403, detail: "1015 - user is not member of business"}
+        '404':
+          description: >
+            Business, match or selected shift not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              examples:
+                businessNotFound:
+                  summary: "1006 - business does not exist"
+                  value: {status: 404, detail: "1006 - business does not exist"}
+                matchNotFound:
+                  summary: "1074 - attendance match not found"
+                  value: {status: 404, detail: "1074 - attendance match not found"}
+                shiftNotFound:
+                  summary: "1076 - scheduled shift not found"
+                  value: {status: 404, detail: "1076 - scheduled shift not found"}
+        '409':
+          description: >
+            The resolution is not allowed for the match's state (1084) or it changed concurrently (1049).
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              examples:
+                concurrentModification:
+                  summary: "1049 - resource was modified concurrently"
+                  value: {status: 409, detail: "1049 - resource was modified concurrently"}
+                invalidResolution:
+                  summary: "1084 - attendance resolution is not allowed for the current state"
+                  value: {status: 409, detail: "1084 - attendance resolution is not allowed for the current state"}
+      x-functional-errors: [1006, 1015, 1020, 1049, 1074, 1075, 1076, 1078, 1084]
+
+  match-correction:
+    post:
+      summary: Correct the worklog of a match
+      description: |
+        Correct the worklog of a match on `…/attendance/matches/{attendanceMatchId}/correction`.
+
+        OWNER only. The BFF checks the role with `getUserBusinesses` before anything else; the Main API
+        enforces it again (M7). Main API functional errors are propagated unchanged. The response is the
+        detail re-read after the action. Reconciliation is asynchronous: right after a correction or a
+        rejection the detail may show `reconciliationPending: true` and `accept.disabledReason:
+        RECONCILIATION_PENDING`; refetch it shortly.
+
+        Main API calls, in sequence:
+        1. `getUserBusinesses` (role and business time zone).
+        2. Locate the match: `getDailyAttendance` (`GET /api/v1/businesses/{businessId}/attendance?date&userIds={userId}`),
+             `getBusinessUsers` (`includeRemoved=true`) and `getBusinessJobRoles`, in one `parZip`; the BFF
+             locates the match by id in that one-person, one-day response. Not found: 404 1074.
+        3. `correctBusinessWorklog` (`PUT /api/v1/businesses/{businessId}/worklogs/{worklogId}/correction`). `worklogId` must be the match's worklog (otherwise 404 1017, without calling the action).
+        4. Re-read as in `getAttendanceMatchDetail`, on the business-local date of the worklog's current clock-in (business time zone from step 1); if the match is now assigned to a shift, the response is that shift's detail.
+
+        Concurrency: independent Main API calls of one stage run with Arrow `parZip`; fan-outs are bounded by `Semaphore(8)`, so at most 8 Main API calls are in flight per request. The BFF never filters rows in memory: every filter (date, week, users) is a Main API parameter.
+      tags:
+        - Attendance
+      operationId: correctAttendanceMatchWorklog
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '../../components/attendance/components.yml#/components/parameters/BusinessId'
+        - $ref: '../../components/attendance/components.yml#/components/parameters/AttendanceMatchId'
+        - $ref: '../../components/attendance/components.yml#/components/parameters/MatchDate'
+        - $ref: '../../components/attendance/components.yml#/components/parameters/MatchUserId'
+      requestBody:
+        required: true
+        description: Worklog to correct, new times and mandatory reason
+        content:
+          application/json:
+            schema:
+              $ref: '../../components/attendance/components.yml#/components/schemas/AttendanceWorklogCorrectionRequestDTO'
+            example:
+              worklogId: 3077
+              clockOut: "2026-10-30T12:30:00+01:00"
+              reason: Automatic close; the worker left at 12:30.
+      responses:
+        '200':
+          description: Refreshed detail; `kind` may be SHIFT if the match is now assigned to a shift
+          content:
+            application/json:
+              schema:
+                $ref: '../../components/attendance/components.yml#/components/schemas/AttendanceDetailDTO'
+              examples:
+                attendanceMatchDetail:
+                  $ref: '../../components/attendance/components.yml#/components/examples/AttendanceMatchDetail'
+        '400':
+          description: >
+            The reason is blank (1068); or the correction is not valid (1025): neither `clockIn` nor `clockOut` is sent, `clockOut` is missing for a worklog with `provisionalClockOut` (open AUTOMATIC_CLOSE), or the Main API rejects the interval (it changes nothing, ends in the future or is not a valid interval). The BFF checks the first two rules after the pre-read and before calling `correctBusinessWorklog`.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              examples:
+                worklogNotValid:
+                  summary: "1025 - worklog is not valid"
+                  value: {status: 400, detail: "1025 - worklog is not valid"}
+                reasonRequired:
+                  summary: "1068 - worklog correction requires a non-blank reason"
+                  value: {status: 400, detail: "1068 - worklog correction requires a non-blank reason"}
+        '401':
+          description: No authenticated session
+        '403':
+          description: >
+            The caller is not the OWNER of the business. The BFF checks the role first with `getUserBusinesses`; the Main API enforces the same rule (M7) and its 403 1020 is propagated unchanged. A non-member receives 1015.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              examples:
+                notOwner:
+                  summary: "1020 - user is not the owner of business"
+                  value: {status: 403, detail: "1020 - user is not the owner of business"}
+                notMember:
+                  summary: "1015 - user is not member of business"
+                  value: {status: 403, detail: "1015 - user is not member of business"}
+        '404':
+          description: >
+            Business or match not found, or the worklog is not the match's worklog.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              examples:
+                businessNotFound:
+                  summary: "1006 - business does not exist"
+                  value: {status: 404, detail: "1006 - business does not exist"}
+                worklogNotFound:
+                  summary: "1017 - worklog not found"
+                  value: {status: 404, detail: "1017 - worklog not found"}
+                matchNotFound:
+                  summary: "1074 - attendance match not found"
+                  value: {status: 404, detail: "1074 - attendance match not found"}
+        '409':
+          description: >
+            The correction overlaps another worklog (1022) or the worklog changed concurrently (1049).
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              examples:
+                worklogOverlap:
+                  summary: "1022 - worklog overlaps with existing worklog"
+                  value: {status: 409, detail: "1022 - worklog overlaps with existing worklog"}
+                concurrentModification:
+                  summary: "1049 - resource was modified concurrently"
+                  value: {status: 409, detail: "1049 - resource was modified concurrently"}
+      x-functional-errors: [1006, 1015, 1017, 1020, 1022, 1025, 1049, 1068, 1074]
+
+  match-rejection:
+    post:
+      summary: Reject the worklog of a match
+      description: |
+        Reject the worklog of a match on `…/attendance/matches/{attendanceMatchId}/rejection`.
+
+        OWNER only. The BFF checks the role with `getUserBusinesses` before anything else; the Main API
+        enforces it again (M7). Main API functional errors are propagated unchanged. The response is the
+        detail re-read after the action. Reconciliation is asynchronous: right after a correction or a
+        rejection the detail may show `reconciliationPending: true` and `accept.disabledReason:
+        RECONCILIATION_PENDING`; refetch it shortly.
+
+        Main API calls, in sequence:
+        1. `getUserBusinesses` (role and business time zone).
+        2. Locate the match: `getDailyAttendance` (`GET /api/v1/businesses/{businessId}/attendance?date&userIds={userId}`),
+             `getBusinessUsers` (`includeRemoved=true`) and `getBusinessJobRoles`, in one `parZip`; the BFF
+             locates the match by id in that one-person, one-day response. Not found: 404 1074.
+        3. `rejectWorklog` (`POST /api/v1/businesses/{businessId}/worklogs/{worklogId}/reject`). `worklogId` must be the match's worklog (otherwise 404 1017, without calling the action).
+        4. Re-read the same `date` as in `getAttendanceMatchDetail`.
+
+        Concurrency: independent Main API calls of one stage run with Arrow `parZip`; fan-outs are bounded by `Semaphore(8)`, so at most 8 Main API calls are in flight per request. The BFF never filters rows in memory: every filter (date, week, users) is a Main API parameter.
+      tags:
+        - Attendance
+      operationId: rejectAttendanceMatchWorklog
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '../../components/attendance/components.yml#/components/parameters/BusinessId'
+        - $ref: '../../components/attendance/components.yml#/components/parameters/AttendanceMatchId'
+        - $ref: '../../components/attendance/components.yml#/components/parameters/MatchDate'
+        - $ref: '../../components/attendance/components.yml#/components/parameters/MatchUserId'
+      requestBody:
+        required: true
+        description: Worklog to reject and mandatory reason
+        content:
+          application/json:
+            schema:
+              $ref: '../../components/attendance/components.yml#/components/schemas/AttendanceWorklogRejectionRequestDTO'
+            example:
+              worklogId: 3077
+              reason: Clocked in by mistake on a day off.
+      responses:
+        '200':
+          description: Refreshed detail; `kind` may be SHIFT if the match is now assigned to a shift
+          content:
+            application/json:
+              schema:
+                $ref: '../../components/attendance/components.yml#/components/schemas/AttendanceDetailDTO'
+              examples:
+                attendanceMatchDetail:
+                  $ref: '../../components/attendance/components.yml#/components/examples/AttendanceMatchDetail'
+        '400':
+          description: >
+            The reason is blank (1068).
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              examples:
+                reasonRequired:
+                  summary: "1068 - worklog correction requires a non-blank reason"
+                  value: {status: 400, detail: "1068 - worklog correction requires a non-blank reason"}
+        '401':
+          description: No authenticated session
+        '403':
+          description: >
+            The caller is not the OWNER of the business. The BFF checks the role first with `getUserBusinesses`; the Main API enforces the same rule (M7) and its 403 1020 is propagated unchanged. A non-member receives 1015.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              examples:
+                notOwner:
+                  summary: "1020 - user is not the owner of business"
+                  value: {status: 403, detail: "1020 - user is not the owner of business"}
+                notMember:
+                  summary: "1015 - user is not member of business"
+                  value: {status: 403, detail: "1015 - user is not member of business"}
+        '404':
+          description: >
+            Business or match not found, or the worklog is not the match's worklog.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              examples:
+                businessNotFound:
+                  summary: "1006 - business does not exist"
+                  value: {status: 404, detail: "1006 - business does not exist"}
+                worklogNotFound:
+                  summary: "1017 - worklog not found"
+                  value: {status: 404, detail: "1017 - worklog not found"}
+                matchNotFound:
+                  summary: "1074 - attendance match not found"
+                  value: {status: 404, detail: "1074 - attendance match not found"}
+        '409':
+          description: >
+            The worklog cannot move to REJECTED from its current review state (1067).
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              examples:
+                invalidReviewTransition:
+                  summary: "1067 - worklog review transition is not allowed"
+                  value: {status: 409, detail: "1067 - worklog review transition is not allowed"}
+      x-functional-errors: [1006, 1015, 1017, 1020, 1067, 1068, 1074]
+
+  match-break-correction:
+    post:
+      summary: Correct a break of the worklog of a match
+      description: |
+        Correct a break of the worklog of a match on `…/attendance/matches/{attendanceMatchId}/breaks/{breakId}/correction`.
+
+        OWNER only. The BFF checks the role with `getUserBusinesses` before anything else; the Main API
+        enforces it again (M7). Main API functional errors are propagated unchanged. The response is the
+        detail re-read after the action. Reconciliation is asynchronous: right after a correction or a
+        rejection the detail may show `reconciliationPending: true` and `accept.disabledReason:
+        RECONCILIATION_PENDING`; refetch it shortly.
+
+        Main API calls, in sequence:
+        1. `getUserBusinesses` (role and business time zone).
+        2. Locate the match: `getDailyAttendance` (`GET /api/v1/businesses/{businessId}/attendance?date&userIds={userId}`),
+             `getBusinessUsers` (`includeRemoved=true`) and `getBusinessJobRoles`, in one `parZip`; the BFF
+             locates the match by id in that one-person, one-day response. Not found: 404 1074.
+        3. `correctBusinessWorklogBreak` (`PUT /api/v1/businesses/{businessId}/worklogs/{worklogId}/breaks/{breakId}/correction`) on the match's worklog. A `breakId` that is not one of its breaks returns 404 1069 without calling the action.
+        4. Re-read the same `date` as in `getAttendanceMatchDetail`.
+
+        Concurrency: independent Main API calls of one stage run with Arrow `parZip`; fan-outs are bounded by `Semaphore(8)`, so at most 8 Main API calls are in flight per request. The BFF never filters rows in memory: every filter (date, week, users) is a Main API parameter.
+      tags:
+        - Attendance
+      operationId: correctAttendanceMatchBreak
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '../../components/attendance/components.yml#/components/parameters/BusinessId'
+        - $ref: '../../components/attendance/components.yml#/components/parameters/AttendanceMatchId'
+        - $ref: '../../components/attendance/components.yml#/components/parameters/MatchDate'
+        - $ref: '../../components/attendance/components.yml#/components/parameters/MatchUserId'
+        - $ref: '../../components/attendance/components.yml#/components/parameters/BreakId'
+      requestBody:
+        required: true
+        description: New break interval and mandatory reason
+        content:
+          application/json:
+            schema:
+              $ref: '../../components/attendance/components.yml#/components/schemas/AttendanceBreakCorrectionRequestDTO'
+            example:
+              startedAt: "2026-10-30T11:00:00+01:00"
+              endedAt: "2026-10-30T11:20:00+01:00"
+              reason: The break ended earlier than recorded.
+      responses:
+        '200':
+          description: Refreshed detail; `kind` may be SHIFT if the match is now assigned to a shift
+          content:
+            application/json:
+              schema:
+                $ref: '../../components/attendance/components.yml#/components/schemas/AttendanceDetailDTO'
+              examples:
+                attendanceMatchDetail:
+                  $ref: '../../components/attendance/components.yml#/components/examples/AttendanceMatchDetail'
+        '400':
+          description: >
+            The reason is blank (1068) or the interval is not valid (1073), which today includes overlapping another effective break (follow-up: the Main API needs its own overlap code).
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              examples:
+                reasonRequired:
+                  summary: "1068 - worklog correction requires a non-blank reason"
+                  value: {status: 400, detail: "1068 - worklog correction requires a non-blank reason"}
+                breakNotValid:
+                  summary: "1073 - worklog break interval is not valid"
+                  value: {status: 400, detail: "1073 - worklog break interval is not valid"}
+        '401':
+          description: No authenticated session
+        '403':
+          description: >
+            The caller is not the OWNER of the business. The BFF checks the role first with `getUserBusinesses`; the Main API enforces the same rule (M7) and its 403 1020 is propagated unchanged. A non-member receives 1015.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              examples:
+                notOwner:
+                  summary: "1020 - user is not the owner of business"
+                  value: {status: 403, detail: "1020 - user is not the owner of business"}
+                notMember:
+                  summary: "1015 - user is not member of business"
+                  value: {status: 403, detail: "1015 - user is not member of business"}
+        '404':
+          description: >
+            Business, match, worklog or break not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              examples:
+                businessNotFound:
+                  summary: "1006 - business does not exist"
+                  value: {status: 404, detail: "1006 - business does not exist"}
+                worklogNotFound:
+                  summary: "1017 - worklog not found"
+                  value: {status: 404, detail: "1017 - worklog not found"}
+                breakNotFound:
+                  summary: "1069 - worklog break not found"
+                  value: {status: 404, detail: "1069 - worklog break not found"}
+                matchNotFound:
+                  summary: "1074 - attendance match not found"
+                  value: {status: 404, detail: "1074 - attendance match not found"}
+        '409':
+          description: >
+            The break changed concurrently (1049). An overlap that the Main API only detects when saving (a concurrent change) also surfaces as 1049, so 1049 does not tell overlap from concurrency; follow-up for a Main API overlap code.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              examples:
+                concurrentModification:
+                  summary: "1049 - resource was modified concurrently"
+                  value: {status: 409, detail: "1049 - resource was modified concurrently"}
+      x-functional-errors: [1006, 1015, 1017, 1020, 1049, 1068, 1069, 1073, 1074]
+
+  match-break-void:
+    post:
+      summary: Void a break of the worklog of a match
+      description: |
+        Void a break of the worklog of a match on `…/attendance/matches/{attendanceMatchId}/breaks/{breakId}/void`.
+
+        OWNER only. The BFF checks the role with `getUserBusinesses` before anything else; the Main API
+        enforces it again (M7). Main API functional errors are propagated unchanged. The response is the
+        detail re-read after the action. Reconciliation is asynchronous: right after a correction or a
+        rejection the detail may show `reconciliationPending: true` and `accept.disabledReason:
+        RECONCILIATION_PENDING`; refetch it shortly.
+
+        Main API calls, in sequence:
+        1. `getUserBusinesses` (role and business time zone).
+        2. Locate the match: `getDailyAttendance` (`GET /api/v1/businesses/{businessId}/attendance?date&userIds={userId}`),
+             `getBusinessUsers` (`includeRemoved=true`) and `getBusinessJobRoles`, in one `parZip`; the BFF
+             locates the match by id in that one-person, one-day response. Not found: 404 1074.
+        3. `voidBusinessWorklogBreak` (`POST /api/v1/businesses/{businessId}/worklogs/{worklogId}/breaks/{breakId}/void`) on the match's worklog. A `breakId` that is not one of its breaks returns 404 1069 without calling the action.
+        4. Re-read the same `date` as in `getAttendanceMatchDetail`.
+
+        Concurrency: independent Main API calls of one stage run with Arrow `parZip`; fan-outs are bounded by `Semaphore(8)`, so at most 8 Main API calls are in flight per request. The BFF never filters rows in memory: every filter (date, week, users) is a Main API parameter.
+      tags:
+        - Attendance
+      operationId: voidAttendanceMatchBreak
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '../../components/attendance/components.yml#/components/parameters/BusinessId'
+        - $ref: '../../components/attendance/components.yml#/components/parameters/AttendanceMatchId'
+        - $ref: '../../components/attendance/components.yml#/components/parameters/MatchDate'
+        - $ref: '../../components/attendance/components.yml#/components/parameters/MatchUserId'
+        - $ref: '../../components/attendance/components.yml#/components/parameters/BreakId'
+      requestBody:
+        required: true
+        description: Mandatory reason
+        content:
+          application/json:
+            schema:
+              $ref: '../../components/attendance/components.yml#/components/schemas/AttendanceReasonRequestDTO'
+            example:
+              reason: The break was recorded accidentally.
+      responses:
+        '200':
+          description: Refreshed detail; `kind` may be SHIFT if the match is now assigned to a shift
+          content:
+            application/json:
+              schema:
+                $ref: '../../components/attendance/components.yml#/components/schemas/AttendanceDetailDTO'
+              examples:
+                attendanceMatchDetail:
+                  $ref: '../../components/attendance/components.yml#/components/examples/AttendanceMatchDetail'
+        '400':
+          description: >
+            The reason is blank (1068) or the break cannot be voided in its state (1073).
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              examples:
+                reasonRequired:
+                  summary: "1068 - worklog correction requires a non-blank reason"
+                  value: {status: 400, detail: "1068 - worklog correction requires a non-blank reason"}
+                breakNotValid:
+                  summary: "1073 - worklog break interval is not valid"
+                  value: {status: 400, detail: "1073 - worklog break interval is not valid"}
+        '401':
+          description: No authenticated session
+        '403':
+          description: >
+            The caller is not the OWNER of the business. The BFF checks the role first with `getUserBusinesses`; the Main API enforces the same rule (M7) and its 403 1020 is propagated unchanged. A non-member receives 1015.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              examples:
+                notOwner:
+                  summary: "1020 - user is not the owner of business"
+                  value: {status: 403, detail: "1020 - user is not the owner of business"}
+                notMember:
+                  summary: "1015 - user is not member of business"
+                  value: {status: 403, detail: "1015 - user is not member of business"}
+        '404':
+          description: >
+            Business, match or break not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              examples:
+                businessNotFound:
+                  summary: "1006 - business does not exist"
+                  value: {status: 404, detail: "1006 - business does not exist"}
+                breakNotFound:
+                  summary: "1069 - worklog break not found"
+                  value: {status: 404, detail: "1069 - worklog break not found"}
+                matchNotFound:
+                  summary: "1074 - attendance match not found"
+                  value: {status: 404, detail: "1074 - attendance match not found"}
+        '409':
+          description: >
+            The break changed concurrently (1049).
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              examples:
+                concurrentModification:
+                  summary: "1049 - resource was modified concurrently"
+                  value: {status: 409, detail: "1049 - resource was modified concurrently"}
+      x-functional-errors: [1006, 1015, 1020, 1049, 1068, 1069, 1073, 1074]
