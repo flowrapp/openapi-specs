@@ -407,7 +407,7 @@ components:
         AMBIGUOUS_MATCH) incident is open, CRITICAL while an AUTOMATIC_CLOSE is open, and
         ON_TIME with `warningDot` once the unplanned work is accepted. It is never UPCOMING or
         OFF.
-      enum: [ON_TIME, WARNING, CRITICAL, IN_PROGRESS, UPCOMING, OFF]
+      enum: [ON_TIME, WARNING, CRITICAL, IN_PROGRESS, UPCOMING, "OFF"]
       example: ON_TIME
 
     AttendanceWorklogChangeActionDTO:
