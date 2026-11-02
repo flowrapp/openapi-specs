@@ -255,7 +255,7 @@ components:
           type: [integer, 'null']
           format: int64
           minimum: 0
-          description: Measured deviation for temporal incidents; null for structural and no-show incidents.
+          description: Measured deviation for temporal incidents; null for structural, no-show and AUTOMATIC_CLOSE incidents.
           example: 900
         toleranceSeconds:
           type: [integer, 'null']
