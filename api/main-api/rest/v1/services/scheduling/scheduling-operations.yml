@@ -1032,7 +1032,9 @@ planning:
             Restricts the schedule to the shifts of this job role, filtered server-side:
             the job role stored on each scheduled shift when it was created
             (scheduled_shifts.job_role_id), so past weeks keep the job role in force that
-            day. Combined with userIds using AND. A job role with no shift in the week, or
+            day. The team schedule holds only scheduled shifts, so the contract fallback used
+            for worklogs without a shift (getBusinessReports, getDailyAttendance) never
+            applies here. Combined with userIds using AND. A job role with no shift in the week, or
             not of this business, returns an empty schedule.
           schema:
             type: integer
