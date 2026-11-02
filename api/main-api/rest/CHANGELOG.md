@@ -4,7 +4,7 @@
 
 ### Added
 
-- Optional `periodType` (`MONTH`, `YEAR`, `RANGE`; default `RANGE`) on `GET /api/v1/businesses/{businessId}/reports/worked-hours.pdf` (query) and `POST /api/v1/businesses/{businessId}/reports/worked-hours` (request body), defined once as `WorkedHoursReportPeriodTypeDTO`. `MONTH` requires `from`/`to` to cover exactly one calendar month, `YEAR` exactly one calendar year (January 1 to December 31; no fiscal years), and `RANGE` accepts any valid range as before. A mismatch returns `400`. Omitting it behaves exactly as before (`RANGE`); nothing is inferred from the dates. A multi-employee PDF, including YEAR, is one single PDF, not a ZIP.
+- Optional `periodType` (`MONTH`, `YEAR`, `RANGE`; default `RANGE`) on `GET /api/v1/businesses/{businessId}/reports/worked-hours.pdf` (query) and `POST /api/v1/businesses/{businessId}/reports/worked-hours` (request body), defined once as `WorkedHoursReportPeriodTypeDTO`. `MONTH` requires `from`/`to` to cover exactly one calendar month, `YEAR` exactly one calendar year (January 1 to December 31; no fiscal years), and `RANGE` accepts any valid range as before. A mismatch returns `400` with the new functional code `1114` (`REPORT_PERIOD_TYPE_MISMATCH`, `from and to do not match periodType`). Omitting it behaves exactly as before (`RANGE`); nothing is inferred from the dates. A multi-employee PDF, including YEAR, is one single PDF, not a ZIP.
 
 ## 0.0.83
 

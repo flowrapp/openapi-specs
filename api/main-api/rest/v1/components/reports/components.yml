@@ -46,7 +46,7 @@ components:
           to is December 31 of the same year). Fiscal or rolling 12-month years are not supported.
         - RANGE: any from and to with from on or before to, exactly as before this field existed.
         When omitted, RANGE is used. Nothing is inferred from the dates.
-        If from and to do not match the period type, the request fails with 400.
+        If from and to do not match the period type, the request fails with 400 and functional code 1114 (REPORT_PERIOD_TYPE_MISMATCH).
       enum: [MONTH, YEAR, RANGE]
       default: RANGE
       example: MONTH
