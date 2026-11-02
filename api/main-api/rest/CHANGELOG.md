@@ -16,6 +16,7 @@ Meant to be released after 0.0.84 (PR #40, `periodType` on worked-hours reports)
 
 - `getBusinessReports` documents OWNER or MANAGER access (`403` `1020`), matching the backend.
 - `DailyAttendanceSummaryDTO.recordedWorkedSeconds` and `reportableWorkedSeconds` are documented as net of breaks.
+- Review operations are OWNER-only across the app (M7): `approveShiftAttendance`, `acceptUnplannedAttendance`, `resolveAttendanceMatch`, `acknowledgeNoShow`, `approveWorklog`, `rejectWorklog`, `correctBusinessWorklog`, `correctBusinessWorklogBreak` and `voidBusinessWorklogBreak` now document that only the OWNER may call them; a MANAGER receives `403` `1020` (`user is not the owner of business`). Previously the descriptions allowed an OWNER or MANAGER. The schema does not change, so oasdiff does not report it, but it narrows who may call these operations: the backend must enforce it. `rejectWorklog` is included because rejecting is part of the same review.
 
 ## 0.0.83
 

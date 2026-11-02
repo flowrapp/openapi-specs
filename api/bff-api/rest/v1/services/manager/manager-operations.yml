@@ -466,8 +466,8 @@ manager:
     put:
       summary: Edit a worklog
       description: >
-        Updates the clock-in and/or clock-out times of an existing worklog. This is a manager-only
-        operation for correcting worker time entries.
+        Updates the clock-in and/or clock-out times of an existing worklog. This is an owner-only
+        operation for correcting worker time entries: only the OWNER of the business may call it and a MANAGER receives 403.
       tags:
         - Manager
       operationId: managerUpdateWorklog
@@ -507,7 +507,7 @@ manager:
         '401':
           description: Unauthorized
         '403':
-          description: Forbidden - User is not a manager of this business
+          description: Forbidden - User is not the owner of this business (a MANAGER receives 403 too)
         '404':
           description: Worklog not found
 

@@ -185,7 +185,7 @@ attendance:
   match-resolution:
     post:
       summary: Resolve an attendance match
-      description: Assigns an ambiguous match to one valid retained or plausible shift, or declares it unplanned. A non-blank reason is required.
+      description: Assigns an ambiguous match to one valid retained or plausible shift, or declares it unplanned. A non-blank reason is required. Only the OWNER of the business may call this operation; a MANAGER receives 403 (1020).
       tags: [Attendance]
       operationId: resolveAttendanceMatch
       security:
@@ -241,11 +241,12 @@ attendance:
         '401':
           description: Unauthorized.
         '403':
-          description: The authenticated user is not an owner or manager of the business.
+          description: The authenticated user is not the owner of the business. A MANAGER receives 403 too.
           content:
             application/problem+json:
               schema:
                 $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+              example: {status: 403, detail: '1020 - user is not the owner of business'}
         '404':
           description: Business, match, or selected shift not found.
           content:
@@ -259,12 +260,12 @@ attendance:
               schema:
                 $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
               example: {status: 409, detail: '1049 - resource was modified concurrently'}
-      x-functional-errors: [1006, 1049, 1074, 1075, 1076, 1078, 1084]
+      x-functional-errors: [1006, 1020, 1049, 1074, 1075, 1076, 1078, 1084]
 
   unplanned-acceptance:
     post:
       summary: Accept unscheduled attendance
-      description: Accepts an UNSCHEDULED_WORK incident with a mandatory reason and approves its eligible non-rejected worklog.
+      description: Accepts an UNSCHEDULED_WORK incident with a mandatory reason and approves its eligible non-rejected worklog. Only the OWNER of the business may call this operation; a MANAGER receives 403 (1020).
       tags: [Attendance]
       operationId: acceptUnplannedAttendance
       security:
@@ -301,7 +302,12 @@ attendance:
         '401':
           description: Unauthorized.
         '403':
-          description: The authenticated user is not an owner or manager of the business.
+          description: The authenticated user is not the owner of the business. A MANAGER receives 403 too.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+              example: {status: 403, detail: '1020 - user is not the owner of business'}
         '404':
           description: Business or match not found.
           content:
@@ -314,12 +320,12 @@ attendance:
             application/problem+json:
               schema:
                 $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
-      x-functional-errors: [1006, 1049, 1067, 1074, 1078, 1084]
+      x-functional-errors: [1006, 1020, 1049, 1067, 1074, 1078, 1084]
 
   no-show-acknowledgment:
     post:
       summary: Acknowledge a no-show
-      description: Resolves the shift-scoped NO_SHOW incident with a mandatory reason and does not create a worklog.
+      description: Resolves the shift-scoped NO_SHOW incident with a mandatory reason and does not create a worklog. Only the OWNER of the business may call this operation; a MANAGER receives 403 (1020).
       tags: [Attendance]
       operationId: acknowledgeNoShow
       security:
@@ -356,14 +362,19 @@ attendance:
         '401':
           description: Unauthorized.
         '403':
-          description: The authenticated user is not an owner or manager of the business.
+          description: The authenticated user is not the owner of the business. A MANAGER receives 403 too.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+              example: {status: 403, detail: '1020 - user is not the owner of business'}
         '404':
           description: Business, shift, or no-show incident not found.
           content:
             application/problem+json:
               schema:
                 $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
-      x-functional-errors: [1006, 1076, 1078, 1085]
+      x-functional-errors: [1006, 1020, 1076, 1078, 1085]
 
   shift-attendance:
     get:
@@ -423,7 +434,7 @@ attendance:
   shift-approval:
     post:
       summary: Approve shift attendance
-      description: Approves one completed ShiftAttendance using an opaque expected revision. Approval is atomic and rejects stale or unreconciled attendance.
+      description: Approves one completed ShiftAttendance using an opaque expected revision. Approval is atomic and rejects stale or unreconciled attendance. Only the OWNER of the business may call this operation; a MANAGER receives 403 (1020).
       tags: [Attendance]
       operationId: approveShiftAttendance
       security:
@@ -460,11 +471,12 @@ attendance:
         '401':
           description: Unauthorized.
         '403':
-          description: The authenticated user is not an owner or manager of the business.
+          description: The authenticated user is not the owner of the business. A MANAGER receives 403 too.
           content:
             application/problem+json:
               schema:
                 $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+              example: {status: 403, detail: '1020 - user is not the owner of business'}
         '404':
           description: Business or scheduled shift not found.
           content:
@@ -488,7 +500,7 @@ attendance:
                   value: {status: 409, detail: '1082 - attendance has an open worklog or break'}
                 STRUCTURAL:
                   value: {status: 409, detail: '1083 - attendance has unresolved structural incidents'}
-      x-functional-errors: [1006, 1049, 1076, 1079, 1080, 1081, 1082, 1083]
+      x-functional-errors: [1006, 1020, 1049, 1076, 1079, 1080, 1081, 1082, 1083]
 
   incident-justification:
     post:

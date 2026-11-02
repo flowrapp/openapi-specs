@@ -718,11 +718,12 @@ worklogs:
     put:
       summary: Correct a business worklog
       description: >
-        Allows an owner or manager of the route business to correct a worker worklog. A non-blank
+        Allows the owner of the route business to correct a worker worklog. A non-blank
         reason is required. Successful management corrections are approved immediately; changed
         punch origins become ADMIN while unchanged origins are preserved. This is the correction
         route for attendance. The contract does not add a correction action on the incident.
         Reconciliation may later record the incident resolution CORRECTED.
+        Only the OWNER of the business may call this operation; a MANAGER receives 403 (1020).
       tags:
         - Worklogs
       operationId: correctBusinessWorklog
@@ -767,11 +768,12 @@ worklogs:
         '401':
           description: Unauthorized
         '403':
-          description: The authenticated user is not an owner or manager of the business
+          description: The authenticated user is not the owner of the business. A MANAGER receives 403 too
           content:
             application/problem+json:
               schema:
                 $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+              example: {status: 403, detail: '1020 - user is not the owner of business'}
         '404':
           description: Business or worklog not found
           content:
@@ -787,6 +789,7 @@ worklogs:
       x-functional-errors:
         - 1006
         - 1017
+        - 1020
         - 1022
         - 1049
         - 1068
@@ -794,7 +797,7 @@ worklogs:
   approval:
     post:
       summary: Approve a business worklog
-      description: Allows an owner or manager of the business to approve a pending or confirmed worklog without changing its data.
+      description: Allows the owner of the business to approve a pending or confirmed worklog without changing its data. Only the OWNER of the business may call this operation; a MANAGER receives 403 (1020).
       tags:
         - Worklogs
       operationId: approveWorklog
@@ -826,11 +829,12 @@ worklogs:
         '401':
           description: Unauthorized
         '403':
-          description: The authenticated user is not an owner or manager of the business
+          description: The authenticated user is not the owner of the business. A MANAGER receives 403 too
           content:
             application/problem+json:
               schema:
                 $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+              example: {status: 403, detail: '1020 - user is not the owner of business'}
         '404':
           description: Business or worklog not found
           content:
@@ -846,17 +850,19 @@ worklogs:
       x-functional-errors:
         - 1006
         - 1017
+        - 1020
         - 1067
 
   rejection:
     post:
       summary: Reject a business worklog
       description: >
-        Allows an owner or manager of the business to reject a worklog. A non-blank
+        Allows the owner of the business to reject a worklog. A non-blank
         reason is required and the worklog remains retained for audit. This is the
         rejection route for attendance. The contract does not add a rejection action
         on the incident. Reconciliation may later record the incident resolution
         WORKLOG_REJECTED.
+        Only the OWNER of the business may call this operation; a MANAGER receives 403 (1020).
       tags:
         - Worklogs
       operationId: rejectWorklog
@@ -901,11 +907,12 @@ worklogs:
         '401':
           description: Unauthorized
         '403':
-          description: The authenticated user is not an owner or manager of the business
+          description: The authenticated user is not the owner of the business. A MANAGER receives 403 too
           content:
             application/problem+json:
               schema:
                 $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+              example: {status: 403, detail: '1020 - user is not the owner of business'}
         '404':
           description: Business or worklog not found
           content:
@@ -921,6 +928,7 @@ worklogs:
       x-functional-errors:
         - 1006
         - 1017
+        - 1020
         - 1067
         - 1068
 
@@ -1333,7 +1341,7 @@ worklogs:
   management-break-correction:
     put:
       summary: Correct a business worklog break
-      description: Corrects a completed break in a closed worklog for an owner or manager of the route business. A non-blank reason is required and the worklog remains APPROVED.
+      description: Corrects a completed break in a closed worklog for the owner of the route business. A non-blank reason is required and the worklog remains APPROVED. Only the OWNER of the business may call this operation; a MANAGER receives 403 (1020).
       tags:
         - Worklogs
       operationId: correctBusinessWorklogBreak
@@ -1385,11 +1393,12 @@ worklogs:
         '401':
           description: Unauthorized
         '403':
-          description: The authenticated user is not an owner or manager of the business
+          description: The authenticated user is not the owner of the business. A MANAGER receives 403 too
           content:
             application/problem+json:
               schema:
                 $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+              example: {status: 403, detail: '1020 - user is not the owner of business'}
         '404':
           description: Business, worklog, or break not found
           content:
@@ -1414,7 +1423,7 @@ worklogs:
   management-break-void:
     post:
       summary: Void a business worklog break
-      description: Voids a completed break in a closed worklog for an owner or manager of the route business. A non-blank reason is required and the worklog remains APPROVED.
+      description: Voids a completed break in a closed worklog for the owner of the route business. A non-blank reason is required and the worklog remains APPROVED. Only the OWNER of the business may call this operation; a MANAGER receives 403 (1020).
       tags:
         - Worklogs
       operationId: voidBusinessWorklogBreak
@@ -1466,11 +1475,12 @@ worklogs:
         '401':
           description: Unauthorized
         '403':
-          description: The authenticated user is not an owner or manager of the business
+          description: The authenticated user is not the owner of the business. A MANAGER receives 403 too
           content:
             application/problem+json:
               schema:
                 $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+              example: {status: 403, detail: '1020 - user is not the owner of business'}
         '404':
           description: Business, worklog, or break not found
           content:
