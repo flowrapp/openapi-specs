@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.0.72
+
+### Added
+
+- `getWorkerBusinesses` (`GET /api/v1/worker/businesses`): `WorkerBusinessResponseDTO.attendanceToleranceMinutes` (integer 0–1440, required), the business's attendance tolerance, read-only, for the front's Business tab. It is the Main API `getUserBusinesses` value (required there, `NOT NULL DEFAULT 5` in the database), forwarded unchanged: no extra Main API call and no N+1. Every role already receives it from the Main API, so the BFF does not gate it. Additive; no other change.
+
 ## 0.0.71
 
 ### Changed

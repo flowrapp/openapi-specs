@@ -44,6 +44,7 @@ worker:
                     longitude: -5.99
                     area: 50.0
                   userRole: "EMPLOYEE"
+                  attendanceToleranceMinutes: 5
         '401':
           description: Unauthorized
 
