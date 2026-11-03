@@ -12,6 +12,17 @@
 - Documentation only, no contract or behaviour change and no version bump: `createBusinessInvitation`, `getBusinessInvitations` and `deleteBusinessInvitation` document `403` `1020` (`user is not the owner of business`), which is what the backend returns (`BusinessRoleService`), instead of `1011`. `1011` stays in the catalog.
 - Documentation only: `businessUserId` in the geofencing and auto-clocking settings (`GeofencingUserSettingDTO`, `AutoClockingUserSettingDTO` and the path parameter of the two individual PATCH operations) is described as the user id, which is what the backend reads and returns (mapper source `businessUser.user.id`; `findByUserAndBusinessId(userId, …)`), not as the id of the membership row.
 
+## 0.0.91
+
+Next repository tag: `v0.0.101` (Main API 0.0.91 and BFF API 0.0.78), not tagged yet.
+
+### Fixed
+
+- Documentation only, no schema or behaviour change: `409` errors the backend already returns are now listed.
+  - `requestPlanningGeneration`: `1049` `CONCURRENT_MODIFICATION` (a week planning changed while the generation saved it, for example an OWNER edit of a draft that `replaceDrafts` regenerates; read it again and retry). Added to `x-functional-errors`, the `409` description and a `409` example.
+  - `createRecurringSchedule` and `replaceRecurringSchedule`: `1055` `SCHEDULE_EXCEPTION_OVERLAPS` (with the schedule exceptions next to its validity, an opening interval that crosses midnight would collide with the opening of the following day). Added to `x-functional-errors` and to a new operation description, which also lists `1051` and, for the replace, `1049`. `deleteRecurringSchedule` does not run that check, so it does not get `1055`.
+  - `createScheduleException`, `replaceScheduleException` and `deleteScheduleException` already listed `1055`; no change.
+
 ## 0.0.90
 
 Release: repository tag `v0.0.100` (Main API 0.0.90 and BFF API 0.0.77).
