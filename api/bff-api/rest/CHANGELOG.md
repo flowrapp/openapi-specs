@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.0.75
+
+### Added
+
+- `ClockViewResponseDTO.autoClocking` (`getWorkerClockView`, required): the worker's effective automatic clock-in for the business, `CurrentUserAutoClockingSettingsDTO` (`effectiveEnabled`), the same object and value as `getWorkerAutoClockingSettings` (business-wide switch AND the worker's preference, Main API setting `AUTO_CLOCKING_BY_GEOFENCE`, both default true). It lets the employee home show «Fichaje automático activo» without another call; the app still ANDs it with its own device state (geofence registered, location permission «Always»). One more Main API call, `getCurrentUserAutoClockingSettings`, in parallel with the existing ones; its errors are propagated. Main API unchanged. Additive required response property.
+
 ## 0.0.74
 
 ### Added
