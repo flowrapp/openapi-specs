@@ -1277,6 +1277,16 @@ components:
           format: date
           description: Sunday of the last week, in the business-local calendar.
           example: "2026-11-22"
+        replaceDrafts:
+          type: boolean
+          default: false
+          description: >
+            When true, a DRAFT planning of the period does not block the request (no 409 1121 for
+            it): that week is generated again on the same planning, and its scheduled shifts,
+            manual edits included, are replaced by the solver result. PUBLISHED and ARCHIVED weeks
+            still return 409 1121, and CREATED or SOLVING weeks 409 1122. When false or omitted,
+            the behaviour is unchanged. The client asks the OWNER before sending true.
+          example: false
       required: [from, to]
 
     PlanningGenerationStatusDTO:
@@ -1367,3 +1377,107 @@ components:
           items:
             $ref: "#/components/schemas/PlanningGenerationWeekDTO"
       required: [id, businessId, from, to, status, requestedBy, requestedAt, finishedAt, failureReason, weeks]
+
+    PlanningGenerationInputShiftDTO:
+      type: object
+      description: >
+        One shift of an effective day, as the planning snapshot captures it: the business shift
+        identity and presentation, the occurrence times and break, and its staffing demand per
+        job role. `endTime` not later than `startTime` rolls into the next day.
+      properties:
+        shiftId:
+          type: integer
+          format: int64
+          minimum: 1
+          example: 20
+        name:
+          type: string
+          minLength: 1
+          example: Mañana
+        color:
+          type: string
+          pattern: "^#[0-9A-Fa-f]{6}$"
+          example: "#1A2B3C"
+        startTime:
+          $ref: "#/components/schemas/LocalMinuteTimeDTO"
+        endTime:
+          $ref: "#/components/schemas/LocalMinuteTimeDTO"
+        breakMinutes:
+          type: integer
+          format: int32
+          minimum: 0
+          example: 0
+        demands:
+          type: array
+          description: Minimum, target and maximum employees per job role
+          items:
+            $ref: "#/components/schemas/RoleDemandResponseDTO"
+      required: [shiftId, name, color, startTime, endTime, breakMinutes, demands]
+
+    PlanningGenerationInputDayDTO:
+      type: object
+      description: Effective configuration of one business-local date of the week
+      properties:
+        date:
+          type: string
+          format: date
+          example: "2026-11-17"
+        source:
+          type: string
+          description: >
+            Where the effective configuration comes from: EXCEPTION (the schedule exception of the
+            date), RECURRING_SCHEDULE (the recurring schedule effective on the date) or NONE (no
+            recurring schedule covers the date: empty day). Open set.
+          enum: [RECURRING_SCHEDULE, EXCEPTION, NONE]
+          example: RECURRING_SCHEDULE
+        scheduleExceptionId:
+          type: [integer, "null"]
+          format: int64
+          description: >
+            Id of the schedule exception that replaces this date, or null when the date uses the
+            recurring schedule (or has none)
+          example: null
+        openingIntervals:
+          type: array
+          items:
+            $ref: "#/components/schemas/OpeningIntervalResponseDTO"
+        shifts:
+          type: array
+          description: Shifts of the date; empty means the date is closed for the solver
+          items:
+            $ref: "#/components/schemas/PlanningGenerationInputShiftDTO"
+      required: [date, source, scheduleExceptionId, openingIntervals, shifts]
+
+    PlanningGenerationInputDTO:
+      type: object
+      description: >
+        Read-only solver input of one week (getPlanningGenerationInput): the 7 effective days
+        and the solver contract set.
+      properties:
+        businessId:
+          type: integer
+          format: int64
+          example: 101
+        weekStart:
+          type: string
+          format: date
+          example: "2026-11-16"
+        weekEnd:
+          type: string
+          format: date
+          example: "2026-11-22"
+        days:
+          type: array
+          minItems: 7
+          maxItems: 7
+          description: The 7 dates of the week in order, Monday first
+          items:
+            $ref: "#/components/schemas/PlanningGenerationInputDayDTO"
+        contracts:
+          type: array
+          description: >
+            Contracts that intersect the week and belong to active members, ordered by userId
+            then startDate descending. Same set the solver receives.
+          items:
+            $ref: "../contracts/components.yml#/components/schemas/BusinessContractResponseDTO"
+      required: [businessId, weekStart, weekEnd, days, contracts]
