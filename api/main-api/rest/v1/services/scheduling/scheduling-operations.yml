@@ -165,6 +165,11 @@ recurringSchedules:
       tags: [Recurring Schedules]
       operationId: createRecurringSchedule
       summary: Create a recurring schedule
+      description: >
+        Creates a recurring schedule version. 409 when its validity overlaps another version
+        (1051), or when, together with the schedule exceptions next to its validity, an opening
+        interval that crosses midnight would collide with the opening of the following day
+        (1055).
       security: [{ bearerAuth: [] }]
       parameters:
         - $ref: '../../components/scheduling/components.yml#/components/parameters/BusinessId'
@@ -185,7 +190,7 @@ recurringSchedules:
         '403': {$ref: '../../components/scheduling/components.yml#/components/responses/Forbidden'}
         '404': {$ref: '../../components/scheduling/components.yml#/components/responses/NotFound'}
         '409': {$ref: '../../components/scheduling/components.yml#/components/responses/Conflict'}
-      x-functional-errors: [1006, 1020, 1050, 1051]
+      x-functional-errors: [1006, 1020, 1050, 1051, 1055]
   effective:
     get:
       tags: [Recurring Schedules]
@@ -344,6 +349,11 @@ recurringSchedules:
       tags: [Recurring Schedules]
       operationId: replaceRecurringSchedule
       summary: Replace a complete recurring schedule by its root ID
+      description: >
+        Replaces a recurring schedule version. 409 when the `version` is stale (1049), when its
+        validity overlaps another version (1051), or when, together with the schedule exceptions
+        next to its validity, an opening interval that crosses midnight would collide with the
+        opening of the following day (1055).
       security: [{ bearerAuth: [] }]
       parameters:
         - $ref: '../../components/scheduling/components.yml#/components/parameters/BusinessId'
@@ -365,7 +375,7 @@ recurringSchedules:
         '403': {$ref: '../../components/scheduling/components.yml#/components/responses/Forbidden'}
         '404': {$ref: '../../components/scheduling/components.yml#/components/responses/NotFound'}
         '409': {$ref: '../../components/scheduling/components.yml#/components/responses/Conflict'}
-      x-functional-errors: [1006, 1020, 1050, 1051, 1049]
+      x-functional-errors: [1006, 1020, 1049, 1050, 1051, 1055]
     delete:
       tags: [Recurring Schedules]
       operationId: deleteRecurringSchedule
@@ -1233,7 +1243,11 @@ planning:
               example: {status: 403, detail: "1020 - user is not the owner of business"}
         '404': {$ref: '../../components/scheduling/components.yml#/components/responses/NotFound'}
         '409':
-          description: A planning already exists in the period, or a generation is already in progress for it.
+          description: >
+            A planning already exists in the period (1121), a generation is already in progress
+            for it (1122), or a week planning was changed while it was being saved, for example
+            an OWNER edit of a draft that `replaceDrafts` regenerates (1049, retry after reading
+            it again).
           content:
             application/problem+json:
               schema:
@@ -1243,6 +1257,8 @@ planning:
                   value: {status: 409, detail: "1121 - a planning already exists in the generation period"}
                 IN_PROGRESS:
                   value: {status: 409, detail: "1122 - a planning generation is already in progress for the period"}
+                CONCURRENT_MODIFICATION:
+                  value: {status: 409, detail: "1049 - resource was modified concurrently"}
         '422':
           description: The generator has no input for the period.
           content:
@@ -1254,7 +1270,7 @@ planning:
                   value: {status: 422, detail: "1123 - no active member has a contract in the generation period"}
                 NO_DEMAND:
                   value: {status: 422, detail: "1124 - a week of the generation period has no shift with staffing demand"}
-      x-functional-errors: [1006, 1020, 1098, 1120, 1121, 1122, 1123, 1124]
+      x-functional-errors: [1006, 1020, 1049, 1098, 1120, 1121, 1122, 1123, 1124]
   generation:
     get:
       tags: [Planning]

@@ -106,7 +106,11 @@ planning:
                   summary: "1006 - business does not exist"
                   value: {status: 404, detail: "1006 - business does not exist"}
         '409':
-          description: A plan already exists in the period (1121) or a generation is in progress (1122)
+          description: >
+            A plan already exists in the period (1121), a generation is in progress (1122), or a
+            week planning was changed while it was being saved, for example an edit of a draft that
+            `replaceDrafts` regenerates (1049, read it again and retry). Main API errors are passed
+            through unchanged.
           content:
             application/problem+json:
               schema:
@@ -118,6 +122,9 @@ planning:
                 inProgress:
                   summary: "1122 - a planning generation is already in progress for the period"
                   value: {status: 409, detail: "1122 - a planning generation is already in progress for the period"}
+                concurrentModification:
+                  summary: "1049 - resource was modified concurrently"
+                  value: {status: 409, detail: "1049 - resource was modified concurrently"}
         '422':
           description: No active member with a contract in the period (1123), or a week without staffing demand (1124)
           content:
@@ -131,7 +138,7 @@ planning:
                 noDemand:
                   summary: "1124 - a week of the generation period has no shift with staffing demand"
                   value: {status: 422, detail: "1124 - a week of the generation period has no shift with staffing demand"}
-      x-functional-errors: [1006, 1015, 1020, 1098, 1120, 1121, 1122, 1123, 1124]
+      x-functional-errors: [1006, 1015, 1020, 1049, 1098, 1120, 1121, 1122, 1123, 1124]
   generation:
     get:
       summary: Get the status of a planning generation

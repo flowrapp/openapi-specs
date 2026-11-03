@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.0.78
+
+Next repository tag: `v0.0.101` (Main API 0.0.91 and BFF API 0.0.78), not tagged yet.
+
+### Fixed
+
+- Documentation only, no schema or behaviour change: `409` errors of the Main API that the BFF already passes through unchanged (status and ProblemDetail) are now listed.
+  - `requestPlanGeneration`: `1049` `CONCURRENT_MODIFICATION` (a week planning changed while the generation saved it, for example an edit of a draft that `replaceDrafts` regenerates). Added to `x-functional-errors`, the `409` description and a `409` example.
+  - `createManagerRecurringSchedule` (with `1051`) and `replaceManagerRecurringSchedule` (with `1049` and `1051`): `1055` `SCHEDULE_EXCEPTION_OVERLAPS` in the `409` description and examples.
+  - `createManagerScheduleException`: `1055` next to `1054` in the `409` description and examples.
+  - `deleteManagerScheduleException`: new `409` response for `1055` (deleting the exception would make an opening interval that crosses midnight collide with the adjacent day once the recurring schedule applies again).
+  - `replaceManagerScheduleException` already documented `1055`; no change.
+
 ## 0.0.77
 
 Release: repository tag `v0.0.100` (Main API 0.0.90 and BFF API 0.0.77).

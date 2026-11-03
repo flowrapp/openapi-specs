@@ -1049,12 +1049,21 @@ manager:
                 $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
               example: {status: 404, detail: "1006 - business does not exist"}
         '409':
-          description: Recurring schedule overlaps an existing version
+          description: >
+            Recurring schedule overlaps an existing version (1051), or, together with the schedule
+            exceptions next to its validity, an opening interval that crosses midnight would collide
+            with the opening of the following day (1055). Main API error passed through unchanged.
           content:
             application/problem+json:
               schema:
                 $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
-              example: {status: 409, detail: "1051 - recurring schedule overlaps an existing schedule"}
+              examples:
+                versionOverlap:
+                  summary: "1051 - recurring schedule overlaps an existing schedule"
+                  value: {status: 409, detail: "1051 - recurring schedule overlaps an existing schedule"}
+                adjacentDayOverlap:
+                  summary: "1055 - schedule exception overlaps an adjacent effective configuration"
+                  value: {status: 409, detail: "1055 - schedule exception overlaps an adjacent effective configuration"}
 
   recurring-schedule-item:
     put:
@@ -1149,12 +1158,25 @@ manager:
                 $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
               example: {status: 404, detail: "1052 - recurring schedule not found"}
         '409':
-          description: Version or schedule overlap conflict
+          description: >
+            Stale `version` (1049), overlap with another version (1051), or, together with the
+            schedule exceptions next to its validity, an opening interval that crosses midnight would
+            collide with the opening of the following day (1055). Main API error passed through
+            unchanged.
           content:
             application/problem+json:
               schema:
                 $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
-              example: {status: 409, detail: "1049 - resource was modified concurrently"}
+              examples:
+                concurrentModification:
+                  summary: "1049 - resource was modified concurrently"
+                  value: {status: 409, detail: "1049 - resource was modified concurrently"}
+                versionOverlap:
+                  summary: "1051 - recurring schedule overlaps an existing schedule"
+                  value: {status: 409, detail: "1051 - recurring schedule overlaps an existing schedule"}
+                adjacentDayOverlap:
+                  summary: "1055 - schedule exception overlaps an adjacent effective configuration"
+                  value: {status: 409, detail: "1055 - schedule exception overlaps an adjacent effective configuration"}
 
   shifts:
     get:
@@ -2457,12 +2479,21 @@ manager:
                 $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
               example: {status: 404, detail: "1006 - business does not exist"}
         '409':
-          description: Exception already exists or overlaps adjacent configuration
+          description: >
+            An exception already exists for the date (1054), or an opening interval that crosses
+            midnight would collide with the opening of the adjacent day (1055). Main API error passed
+            through unchanged.
           content:
             application/problem+json:
               schema:
                 $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
-              example: {status: 409, detail: "1054 - schedule exception already exists for date"}
+              examples:
+                alreadyExists:
+                  summary: "1054 - schedule exception already exists for date"
+                  value: {status: 409, detail: "1054 - schedule exception already exists for date"}
+                adjacentDayOverlap:
+                  summary: "1055 - schedule exception overlaps an adjacent effective configuration"
+                  value: {status: 409, detail: "1055 - schedule exception overlaps an adjacent effective configuration"}
 
   schedule-exception-item:
     put:
@@ -2587,3 +2618,13 @@ manager:
               schema:
                 $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
               example: {status: 404, detail: "1056 - schedule exception not found"}
+        '409':
+          description: >
+            Removing the exception would make an opening interval that crosses midnight collide with
+            the opening of the adjacent day once the recurring schedule applies again (1055). Main API
+            error passed through unchanged.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              example: {status: 409, detail: "1055 - schedule exception overlaps an adjacent effective configuration"}
