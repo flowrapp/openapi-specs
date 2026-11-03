@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.0.76
+
+### Added
+
+- `MemberSearchItemDTO` (`GET /api/v1/businesses/{businessId}/members/search`, `searchBusinessMembers`), for the redesigned «Equipo» list (one call, no threshold in the app). Three additive required response properties:
+  - `totalWeekHours` (number, double, > 0, or null): `contract.totalWeekHours` of the current contract, from the current-contract batch the endpoint already calls (`getCurrentContractsForUsers`). Null when the member has no current contract.
+  - `currentContractEndDate` (date or null): `contract.endDate` of the same batch, inclusive and business-local. Null for an open-ended contract and when there is no current contract (`currentContractId` tells them apart).
+  - `contractEndingSoon` (boolean, always present): computed by the BFF, true when `currentContractEndDate` is not null and `today <= currentContractEndDate <= today + 30 days`, with `today` the business-local date. False for an open-ended contract or no current contract.
+- One more Main API call for a non-empty page, `getUserBusinesses`, only to read the business `zone` for the business-local today (UTC when the business has none). It runs together with the contract and open-worklog batches (at most three in flight, four Main API calls in total). Still no per-user call.
+- Main API unchanged: the current-contract batch already returns `totalWeekHours` and `endDate`.
+
 ## 0.0.75
 
 ### Added

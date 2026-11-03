@@ -74,7 +74,7 @@ members:
         business receives 404 with functional code 1006.
         The literal path segment `search` is registered beside `/members/{userId}`;
         `userId` is an int64, so `search` is not a member id.
-        The BFF does not interpret the cursor. It makes at most three Main API calls
+        The BFF does not interpret the cursor. It makes at most four Main API calls
         for the page, never one call per user:
         1. `GET /api/v2/businesses/{businessId}/users` with `search` set to `q` (omitted
         when `q` is empty or blank), plus
@@ -83,12 +83,19 @@ members:
         and `nextCursor` are forwarded as-is.
         2. When the page is not empty, `GET /api/v1/businesses/{businessId}/contracts/current?userIds=`
         once, with every user id of the page (at most 50). `currentContractId` is
-        `contract.id` and `jobRole` is `contract.jobRole`. A member missing from this
-        response has `currentContractId: null` and `jobRole: null`.
+        `contract.id`, `jobRole` is `contract.jobRole`, `totalWeekHours` is
+        `contract.totalWeekHours`, and `currentContractEndDate` is `contract.endDate`.
+        A member missing from this response has `currentContractId`, `jobRole`,
+        `totalWeekHours`, and `currentContractEndDate` null and `contractEndingSoon` false.
         3. When the page is not empty, `GET /api/v1/businesses/{businessId}/worklogs/open?userIds=`
         once, with the same ids. `workingNow` is true when that response contains the
         user id, and false otherwise.
-        Calls 2 and 3 run for the whole page together. An empty page skips them.
+        4. When the page is not empty, `GET /api/v1/businesses` (`getUserBusinesses`) once,
+        only to read the business `zone` and compute the business-local today for
+        `contractEndingSoon` (true when `currentContractEndDate` is within today + 30 days,
+        both ends included). A business without a zone uses UTC.
+        Calls 2, 3, and 4 run for the whole page together (at most three in flight). An
+        empty page skips them. Errors of any call are propagated.
         `q` is the v2 `search` parameter: accent- and case-insensitive, name only, not
         email, 2 to 64 characters after trim and normalization when present. Order is the
         v2 order: with `q`, rank (a prefix of the name or of a word first), then normalized
@@ -172,6 +179,9 @@ members:
                       icon: kitchen
                       active: true
                     currentContractId: 501
+                    totalWeekHours: 40
+                    currentContractEndDate: null
+                    contractEndingSoon: false
                     workingNow: true
                   - userId: 18
                     name: "Arturo López"
@@ -184,12 +194,18 @@ members:
                       icon: front-of-house
                       active: true
                     currentContractId: 480
+                    totalWeekHours: 32
+                    currentContractEndDate: "2026-11-30"
+                    contractEndingSoon: true
                     workingNow: false
                   - userId: 27
                     name: "Saturnino Ruiz"
                     role: MANAGER
                     jobRole: null
                     currentContractId: null
+                    totalWeekHours: null
+                    currentContractEndDate: null
+                    contractEndingSoon: false
                     workingNow: false
                 hasNext: true
                 nextCursor: "eyJ2IjoxLCJyIjoxfQ"
