@@ -49,6 +49,17 @@ components:
           description: Role of the current user in this business
           enum: [OWNER, MANAGER, EMPLOYEE]
           example: "EMPLOYEE"
+        attendanceToleranceMinutes:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 1440
+          description: >
+            Read-only. Minutes tolerated for attendance deviations in this business (the Main API
+            `getUserBusinesses` `attendanceToleranceMinutes`, forwarded unchanged; no extra Main API
+            call). The same value for every role. It is changed only through the Main API
+            attendance-tolerance endpoint.
+          example: 5
       required:
         - id
         - nif
@@ -61,6 +72,7 @@ components:
         - postalCode
         - location
         - userRole
+        - attendanceToleranceMinutes
 
     ClockViewResponseDTO:
       type: object
