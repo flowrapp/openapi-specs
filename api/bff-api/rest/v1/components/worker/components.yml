@@ -78,7 +78,8 @@ components:
       type: object
       description: >
         Aggregated clock view for the worker's current day. Combines today's work sessions,
-        the currently active session (if any), and running totals for the week and month.
+        the currently active session (if any), its open break (if any), the day's breaks, and
+        running totals for the week and month.
       properties:
         date:
           type: string
@@ -95,6 +96,36 @@ components:
           description: All completed work sessions for this date
           items:
             $ref: '../common/components.yml#/components/schemas/SessionDTO'
+        activeBreak:
+          description: >
+            The open break («Pausa») of `activeWorklog`, or null when the worker is not on a break or is
+            clocked out. Non-null means the Main API `operationalState` of the active worklog is `ON_BREAK`:
+            the app shows «Reanudar» (end the break) instead of «Pausa». It is also the last item of `breaks`.
+          oneOf:
+            - $ref: '#/components/schemas/WorkerBreakDTO'
+            - type: 'null'
+        breaks:
+          type: array
+          description: >
+            Breaks of the worklogs in this view (`activeWorklog` and `sessions`), open one included, sorted by
+            `startedAt`. Only EFFECTIVE breaks: a VOIDED break does not deduct time and is not listed. There is
+            a single kind of break («Pausa», no types) and every break is deducted from the worked time. Empty
+            when there are none. To show a running counter for the active session, the app computes
+            `now - activeWorklog.clockIn` minus the closed breaks of that worklog, minus `now - activeBreak.startedAt`
+            when `activeBreak` is not null.
+          items:
+            $ref: '#/components/schemas/WorkerBreakDTO'
+          example:
+            - id: 456
+              worklogId: 123
+              startedAt: "2025-07-29T11:00:00+02:00"
+              endedAt: "2025-07-29T11:30:00+02:00"
+              durationSeconds: 1800
+            - id: 457
+              worklogId: 123
+              startedAt: "2025-07-29T14:00:00+02:00"
+              endedAt: null
+              durationSeconds: null
         totalSecondsWeek:
           type: integer
           format: int64
@@ -108,8 +139,85 @@ components:
       required:
         - date
         - sessions
+        - breaks
         - totalSecondsWeek
         - totalSecondsMonth
+
+    WorkerBreakDTO:
+      type: object
+      description: >
+        A worker break («Pausa») inside a worklog. There is a single kind of break and it is always deducted
+        from the worked time. Mapped from the Main API `WorklogBreakDTO`.
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: Identifier of the break (the `breakId` used to end it).
+          example: 457
+        worklogId:
+          type: integer
+          format: int64
+          description: Identifier of the worklog the break belongs to.
+          example: 123
+        startedAt:
+          type: string
+          format: date-time
+          description: Effective break start.
+          example: "2025-07-29T14:00:00+02:00"
+        endedAt:
+          type: ['string', 'null']
+          format: date-time
+          description: Effective break end, or null while the break is open.
+          example: null
+        durationSeconds:
+          type: ['integer', 'null']
+          format: int64
+          description: "`endedAt - startedAt` in seconds, or null while the break is open."
+          example: null
+      required:
+        - id
+        - worklogId
+        - startedAt
+
+    WorkerBreakStartRequestDTO:
+      type: object
+      description: Idempotent request to start a break on the worker's open worklog.
+      additionalProperties: false
+      properties:
+        idempotencyId:
+          type: string
+          format: uuid
+          description: Client-generated command identifier, reused when retrying the same break start.
+          example: "3fa85f64-5717-4562-b3fc-2c963f66afa6"
+        startedAt:
+          type: string
+          format: date-time
+          description: >
+            Observed break start (for example a tap queued while offline). Omit it to use the server clock.
+            It must not be before the clock-in or in the future (1073).
+          example: "2025-07-29T14:00:00+02:00"
+      required:
+        - idempotencyId
+
+    WorkerBreakEndRequestDTO:
+      type: object
+      description: Idempotent request to end the worker's open break.
+      additionalProperties: false
+      properties:
+        idempotencyId:
+          type: string
+          format: uuid
+          description: Client-generated command identifier, reused when retrying the same break end.
+          example: "7c9e6679-7425-40de-944b-e07fc1f90ae7"
+        endedAt:
+          type: string
+          format: date-time
+          description: >
+            Observed break end. Omit it to use the server clock. It must be after `startedAt` and not in the
+            future (1073).
+          example: "2025-07-29T14:30:00+02:00"
+      required:
+        - idempotencyId
 
     WorklogLocationDTO:
       type: object

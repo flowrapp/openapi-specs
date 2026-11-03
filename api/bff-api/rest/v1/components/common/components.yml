@@ -46,8 +46,12 @@ components:
             - integer
             - 'null'
           format: int64
-          description: Duration of the session in seconds (null if session is still active)
-          example: 32400
+          description: >
+            Worked seconds of the session, net of breaks: `clockOut - clockIn` minus every EFFECTIVE
+            closed break of the worklog (BFF 0.0.73; before, the gross interval). Same rule as the Main
+            API `reportableSeconds`, so the sum of a day's sessions matches the reports-based week and
+            month totals for those worklogs. Never negative. Null while the session is still active.
+          example: 30600
       required:
         - id
         - clockIn

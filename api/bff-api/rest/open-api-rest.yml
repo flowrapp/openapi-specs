@@ -7,7 +7,7 @@ info:
     This BFF aggregates and shapes data from the Flowrapp main API to serve
     the specific needs of the mobile frontend, providing role-based endpoints
     for workers and managers.
-  version: 0.0.72
+  version: 0.0.73
   contact:
     name: Flowrapp Team
     url: https://flowrapp.github.io
@@ -124,6 +124,10 @@ paths:
     $ref: "v1/services/worker/worker-operations.yml#/worker/geofence-event"
   "/api/v1/worker/businesses/{businessId}/worklogs/{worklogId}/clock-out":
     $ref: "v1/services/worker/worker-operations.yml#/worker/clock-out"
+  "/api/v1/worker/businesses/{businessId}/worklogs/{worklogId}/breaks":
+    $ref: "v1/services/worker/worker-operations.yml#/worker/break-start"
+  "/api/v1/worker/businesses/{businessId}/worklogs/{worklogId}/breaks/{breakId}/end":
+    $ref: "v1/services/worker/worker-operations.yml#/worker/break-end"
   "/api/v1/worker/businesses/{businessId}/history/day":
     $ref: "v1/services/worker/worker-operations.yml#/worker/history-day"
   "/api/v1/worker/businesses/{businessId}/history/week":

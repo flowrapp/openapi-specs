@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.0.73
+
+### Added
+
+- Worker breaks («Pausa»), on top of the Main API breaks of 0.0.94 (`worklog_breaks`; Main API untouched). There is a single kind of break, without types, and every break is deducted from the worked time.
+  - `POST /api/v1/worker/businesses/{businessId}/worklogs/{worklogId}/breaks` (`startWorkerBreak`, tag `Worker`): starts a break on the worker's open worklog. Body `WorkerBreakStartRequestDTO` (`idempotencyId` required, optional `startedAt`); `200` with `WorkerBreakDTO`. One Main API call, `startWorklogBreak`.
+  - `PUT /api/v1/worker/businesses/{businessId}/worklogs/{worklogId}/breaks/{breakId}/end` (`endWorkerBreak`, tag `Worker`): ends the open break. Body `WorkerBreakEndRequestDTO` (`idempotencyId` required, optional `endedAt`); `200` with `WorkerBreakDTO`. One Main API call, `endWorklogBreak`.
+  - Both are idempotent by `idempotencyId`, take no location and do not go through the geofence policy (the Main API break commands take neither). Main API functional errors are propagated unchanged: `400` `1073` (interval not valid), `403` `1018` (worklog closed, so no open worklog) / `1019`, `404` `1017` / `1065` / `1069` (end), `409` `1070` (a break is already open, start), `1071` (no open break, end), `1072` (idempotency conflict), `1049` (concurrent change). The Main API has no separate break-overlap code: with at most one open break, explicit start/end cannot overlap, and an invalid interval is `1073`.
+- `ClockViewResponseDTO` (`getWorkerClockView`): `activeBreak` (`WorkerBreakDTO` or null: the open break of `activeWorklog`, so the app shows «Reanudar») and `breaks` (required array: the EFFECTIVE breaks of `activeWorklog` and `sessions`, open one included, sorted by `startedAt`; VOIDED breaks are not listed). No extra Main API call: they come in the `breaks` of the `getUserWorklogs` worklogs the view already reads.
+
+### Changed
+
+- `SessionDTO.durationSeconds` (clock view, clock-out, day/week/month history, manager worker sessions) is net of breaks: `clockOut - clockIn` minus the EFFECTIVE closed breaks of the worklog, never negative. This is the Main API `reportableSeconds` rule, already used by the reports-based week and month totals, so a day's sessions add up consistently with them. Before, it was the gross interval. No schema change; the value is lower only for worklogs with breaks.
+- `workerClockOut`: a break still open is ended by the Main API at the clock-out instant (documented; Main API behaviour).
+
 ## 0.0.72
 
 ### Added
