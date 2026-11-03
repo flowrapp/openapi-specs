@@ -220,7 +220,9 @@ planning:
           are not contracts and do not count.
         - `status`: SHORT when E < N; TIGHT when N <= E < 1.10 * N (computed in integers:
           `10 * E < 11 * N`); COVERED when E >= 1.10 * N. A role without demand (N = 0) is COVERED.
-        - `belowMinimum`: E < `minimumSeconds`.
+        - `belowMinimum`: E < `minimumSeconds`. A warning only («ni al mínimo»): it never
+          changes `status`. The Main API keeps minimumEmployees <= targetEmployees, so it can only
+          be true for a role that is already SHORT.
         - `shortfallSeconds` = max(0, N - E) («te faltan 8 h») and `surplusSeconds` =
           max(0, E - N) («sobran 16 h»). Hours are not converted into shifts.
         - `memberCount` and `members` (name and prorated seconds): the distinct people with a
@@ -242,11 +244,17 @@ planning:
           the same instant, at any instant of this shift (this shift included). A worker cannot
           be in two overlapping shifts.
         - `status`: SHORT when targetAtOnce > people; TIGHT when equal; COVERED when lower, or
-          when targetAtOnce is 0. `belowMinimum`: minimumAtOnce > people.
+          when targetAtOnce is 0. `belowMinimum`: minimumAtOnce > people, a warning only that
+          never changes `status` (it can only be true when the status is already SHORT).
         - Day `status` is the worst shift-role status of the date, and `reason` says why:
           `CLOSED` (no shifts, status null), `NO_DEMAND` (shifts without any target, status
-          null), `BELOW_MINIMUM_AT_ONCE`, `SHORT_AT_ONCE`, `TIGHT_AT_ONCE`, or null when COVERED.
+          null), `BELOW_MINIMUM_AT_ONCE` (SHORT and a shift-role of the date is `belowMinimum`),
+          `SHORT_AT_ONCE`, `TIGHT_AT_ONCE`, or null when COVERED.
           `reasonJobRoleId` is the job role that sets it (worst first, then job-role name and id).
+
+        A week without any recurring schedule in force is not an error: it returns 200 with its
+        dates `source: NONE` and closed (special days still count), so with no demand
+        `coveragePercent` is null and `generation.blocker` is NO_DEMAND.
 
         Each date has `source` (RECURRING_SCHEDULE, EXCEPTION or NONE), `scheduleExceptionId`
         and `roles` (Σ targetEmployees of each role over its shifts, with the worst status). Each

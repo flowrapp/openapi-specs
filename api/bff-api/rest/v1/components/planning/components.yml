@@ -296,7 +296,7 @@ components:
           $ref: "#/components/schemas/WeekCoverageStatusDTO"
         belowMinimum:
           type: boolean
-          description: True when E < minimumSeconds («ni al mínimo»)
+          description: True when E < minimumSeconds («ni al mínimo»). Warning only, it never changes status
           example: false
         memberCount:
           type: integer
@@ -357,7 +357,7 @@ components:
           $ref: "#/components/schemas/WeekCoverageStatusDTO"
         belowMinimum:
           type: boolean
-          description: True when minimumAtOnce > people
+          description: True when minimumAtOnce > people. Warning only, it never changes status
           example: false
       required: [jobRoleId, minimumEmployees, targetEmployees, maximumEmployees, targetAtOnce, minimumAtOnce, people, status, belowMinimum]
 
