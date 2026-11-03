@@ -286,6 +286,7 @@ components:
         | Alert | `LONG_OPEN` | CRITICAL |
         | Open incident | `LATE_ENTRY`, `EARLY_ENTRY`, `EARLY_EXIT`, `LATE_EXIT`, `UNEXPLAINED_GAP` | WARNING |
         | Open incident | `UNSCHEDULED_WORK`, `AMBIGUOUS_MATCH` | WARNING |
+        | Open incident | `OUTSIDE_GEOFENCE` | WARNING |
         | Open incident or alert | any value unknown to the BFF | WARNING |
         | Nothing open | — | OK |
 
@@ -296,6 +297,9 @@ components:
         - WARNING is a time that exists and is only off-plan. `UNSCHEDULED_WORK` and
           `AMBIGUOUS_MATCH` block approval (structural), but the hours are real, so they are
           WARNING; the block itself is shown by `actions.accept.disabledReason`.
+        - `OUTSIDE_GEOFENCE` (Main API 0.0.89: a WARN clock-in or clock-out more than 25 m outside
+          the business area or without a location) is WARNING: the hours are real and it is a
+          normal review that never blocks «Aceptar».
         - A row's or cell's severity is the highest among its OPEN incidents and its current
           alerts. RESOLVED incidents never raise it.
         - A justification does not lower the severity: the incident stays OPEN until the owner acts.
@@ -311,7 +315,7 @@ components:
         Incident type (Main API `AttendanceIncidentTypeDTO`) or shift alert (Main API
         `ShiftAttendanceAlertDTO`), passed through unchanged. New values may be added; clients
         must tolerate unknown values.
-      enum: [EARLY_ENTRY, LATE_ENTRY, EARLY_EXIT, LATE_EXIT, UNEXPLAINED_GAP, UNSCHEDULED_WORK, AMBIGUOUS_MATCH, NO_SHOW, AUTOMATIC_CLOSE, MISSING_CLOCK_IN, LONG_OPEN]
+      enum: [EARLY_ENTRY, LATE_ENTRY, EARLY_EXIT, LATE_EXIT, UNEXPLAINED_GAP, UNSCHEDULED_WORK, AMBIGUOUS_MATCH, NO_SHOW, AUTOMATIC_CLOSE, OUTSIDE_GEOFENCE, MISSING_CLOCK_IN, LONG_OPEN]
       example: LATE_ENTRY
 
     AttendanceRowKindDTO:

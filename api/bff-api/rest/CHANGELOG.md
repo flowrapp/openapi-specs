@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.0.74
+
+### Added
+
+- Attendance chip and incident type `OUTSIDE_GEOFENCE` in `AttendanceChipTypeDTO` (Main API 0.0.89, WARN geofence mark: a clock-in or clock-out more than 25 m outside the business area, or without a location, under the WARN policy). Passed through unchanged like the other Main API incident types; severity WARNING in the `AttendanceSeverityDTO` table (the hours are real and it is a normal review). It never blocks «Aceptar» (`actions.accept`), and accepting, correcting or rejecting resolves it as for a temporal incident. Additive value in a response enum: clients must tolerate unknown values (an older BFF already maps an unknown type to WARNING).
+- No other schema change: the geofence evidence of the Main API (`evidence.geofenceChecks`: distance and area radius per clock action) is not exposed by the BFF yet; it will be a separate, additive change of the attendance detail.
+
 ## 0.0.73
 
 ### Added

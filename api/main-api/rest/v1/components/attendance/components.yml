@@ -217,8 +217,9 @@ components:
       description: |
         Type of attendance deviation or structural incident.
         AUTOMATIC_CLOSE: the worklog was closed automatically by the system after 24 hours without a clock-out. Its clock-out time is a placeholder and not valid: the worklog does not count in totals or reports until the owner corrects the clock-out or rejects the worklog. While this incident is open the worklog cannot be approved.
+        OUTSIDE_GEOFENCE: under the WARN geofencing policy, the clock-in or the clock-out of the worklog was recorded more than 25 m (GPS margin) outside the business area (`distanceMeters > areaMeters + 25`) or without a device location. Scope MATCH, at most one open per worklog, covering both its clock-in and its clock-out; the checks are in `evidence.geofenceChecks`. Only for a worklog whose match is MATCHED, UNSCHEDULED or AMBIGUOUS (the ones attendance shows): with a NOT_APPLICABLE match (no published planning that day) the check is recorded but no incident is opened, so the worklog is not left pending without a place to review it; if the worklog is later rematched to a planning, reconciliation opens it then. It is a normal review: it does not block approval, so accepting the shift attendance or approving the worklog accepts it, and a correction or a rejection of the worklog resolves it. Once a person resolves it, it is not reopened. ALLOW never opens it, and BLOCK rejects the clock action instead (403 1100), so neither leaves this incident.
         New values may be added to this enum; clients must tolerate unknown values.
-      enum: [EARLY_ENTRY, LATE_ENTRY, EARLY_EXIT, LATE_EXIT, UNEXPLAINED_GAP, UNSCHEDULED_WORK, AMBIGUOUS_MATCH, NO_SHOW, AUTOMATIC_CLOSE]
+      enum: [EARLY_ENTRY, LATE_ENTRY, EARLY_EXIT, LATE_EXIT, UNEXPLAINED_GAP, UNSCHEDULED_WORK, AMBIGUOUS_MATCH, NO_SHOW, AUTOMATIC_CLOSE, OUTSIDE_GEOFENCE]
       example: LATE_ENTRY
 
     AttendanceIncidentScopeDTO:
@@ -255,7 +256,7 @@ components:
           type: [integer, 'null']
           format: int64
           minimum: 0
-          description: Measured deviation for temporal incidents; null for structural, no-show and AUTOMATIC_CLOSE incidents.
+          description: Measured deviation for temporal incidents; null for structural, no-show, AUTOMATIC_CLOSE and OUTSIDE_GEOFENCE incidents.
           example: 900
         toleranceSeconds:
           type: [integer, 'null']
@@ -270,7 +271,62 @@ components:
             type: integer
             format: int64
             minimum: 1
+        geofenceChecks:
+          type: array
+          description: >
+            For OUTSIDE_GEOFENCE, every geofence check recorded for the worklog of the match (its clock-in
+            and, once closed, its clock-out), ordered by `checkedAt`, including a check that was inside, so
+            the reviewer sees both actions. Empty for every other incident type. Always returned, not listed
+            as required.
+          items:
+            $ref: '#/components/schemas/AttendanceGeofenceCheckDTO'
       required: [type, measuredSeconds, toleranceSeconds, candidateShiftIds]
+
+    AttendanceGeofenceCheckActionDTO:
+      type: string
+      description: Clock action that was checked against the business geofence.
+      enum: [CLOCK_IN, CLOCK_OUT]
+      example: CLOCK_IN
+
+    AttendanceGeofenceCheckOutcomeDTO:
+      type: string
+      description: >
+        Result of a geofence check. INSIDE: the device location was within the business area plus the
+        25 m GPS margin (`distanceMeters <= areaMeters + 25`). OUTSIDE: it was beyond that margin.
+        NO_LOCATION: the clock request carried no device location. New values may be added; clients must
+        tolerate unknown values.
+      enum: [INSIDE, OUTSIDE, NO_LOCATION]
+      example: OUTSIDE
+
+    AttendanceGeofenceCheckDTO:
+      type: object
+      description: >
+        Append-only evidence of one geofence check of a clock action under the WARN policy. Only the
+        distance and the area radius in force are stored; the device coordinates are never stored or
+        returned.
+      properties:
+        action:
+          $ref: '#/components/schemas/AttendanceGeofenceCheckActionDTO'
+        outcome:
+          $ref: '#/components/schemas/AttendanceGeofenceCheckOutcomeDTO'
+        distanceMeters:
+          type: [integer, 'null']
+          format: int32
+          minimum: 0
+          description: Distance in whole meters from the device location to the centre of the business area; null for NO_LOCATION.
+          example: 340
+        areaMeters:
+          type: integer
+          format: int32
+          minimum: 0
+          description: Radius in whole meters of the business area when the check was made (it may have changed since).
+          example: 100
+        checkedAt:
+          type: string
+          format: date-time
+          description: When the check was made (the clock request was processed).
+          example: "2026-11-03T08:01:12Z"
+      required: [action, outcome, distanceMeters, areaMeters, checkedAt]
 
     AttendanceIncidentDTO:
       type: object
