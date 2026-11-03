@@ -28,10 +28,11 @@ components:
       type: object
       description: >
         Hub search hit. `userId`, `name`, and `role` come from the Main API membership
-        page. `currentContractId` and `jobRole` come from the current-contract batch,
-        or null when that member has no current contract. `workingNow` comes from the
-        open-worklog batch. Email is not included. `userId` is the same identifier
-        schedule accepts as `employeeId`.
+        page. `currentContractId`, `jobRole`, `totalWeekHours`, and `currentContractEndDate`
+        come from the current-contract batch, or are null when that member has no current
+        contract. `contractEndingSoon` is computed by the BFF from `currentContractEndDate`
+        and the business-local date. `workingNow` comes from the open-worklog batch. Email
+        is not included. `userId` is the same identifier schedule accepts as `employeeId`.
       properties:
         userId:
           type: integer
@@ -64,13 +65,46 @@ components:
               minimum: 1
               example: 501
             - type: "null"
+        totalWeekHours:
+          description: >
+            Contracted hours per week of the current contract (`contract.totalWeekHours` of
+            the current-contract batch, always greater than 0 there), or null when the member
+            has no current contract. Lets the team list show «32 h/sem» without another call.
+          oneOf:
+            - type: number
+              format: double
+              exclusiveMinimum: 0
+              example: 32
+            - type: "null"
+        currentContractEndDate:
+          description: >
+            Inclusive end date of the current contract (`contract.endDate` of the
+            current-contract batch), business-local. Null when the current contract is
+            open-ended, and null when the member has no current contract (tell both apart
+            with `currentContractId`). Being the current contract, it is never before the
+            business-local today.
+          oneOf:
+            - type: string
+              format: date
+              example: "2026-11-30"
+            - type: "null"
+        contractEndingSoon:
+          type: boolean
+          description: >
+            True when `currentContractEndDate` is not null and falls within the next 30 days,
+            both ends included: `today <= currentContractEndDate <= today + 30 days`, where
+            `today` is the business-local current date (business `zone` from the Main API,
+            UTC when it has none). False for an open-ended contract and when there is no
+            current contract. The 30-day threshold is fixed by the BFF so the app does not
+            compute it. Always present.
+          example: true
         workingNow:
           type: boolean
           description: >
             True when the open-worklog batch for this page includes the user id.
             False when it does not. Always present.
           example: true
-      required: [userId, name, role, jobRole, currentContractId, workingNow]
+      required: [userId, name, role, jobRole, currentContractId, totalWeekHours, currentContractEndDate, contractEndingSoon, workingNow]
 
     MemberProfileDTO:
       type: object
