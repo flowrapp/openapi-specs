@@ -136,12 +136,26 @@ components:
           format: int64
           description: Total seconds worked in the current calendar month
           example: 504000
+        autoClocking:
+          description: >
+            The worker's effective automatic clock-in («Fichaje automático») for this business, so the home
+            can show «Fichaje automático activo» without another call. Same value as
+            `getWorkerAutoClockingSettings`: the business-wide switch AND the worker's own preference (Main API
+            setting `AUTO_CLOCKING_BY_GEOFENCE`, both default to true when never stored). It says whether the
+            backend WILL clock in and out automatically from the device geofence events
+            (`PUT /api/v1/worker/businesses/{businessId}/geofence-events/{eventId}`); it does not know the device
+            state, so the app shows the label only when `effectiveEnabled` is true AND its own geofence is
+            registered with location permission «Always». The backend only clocks in automatically when the
+            worker has exactly one published shift within 30 minutes of the dwell event, and clocks out on the
+            exit event. Not tied to `date`: it is the current setting.
+          $ref: '../settings/components.yml#/components/schemas/CurrentUserAutoClockingSettingsDTO'
       required:
         - date
         - sessions
         - breaks
         - totalSecondsWeek
         - totalSecondsMonth
+        - autoClocking
 
     WorkerBreakDTO:
       type: object

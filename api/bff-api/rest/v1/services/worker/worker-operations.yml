@@ -58,6 +58,8 @@ worker:
         and running totals for the current week and month.
         Breaks add no Main API call: they come in the `breaks` of each Main API `getUserWorklogs`
         worklog the view already reads. Session `durationSeconds` is net of breaks (BFF 0.0.73).
+        `autoClocking` (BFF 0.0.75) adds one Main API call, `getCurrentUserAutoClockingSettings`, made in
+        parallel with the worklogs and reports calls; an error of that call is propagated like the others.
       tags:
         - Worker
       operationId: getWorkerClockView
