@@ -7,8 +7,10 @@ planning:
         `getUserBusinesses` first; the Main API enforces it again. Every rule lives in the Main API
         (explicit period of whole weeks, at most 4, starting at the current week or later; no plan in the period; no
         generation in progress, double click included; members with a contract and staffing
-        demand) and its functional errors are propagated unchanged. The result is one DRAFT plan
-        per week, never published automatically. Poll `getPlanGeneration` until COMPLETED or
+        demand) and its functional errors are propagated unchanged. `replaceDrafts: true` is
+        forwarded: a DRAFT week is then generated again instead of returning 409 1121 (ask the
+        OWNER first; `getWeekCoverage.planning` tells whether the week has a DRAFT). The result
+        is one DRAFT plan per week, never published automatically. Poll `getPlanGeneration` until COMPLETED or
         FAILED.
 
         Main API calls, in sequence:
@@ -35,6 +37,9 @@ planning:
               currentWeek:
                 summary: The current week, requested on Wednesday 2026-11-04 (allowed)
                 value: {from: "2026-11-02", to: "2026-11-08"}
+              replaceDraft:
+                summary: The week of 16 Nov, replacing its DRAFT after the OWNER confirmed
+                value: {from: "2026-11-16", to: "2026-11-22", replaceDrafts: true}
       responses:
         '202':
           description: Generation accepted
@@ -190,3 +195,438 @@ planning:
                   summary: "1125 - planning generation not found"
                   value: {status: 404, detail: "1125 - planning generation not found"}
       x-functional-errors: [1006, 1015, 1020, 1125]
+  week-coverage:
+    get:
+      summary: Weekly staffing coverage («¿Llegas?») before generating
+      description: |
+        «¿Llegas con tu equipo?» for one ISO week, OWNER only. It compares the staffing demand of
+        the week with the contracted hours, per job role, and the people needed at once with the
+        people of each role, per date and shift. It uses the solver input of the week
+        (`getPlanningGenerationInput`: the same effective days, special days included, and the
+        same contract set as a generation), so the numbers match what the solver receives. It is
+        a necessary condition, not a promise: the solver can still leave a gap because of rest
+        rules or overlaps.
+
+        Week, per job role `r` (seconds):
+        - `requiredSeconds` N(r): for every shift of every date of the week, the net shift
+          duration (`endTime - startTime`, rolling into the next day when `endTime` is not later
+          than `startTime`, minus `breakMinutes`) times `targetEmployees` of `r`. A date without
+          shifts adds nothing, so closing a day lowers N.
+        - `minimumSeconds`: the same with `minimumEmployees`.
+        - `contractedSeconds` E(r): for every contract of `r` in the solver contract set,
+          `floor(totalWeekHours * 3600 * coveredDays / 7)`, where `coveredDays` is the number of
+          days of the week inside the contract. This is the solver capacity
+          (`ContractPeriod.capacitySeconds`). Closing a day does not change E. Pending invitations
+          are not contracts and do not count.
+        - `status`: SHORT when E < N; TIGHT when N <= E < 1.10 * N (computed in integers:
+          `10 * E < 11 * N`); COVERED when E >= 1.10 * N. A role without demand (N = 0) is COVERED.
+        - `belowMinimum`: E < `minimumSeconds`.
+        - `shortfallSeconds` = max(0, N - E) («te faltan 8 h») and `surplusSeconds` =
+          max(0, E - N) («sobran 16 h»). Hours are not converted into shifts.
+        - `memberCount` and `members` (name and prorated seconds): the distinct people with a
+          contract of `r` in the week.
+        - `roles` lists every job role with N > 0 or E > 0 this week, ordered by job-role name
+          and id.
+        Week `status` is the worst role status (null without roles); `openDays`,
+        `shiftOccurrences` and `memberCount` count dates with shifts, shifts and distinct people
+        with a contract in the week.
+
+        Totals: `requiredSeconds` = ΣN, `contractedSeconds` = ΣE, `coveredSeconds` = Σ min(N, E)
+        over `roles`, and `coveragePercent` = round half up of 100 * coveredSeconds /
+        requiredSeconds, or null when requiredSeconds is 0.
+
+        Per date and shift, per job role of the shift demand:
+        - `people`: distinct users whose contract effective on that date has that job role.
+        - `targetAtOnce` and `minimumAtOnce`: the largest sum of `targetEmployees` (or
+          `minimumEmployees`) of that role over the shifts of the same date that are running at
+          the same instant, at any instant of this shift (this shift included). A worker cannot
+          be in two overlapping shifts.
+        - `status`: SHORT when targetAtOnce > people; TIGHT when equal; COVERED when lower, or
+          when targetAtOnce is 0. `belowMinimum`: minimumAtOnce > people.
+        - Day `status` is the worst shift-role status of the date, and `reason` says why:
+          `CLOSED` (no shifts, status null), `NO_DEMAND` (shifts without any target, status
+          null), `BELOW_MINIMUM_AT_ONCE`, `SHORT_AT_ONCE`, `TIGHT_AT_ONCE`, or null when COVERED.
+          `reasonJobRoleId` is the job role that sets it (worst first, then job-role name and id).
+
+        Each date has `source` (RECURRING_SCHEDULE, EXCEPTION or NONE), `scheduleExceptionId`
+        and `roles` (Σ targetEmployees of each role over its shifts, with the worst status). Each
+        shift has `targetEmployees` (Σ of its roles) and its worst `status`.
+
+        `planning` is the existing planning of the week (`id`, `status`) or null. `generation`
+        is a hint for «Generar», with the Main API checks of `requestPlanningGeneration` in its
+        order: PAST_WEEK (`weekStart` before the Monday of the business-local current week,
+        1098), IN_PROGRESS (planning CREATED or SOLVING, 1122), PLANNING_EXISTS (PUBLISHED or
+        ARCHIVED, 1121), NO_CONTRACTS (empty solver contract set, 1123), NO_DEMAND (no shift of
+        the week with any demand, 1124). `replacesDraft` is true for a DRAFT week: ask the OWNER,
+        then call `requestPlanGeneration` with `replaceDrafts: true`. The Main API still decides.
+
+        Not in this version: hypothetical days without saving (preview) and the assigned
+        employees of an existing planning per shift; both can be added later without breaking
+        this response.
+
+        Main API calls, in parallel (Arrow `parZip`, at most 5 in flight), never one per user or
+        per day:
+        1. `getPlanningGenerationInput` (`GET /api/v1/businesses/{businessId}/planning-generations/input?weekStart=`).
+        2. `getBusinessJobRoles`, every page of 100, inactive roles included (names and colors).
+        3. `getPlanning` (`GET /api/v1/businesses/{businessId}/plannings/{weekStart}`); its
+           404 1046 becomes `planning: null`.
+        4. `getBusinessUsers` (active members), only for the names of `members`.
+        5. `getUserBusinesses`, only for the business `zone` of PAST_WEEK.
+        The Main API enforces the OWNER role on calls 1 to 4; any other error is propagated.
+      tags:
+        - Planning
+      operationId: getWeekCoverage
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '../../components/planning/components.yml#/components/parameters/BusinessId'
+        - name: week
+          in: query
+          required: true
+          description: ISO week `YYYY-Www`, Monday to Sunday in the business calendar. Past, current and future weeks are accepted.
+          schema:
+            type: string
+            pattern: '^\d{4}-W\d{2}$'
+            example: "2026-W47"
+      responses:
+        '200':
+          description: Coverage of the week
+          content:
+            application/json:
+              schema:
+                $ref: '../../components/planning/components.yml#/components/schemas/WeekCoverageDTO'
+              example:
+                businessId: 101
+                week: 2026-W47
+                weekStart: '2026-11-16'
+                weekEnd: '2026-11-22'
+                tightMarginPercent: 10
+                status: SHORT
+                totals: {requiredSeconds: 1353600, contractedSeconds: 1382400, coveredSeconds: 1324800, coveragePercent: 98}
+                openDays: 6
+                shiftOccurrences: 12
+                memberCount: 10
+                roles:
+                - jobRoleId: 11
+                  jobRole: {id: 11, code: BARTENDER, name: Barra, color: '#8E6CEF', icon: bar, active: true}
+                  requiredSeconds: 403200
+                  minimumSeconds: 345600
+                  contractedSeconds: 403200
+                  shortfallSeconds: 0
+                  surplusSeconds: 0
+                  status: TIGHT
+                  belowMinimum: false
+                  memberCount: 3
+                  members:
+                  - {userId: 52, name: Hugo Torres, contractedSeconds: 144000}
+                  - {userId: 51, name: Lucía Ramos, contractedSeconds: 144000}
+                  - {userId: 53, name: Álvaro Gil, contractedSeconds: 115200}
+                - jobRoleId: 12
+                  jobRole: {id: 12, code: COOK, name: Cocina, color: '#4C9F70', icon: kitchen, active: true}
+                  requiredSeconds: 460800
+                  minimumSeconds: 345600
+                  contractedSeconds: 432000
+                  shortfallSeconds: 28800
+                  surplusSeconds: 0
+                  status: SHORT
+                  belowMinimum: false
+                  memberCount: 3
+                  members:
+                  - {userId: 61, name: Carlos Vega, contractedSeconds: 144000}
+                  - {userId: 63, name: Carmen Rubio, contractedSeconds: 144000}
+                  - {userId: 62, name: Sofía Peña, contractedSeconds: 144000}
+                - jobRoleId: 10
+                  jobRole: {id: 10, code: WAITER, name: Sala, color: '#3494FB', icon: front-of-house, active: true}
+                  requiredSeconds: 489600
+                  minimumSeconds: 345600
+                  contractedSeconds: 547200
+                  shortfallSeconds: 0
+                  surplusSeconds: 57600
+                  status: COVERED
+                  belowMinimum: false
+                  memberCount: 4
+                  members:
+                  - {userId: 44, name: Ana Gómez, contractedSeconds: 115200}
+                  - {userId: 42, name: Irene Navas, contractedSeconds: 144000}
+                  - {userId: 41, name: Javier Mora, contractedSeconds: 144000}
+                  - {userId: 43, name: Pablo Ruiz, contractedSeconds: 144000}
+                days:
+                - date: '2026-11-16'
+                  dayOfWeek: MONDAY
+                  source: RECURRING_SCHEDULE
+                  scheduleExceptionId: null
+                  open: false
+                  status: null
+                  reason: CLOSED
+                  reasonJobRoleId: null
+                  roles: []
+                  shifts: []
+                - date: '2026-11-17'
+                  dayOfWeek: TUESDAY
+                  source: RECURRING_SCHEDULE
+                  scheduleExceptionId: null
+                  open: true
+                  status: COVERED
+                  reason: null
+                  reasonJobRoleId: null
+                  roles:
+                  - {jobRoleId: 11, targetEmployees: 2, status: COVERED}
+                  - {jobRoleId: 12, targetEmployees: 2, status: COVERED}
+                  - {jobRoleId: 10, targetEmployees: 2, status: COVERED}
+                  shifts:
+                  - shiftId: 20
+                    name: Mañana
+                    color: '#1A2B3C'
+                    startTime: 08:00
+                    endTime: '16:00'
+                    breakMinutes: 0
+                    netSeconds: 28800
+                    targetEmployees: 3
+                    status: COVERED
+                    roles:
+                    - {jobRoleId: 10, minimumEmployees: 1, targetEmployees: 1, maximumEmployees: 2, targetAtOnce: 1, minimumAtOnce: 1, people: 4, status: COVERED, belowMinimum: false}
+                    - {jobRoleId: 11, minimumEmployees: 1, targetEmployees: 1, maximumEmployees: 2, targetAtOnce: 1, minimumAtOnce: 1, people: 3, status: COVERED, belowMinimum: false}
+                    - {jobRoleId: 12, minimumEmployees: 1, targetEmployees: 1, maximumEmployees: 2, targetAtOnce: 1, minimumAtOnce: 1, people: 3, status: COVERED, belowMinimum: false}
+                  - shiftId: 21
+                    name: Noche
+                    color: '#2E4A7D'
+                    startTime: '16:00'
+                    endTime: 00:00
+                    breakMinutes: 0
+                    netSeconds: 28800
+                    targetEmployees: 3
+                    status: COVERED
+                    roles:
+                    - {jobRoleId: 10, minimumEmployees: 1, targetEmployees: 1, maximumEmployees: 2, targetAtOnce: 1, minimumAtOnce: 1, people: 4, status: COVERED, belowMinimum: false}
+                    - {jobRoleId: 11, minimumEmployees: 1, targetEmployees: 1, maximumEmployees: 2, targetAtOnce: 1, minimumAtOnce: 1, people: 3, status: COVERED, belowMinimum: false}
+                    - {jobRoleId: 12, minimumEmployees: 1, targetEmployees: 1, maximumEmployees: 2, targetAtOnce: 1, minimumAtOnce: 1, people: 3, status: COVERED, belowMinimum: false}
+                - date: '2026-11-18'
+                  dayOfWeek: WEDNESDAY
+                  source: RECURRING_SCHEDULE
+                  scheduleExceptionId: null
+                  open: true
+                  status: COVERED
+                  reason: null
+                  reasonJobRoleId: null
+                  roles:
+                  - {jobRoleId: 11, targetEmployees: 2, status: COVERED}
+                  - {jobRoleId: 12, targetEmployees: 2, status: COVERED}
+                  - {jobRoleId: 10, targetEmployees: 2, status: COVERED}
+                  shifts:
+                  - shiftId: 20
+                    name: Mañana
+                    color: '#1A2B3C'
+                    startTime: 08:00
+                    endTime: '16:00'
+                    breakMinutes: 0
+                    netSeconds: 28800
+                    targetEmployees: 3
+                    status: COVERED
+                    roles:
+                    - {jobRoleId: 10, minimumEmployees: 1, targetEmployees: 1, maximumEmployees: 2, targetAtOnce: 1, minimumAtOnce: 1, people: 4, status: COVERED, belowMinimum: false}
+                    - {jobRoleId: 11, minimumEmployees: 1, targetEmployees: 1, maximumEmployees: 2, targetAtOnce: 1, minimumAtOnce: 1, people: 3, status: COVERED, belowMinimum: false}
+                    - {jobRoleId: 12, minimumEmployees: 1, targetEmployees: 1, maximumEmployees: 2, targetAtOnce: 1, minimumAtOnce: 1, people: 3, status: COVERED, belowMinimum: false}
+                  - shiftId: 21
+                    name: Noche
+                    color: '#2E4A7D'
+                    startTime: '16:00'
+                    endTime: 00:00
+                    breakMinutes: 0
+                    netSeconds: 28800
+                    targetEmployees: 3
+                    status: COVERED
+                    roles:
+                    - {jobRoleId: 10, minimumEmployees: 1, targetEmployees: 1, maximumEmployees: 2, targetAtOnce: 1, minimumAtOnce: 1, people: 4, status: COVERED, belowMinimum: false}
+                    - {jobRoleId: 11, minimumEmployees: 1, targetEmployees: 1, maximumEmployees: 2, targetAtOnce: 1, minimumAtOnce: 1, people: 3, status: COVERED, belowMinimum: false}
+                    - {jobRoleId: 12, minimumEmployees: 1, targetEmployees: 1, maximumEmployees: 2, targetAtOnce: 1, minimumAtOnce: 1, people: 3, status: COVERED, belowMinimum: false}
+                - date: '2026-11-19'
+                  dayOfWeek: THURSDAY
+                  source: RECURRING_SCHEDULE
+                  scheduleExceptionId: null
+                  open: true
+                  status: COVERED
+                  reason: null
+                  reasonJobRoleId: null
+                  roles:
+                  - {jobRoleId: 11, targetEmployees: 2, status: COVERED}
+                  - {jobRoleId: 12, targetEmployees: 2, status: COVERED}
+                  - {jobRoleId: 10, targetEmployees: 2, status: COVERED}
+                  shifts:
+                  - shiftId: 20
+                    name: Mañana
+                    color: '#1A2B3C'
+                    startTime: 08:00
+                    endTime: '16:00'
+                    breakMinutes: 0
+                    netSeconds: 28800
+                    targetEmployees: 3
+                    status: COVERED
+                    roles:
+                    - {jobRoleId: 10, minimumEmployees: 1, targetEmployees: 1, maximumEmployees: 2, targetAtOnce: 1, minimumAtOnce: 1, people: 4, status: COVERED, belowMinimum: false}
+                    - {jobRoleId: 11, minimumEmployees: 1, targetEmployees: 1, maximumEmployees: 2, targetAtOnce: 1, minimumAtOnce: 1, people: 3, status: COVERED, belowMinimum: false}
+                    - {jobRoleId: 12, minimumEmployees: 1, targetEmployees: 1, maximumEmployees: 2, targetAtOnce: 1, minimumAtOnce: 1, people: 3, status: COVERED, belowMinimum: false}
+                  - shiftId: 21
+                    name: Noche
+                    color: '#2E4A7D'
+                    startTime: '16:00'
+                    endTime: 00:00
+                    breakMinutes: 0
+                    netSeconds: 28800
+                    targetEmployees: 3
+                    status: COVERED
+                    roles:
+                    - {jobRoleId: 10, minimumEmployees: 1, targetEmployees: 1, maximumEmployees: 2, targetAtOnce: 1, minimumAtOnce: 1, people: 4, status: COVERED, belowMinimum: false}
+                    - {jobRoleId: 11, minimumEmployees: 1, targetEmployees: 1, maximumEmployees: 2, targetAtOnce: 1, minimumAtOnce: 1, people: 3, status: COVERED, belowMinimum: false}
+                    - {jobRoleId: 12, minimumEmployees: 1, targetEmployees: 1, maximumEmployees: 2, targetAtOnce: 1, minimumAtOnce: 1, people: 3, status: COVERED, belowMinimum: false}
+                - date: '2026-11-20'
+                  dayOfWeek: FRIDAY
+                  source: RECURRING_SCHEDULE
+                  scheduleExceptionId: null
+                  open: true
+                  status: COVERED
+                  reason: null
+                  reasonJobRoleId: null
+                  roles:
+                  - {jobRoleId: 11, targetEmployees: 3, status: COVERED}
+                  - {jobRoleId: 12, targetEmployees: 3, status: COVERED}
+                  - {jobRoleId: 10, targetEmployees: 3, status: COVERED}
+                  shifts:
+                  - shiftId: 20
+                    name: Mañana
+                    color: '#1A2B3C'
+                    startTime: 08:00
+                    endTime: '16:00'
+                    breakMinutes: 0
+                    netSeconds: 28800
+                    targetEmployees: 3
+                    status: COVERED
+                    roles:
+                    - {jobRoleId: 10, minimumEmployees: 1, targetEmployees: 1, maximumEmployees: 2, targetAtOnce: 1, minimumAtOnce: 1, people: 4, status: COVERED, belowMinimum: false}
+                    - {jobRoleId: 11, minimumEmployees: 1, targetEmployees: 1, maximumEmployees: 2, targetAtOnce: 1, minimumAtOnce: 1, people: 3, status: COVERED, belowMinimum: false}
+                    - {jobRoleId: 12, minimumEmployees: 1, targetEmployees: 1, maximumEmployees: 2, targetAtOnce: 1, minimumAtOnce: 1, people: 3, status: COVERED, belowMinimum: false}
+                  - shiftId: 21
+                    name: Noche
+                    color: '#2E4A7D'
+                    startTime: '16:00'
+                    endTime: 00:00
+                    breakMinutes: 0
+                    netSeconds: 28800
+                    targetEmployees: 6
+                    status: COVERED
+                    roles:
+                    - {jobRoleId: 10, minimumEmployees: 1, targetEmployees: 2, maximumEmployees: 3, targetAtOnce: 2, minimumAtOnce: 1, people: 4, status: COVERED, belowMinimum: false}
+                    - {jobRoleId: 11, minimumEmployees: 1, targetEmployees: 2, maximumEmployees: 3, targetAtOnce: 2, minimumAtOnce: 1, people: 3, status: COVERED, belowMinimum: false}
+                    - {jobRoleId: 12, minimumEmployees: 1, targetEmployees: 2, maximumEmployees: 3, targetAtOnce: 2, minimumAtOnce: 1, people: 3, status: COVERED, belowMinimum: false}
+                - date: '2026-11-21'
+                  dayOfWeek: SATURDAY
+                  source: RECURRING_SCHEDULE
+                  scheduleExceptionId: null
+                  open: true
+                  status: COVERED
+                  reason: null
+                  reasonJobRoleId: null
+                  roles:
+                  - {jobRoleId: 11, targetEmployees: 3, status: COVERED}
+                  - {jobRoleId: 12, targetEmployees: 3, status: COVERED}
+                  - {jobRoleId: 10, targetEmployees: 5, status: COVERED}
+                  shifts:
+                  - shiftId: 20
+                    name: Mañana
+                    color: '#1A2B3C'
+                    startTime: 08:00
+                    endTime: '16:00'
+                    breakMinutes: 0
+                    netSeconds: 28800
+                    targetEmployees: 4
+                    status: COVERED
+                    roles:
+                    - {jobRoleId: 10, minimumEmployees: 1, targetEmployees: 2, maximumEmployees: 3, targetAtOnce: 2, minimumAtOnce: 1, people: 4, status: COVERED, belowMinimum: false}
+                    - {jobRoleId: 11, minimumEmployees: 1, targetEmployees: 1, maximumEmployees: 2, targetAtOnce: 1, minimumAtOnce: 1, people: 3, status: COVERED, belowMinimum: false}
+                    - {jobRoleId: 12, minimumEmployees: 1, targetEmployees: 1, maximumEmployees: 2, targetAtOnce: 1, minimumAtOnce: 1, people: 3, status: COVERED, belowMinimum: false}
+                  - shiftId: 21
+                    name: Noche
+                    color: '#2E4A7D'
+                    startTime: '16:00'
+                    endTime: 00:00
+                    breakMinutes: 0
+                    netSeconds: 28800
+                    targetEmployees: 7
+                    status: COVERED
+                    roles:
+                    - {jobRoleId: 10, minimumEmployees: 1, targetEmployees: 3, maximumEmployees: 4, targetAtOnce: 3, minimumAtOnce: 1, people: 4, status: COVERED, belowMinimum: false}
+                    - {jobRoleId: 11, minimumEmployees: 1, targetEmployees: 2, maximumEmployees: 3, targetAtOnce: 2, minimumAtOnce: 1, people: 3, status: COVERED, belowMinimum: false}
+                    - {jobRoleId: 12, minimumEmployees: 1, targetEmployees: 2, maximumEmployees: 3, targetAtOnce: 2, minimumAtOnce: 1, people: 3, status: COVERED, belowMinimum: false}
+                - date: '2026-11-22'
+                  dayOfWeek: SUNDAY
+                  source: RECURRING_SCHEDULE
+                  scheduleExceptionId: null
+                  open: true
+                  status: TIGHT
+                  reason: TIGHT_AT_ONCE
+                  reasonJobRoleId: 12
+                  roles:
+                  - {jobRoleId: 11, targetEmployees: 2, status: COVERED}
+                  - {jobRoleId: 12, targetEmployees: 4, status: TIGHT}
+                  - {jobRoleId: 10, targetEmployees: 3, status: COVERED}
+                  shifts:
+                  - shiftId: 20
+                    name: Mañana
+                    color: '#1A2B3C'
+                    startTime: 08:00
+                    endTime: '16:00'
+                    breakMinutes: 0
+                    netSeconds: 28800
+                    targetEmployees: 6
+                    status: TIGHT
+                    roles:
+                    - {jobRoleId: 10, minimumEmployees: 1, targetEmployees: 2, maximumEmployees: 3, targetAtOnce: 2, minimumAtOnce: 1, people: 4, status: COVERED, belowMinimum: false}
+                    - {jobRoleId: 11, minimumEmployees: 1, targetEmployees: 1, maximumEmployees: 2, targetAtOnce: 1, minimumAtOnce: 1, people: 3, status: COVERED, belowMinimum: false}
+                    - {jobRoleId: 12, minimumEmployees: 1, targetEmployees: 3, maximumEmployees: 4, targetAtOnce: 3, minimumAtOnce: 1, people: 3, status: TIGHT, belowMinimum: false}
+                  - shiftId: 21
+                    name: Noche
+                    color: '#2E4A7D'
+                    startTime: '16:00'
+                    endTime: 00:00
+                    breakMinutes: 0
+                    netSeconds: 28800
+                    targetEmployees: 3
+                    status: COVERED
+                    roles:
+                    - {jobRoleId: 10, minimumEmployees: 1, targetEmployees: 1, maximumEmployees: 2, targetAtOnce: 1, minimumAtOnce: 1, people: 4, status: COVERED, belowMinimum: false}
+                    - {jobRoleId: 11, minimumEmployees: 1, targetEmployees: 1, maximumEmployees: 2, targetAtOnce: 1, minimumAtOnce: 1, people: 3, status: COVERED, belowMinimum: false}
+                    - {jobRoleId: 12, minimumEmployees: 1, targetEmployees: 1, maximumEmployees: 2, targetAtOnce: 1, minimumAtOnce: 1, people: 3, status: COVERED, belowMinimum: false}
+                planning: {id: 502, status: DRAFT}
+                generation: {allowed: true, blocker: null, replacesDraft: true}
+        '400':
+          description: The week is not a valid ISO week (1045)
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              examples:
+                invalidWeek:
+                  summary: "1045 - planning is invalid"
+                  value: {status: 400, detail: "1045 - planning is invalid"}
+        '401':
+          description: No authenticated session
+        '403':
+          description: The caller is not the OWNER of the business (1020)
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              examples:
+                notOwner:
+                  summary: "1020 - user is not the owner of business"
+                  value: {status: 403, detail: "1020 - user is not the owner of business"}
+        '404':
+          description: Business not found (1006)
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              examples:
+                businessNotFound:
+                  summary: "1006 - business does not exist"
+                  value: {status: 404, detail: "1006 - business does not exist"}
+      x-functional-errors: [1006, 1020, 1045]

@@ -12,6 +12,13 @@
 - Documentation only, no contract or behaviour change and no version bump: `createBusinessInvitation`, `getBusinessInvitations` and `deleteBusinessInvitation` document `403` `1020` (`user is not the owner of business`), which is what the backend returns (`BusinessRoleService`), instead of `1011`. `1011` stays in the catalog.
 - Documentation only: `businessUserId` in the geofencing and auto-clocking settings (`GeofencingUserSettingDTO`, `AutoClockingUserSettingDTO` and the path parameter of the two individual PATCH operations) is described as the user id, which is what the backend reads and returns (mapper source `businessUser.user.id`; `findByUserAndBusinessId(userId, …)`), not as the id of the membership row.
 
+## 0.0.90
+
+### Added
+
+- `GET /api/v1/businesses/{businessId}/planning-generations/input?weekStart=` (`getPlanningGenerationInput`, tag Planning, OWNER, `PlanningGenerationInputDTO`): read-only view of what a generation of that week would send to the solver, for the BFF weekly coverage («¿Llegas con tu equipo?»). The 7 dates with the effective day of each (the schedule exception of the date, else the recurring schedule with the latest `validFrom` effective on it, else an empty day), its `source` (`EXCEPTION`, `RECURRING_SCHEDULE`, `NONE`), `scheduleExceptionId`, opening intervals and shifts with their demands (`minimumEmployees`, `targetEmployees`, `maximumEmployees` per job role); and the contracts of the solver set (active members, intersecting the week), as `BusinessContractResponseDTO`. No proration in the Main API: the consumer applies the solver one. Past weeks allowed. `weekStart` not a Monday: `400` `1045`. Not the owner: `403` `1020`; unknown business: `404` `1006`. Nothing is written or locked. No migration.
+- `PlanningGenerationRequestDTO.replaceDrafts` (boolean, optional, default false) in `requestPlanningGeneration`. With true, a week of the period whose planning is DRAFT is regenerated on the same planning (like a FAILED one: back to CREATED, its scheduled shifts are replaced by the new result, new snapshot and job), so manual edits of that draft are lost: clients must ask first. PUBLISHED and ARCHIVED keep `409` `1121`, CREATED and SOLVING keep `409` `1122`. Without the property nothing changes.
+
 ## 0.0.89
 
 ### Added

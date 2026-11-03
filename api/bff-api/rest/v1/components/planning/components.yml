@@ -36,6 +36,16 @@ components:
           format: date
           description: Sunday of the last week
           example: "2026-11-22"
+        replaceDrafts:
+          type: boolean
+          default: false
+          description: >
+            Main API `PlanningGenerationRequestDTO.replaceDrafts`, forwarded unchanged. When true, a
+            DRAFT planning of the period is generated again and its scheduled shifts, manual edits
+            included, are replaced (no 409 1121 for it); PUBLISHED and ARCHIVED weeks still return
+            409 1121. The app sends true only after the OWNER confirms («Ya hay un borrador de esta
+            semana. ¿Lo sustituyes?»), using `getWeekCoverage.planning` to know a DRAFT exists.
+          example: false
       required: [from, to]
 
     PlanningGenerationStatusDTO:
@@ -126,3 +136,437 @@ components:
           items:
             $ref: "#/components/schemas/PlanningGenerationWeekDTO"
       required: [id, businessId, from, to, status, requestedBy, requestedAt, finishedAt, failureReason, weeks]
+
+    WeekCoverageStatusDTO:
+      type: string
+      description: >
+        COVERED («Cubierto»), TIGHT («Justo», no margin) or SHORT («Falta gente»). Measured
+        against the target demand. Open set: clients must tolerate unknown values.
+      enum: [COVERED, TIGHT, SHORT]
+      example: TIGHT
+
+    WeekCoverageDayReasonDTO:
+      type: string
+      description: >
+        Why a date has its status: CLOSED (no shifts), NO_DEMAND (shifts, but no target above 0),
+        BELOW_MINIMUM_AT_ONCE (a role has fewer people than its minimum at once),
+        SHORT_AT_ONCE (fewer people than the target at once), TIGHT_AT_ONCE (exactly the
+        target at once). Open set: clients must tolerate unknown values.
+      enum: [CLOSED, NO_DEMAND, BELOW_MINIMUM_AT_ONCE, SHORT_AT_ONCE, TIGHT_AT_ONCE]
+      example: TIGHT_AT_ONCE
+
+    WeekCoverageDaySourceDTO:
+      type: string
+      description: >
+        Where the effective configuration of the date comes from: RECURRING_SCHEDULE (the base
+        week effective on that date), EXCEPTION (a special day) or NONE (no recurring schedule
+        covers the date and there is no exception: the date is closed). Open set.
+      enum: [RECURRING_SCHEDULE, EXCEPTION, NONE]
+      example: RECURRING_SCHEDULE
+
+    WeekCoverageGenerationBlockerDTO:
+      type: string
+      description: >
+        Why «Generar» would fail for this week, in the order the Main API checks it: PAST_WEEK
+        (1098), IN_PROGRESS (1122), PLANNING_EXISTS (1121, a PUBLISHED or ARCHIVED planning),
+        NO_CONTRACTS (1123), NO_DEMAND (1124). Open set.
+      enum: [PAST_WEEK, IN_PROGRESS, PLANNING_EXISTS, NO_CONTRACTS, NO_DEMAND]
+      example: PLANNING_EXISTS
+
+    WeekCoverageGenerationDTO:
+      type: object
+      description: >
+        Hint for the «Generar» button, computed by the BFF from the same data with the Main API
+        rules of `requestPlanningGeneration`. The Main API still decides: its error is the truth
+        if the data changed in between.
+      properties:
+        allowed:
+          type: boolean
+          description: True when blocker is null
+          example: true
+        blocker:
+          description: First rule that would reject the request, or null
+          oneOf:
+            - $ref: "#/components/schemas/WeekCoverageGenerationBlockerDTO"
+            - type: "null"
+        replacesDraft:
+          type: boolean
+          description: >
+            True when the week has a DRAFT planning: generating is allowed only after the OWNER
+            confirms, with `replaceDrafts: true`, and it replaces the draft shifts
+          example: true
+      required: [allowed, blocker, replacesDraft]
+
+    WeekCoverageTotalsDTO:
+      type: object
+      description: Week totals over `roles`
+      properties:
+        requiredSeconds:
+          type: integer
+          format: int64
+          minimum: 0
+          description: Σ requiredSeconds of the roles (target demand)
+          example: 1353600
+        contractedSeconds:
+          type: integer
+          format: int64
+          minimum: 0
+          description: Σ contractedSeconds of the roles (prorated as the solver does)
+          example: 1382400
+        coveredSeconds:
+          type: integer
+          format: int64
+          minimum: 0
+          description: Σ min(requiredSeconds, contractedSeconds) of the roles («Cubres 368 de 376 h»)
+          example: 1324800
+        coveragePercent:
+          type: [integer, "null"]
+          format: int32
+          minimum: 0
+          maximum: 100
+          description: Round half up of 100 * coveredSeconds / requiredSeconds; null when requiredSeconds is 0 (no demand)
+          example: 98
+      required: [requiredSeconds, contractedSeconds, coveredSeconds, coveragePercent]
+
+    WeekCoverageMemberDTO:
+      type: object
+      description: One person with a contract of the role in the week
+      properties:
+        userId:
+          type: integer
+          format: int64
+          minimum: 1
+          example: 41
+        name:
+          type: string
+          example: Carlos Vega
+        contractedSeconds:
+          type: integer
+          format: int64
+          minimum: 0
+          description: Σ floor(totalWeekHours * 3600 * coveredDays / 7) of the person's contracts of this role in the week
+          example: 144000
+      required: [userId, name, contractedSeconds]
+
+    WeekCoverageRoleDTO:
+      type: object
+      description: Weekly hours of one job role, target demand against contracted hours
+      properties:
+        jobRoleId:
+          type: integer
+          format: int64
+          minimum: 1
+          example: 12
+        jobRole:
+          description: Job role from the catalog, inactive included; null only if the id is missing from the catalog
+          oneOf:
+            - $ref: "../manager/components.yml#/components/schemas/ManagerJobRoleSummaryDTO"
+            - type: "null"
+        requiredSeconds:
+          type: integer
+          format: int64
+          minimum: 0
+          description: N, net shift seconds times targetEmployees over the week («Pides 128 h»)
+          example: 460800
+        minimumSeconds:
+          type: integer
+          format: int64
+          minimum: 0
+          description: The same with minimumEmployees
+          example: 345600
+        contractedSeconds:
+          type: integer
+          format: int64
+          minimum: 0
+          description: E, Σ floor(totalWeekHours * 3600 * coveredDays / 7) of the role contracts («120 h de contrato»)
+          example: 432000
+        shortfallSeconds:
+          type: integer
+          format: int64
+          minimum: 0
+          description: max(0, N - E) («te faltan 8 h»)
+          example: 28800
+        surplusSeconds:
+          type: integer
+          format: int64
+          minimum: 0
+          description: max(0, E - N) («sobran 16 h»)
+          example: 0
+        status:
+          $ref: "#/components/schemas/WeekCoverageStatusDTO"
+        belowMinimum:
+          type: boolean
+          description: True when E < minimumSeconds («ni al mínimo»)
+          example: false
+        memberCount:
+          type: integer
+          format: int32
+          minimum: 0
+          description: Distinct people with a contract of this role in the week («de 3»)
+          example: 3
+        members:
+          type: array
+          description: The same people, ordered by name then userId
+          items:
+            $ref: "#/components/schemas/WeekCoverageMemberDTO"
+      required: [jobRoleId, jobRole, requiredSeconds, minimumSeconds, contractedSeconds, shortfallSeconds, surplusSeconds, status, belowMinimum, memberCount, members]
+
+    WeekCoverageShiftRoleDTO:
+      type: object
+      description: One job-role demand of a shift and the people of that role on the date
+      properties:
+        jobRoleId:
+          type: integer
+          format: int64
+          minimum: 1
+          example: 12
+        minimumEmployees:
+          type: integer
+          format: int32
+          minimum: 0
+          example: 1
+        targetEmployees:
+          type: integer
+          format: int32
+          minimum: 0
+          example: 3
+        maximumEmployees:
+          type: integer
+          format: int32
+          minimum: 1
+          example: 4
+        targetAtOnce:
+          type: integer
+          format: int32
+          minimum: 0
+          description: Largest sum of targetEmployees of the role over the shifts of the date running at the same instant, during this shift
+          example: 3
+        minimumAtOnce:
+          type: integer
+          format: int32
+          minimum: 0
+          description: The same with minimumEmployees
+          example: 1
+        people:
+          type: integer
+          format: int32
+          minimum: 0
+          description: Distinct people whose contract effective on the date has this job role
+          example: 3
+        status:
+          $ref: "#/components/schemas/WeekCoverageStatusDTO"
+        belowMinimum:
+          type: boolean
+          description: True when minimumAtOnce > people
+          example: false
+      required: [jobRoleId, minimumEmployees, targetEmployees, maximumEmployees, targetAtOnce, minimumAtOnce, people, status, belowMinimum]
+
+    WeekCoverageShiftDTO:
+      type: object
+      description: One shift of the effective day, ordered by startTime
+      properties:
+        shiftId:
+          type: integer
+          format: int64
+          minimum: 1
+          example: 20
+        name:
+          type: string
+          example: Mañana
+        color:
+          type: string
+          pattern: "^#[0-9A-Fa-f]{6}$"
+          example: "#1A2B3C"
+        startTime:
+          type: string
+          pattern: "^([01][0-9]|2[0-3]):[0-5][0-9]$"
+          example: "08:00"
+        endTime:
+          type: string
+          pattern: "^([01][0-9]|2[0-3]):[0-5][0-9]$"
+          description: Not later than startTime means the next day
+          example: "16:00"
+        breakMinutes:
+          type: integer
+          format: int32
+          minimum: 0
+          example: 0
+        netSeconds:
+          type: integer
+          format: int64
+          minimum: 0
+          description: endTime - startTime (rolled into the next day when needed) minus breakMinutes
+          example: 28800
+        targetEmployees:
+          type: integer
+          format: int32
+          minimum: 0
+          description: Σ targetEmployees of the roles («7 personas»)
+          example: 5
+        status:
+          description: Worst status of its roles; null when targetEmployees is 0
+          oneOf:
+            - $ref: "#/components/schemas/WeekCoverageStatusDTO"
+            - type: "null"
+        roles:
+          type: array
+          items:
+            $ref: "#/components/schemas/WeekCoverageShiftRoleDTO"
+      required: [shiftId, name, color, startTime, endTime, breakMinutes, netSeconds, targetEmployees, status, roles]
+
+    WeekCoverageDayRoleDTO:
+      type: object
+      description: One job role on the date, over all its shifts («Sala 5 · Barra 3 · Cocina 3»)
+      properties:
+        jobRoleId:
+          type: integer
+          format: int64
+          minimum: 1
+          example: 12
+        targetEmployees:
+          type: integer
+          format: int32
+          minimum: 0
+          description: Σ targetEmployees of the role over the shifts of the date
+          example: 4
+        status:
+          $ref: "#/components/schemas/WeekCoverageStatusDTO"
+      required: [jobRoleId, targetEmployees, status]
+
+    WeekCoverageDayDTO:
+      type: object
+      description: One business-local date of the week
+      properties:
+        date:
+          type: string
+          format: date
+          example: "2026-11-22"
+        dayOfWeek:
+          type: string
+          enum: [MONDAY, TUESDAY, WEDNESDAY, THURSDAY, FRIDAY, SATURDAY, SUNDAY]
+          example: SUNDAY
+        source:
+          $ref: "#/components/schemas/WeekCoverageDaySourceDTO"
+        scheduleExceptionId:
+          type: [integer, "null"]
+          format: int64
+          description: Special day (schedule exception) of this date when source is EXCEPTION, otherwise null
+          example: null
+        open:
+          type: boolean
+          description: True when the effective day has at least one shift
+          example: true
+        status:
+          description: Worst shift-role status of the date; null when CLOSED or NO_DEMAND
+          oneOf:
+            - $ref: "#/components/schemas/WeekCoverageStatusDTO"
+            - type: "null"
+        reason:
+          description: Why the date has its status; null when COVERED
+          oneOf:
+            - $ref: "#/components/schemas/WeekCoverageDayReasonDTO"
+            - type: "null"
+        reasonJobRoleId:
+          type: [integer, "null"]
+          format: int64
+          description: Job role that sets the status (worst first, then job-role name and id); null when reason is null, CLOSED or NO_DEMAND
+          example: 12
+        roles:
+          type: array
+          description: Job roles with demand on the date, ordered by job-role name and id
+          items:
+            $ref: "#/components/schemas/WeekCoverageDayRoleDTO"
+        shifts:
+          type: array
+          items:
+            $ref: "#/components/schemas/WeekCoverageShiftDTO"
+      required: [date, dayOfWeek, source, scheduleExceptionId, open, status, reason, reasonJobRoleId, roles, shifts]
+
+    WeekCoveragePlanningDTO:
+      type: object
+      description: Existing planning of the week (Main API `getPlanning`)
+      properties:
+        id:
+          type: integer
+          format: int64
+          minimum: 1
+          example: 502
+        status:
+          $ref: "#/components/schemas/PlanningGenerationWeekStatusDTO"
+      required: [id, status]
+
+    WeekCoverageDTO:
+      type: object
+      description: «¿Llegas con tu equipo?» for one ISO week (getWeekCoverage)
+      properties:
+        businessId:
+          type: integer
+          format: int64
+          example: 101
+        week:
+          type: string
+          pattern: '^\d{4}-W\d{2}$'
+          example: "2026-W47"
+        weekStart:
+          type: string
+          format: date
+          example: "2026-11-16"
+        weekEnd:
+          type: string
+          format: date
+          example: "2026-11-22"
+        tightMarginPercent:
+          type: integer
+          format: int32
+          description: Margin of TIGHT, fixed by the BFF (TIGHT while E < N * (100 + tightMarginPercent) / 100)
+          example: 10
+        status:
+          description: Worst status of `roles`; null when there are no roles
+          example: SHORT
+          oneOf:
+            - $ref: "#/components/schemas/WeekCoverageStatusDTO"
+            - type: "null"
+        totals:
+          $ref: "#/components/schemas/WeekCoverageTotalsDTO"
+        openDays:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 7
+          description: Dates with at least one shift («6 días abiertos»)
+          example: 6
+        shiftOccurrences:
+          type: integer
+          format: int32
+          minimum: 0
+          description: Shifts over all the dates of the week («12 turnos»)
+          example: 12
+        memberCount:
+          type: integer
+          format: int32
+          minimum: 0
+          description: Distinct people with a contract in the week («10 personas»)
+          example: 10
+        roles:
+          type: array
+          description: Every job role with demand or contracts this week, ordered by job-role name and id
+          items:
+            $ref: "#/components/schemas/WeekCoverageRoleDTO"
+        days:
+          type: array
+          minItems: 7
+          maxItems: 7
+          description: The 7 dates of the week in order, Monday first
+          items:
+            $ref: "#/components/schemas/WeekCoverageDayDTO"
+        planning:
+          description: >
+            The planning of the week, or null when there is none. DRAFT: ask before generating
+            with replaceDrafts true. CREATED or SOLVING: a generation is running (409 1122).
+            PUBLISHED or ARCHIVED: generating returns 409 1121. FAILED or null: generate freely.
+          oneOf:
+            - $ref: "#/components/schemas/WeekCoveragePlanningDTO"
+            - type: "null"
+        generation:
+          $ref: "#/components/schemas/WeekCoverageGenerationDTO"
+      required: [businessId, week, weekStart, weekEnd, tightMarginPercent, status, totals, openDays, shiftOccurrences, memberCount, roles, days, planning, generation]

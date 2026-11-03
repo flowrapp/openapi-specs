@@ -1148,7 +1148,9 @@ planning:
         active member has a contract that intersects the period (422 1123); and the recurring
         schedules and schedule exceptions give every week of the period at least one shift with a
         staffing demand (422 1124). A FAILED planning of the period does not block: it is
-        generated again.
+        generated again. With `replaceDrafts: true` a DRAFT planning of the period does not block
+        either: it is generated again on the same planning and its scheduled shifts are replaced
+        (409 1121 stays for PUBLISHED and ARCHIVED).
 
 
         Idempotency: two requests for overlapping periods cannot both be accepted; the database
@@ -1308,3 +1310,116 @@ planning:
                 GENERATION_NOT_FOUND:
                   value: {status: 404, detail: "1125 - planning generation not found"}
       x-functional-errors: [1006, 1020, 1125]
+  generationInput:
+    get:
+      tags: [Planning]
+      operationId: getPlanningGenerationInput
+      summary: Get the solver input that a generation of one week would use
+      description: >
+        Read-only preview of what `requestPlanningGeneration` would send to the solver for the
+        week starting on the Monday `weekStart`, built with the same code path, so a client can
+        compare the staffing demand with the contracted hours before generating. Nothing is
+        created, locked or sent to the solver, and the answer does not depend on whether a
+        planning already exists for the week.
+
+
+        `days` always has the 7 business-local dates from `weekStart` to `weekStart + 6`, in
+        order. Each date carries its effective configuration, resolved exactly as the planning
+        snapshot resolves it: the schedule exception of that date when there is one (it replaces
+        the whole day, and an exception without shifts closes it), otherwise the day of the week
+        of the recurring schedule effective on that date (the one with the latest `validFrom`),
+        otherwise an empty day. `scheduleExceptionId` tells which dates come from a schedule
+        exception, and `source` says which rule applied (EXCEPTION, RECURRING_SCHEDULE or NONE). A
+        date without shifts is closed for the solver.
+
+
+        `contracts` is the contract set of the solver: every contract of the business that
+        intersects the week (`startDate <= weekStart + 6` and `endDate` null or
+        `>= weekStart`) and whose user is an active member (not removed). Contracts of removed
+        members and pending invitations are not included. The capacity of each contract is
+        prorated by the solver, not here: `floor(totalWeekHours * 3600 * coveredDays / 7)`
+        seconds, where `coveredDays` is the number of days of the week inside the contract;
+        closing a day does not change it.
+
+
+        Past, current and future weeks are accepted. Only the business owner can access this
+        operation. A `weekStart` that is not a Monday returns 400 1045. The literal path segment
+        `input` is registered beside `/planning-generations/{generationId}`; `generationId` is an
+        int64, so `input` is not a generation id.
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '../../components/scheduling/components.yml#/components/parameters/BusinessId'
+        - name: weekStart
+          in: query
+          required: true
+          description: Business-local Monday of the week
+          schema:
+            type: string
+            format: date
+            example: "2026-11-16"
+      responses:
+        '200':
+          description: Effective days and solver contracts of the week
+          content:
+            application/json:
+              schema:
+                $ref: '../../components/scheduling/components.yml#/components/schemas/PlanningGenerationInputDTO'
+              example:
+                businessId: 101
+                weekStart: "2026-11-16"
+                weekEnd: "2026-11-22"
+                days:
+                  - {date: "2026-11-16", source: RECURRING_SCHEDULE, scheduleExceptionId: null, openingIntervals: [], shifts: []}
+                  - date: "2026-11-17"
+                    source: RECURRING_SCHEDULE
+                    scheduleExceptionId: null
+                    openingIntervals: [{startTime: "08:00", endTime: "16:00"}]
+                    shifts:
+                      - {shiftId: 20, name: Mañana, color: "#1A2B3C", startTime: "08:00", endTime: "16:00", breakMinutes: 0, demands: [{jobRoleId: 10, minimumEmployees: 1, targetEmployees: 1, maximumEmployees: 2}, {jobRoleId: 11, minimumEmployees: 1, targetEmployees: 1, maximumEmployees: 2}]}
+                  - date: "2026-11-18"
+                    source: RECURRING_SCHEDULE
+                    scheduleExceptionId: null
+                    openingIntervals: [{startTime: "08:00", endTime: "16:00"}]
+                    shifts:
+                      - {shiftId: 20, name: Mañana, color: "#1A2B3C", startTime: "08:00", endTime: "16:00", breakMinutes: 0, demands: [{jobRoleId: 10, minimumEmployees: 1, targetEmployees: 1, maximumEmployees: 2}, {jobRoleId: 11, minimumEmployees: 1, targetEmployees: 1, maximumEmployees: 2}]}
+                  - {date: "2026-11-19", source: EXCEPTION, scheduleExceptionId: 77, openingIntervals: [], shifts: []}
+                  - date: "2026-11-20"
+                    source: RECURRING_SCHEDULE
+                    scheduleExceptionId: null
+                    openingIntervals: [{startTime: "08:00", endTime: "16:00"}]
+                    shifts:
+                      - {shiftId: 20, name: Mañana, color: "#1A2B3C", startTime: "08:00", endTime: "16:00", breakMinutes: 0, demands: [{jobRoleId: 10, minimumEmployees: 1, targetEmployees: 1, maximumEmployees: 2}, {jobRoleId: 11, minimumEmployees: 1, targetEmployees: 1, maximumEmployees: 2}]}
+                  - date: "2026-11-21"
+                    source: RECURRING_SCHEDULE
+                    scheduleExceptionId: null
+                    openingIntervals: [{startTime: "08:00", endTime: "16:00"}]
+                    shifts:
+                      - {shiftId: 20, name: Mañana, color: "#1A2B3C", startTime: "08:00", endTime: "16:00", breakMinutes: 0, demands: [{jobRoleId: 10, minimumEmployees: 1, targetEmployees: 1, maximumEmployees: 2}, {jobRoleId: 11, minimumEmployees: 1, targetEmployees: 1, maximumEmployees: 2}]}
+                  - date: "2026-11-22"
+                    source: RECURRING_SCHEDULE
+                    scheduleExceptionId: null
+                    openingIntervals: [{startTime: "08:00", endTime: "16:00"}]
+                    shifts:
+                      - {shiftId: 20, name: Mañana, color: "#1A2B3C", startTime: "08:00", endTime: "16:00", breakMinutes: 0, demands: [{jobRoleId: 10, minimumEmployees: 1, targetEmployees: 1, maximumEmployees: 2}, {jobRoleId: 11, minimumEmployees: 1, targetEmployees: 1, maximumEmployees: 2}]}
+                contracts:
+                  - id: 501
+                    userId: 41
+                    businessId: 101
+                    jobRoleId: 11
+                    totalWeekHours: 40.0
+                    startDate: "2025-01-01"
+                    endDate: null
+                    createdAt: "2025-01-01T09:00:00+01:00"
+                    updatedAt: "2025-01-01T09:00:00+01:00"
+        '400':
+          description: weekStart is not a Monday (1045)
+          content:
+            application/problem+json:
+              schema:
+                $ref: "../../components/common/error-components.yml#/components/schemas/ProblemDetail"
+              examples:
+                NOT_A_MONDAY:
+                  value: {status: 400, detail: "1045 - planning is invalid"}
+        '403': {$ref: '../../components/scheduling/components.yml#/components/responses/Forbidden'}
+        '404': {$ref: '../../components/scheduling/components.yml#/components/responses/NotFound'}
+      x-functional-errors: [1006, 1020, 1045]
