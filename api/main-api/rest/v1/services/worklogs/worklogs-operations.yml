@@ -11,7 +11,8 @@ worklogs:
         Geofencing policy (the more restrictive of the business and the user policy): BLOCK rejects a
         clock-in outside the business area or without a location with 403 1100. WARN lets it through and,
         when the location is more than 25 m outside the area or missing, opens an OUTSIDE_GEOFENCE
-        attendance incident on the new worklog, which therefore starts in PENDING_REVIEW. ALLOW never flags.
+        attendance incident on the new worklog, which therefore starts in PENDING_REVIEW, unless its match
+        is NOT_APPLICABLE (no published planning that day): then the check is only recorded. ALLOW never flags.
       tags:
         - Worklogs
       operationId: clockIn
