@@ -12,6 +12,17 @@
 - Documentation only, no contract or behaviour change and no version bump: `createBusinessInvitation`, `getBusinessInvitations` and `deleteBusinessInvitation` document `403` `1020` (`user is not the owner of business`), which is what the backend returns (`BusinessRoleService`), instead of `1011`. `1011` stays in the catalog.
 - Documentation only: `businessUserId` in the geofencing and auto-clocking settings (`GeofencingUserSettingDTO`, `AutoClockingUserSettingDTO` and the path parameter of the two individual PATCH operations) is described as the user id, which is what the backend reads and returns (mapper source `businessUser.user.id`; `findByUserAndBusinessId(userId, …)`), not as the id of the membership row.
 
+## 0.0.89
+
+### Added
+
+- Attendance incident type `OUTSIDE_GEOFENCE` in `AttendanceIncidentTypeDTO` (WARN geofence mark). Under the WARN geofencing policy a clock-in or clock-out more than 25 m (GPS margin) outside the business area (`distanceMeters > areaMeters + 25`), or without a device location, is let through and flagged for review: the worklog's match gets one open `OUTSIDE_GEOFENCE` incident (scope `MATCH`, at most one open per worklog, covering both actions), so the worklog is `PENDING_REVIEW` and counts as pending until it is reviewed. It is opened at clock-in when the clock-in is flagged, and by reconciliation after the clock-out when only the clock-out is. It is a normal review, not structural: it does not block `approveShiftAttendance` nor `approveBusinessWorklog`, both of which accept it; a correction (`CORRECTED`) or a rejection (`WORKLOG_REJECTED`) of the worklog also resolves it, and once a person resolves it it is not reopened. ALLOW never flags, and BLOCK keeps rejecting the action with `403` `1100`, so neither opens it. No push notification. This is an additive value in a response enum: clients must tolerate unknown values.
+- `AttendanceIncidentEvidenceDTO.geofenceChecks` (array of `AttendanceGeofenceCheckDTO`: `action` `CLOCK_IN`/`CLOCK_OUT`, `outcome` `INSIDE`/`OUTSIDE`/`NO_LOCATION`, `distanceMeters` (null for `NO_LOCATION`), `areaMeters` (radius in force at the time) and `checkedAt`). For `OUTSIDE_GEOFENCE` it lists every WARN check of the worklog, the inside one included; empty for every other type. Always returned, not listed as required. The checks are append-only evidence; device coordinates are never stored or returned.
+
+### Changed
+
+- `clockIn`, `clockOut` and `GeofencingPolicy` describe the WARN flag above. Request bodies unchanged: the location stays optional.
+
 ## 0.0.88
 
 ### Added

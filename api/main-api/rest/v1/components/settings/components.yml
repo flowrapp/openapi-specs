@@ -100,7 +100,9 @@ components:
       description: >-
         Policy for clock-in and clock-out outside the business geofence.
         ALLOW permits the action without a warning; WARN permits it with a
-        warning; BLOCK prevents it. Missing business and individual settings
+        warning and flags it for review (OUTSIDE_GEOFENCE attendance incident)
+        when it is more than 25 m outside the area or has no location; BLOCK
+        prevents it. Missing business and individual settings
         default to ALLOW. Restrictiveness increases from ALLOW to WARN to BLOCK.
       enum: [ALLOW, WARN, BLOCK]
       example: BLOCK

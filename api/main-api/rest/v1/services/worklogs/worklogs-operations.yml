@@ -8,6 +8,10 @@ worklogs:
         required. The backend fills it with the attendance match created for the
         new worklog, including a NOT_APPLICABLE match. The clock-in use case does
         not select the match; the API completes the identifier before it responds.
+        Geofencing policy (the more restrictive of the business and the user policy): BLOCK rejects a
+        clock-in outside the business area or without a location with 403 1100. WARN lets it through and,
+        when the location is more than 25 m outside the area or missing, opens an OUTSIDE_GEOFENCE
+        attendance incident on the new worklog, which therefore starts in PENDING_REVIEW. ALLOW never flags.
       tags:
         - Worklogs
       operationId: clockIn
@@ -79,6 +83,10 @@ worklogs:
         count in worked-hours reports until attendance reconciliation moves it
         to CONFIRMED, when there is nothing to review, or to PENDING_REVIEW,
         when an open attendance incident remains.
+        Geofencing policy: as in clock-in, BLOCK rejects a clock-out outside the business area or without
+        a location with 403 1100, and WARN lets it through and records the check; reconciliation then
+        opens (or keeps) the OUTSIDE_GEOFENCE incident of the worklog when the clock-out location is more
+        than 25 m outside the area or missing.
       tags:
         - Worklogs
       operationId: clockOut
