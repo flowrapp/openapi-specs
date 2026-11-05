@@ -426,6 +426,10 @@ components:
         `breakMinutes` remains required and is the effective value for this occurrence. Clients
         that create a NEW occurrence typically initialize it from the catalog Shift's
         `defaultBreakMinutes`; changing the catalog default never rewrites existing occurrences.
+        When a planning is generated or published, this effective value is copied into the
+        planning snapshot and into each `scheduled_shift`; those snapshots never read the catalog
+        `defaultBreakMinutes` back, so editing the catalog default cannot alter existing
+        plannings, their net planned seconds or their assigned shifts.
       properties:
         shiftId:
           type: integer
@@ -787,6 +791,10 @@ components:
           type: integer
           format: int32
           minimum: 0
+          description: >
+            Effective break of this occurrence, captured in the planning snapshot. Never read
+            back from the catalog Shift's `defaultBreakMinutes`: editing that default later
+            cannot change this snapshot nor the planned net seconds.
           example: 30
         demands:
           type: array
