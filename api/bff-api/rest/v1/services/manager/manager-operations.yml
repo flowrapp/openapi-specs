@@ -2,12 +2,39 @@ manager:
   businesses:
     get:
       summary: Get manager business dashboard
-      description: >
+      description: |
         Returns the manager's business dashboard with aggregate statistics. Includes the total
         number of businesses, total workers across all businesses, and a summary of each
         business with its worker count. When businessId is provided, it must identify a business
         managed by the authenticated user; the response also includes its home view. All home
         dates and hourly samples use the business's IANA time zone.
+
+        Home admin v3.2 (BFF 0.0.81, additive, optional fields on `ManagerBusinessHomeDTO`):
+        - `workingNow.byJobRole`: fichados vs planificados ahora por puesto from
+          `home.workingNow` + Main `getDailyAttendance(today)` grouped by `row.jobRole`
+          (`working` = `clocked.open`, `scheduledNow` = planned in progress at `asOf`;
+          `jobRole: null` group for UNMATCHED / no puesto). Not plantilla, contracts or
+          P4a `memberCount`.
+        - `attendanceToday.missing`: CRITICAL rows with chips `NO_SHOW` or `MISSING_CLOCK_IN`;
+          `attendanceToday.upcoming` = `counts.upcoming`.
+        - `teamHours.clockedSeconds` + `teamHours.plannedSeconds` from the same BFF
+          `getAttendanceHours` totals (`totals.clockedSeconds` / `totals.plannedSeconds`).
+          Home «Horas semana» must use that pair; legacy `teamHours.totalSeconds` stays for
+          compatibility and must not be mixed with `plannedSeconds`. `plannedSeconds` null =
+          no published plan; `clockedSeconds` remains present for OWNER.
+        - `attention`: `incidentCount` (= `counts.incidents`) and ≤3 first INCIDENTS rows;
+          Recordar = existing `notifyAttendanceShiftClockIn`, Revisar = attendance detail.
+        - `nextWeek`: ISO week after `date`, planning status or `NONE`, `gapCount` with Horario
+          H5 `publishCoverageGaps` semantics (planning assignments × coverage; not
+          `shortfallSeconds`). Null `gapCount` when there is no planning to evaluate.
+        Checklist: front-only; no backend field.
+
+        Composition uses existing Main reads only (no Main change), bounded concurrency
+        (`parZip`, `Semaphore(8)`), no team-wide sweeps and no in-memory filters over complete
+        team collections. OWNER vs MANAGER: blocks that need attendance/day, attendance/hours
+        or planning/coverage are filled only for OWNER (Main limits those reads); for MANAGER
+        they are omitted or null. Composing never returns 403; privileges are not elevated and
+        attendance data is never returned to MANAGER. The dashboard already admits MANAGER.
       tags:
         - Manager
       operationId: getManagerBusinessDashboard
@@ -57,8 +84,13 @@ manager:
                         workers:
                           - {userId: 11, name: "Alex Morgan", clockIn: '2026-09-24T08:30:00-04:00'}
                           - {userId: 12, name: "Jordan Lee", clockIn: '2026-09-24T09:00:00-04:00'}
+                        byJobRole:
+                          - {jobRole: {id: 10, name: "Sala", color: "#1A2B3C"}, working: 1, scheduledNow: 1}
+                          - {jobRole: {id: 3, name: "Barra", color: "#4C9F70"}, working: 1, scheduledNow: 1}
                       attendanceToday:
                         count: 3
+                        missing: 1
+                        upcoming: 4
                         workers:
                           - {userId: 13, name: "Sam Rivera", firstClockIn: '2026-09-24T06:00:00-04:00', lastClockOut: '2026-09-24T08:00:00-04:00', totalSeconds: 7200}
                           - {userId: 11, name: "Alex Morgan", firstClockIn: '2026-09-24T08:30:00-04:00', lastClockOut: null, totalSeconds: 7200}
@@ -66,6 +98,8 @@ manager:
                       teamHours:
                         week: 2026-W39
                         totalSeconds: 99000
+                        clockedSeconds: 99000
+                        plannedSeconds: 1764000
                         days:
                           - {date: '2026-09-21', totalSeconds: 28800}
                           - {date: '2026-09-22', totalSeconds: 32400}
@@ -99,6 +133,40 @@ manager:
                         - {at: '2026-09-24T21:00:00-04:00', workerCount: 0}
                         - {at: '2026-09-24T22:00:00-04:00', workerCount: 0}
                         - {at: '2026-09-24T23:00:00-04:00', workerCount: 0}
+                      attention:
+                        incidentCount: 4
+                        rows:
+                          - attendanceMatchId: null
+                            scheduledShiftId: 900
+                            userId: 103
+                            name: Carlos Vega
+                            jobRole: {id: 10, name: "Sala", color: "#1A2B3C"}
+                            chipType: NO_SHOW
+                            severity: CRITICAL
+                            plannedStartAt: '2026-09-24T08:00:00-04:00'
+                            clockInNotice: null
+                          - attendanceMatchId: null
+                            scheduledShiftId: 901
+                            userId: 104
+                            name: Ana Ruiz
+                            jobRole: {id: 3, name: "Barra", color: "#4C9F70"}
+                            chipType: MISSING_CLOCK_IN
+                            severity: CRITICAL
+                            plannedStartAt: '2026-09-24T09:00:00-04:00'
+                            clockInNotice: null
+                          - attendanceMatchId: 712
+                            scheduledShiftId: null
+                            userId: 110
+                            name: Pat Gómez
+                            jobRole: null
+                            chipType: UNSCHEDULED_WORK
+                            severity: WARNING
+                            plannedStartAt: null
+                            clockInNotice: null
+                      nextWeek:
+                        week: 2026-W40
+                        status: DRAFT
+                        gapCount: 1
         '400':
           description: Invalid businessId
           content:

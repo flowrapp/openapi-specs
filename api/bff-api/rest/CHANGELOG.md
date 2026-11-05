@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.0.81
+
+Next repository tag: `v0.0.104` (BFF API 0.0.81), after `v0.0.103`. Spec only; no BFF implementation in this change.
+
+### Added
+
+- Home admin v3.2 additive optional fields on `ManagerBusinessHomeDTO` (`GET /api/v1/manager/businesses?businessId=`, `getManagerBusinessDashboard`). Main API unchanged (0.0.93). Composition of existing Main reads only, bounded concurrency (`parZip`, `Semaphore(8)`), no team sweeps / N+1, no in-memory filters over complete team collections. OWNER vs MANAGER: blocks that need attendance/day, attendance/hours or planning/coverage are filled only for OWNER; for MANAGER omitted or null; never 403 for composing; no attendance data for MANAGER. Checklist remains front-only.
+  - `workingNow.byJobRole[]`: `{jobRole: {id,name,color}|null, working, scheduledNow}` — fichados (`clocked.open`) vs planificados ahora (`planned.startAt <= asOf < planned.endAt`) grouped by `row.jobRole` from `getDailyAttendance(today)`; `jobRole: null` for without puesto. Not plantilla / contracts / P4a `memberCount`.
+  - `attendanceToday.missing` (CRITICAL rows with chips `NO_SHOW` / `MISSING_CLOCK_IN`) and `attendanceToday.upcoming` (`counts.upcoming`).
+  - `teamHours.clockedSeconds` and `teamHours.plannedSeconds` from the same BFF `getAttendanceHours` totals. Home «Horas semana» must use that pair; legacy `teamHours.totalSeconds` stays for compatibility and must not be mixed with `plannedSeconds`. `plannedSeconds` null = no published plan; `clockedSeconds` still present for OWNER.
+  - `attention` (`incidentCount` = `counts.incidents`, `rows` ≤3 first INCIDENTS): flat row with ids, name, jobRole, `chipType` (`AttendanceChipTypeDTO`), `severity`, `plannedStartAt`, `clockInNotice` (`AttendanceClockInNoticeDTO`). Recordar = existing `notifyAttendanceShiftClockIn`; Revisar = attendance detail.
+  - `nextWeek` (`week` YYYY-Www, `status` planning enum or `NONE`, `gapCount`): real assignment gaps with Horario H5 `publishCoverageGaps` semantics (planning × coverage); not `shortfallSeconds`. Without planning → `NONE` + `gapCount` null. CTA PlanWeek.
+
 ## 0.0.80
 
 Next repository tag: `v0.0.103` (Main API 0.0.93 and BFF API 0.0.80), after `v0.0.102` (P4a: Main 0.0.92 / BFF 0.0.79). Spec only; no BFF implementation in this change.
