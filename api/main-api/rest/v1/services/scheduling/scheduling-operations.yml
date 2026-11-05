@@ -45,7 +45,11 @@ shifts:
       tags: [Shifts]
       operationId: createBusinessShift
       summary: Create a business Shift
-      description: Creates an active business Shift with a unique normalized name. Only the business owner may access this operation.
+      description: >
+        Creates an active business Shift with a unique normalized name. Only the business owner
+        may access this operation. Optional `defaultBreakMinutes` defaults to 0 when omitted and
+        must fit under the defaultStartAt→defaultEndAt duration (start equal to end = 24h);
+        otherwise 400 1060. The default is never propagated into existing daily occurrences.
       security: [{ bearerAuth: [] }]
       parameters:
         - $ref: '../../components/scheduling/components.yml#/components/parameters/BusinessId'
@@ -95,7 +99,13 @@ shifts:
       tags: [Shifts]
       operationId: updateBusinessShift
       summary: Update or reactivate a business Shift
-      description: Updates a Shift without changing its identity. Setting `active` to true reactivates an archived Shift.
+      description: >
+        Updates a Shift without changing its identity. Setting `active` to true reactivates an
+        archived Shift. Optional `defaultBreakMinutes` keeps the stored value when omitted; if
+        present (or if default times change so the stored break no longer fits) it must stay
+        strictly below the default duration (start equal to end = 24h) or the server returns
+        400 1060. Changing the default never rewrites existing daily occurrences, schedule
+        exceptions or plannings.
       security: [{ bearerAuth: [] }]
       parameters:
         - $ref: '../../components/scheduling/components.yml#/components/parameters/BusinessId'

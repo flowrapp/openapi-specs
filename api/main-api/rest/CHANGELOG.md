@@ -12,6 +12,14 @@
 - Documentation only, no contract or behaviour change and no version bump: `createBusinessInvitation`, `getBusinessInvitations` and `deleteBusinessInvitation` document `403` `1020` (`user is not the owner of business`), which is what the backend returns (`BusinessRoleService`), instead of `1011`. `1011` stays in the catalog.
 - Documentation only: `businessUserId` in the geofencing and auto-clocking settings (`GeofencingUserSettingDTO`, `AutoClockingUserSettingDTO` and the path parameter of the two individual PATCH operations) is described as the user id, which is what the backend reads and returns (mapper source `businessUser.user.id`; `findByUserAndBusinessId(userId, …)`), not as the id of the membership row.
 
+## 0.0.93
+
+Proposed after Main 0.0.92 / BFF 0.0.79 (P4a draft). Spec-only branch independent of P4a; if both merge, the CHANGELOG and next repository tag may need a merge adjustment. This PR uses 0.0.93/0.0.80 to avoid colliding with P4a's 0.0.92/0.0.79.
+
+### Added
+
+- Catalog Shift field `defaultBreakMinutes` (int32 ≥ 0) on `CreateBusinessShiftRequestDTO` (optional; omitted → 0), `UpdateBusinessShiftRequestDTO` (optional; omitted keeps stored value; not added to `required`), and `BusinessShiftResponseDTO` (required; always populated; 0 = no default break). Suggested unpaid planned break when a NEW daily occurrence is created by the client; never changes existing occurrences, schedule exceptions or plannings; not a clocked break. Validated `<` duration of `defaultStartAt`→`defaultEndAt` (start equal to end = 24h); otherwise 400 `1060` `INVALID_SHIFT`. No new error codes; no server-side propagation. `DailyShiftRequestDTO.breakMinutes` stays required and unchanged.
+
 ## 0.0.91
 
 Next repository tag: `v0.0.101` (Main API 0.0.91 and BFF API 0.0.78), not tagged yet.

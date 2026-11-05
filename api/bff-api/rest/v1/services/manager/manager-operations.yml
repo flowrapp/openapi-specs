@@ -1247,7 +1247,7 @@ manager:
 
     post:
       summary: Create a business Shift
-      description: Creates an active business Shift with a unique normalized name. Requires an OWNER membership.
+      description: Creates an active business Shift with a unique normalized name. Requires an OWNER membership. Optional `defaultBreakMinutes` defaults to 0 when omitted; invalid duration fit returns Main 400 1060.
       tags: [Manager]
       operationId: createManagerShift
       security: [{ bearerAuth: [] }]
@@ -1358,7 +1358,11 @@ manager:
               example: {status: 404, detail: "1061 - shift not found"}
     put:
       summary: Update or reactivate a business Shift
-      description: Updates Shift presentation without changing its identity. Setting active to true reactivates an archived Shift.
+      description: >
+        Updates Shift presentation without changing its identity. Setting active to true
+        reactivates an archived Shift. Optional `defaultBreakMinutes` keeps the stored value
+        when omitted; invalid duration fit returns Main 400 1060. Changing the default never
+        rewrites existing daily occurrences.
       tags: [Manager]
       operationId: updateManagerShift
       security: [{ bearerAuth: [] }]

@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.0.80
+
+Proposed after Main 0.0.92 / BFF 0.0.79 (P4a draft). Spec-only branch independent of P4a; if both merge, the CHANGELOG and next repository tag may need a merge adjustment. This PR uses Main 0.0.93 / BFF 0.0.80 to avoid colliding with P4a's numbering.
+
+### Added
+
+- Catalog Shift field `defaultBreakMinutes` (int32 ≥ 0) on `ManagerShiftCreateRequestDTO` (optional; omitted → 0), `ManagerShiftUpdateRequestDTO` (optional; omitted keeps stored value), and `ManagerShiftResponseDTO` (required; always populated; also on the Shift embedded in recurring schedule / schedule-exception responses that reuse this schema). Same semantics as Main 0.0.93: suggested only when creating a NEW daily occurrence; never rewrites existing occurrences; not a clocked break; validated with 400 `1060`; no server propagation. Daily occurrence `breakMinutes` unchanged and still required.
+
 ## 0.0.78
 
 Next repository tag: `v0.0.101` (Main API 0.0.91 and BFF API 0.0.78), not tagged yet.
