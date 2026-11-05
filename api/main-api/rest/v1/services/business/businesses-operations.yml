@@ -410,7 +410,7 @@ businesses:
         accept as `employeeId`.
         Optional `jobRoleId` keeps only memberships that, on the business-local today, hold a
         current contract with that job role (same "today"/current rule as
-        `getCurrentContractsForUsers` / `countCurrentContractsByJobRole`: `startDate <= today`
+        `getCurrentContractsForUsers`: `startDate <= today`
         and (`endDate` null or `>= today`), active membership, not ADMIN). It is combined with
         `search` (AND) and applied in SQL before the page limit. The job role must belong to
         the business (active or archived); otherwise 404 JOB_ROLE_NOT_FOUND. Order, `limit`,

@@ -1315,7 +1315,7 @@ components:
           minimum: 0
           description: >
             Distinct active non-ADMIN members with a current contract on this job role for
-            the business-local today (Main `countCurrentContractsByJobRole`). Always present,
+            the business-local today, forwarded from Main `getBusinessJobRoles`. Always present,
             including 0 and for archived roles. Never invented: if the count call fails, the
             whole list fails.
           example: 3

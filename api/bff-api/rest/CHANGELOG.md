@@ -6,7 +6,7 @@ Proposed for repository tag after `v0.0.101` (coordinate with Main 0.0.92). Spec
 
 ### Added
 
-- `GET /api/v1/manager/businesses/{businessId}/job-roles` (`getManagerJobRoles`): each `content` item is now `ManagerJobRoleListItemDTO` (same fields as `ManagerJobRoleResponseDTO` plus required `memberCount` ≥ 0 from Main `countCurrentContractsByJobRole` for the page ids; empty page skips the count call; any Main error fails the whole list). POST/PUT keep `ManagerJobRoleResponseDTO` and do not compute `memberCount`. Order, filters, and pagination unchanged.
+- `GET /api/v1/manager/businesses/{businessId}/job-roles` (`getManagerJobRoles`): each `content` item is now `ManagerJobRoleListItemDTO` (same fields as `ManagerJobRoleResponseDTO` plus required `memberCount` ≥ 0 forwarded from Main `getBusinessJobRoles`; the BFF does not compose counts; any Main error fails the whole list). POST/PUT keep `ManagerJobRoleResponseDTO` and do not compute `memberCount`. Order, filters, and pagination unchanged.
 - `GET /api/v1/businesses/{businessId}/members/search` (`searchBusinessMembers`): optional `jobRoleId` forwarded to Main `getBusinessUsersV2`, combinable with `q`/`cursor`/`limit`. Preview of who holds a role uses a small `limit` (for example 3). 404 `1034` when the job role is not of the business. No `total` field.
 
 ### Changed

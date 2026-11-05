@@ -1483,11 +1483,10 @@ manager:
         Name and active filters are applied before results are ordered by active state descending,
         name ascending, and ID ascending. Requires an OWNER membership.
         Each `content` item is a `ManagerJobRoleListItemDTO`: the same fields as
-        `ManagerJobRoleResponseDTO` plus required `memberCount` (distinct active non-ADMIN
-        members with a current contract on that role for the business-local today). After the
-        Main job-roles page, when the page is not empty the BFF calls Main
-        `countCurrentContractsByJobRole` once with the page ids; an empty page skips that call.
-        Any Main error fails the whole list (no invented zeros). POST/PUT keep
+        `ManagerJobRoleResponseDTO` plus required `memberCount`, forwarded from Main
+        `getBusinessJobRoles` (distinct active non-ADMIN members with a current contract on that
+        role for the business-local today). The BFF does not call a count endpoint nor compose
+        counts; any Main error fails the whole list (no invented zeros). POST/PUT keep
         `ManagerJobRoleResponseDTO` and do not return `memberCount`. Order, `page`/`size`/
         `hasNext`, and `name`/`active` filters are unchanged.
       tags: [Manager]

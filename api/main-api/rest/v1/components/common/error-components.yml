@@ -165,13 +165,12 @@ components:
         | 1124 | 422 | PLANNING_GENERATION_NO_DEMAND | a week of the generation period has no shift with staffing demand |
         | 1125 | 404 | PLANNING_GENERATION_NOT_FOUND | planning generation not found |
         | 1126 | 404 | BUSINESS_MEMBER_NOT_FOUND | user is not an active member of the business |
-        | 1127 | 400 | INVALID_JOB_ROLE_IDS | jobRoleIds must contain between 1 and 100 distinct identifiers |
 
         Codes 1086, 1087 and 1088 are the backend enum: SESSION_EXPIRED, PLANNING_ALREADY_EXISTS and PLANNING_VERSION_MISMATCH. Codes 1089–1092 belonged to weekly attendance periods, which were never implemented, and are removed with those routes. Code 1095 remains a separate PLANNING_ALREADY_EXISTS entry and is unchanged here. Code 1115 is raised by the BFF attendance screens (invalid `week` or `date`, or a `date` outside `week`); no Main API operation returns it.
 
         Codes 1116–1119 belong to notifyShiftClockIn and 1120–1125 to the planning generation operations (Main API 0.0.88). Codes 1099, 1100, 1101 and 1104 are used by the backend enum but are not documented here yet; they are not free and must not be reused.
 
-        Code 1126 is raised by the BFF member profile (`getBusinessMemberProfile`, BFF 0.0.69) when the user is not an active member of the business; no Main API operation returns it. Code 1127 (`INVALID_JOB_ROLE_IDS`) is raised by `countCurrentContractsByJobRole` when `jobRoleIds` is missing, empty, longer than 100, or contains duplicates. Code 1011 (`USER_INVITATION_NOT_OWNER`) stays in the backend enum, but no operation returns it: the business invitation operations reject a non-owner with 1020.
+        Code 1126 is raised by the BFF member profile (`getBusinessMemberProfile`, BFF 0.0.69) when the user is not an active member of the business; no Main API operation returns it. Code 1011 (`USER_INVITATION_NOT_OWNER`) stays in the backend enum, but no operation returns it: the business invitation operations reject a non-owner with 1020.
 
         Code 1020 (`USER_NOT_OWNER_OF_BUSINESS`) stays in the catalog. Owner-only operations keep the message `user is not the owner of business`. An operation that allows an OWNER or a MANAGER uses the same code with the message `user is not an owner or manager of the business`.
       enum:
@@ -294,4 +293,3 @@ components:
         - 1124
         - 1125
         - 1126
-        - 1127
