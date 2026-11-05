@@ -419,10 +419,13 @@ components:
           example: "2026-09-24T08:00:00-04:00"
         clockInNotice:
           description: >
-            Latest clock-in notice of the shift (`clockInNotice.lastNotice` of the day row), or
-            null. Front Recordar = existing `notifyAttendanceShiftClockIn`.
+            Complete `clockInNotice` state of the attendance day row, with `lastNotice` and
+            `blocker`. «Recordar» is enabled when `blocker` is null; otherwise front shows that
+            blocker (OUTSIDE_WINDOW, ALREADY_CLOCKED_IN, MEMBER_NOT_ELIGIBLE or TOO_SOON) without
+            recomputing server rules. Null for an UNMATCHED row. Recordar = existing
+            `notifyAttendanceShiftClockIn`; front never promises push delivery.
           oneOf:
-            - $ref: "../attendance/components.yml#/components/schemas/AttendanceClockInNoticeDTO"
+            - $ref: "../attendance/components.yml#/components/schemas/AttendanceClockInNoticeStateDTO"
             - type: "null"
       required:
         [
