@@ -274,13 +274,15 @@ components:
         nextWeek:
           description: |
             OWNER only (omitted or null for MANAGER). Next ISO week after `date`: planning status
-            and real assignment-gap count with the same semantics as Horario H5
-            `publishCoverageGaps` (planning assignments per cell vs coverage). Composed from
-            Main `getPlanning(week+1)` plus the same Main reads BFF `getWeekCoverage` already
-            uses (planning + `getPlanningGenerationInput` / contracts). Gaps are only computable
-            when a planning (published or draft) exists to evaluate; without planning →
-            `status: NONE`, `gapCount: null`. Do not use `shortfallSeconds` as gaps. Front CTA
-            opens PlanWeek.
+            and number of PEOPLE still missing from the planned assignments. For each cell (local
+            date, shift, job role), the deficit is `max(max(minimum, target) - assigned, 0)`;
+            `gapCount` is the sum of those deficits. Composed from Main `getPlanning(week+1)`
+            plus `getPlanningGenerationInput` when the planning is DRAFT or PUBLISHED. This is
+            intentionally NOT Horario H5 `publishCoverageGaps`, which counts one gap per
+            under-covered cell rather than missing people (Sergio, 2026-11-06). Only computable
+            when a planning exists to evaluate; without planning → `status: NONE`,
+            `gapCount: null`. Do not use `shortfallSeconds` as gaps. Front copy says people,
+            not ambiguous "huecos"; CTA opens PlanWeek.
           oneOf:
             - $ref: "#/components/schemas/ManagerHomeNextWeekDTO"
             - type: "null"
@@ -471,8 +473,10 @@ components:
           format: int32
           minimum: 0
           description: >
-            Real assignment-gap count (H5 publishCoverageGaps). Null when status is NONE / no
-            planning to evaluate.
+            Number of people still missing: sum per cell (local date, shift, job role) of
+            `max(max(minimum, target) - assigned, 0)`. NOT a count of under-covered cells:
+            Horario H5 `publishCoverageGaps` uses that different unit. Null when status is NONE
+            / no planning to evaluate.
           example: 1
       required: [week, status, gapCount]
 

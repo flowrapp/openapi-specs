@@ -24,9 +24,11 @@ manager:
           no published plan; `clockedSeconds` remains present for OWNER.
         - `attention`: `incidentCount` (= `counts.incidents`) and ≤3 first INCIDENTS rows;
           Recordar = existing `notifyAttendanceShiftClockIn`, Revisar = attendance detail.
-        - `nextWeek`: ISO week after `date`, planning status or `NONE`, `gapCount` with Horario
-          H5 `publishCoverageGaps` semantics (planning assignments × coverage; not
-          `shortfallSeconds`). Null `gapCount` when there is no planning to evaluate.
+        - `nextWeek`: ISO week after `date`, planning status or `NONE`, `gapCount` = people
+          still missing, summed per cell as `max(max(minimum, target) - assigned, 0)`. It is
+          deliberately different from Horario H5 `publishCoverageGaps`, which counts
+          under-covered cells; not `shortfallSeconds`. Null `gapCount` when there is no
+          planning to evaluate. Front copy expresses people, not ambiguous "huecos".
         Checklist: front-only; no backend field.
 
         Composition uses existing Main reads only (no Main change), bounded concurrency
