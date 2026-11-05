@@ -211,6 +211,7 @@ paths:
       s-contracts"
   "/api/v1/businesses/{businessId}/contracts/current":
     $ref: "v1/services/contracts/contracts-operations.yml#/contracts/current\
+      "
   "/api/v1/businesses/{businessId}/users/{userId}/contracts":
     $ref: "v1/services/contracts/contracts-operations.yml#/contracts/busines\
       s-user-contracts"
