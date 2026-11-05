@@ -92,7 +92,23 @@ components:
 
     ManagerBusinessHomeDTO:
       type: object
-      description: Present only when businessId selects a business managed by the authenticated user. Times and dates use the selected business's IANA time zone.
+      description: |
+        Present only when businessId selects a business managed by the authenticated user.
+        Times and dates use the selected business's IANA time zone.
+
+        Home admin v3.2 additive blocks (`workingNow.byJobRole`, `attendanceToday.missing` /
+        `upcoming`, `teamHours.plannedSeconds`, `attention`, `nextWeek`) are optional for
+        compatibility. They are composed from existing Main API reads (no Main change), with
+        bounded concurrency (`parZip`, `Semaphore(8)`), without sweeping the whole team and
+        without in-memory filters over complete team collections (only grouping of the day's /
+        week's bounded responses).
+
+        OWNER vs MANAGER: blocks that depend on Main `getDailyAttendance`, attendance hours
+        (`getDailyAttendance` planned metrics / BFF `getAttendanceHours`) or planning+coverage
+        are filled only when the caller is OWNER (Main limits those reads to OWNER). For a
+        MANAGER they are omitted or null. Composing them never returns 403: the dashboard
+        already admits MANAGER; privileges are not elevated and attendance data is never
+        returned to MANAGER. Checklist remains front-only (no backend field).
       properties:
         businessId:
           type: integer
@@ -115,7 +131,10 @@ components:
           example: "2026-09-24T10:30:00-04:00"
         workingNow:
           type: object
-          description: Distinct workers with an open worklog at asOf, ordered by clockIn ascending, then userId ascending
+          description: >
+            Distinct workers with an open worklog at asOf, ordered by clockIn ascending, then
+            userId ascending. Optional `byJobRole` (OWNER) groups fichados vs planificados ahora
+            by job role from the same day's attendance rows.
           properties:
             count:
               type: integer
@@ -126,10 +145,28 @@ components:
               type: array
               items:
                 $ref: "#/components/schemas/ManagerWorkingNowWorkerDTO"
+            byJobRole:
+              type: [array, "null"]
+              description: |
+                OWNER only (omitted or null for MANAGER). One entry per job role present among
+                today's attendance rows that are either clocked-open or planned-in-progress at
+                `asOf`, plus a `jobRole: null` group when there are fichados/planificados without
+                a puesto (UNMATCHED / no job role).
+
+                Semántica: `working` = rows with `clocked.open` in that job-role group;
+                `scheduledNow` = rows whose `planned.startAt <= asOf < planned.endAt` in that
+                group. Composed from existing `home.workingNow` plus Main `getDailyAttendance`
+                (today), grouping by `row.jobRole`. Not plantilla, not current contracts, and
+                not P4a `memberCount`.
+              items:
+                $ref: "#/components/schemas/ManagerHomeWorkingNowByJobRoleDTO"
           required: [count, workers]
         attendanceToday:
           type: object
-          description: Distinct workers with at least one worklog overlapping today's business-local date before asOf, ordered by firstClockIn ascending, then userId ascending
+          description: >
+            Distinct workers with at least one worklog overlapping today's business-local date
+            before asOf, ordered by firstClockIn ascending, then userId ascending. Optional
+            `missing` / `upcoming` (OWNER) come from the day's attendance list.
           properties:
             count:
               type: integer
@@ -140,10 +177,32 @@ components:
               type: array
               items:
                 $ref: "#/components/schemas/ManagerAttendanceTodayWorkerDTO"
+            missing:
+              type: [integer, "null"]
+              format: int32
+              minimum: 0
+              description: |
+                OWNER only (omitted or null for MANAGER). Count of attendance/day rows whose
+                severity is CRITICAL because of chips `NO_SHOW` or `MISSING_CLOCK_IN` (not every
+                incident). From the same Main `getDailyAttendance(today)` composition.
+              example: 1
+            upcoming:
+              type: [integer, "null"]
+              format: int32
+              minimum: 0
+              description: |
+                OWNER only (omitted or null for MANAGER). `counts.upcoming` of attendance/day
+                (entries that start later; front copy «N entran más tarde»).
+              example: 4
           required: [count, workers]
         teamHours:
           type: object
-          description: Team time worked in the current business-local ISO week, clipped at asOf for open worklogs; excludes future time
+          description: >
+            Team time worked in the current business-local ISO week, clipped at asOf for open
+            worklogs; excludes future time. Optional `clockedSeconds` and `plannedSeconds`
+            (OWNER) come from the same BFF attendance/hours totals for the Home «Horas semana»
+            card. Legacy `totalSeconds` stays unchanged for compatibility and must not be mixed
+            with `plannedSeconds` on that card.
           properties:
             week:
               type: string
@@ -154,7 +213,35 @@ components:
               type: integer
               format: int64
               minimum: 0
-              description: Sum of the seven daily totals in seconds
+              description: >
+                Legacy dashboard sum of the seven daily totals in seconds (clipped at asOf).
+                Kept for compatibility. The Home «Horas semana» card must NOT pair this with
+                `plannedSeconds`; use `clockedSeconds` + `plannedSeconds` from attendance/hours
+                instead (criteria for open/rejected worklogs can differ).
+            clockedSeconds:
+              type: [integer, "null"]
+              format: int64
+              minimum: 0
+              description: |
+                OWNER only when attendance/hours is available (omitted or null for MANAGER).
+                `getAttendanceHours` → `totals.clockedSeconds` for the current business-local
+                ISO week (reportable + pending closed, not REJECTED; same source as
+                `plannedSeconds`). Pair with `plannedSeconds` on the Home hours card; do not
+                mix with legacy `totalSeconds`.
+              example: 48720
+            plannedSeconds:
+              type: [integer, "null"]
+              format: int64
+              minimum: 0
+              description: |
+                OWNER only when attendance/hours is available (omitted or null for MANAGER).
+                Planned seconds of the current business-local ISO week from BFF
+                `getAttendanceHours` → `totals.plannedSeconds` (Main `getDailyAttendance`
+                `metrics.plannedSeconds` of the published plan). Null means no published
+                schedule for the week (distinguish from 0 = plan with 0 h); when null,
+                `clockedSeconds` is still present for OWNER. Does not change `totalSeconds`.
+                Pair with `clockedSeconds`, never with legacy `totalSeconds`.
+              example: 1764000
             days:
               type: array
               minItems: 7
@@ -175,6 +262,28 @@ components:
             (clockIn <= at < clockOut, or clockOut is open and at <= asOf).
           items:
             $ref: "#/components/schemas/ManagerPresencePointDTO"
+        attention:
+          description: |
+            OWNER only (omitted or null for MANAGER). «Requiere atención» strip: incident total
+            and up to the first 3 INCIDENTS rows of BFF attendance/day (same order). Front
+            actions already exist: Recordar = `notifyAttendanceShiftClockIn`, Revisar = attendance
+            detail. Never 403 for composing.
+          oneOf:
+            - $ref: "#/components/schemas/ManagerHomeAttentionDTO"
+            - type: "null"
+        nextWeek:
+          description: |
+            OWNER only (omitted or null for MANAGER). Next ISO week after `date`: planning status
+            and real assignment-gap count with the same semantics as Horario H5
+            `publishCoverageGaps` (planning assignments per cell vs coverage). Composed from
+            Main `getPlanning(week+1)` plus the same Main reads BFF `getWeekCoverage` already
+            uses (planning + `getPlanningGenerationInput` / contracts). Gaps are only computable
+            when a planning (published or draft) exists to evaluate; without planning →
+            `status: NONE`, `gapCount: null`. Do not use `shortfallSeconds` as gaps. Front CTA
+            opens PlanWeek.
+          oneOf:
+            - $ref: "#/components/schemas/ManagerHomeNextWeekDTO"
+            - type: "null"
       required:
         [
           businessId,
@@ -186,6 +295,186 @@ components:
           teamHours,
           presence,
         ]
+
+    ManagerHomeJobRoleDTO:
+      type: object
+      description: >
+        Compact job-role ref for home cards (`id`, `name`, `color`). Color is the business job
+        role colour (same hex as the manager job-role catalog). Flat DTO: attendance's
+        `AttendanceJobRoleDTO` has no color.
+      additionalProperties: false
+      properties:
+        id:
+          type: integer
+          format: int64
+          minimum: 1
+          example: 3
+        name:
+          type: string
+          minLength: 1
+          example: Barra
+        color:
+          type: string
+          pattern: "^#[0-9A-Fa-f]{6}$"
+          example: "#4C9F70"
+      required: [id, name, color]
+
+    ManagerHomeWorkingNowByJobRoleDTO:
+      type: object
+      description: >
+        Fichados vs planificados ahora for one job-role group on the home «Trabajando ahora»
+        breakdown. Not plantilla / contracts / memberCount.
+      additionalProperties: false
+      properties:
+        jobRole:
+          description: Job role of the group, or null for fichados/planificados without a puesto
+          oneOf:
+            - $ref: "#/components/schemas/ManagerHomeJobRoleDTO"
+            - type: "null"
+        working:
+          type: integer
+          format: int32
+          minimum: 0
+          description: Rows with an open worklog (`clocked.open`) in this job-role group
+          example: 2
+        scheduledNow:
+          type: integer
+          format: int32
+          minimum: 0
+          description: >
+            Rows planned in progress at asOf (`planned.startAt <= asOf < planned.endAt`) in this
+            job-role group
+          example: 2
+      required: [jobRole, working, scheduledNow]
+
+    ManagerHomeAttentionDTO:
+      type: object
+      description: >
+        OWNER-only attention strip from attendance/day. `incidentCount` equals
+        `counts.incidents`; `rows` are the first at most 3 rows with section INCIDENTS in BFF
+        attendance/day order.
+      additionalProperties: false
+      properties:
+        incidentCount:
+          type: integer
+          format: int32
+          minimum: 0
+          description: Same as attendance/day `counts.incidents`
+          example: 4
+        rows:
+          type: array
+          maxItems: 3
+          description: First ≤3 INCIDENTS rows in attendance/day order
+          items:
+            $ref: "#/components/schemas/ManagerHomeAttentionRowDTO"
+      required: [incidentCount, rows]
+
+    ManagerHomeAttentionRowDTO:
+      type: object
+      description: |
+        Compact INCIDENTS row for the home attention strip. Reuses attendance enums and
+        `AttendanceClockInNoticeStateDTO` via $ref; ids/name/jobRole/plannedStartAt are flattened
+        from the day row (worker, detailRef, planned, chips[0]).
+      additionalProperties: false
+      properties:
+        attendanceMatchId:
+          type: [integer, "null"]
+          format: int64
+          minimum: 1
+          description: >
+            Set for UNMATCHED rows (`detailRef.attendanceMatchId`); null for SHIFT
+          example: null
+        scheduledShiftId:
+          type: [integer, "null"]
+          format: int64
+          minimum: 1
+          description: >
+            Set for SHIFT rows (`detailRef.scheduledShiftId`); null for UNMATCHED
+          example: 900
+        userId:
+          type: integer
+          format: int64
+          minimum: 1
+          example: 103
+        name:
+          type: string
+          minLength: 1
+          example: Carlos Vega
+        jobRole:
+          description: Job role of the row, or null when none
+          oneOf:
+            - $ref: "#/components/schemas/ManagerHomeJobRoleDTO"
+            - type: "null"
+        chipType:
+          description: >
+            Primary chip (`chips[0].type`) — Main incident type or shift alert
+          $ref: "../attendance/components.yml#/components/schemas/AttendanceChipTypeDTO"
+        severity:
+          $ref: "../attendance/components.yml#/components/schemas/AttendanceSeverityDTO"
+        plannedStartAt:
+          type: [string, "null"]
+          format: date-time
+          description: >
+            `planned.startAt` when the row has a planned shift; null for UNMATCHED
+          example: "2026-09-24T08:00:00-04:00"
+        clockInNotice:
+          description: >
+            Complete `clockInNotice` state of the attendance day row, with `lastNotice` and
+            `blocker`. «Recordar» is enabled when `blocker` is null; otherwise front shows that
+            blocker (OUTSIDE_WINDOW, ALREADY_CLOCKED_IN, MEMBER_NOT_ELIGIBLE or TOO_SOON) without
+            recomputing server rules. Null for an UNMATCHED row. Recordar = existing
+            `notifyAttendanceShiftClockIn`; front never promises push delivery.
+          oneOf:
+            - $ref: "../attendance/components.yml#/components/schemas/AttendanceClockInNoticeStateDTO"
+            - type: "null"
+      required:
+        [
+          attendanceMatchId,
+          scheduledShiftId,
+          userId,
+          name,
+          jobRole,
+          chipType,
+          severity,
+          plannedStartAt,
+          clockInNotice,
+        ]
+
+    ManagerHomeNextWeekStatusDTO:
+      type: string
+      description: >
+        Planning status of the next ISO week, or `NONE` when there is no planning to evaluate.
+        Open set aligned with Main `PlanningStatusDTO` plus `NONE`; clients must tolerate
+        unknown values.
+      enum: [NONE, CREATED, SOLVING, DRAFT, PUBLISHED, ARCHIVED, FAILED]
+      example: DRAFT
+
+    ManagerHomeNextWeekDTO:
+      type: object
+      description: |
+        Next ISO week card. `gapCount` is the number of assignment gaps with the same semantics
+        as Horario H5 `publishCoverageGaps(planAssignmentsByCell(planning, coverage))` — per
+        cell shortfall vs minimum (danger) or target (warning) from planning assignments joined
+        with coverage demand. Not `shortfallSeconds`. Null when there is no planning
+        (published or draft) to evaluate (`status` is then `NONE`).
+      additionalProperties: false
+      properties:
+        week:
+          type: string
+          pattern: '^\d{4}-W\d{2}$'
+          description: ISO week immediately after the week of `date`
+          example: 2026-W40
+        status:
+          $ref: "#/components/schemas/ManagerHomeNextWeekStatusDTO"
+        gapCount:
+          type: [integer, "null"]
+          format: int32
+          minimum: 0
+          description: >
+            Real assignment-gap count (H5 publishCoverageGaps). Null when status is NONE / no
+            planning to evaluate.
+          example: 1
+      required: [week, status, gapCount]
 
     ManagerWorkingNowWorkerDTO:
       type: object
