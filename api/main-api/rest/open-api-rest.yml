@@ -211,10 +211,6 @@ paths:
       s-contracts"
   "/api/v1/businesses/{businessId}/contracts/current":
     $ref: "v1/services/contracts/contracts-operations.yml#/contracts/current\
-      -contracts-batch"
-  "/api/v1/businesses/{businessId}/contracts/current/job-role-counts":
-    $ref: "v1/services/contracts/contracts-operations.yml#/contracts/current\
-      -job-role-counts"
   "/api/v1/businesses/{businessId}/users/{userId}/contracts":
     $ref: "v1/services/contracts/contracts-operations.yml#/contracts/busines\
       s-user-contracts"
