@@ -250,7 +250,7 @@ components:
 
     CreateBusinessShiftRequestDTO:
       type: object
-      description: Creates an active business Shift. The name is trimmed before normalized uniqueness is checked.
+      description: Creates an active business Shift. The name is trimmed before normalized uniqueness is checked. Optional `defaultBreakMinutes` defaults to 0 when omitted.
       properties:
         name:
           type: string
@@ -272,11 +272,18 @@ components:
           pattern: '^([01][0-9]|2[0-3]):[0-5][0-9](:[0-5][0-9](\.[0-9]{1,9})?)?$'
           description: Default end time in local business time, without a date or time-zone offset. May precede the start time for overnight Shifts. Optional on creation.
           example: "17:00:00"
+        defaultBreakMinutes:
+          type: integer
+          format: int32
+          minimum: 0
+          description: >
+            Planned unpaid break, in minutes, suggested when a NEW daily occurrence of this shift is created. It never changes existing occurrences, schedule exceptions or plannings. Not a clocked break. Must be >= 0 and strictly less than the duration of defaultStartAt→defaultEndAt (start equal to end counts as 24h for this validation). 0 means no default break. On create, omitted defaults to 0. On update, omitted keeps the stored value. If the stored default no longer fits after changing the default times, the server returns 400 1060 INVALID_SHIFT. The server never propagates this value into daily occurrences.
+          example: 30
       required: [name, color]
 
     UpdateBusinessShiftRequestDTO:
       type: object
-      description: Updates a business Shift. Setting active to true reactivates it; DELETE performs logical deactivation.
+      description: Updates a business Shift. Setting active to true reactivates it; DELETE performs logical deactivation. Optional `defaultBreakMinutes` keeps the stored value when omitted; never rewrites existing daily occurrences.
       properties:
         name:
           type: string
@@ -301,6 +308,13 @@ components:
           pattern: '^([01][0-9]|2[0-3]):[0-5][0-9](:[0-5][0-9](\.[0-9]{1,9})?)?$'
           description: Default end time in local business time, without a date or time-zone offset. May precede the start time for overnight Shifts.
           example: "17:00:00"
+        defaultBreakMinutes:
+          type: integer
+          format: int32
+          minimum: 0
+          description: >
+            Planned unpaid break, in minutes, suggested when a NEW daily occurrence of this shift is created. It never changes existing occurrences, schedule exceptions or plannings. Not a clocked break. Must be >= 0 and strictly less than the duration of defaultStartAt→defaultEndAt (start equal to end counts as 24h for this validation). 0 means no default break. On create, omitted defaults to 0. On update, omitted keeps the stored value. If the stored default no longer fits after changing the default times, the server returns 400 1060 INVALID_SHIFT. The server never propagates this value into daily occurrences.
+          example: 30
       required: [name, color, active, defaultStartAt, defaultEndAt]
 
     BusinessShiftResponseDTO:
@@ -346,7 +360,14 @@ components:
           pattern: '^([01][0-9]|2[0-3]):[0-5][0-9](:[0-5][0-9](\.[0-9]{1,9})?)?$'
           description: Default end time in local business time, without a date or time-zone offset. Always populated; may precede the start time for overnight Shifts.
           example: "17:00:00"
-      required: [id, businessId, name, color, active, createdAt, updatedAt, defaultStartAt, defaultEndAt]
+        defaultBreakMinutes:
+          type: integer
+          format: int32
+          minimum: 0
+          description: >
+            Always populated; 0 = no default break. Planned unpaid break, in minutes, suggested when a NEW daily occurrence of this shift is created. It never changes existing occurrences, schedule exceptions or plannings. Not a clocked break. Must be >= 0 and strictly less than the duration of defaultStartAt→defaultEndAt (start equal to end counts as 24h for this validation). 0 means no default break. On create, omitted defaults to 0. On update, omitted keeps the stored value. If the stored default no longer fits after changing the default times, the server returns 400 1060 INVALID_SHIFT. The server never propagates this value into daily occurrences.
+          example: 0
+      required: [id, businessId, name, color, active, createdAt, updatedAt, defaultStartAt, defaultEndAt, defaultBreakMinutes]
 
     BusinessShiftSliceResponseDTO:
       type: object
@@ -380,6 +401,7 @@ components:
             color: "#1A2B3C"
             defaultStartAt: "09:00:00"
             defaultEndAt: "17:00:00"
+            defaultBreakMinutes: 30
             active: true
             createdAt: "2025-06-01T10:00:00+00:00"
             updatedAt: "2025-06-01T10:00:00+00:00"
@@ -389,6 +411,7 @@ components:
             color: "#808080"
             defaultStartAt: "22:00:00"
             defaultEndAt: "06:00:00"
+            defaultBreakMinutes: 0
             active: false
             createdAt: "2025-06-02T10:00:00+00:00"
             updatedAt: "2025-06-02T10:00:00+00:00"
@@ -398,7 +421,15 @@ components:
 
     DailyShiftRequestDTO:
       type: object
-      description: Day-specific occurrence values referencing an independently managed business Shift.
+      description: >
+        Day-specific occurrence values referencing an independently managed business Shift.
+        `breakMinutes` remains required and is the effective value for this occurrence. Clients
+        that create a NEW occurrence typically initialize it from the catalog Shift's
+        `defaultBreakMinutes`; changing the catalog default never rewrites existing occurrences.
+        When a planning is generated or published, this effective value is copied into the
+        planning snapshot and into each `scheduled_shift`; those snapshots never read the catalog
+        `defaultBreakMinutes` back, so editing the catalog default cannot alter existing
+        plannings, their net planned seconds or their assigned shifts.
       properties:
         shiftId:
           type: integer
@@ -811,6 +842,10 @@ components:
           type: integer
           format: int32
           minimum: 0
+          description: >
+            Effective break of this occurrence, captured in the planning snapshot. Never read
+            back from the catalog Shift's `defaultBreakMinutes`: editing that default later
+            cannot change this snapshot nor the planned net seconds.
           example: 30
         demands:
           type: array
