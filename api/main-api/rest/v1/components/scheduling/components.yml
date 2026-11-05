@@ -711,6 +711,57 @@ components:
       required:
         [id, businessId, code, name, color, icon, active, createdAt, updatedAt]
 
+    BusinessJobRoleListItemDTO:
+      type: object
+      description: >
+        Job role of the list, enriched with its current usage. Only the list returns
+        `memberCount`; create and update keep `BusinessJobRoleResponseDTO` and do not compute it.
+      properties:
+        id:
+          type: integer
+          format: int64
+          minimum: 1
+        businessId:
+          type: integer
+          format: int64
+          minimum: 1
+        code:
+          type: string
+        name:
+          type: string
+        description:
+          type: [string, "null"]
+        color:
+          type: string
+          pattern: "^#[0-9A-Fa-f]{6}$"
+          example: "#1A2B3C"
+        icon:
+          type: string
+          pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+          description: Lowercase slug from the open client icon catalog.
+          example: front-of-house
+        active:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        memberCount:
+          type: integer
+          format: int32
+          minimum: 0
+          description: >
+            Distinct active non-ADMIN members holding a current contract on this role for
+            the business-local today (`LocalDate.now(business.zone)`; current =
+            `startDate <= today` and (`endDate` null or `>= today`), same rule as
+            `getCurrentContractsForUsers`). Computed with one grouped query for the page
+            ids, never one query per role; 0 is real (also for archived roles) and never
+            invented on failure.
+      required:
+        [id, businessId, code, name, color, icon, active, createdAt, updatedAt, memberCount]
+
     BusinessJobRoleSliceResponseDTO:
       type: object
       description: Slice of business job roles without a total-count query
@@ -719,7 +770,7 @@ components:
           type: array
           description: Job roles ordered by active state descending, name ascending, and ID ascending
           items:
-            $ref: "#/components/schemas/BusinessJobRoleResponseDTO"
+            $ref: "#/components/schemas/BusinessJobRoleListItemDTO"
         page:
           type: integer
           format: int32

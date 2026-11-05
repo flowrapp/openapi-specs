@@ -2,11 +2,24 @@
 
 ## 0.0.80
 
-Proposed after Main 0.0.92 / BFF 0.0.79 (P4a draft). Spec-only branch independent of P4a; if both merge, the CHANGELOG and next repository tag may need a merge adjustment. This PR uses Main 0.0.93 / BFF 0.0.80 to avoid colliding with P4a's numbering.
+Next repository tag: `v0.0.103` (Main API 0.0.93 and BFF API 0.0.80), after `v0.0.102` (P4a: Main 0.0.92 / BFF 0.0.79). Spec only; no BFF implementation in this change.
 
 ### Added
 
 - Catalog Shift field `defaultBreakMinutes` (int32 ≥ 0) on `ManagerShiftCreateRequestDTO` (optional; omitted → 0), `ManagerShiftUpdateRequestDTO` (optional; omitted keeps stored value), and `ManagerShiftResponseDTO` (required; always populated; also on the Shift embedded in recurring schedule / schedule-exception responses that reuse this schema). Same semantics as Main 0.0.93: suggested only when creating a NEW daily occurrence; never rewrites existing occurrences; not a clocked break; validated with 400 `1060`; no server propagation. Daily occurrence `breakMinutes` unchanged and still required.
+
+## 0.0.79
+
+Proposed for repository tag after `v0.0.101` (coordinate with Main 0.0.92). Spec only; no BFF implementation in this change.
+
+### Added
+
+- `GET /api/v1/manager/businesses/{businessId}/job-roles` (`getManagerJobRoles`): each `content` item is now `ManagerJobRoleListItemDTO` (same fields as `ManagerJobRoleResponseDTO` plus required `memberCount` ≥ 0 forwarded from Main `getBusinessJobRoles`; the BFF does not compose counts; any Main error fails the whole list). POST/PUT keep `ManagerJobRoleResponseDTO` and do not compute `memberCount`. Order, filters, and pagination unchanged.
+- `GET /api/v1/businesses/{businessId}/members/search` (`searchBusinessMembers`): optional `jobRoleId` forwarded to Main `getBusinessUsersV2`, combinable with `q`/`cursor`/`limit`. Preview of who holds a role uses a small `limit` (for example 3). 404 `1034` when the job role is not of the business. No `total` field.
+
+### Changed
+
+- `createManagerRecurringSchedule`, `replaceManagerRecurringSchedule`, `createManagerScheduleException`, `replaceManagerScheduleException`: document keep-existing / reject-new semantics for archived Shift references and inactive job-role demands (same as Main P4a F6). Description only.
 
 ## 0.0.78
 
