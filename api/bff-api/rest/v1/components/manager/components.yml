@@ -373,7 +373,7 @@ components:
       type: object
       description: |
         Compact INCIDENTS row for the home attention strip. Reuses attendance enums and
-        `AttendanceClockInNoticeDTO` via $ref; ids/name/jobRole/plannedStartAt are flattened
+        `AttendanceClockInNoticeStateDTO` via $ref; ids/name/jobRole/plannedStartAt are flattened
         from the day row (worker, detailRef, planned, chips[0]).
       additionalProperties: false
       properties:
