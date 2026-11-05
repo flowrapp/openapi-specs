@@ -227,6 +227,104 @@ contracts:
                 detail: "1006 - business does not exist"
       x-functional-errors: [1006, 1020, 1111]
 
+  current-job-role-counts:
+    get:
+      summary: Count current contracts by job role
+      description: >
+        Returns how many distinct active non-ADMIN members have a contract effective on the
+        business-local current date ("today") for each requested job role. Today is
+        `LocalDate.now(business.zone)`. A contract is current when `startDate <= today` and
+        (`endDate` is null or `endDate >= today`), with an active membership (`removedAt` null)
+        whose role is not ADMIN. Count is `count(distinct user)`.
+        One entry is returned for every requested id, in request order, including zeros and
+        archived (inactive) job roles of the business. An id that is not of this business
+        returns `memberCount: 0` and is not rejected (no cross-business leak: the filter is
+        scoped to the path business).
+        The caller must be an OWNER or MANAGER of the business. This is a Contracts sub-resource
+        of `contracts/current` (same "today" and domain); it does not change the shape of
+        `getCurrentContractsForUsers`.
+      tags:
+        - Contracts
+      operationId: countCurrentContractsByJobRole
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: businessId
+          in: path
+          required: true
+          description: Unique identifier of the business
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+            example: 101
+        - name: jobRoleIds
+          in: query
+          required: true
+          description: >
+            Job role ids to count, as a CSV list (`jobRoleIds=11,12,13`). At least 1 and at most
+            100 distinct ids (100 matches the manager job-role page size). Missing, empty,
+            more than 100, or duplicates return 400 INVALID_JOB_ROLE_IDS.
+          style: form
+          explode: false
+          schema:
+            type: array
+            minItems: 1
+            maxItems: 100
+            uniqueItems: true
+            items:
+              type: integer
+              format: int64
+              minimum: 1
+            example: [11, 12, 13]
+      responses:
+        '200':
+          description: >
+            One `{jobRoleId, memberCount}` entry per requested id, in the same order, zeros included.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '../../components/contracts/components.yml#/components/schemas/JobRoleCurrentCountDTO'
+              example:
+                - jobRoleId: 11
+                  memberCount: 3
+                - jobRoleId: 12
+                  memberCount: 0
+                - jobRoleId: 13
+                  memberCount: 1
+        '400':
+          description: jobRoleIds is missing, empty, longer than 100, or contains duplicates
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+              example:
+                status: 400
+                detail: "1127 - jobRoleIds must contain between 1 and 100 distinct identifiers"
+        '401':
+          description: No authenticated session
+        '403':
+          description: Current user is not an owner or manager of the business
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+              example:
+                status: 403
+                detail: "1020 - user is not an owner or manager of the business"
+        '404':
+          description: Business not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+              example:
+                status: 404
+                detail: "1006 - business does not exist"
+      x-functional-errors: [1006, 1020, 1127]
+
   business-user-contracts:
     post:
       summary: Create a user contract

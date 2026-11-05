@@ -200,3 +200,26 @@ components:
         - page
         - size
         - hasNext
+
+    JobRoleCurrentCountDTO:
+      type: object
+      description: >
+        Distinct active non-ADMIN members with a contract effective on the business-local
+        current date for one requested job role. Zeros are included.
+      properties:
+        jobRoleId:
+          type: integer
+          format: int64
+          minimum: 1
+          description: Requested job role id (echoed from the query, in request order)
+          example: 11
+        memberCount:
+          type: integer
+          format: int32
+          minimum: 0
+          description: >
+            Distinct users with an active non-ADMIN membership and a current contract on
+            that job role for the business-local today. Zero when nobody holds it or the id
+            is not of this business.
+          example: 3
+      required: [jobRoleId, memberCount]

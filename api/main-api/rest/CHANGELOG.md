@@ -7,6 +7,20 @@
 - Functional error catalog: `1115` `INVALID_ATTENDANCE_PERIOD` (400, `attendance week or date is invalid`). It is raised by the BFF attendance screens (BFF 0.0.66: invalid `week` or `date`, or a `date` outside `week` in Hours); no Main API operation returns it, so the Main API contract and version do not change.
 - Functional error catalog: `1126` `BUSINESS_MEMBER_NOT_FOUND` (404, `user is not an active member of the business`). It is raised by the BFF member profile (BFF 0.0.69, `getBusinessMemberProfile`); no Main API operation returns it, so the Main API contract and version do not change.
 
+## 0.0.92
+
+Proposed for repository tag after `v0.0.101` (coordinate with BFF 0.0.79). Spec only; no backend implementation in this change.
+
+### Added
+
+- `GET /api/v1/businesses/{businessId}/contracts/current/job-role-counts?jobRoleIds=` (`countCurrentContractsByJobRole`, tag Contracts, OWNER or MANAGER): batch count of distinct active non-ADMIN members with a current contract on each requested job role for the business-local today (`LocalDate.now(business.zone)`; current = `startDate <= today` and (`endDate` null or `>= today`)). `jobRoleIds` is a required CSV of 1..100 distinct int64 ids; otherwise 400 `1127` `INVALID_JOB_ROLE_IDS`. Response is an array of `JobRoleCurrentCountDTO` (`jobRoleId`, `memberCount` ≥ 0), one entry per requested id in request order, zeros and archived roles included; an id not of the business returns 0. Errors: `1006`, `1020`, `1127`. Sub-resource of `contracts/current` (does not change that response shape). ⚠️ Exception to the "no loose routes" guide: flagged for Sergio/CEO review.
+- Functional error catalog: `1127` `INVALID_JOB_ROLE_IDS` (400).
+- `GET /api/v2/businesses/{businessId}/users` (`getBusinessUsersV2`): optional `jobRoleId` (int64, min 1). Filters to members with a current contract on that role today (same rule as the count), AND with `search`, before the page limit. Job role must belong to the business (active or archived); else 404 `1034`. Cursor is also bound to `jobRoleId`; incompatible reuse → 400 `1110`. Old cursors without `jobRoleId` stay valid when the filter is omitted. Order, `limit`, and response unchanged.
+
+### Changed
+
+- `createRecurringSchedule`, `replaceRecurringSchedule`, `createScheduleException`, `replaceScheduleException`: document that existing daily-shift references to an archived Shift may be kept (new inactive Shift refs → 404 `1061`) and that existing role demands for an inactive job role of the business may be kept (new inactive job-role demands → 404 `1034`), aligning archived job-role demand semantics with archived shifts (P4a F6). Description only; no new error codes.
+
 ### Fixed
 
 - Documentation only, no contract or behaviour change and no version bump: `createBusinessInvitation`, `getBusinessInvitations` and `deleteBusinessInvitation` document `403` `1020` (`user is not the owner of business`), which is what the backend returns (`BusinessRoleService`), instead of `1011`. `1011` stays in the catalog.

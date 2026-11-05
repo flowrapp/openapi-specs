@@ -966,7 +966,12 @@ manager:
 
     post:
       summary: Create a recurring schedule
-      description: Creates the first or a new versioned recurring schedule for the business. Requires an OWNER membership.
+      description: >
+        Creates the first or a new versioned recurring schedule for the business. Requires an
+        OWNER membership. Existing daily-shift references to an archived (inactive) business
+        Shift of this business may be kept; a new reference to an inactive Shift is rejected
+        (404 1061). Existing role demands that already referenced an inactive job role of this
+        business may be kept; a new demand for an inactive job role is rejected (404 1034).
       tags: [Manager]
       operationId: createManagerRecurringSchedule
       security: [{ bearerAuth: [] }]
@@ -1071,6 +1076,10 @@ manager:
       description: >
         Atomically replaces a complete recurring schedule using the expected root `version`.
         Requires an OWNER membership and returns a concurrency conflict when the version is stale.
+        Existing daily-shift references to an archived (inactive) business Shift of this business
+        may be kept; a new reference to an inactive Shift is rejected (404 1061). Existing role
+        demands that already referenced an inactive job role of this business may be kept; a new
+        demand for an inactive job role is rejected (404 1034).
       tags: [Manager]
       operationId: replaceManagerRecurringSchedule
       security: [{ bearerAuth: [] }]
@@ -1473,6 +1482,14 @@ manager:
         `active=false` returns only inactive roles, and an omitted `active` returns both states.
         Name and active filters are applied before results are ordered by active state descending,
         name ascending, and ID ascending. Requires an OWNER membership.
+        Each `content` item is a `ManagerJobRoleListItemDTO`: the same fields as
+        `ManagerJobRoleResponseDTO` plus required `memberCount` (distinct active non-ADMIN
+        members with a current contract on that role for the business-local today). After the
+        Main job-roles page, when the page is not empty the BFF calls Main
+        `countCurrentContractsByJobRole` once with the page ids; an empty page skips that call.
+        Any Main error fails the whole list (no invented zeros). POST/PUT keep
+        `ManagerJobRoleResponseDTO` and do not return `memberCount`. Order, `page`/`size`/
+        `hasNext`, and `name`/`active` filters are unchanged.
       tags: [Manager]
       operationId: getManagerJobRoles
       security: [{ bearerAuth: [] }]
@@ -1518,6 +1535,7 @@ manager:
                     active: true
                     createdAt: "2025-06-01T10:00:00+00:00"
                     updatedAt: "2025-06-01T10:00:00+00:00"
+                    memberCount: 3
                   - id: 11
                     businessId: 101
                     code: HOST
@@ -1528,6 +1546,7 @@ manager:
                     active: false
                     createdAt: "2025-06-02T10:00:00+00:00"
                     updatedAt: "2025-06-02T10:00:00+00:00"
+                    memberCount: 0
                 page: 0
                 size: 20
                 hasNext: false
@@ -2411,7 +2430,12 @@ manager:
 
     post:
       summary: Create a schedule exception
-      description: Creates a complete configuration for one immutable business-local date. Requires an OWNER membership.
+      description: >
+        Creates a complete configuration for one immutable business-local date. Requires an
+        OWNER membership. Existing daily-shift references to an archived (inactive) business
+        Shift of this business may be kept; a new reference to an inactive Shift is rejected
+        (404 1061). Existing role demands that already referenced an inactive job role of this
+        business may be kept; a new demand for an inactive job role is rejected (404 1034).
       tags: [Manager]
       operationId: createManagerScheduleException
       security: [{ bearerAuth: [] }]
@@ -2501,6 +2525,10 @@ manager:
       description: >
         Atomically replaces the complete exception configuration by `exceptionId`. The request
         has no date field, so the stored date remains immutable. Requires an OWNER membership.
+        Existing daily-shift references to an archived (inactive) business Shift of this business
+        may be kept; a new reference to an inactive Shift is rejected (404 1061). Existing role
+        demands that already referenced an inactive job role of this business may be kept; a new
+        demand for an inactive job role is rejected (404 1034).
       tags: [Manager]
       operationId: replaceManagerScheduleException
       security: [{ bearerAuth: [] }]

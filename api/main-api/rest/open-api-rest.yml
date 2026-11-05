@@ -3,7 +3,7 @@ openapi: 3.1.0
 info:
   title: Flowrapp API
   description: REST API for Flowrapp Backend
-  version: 0.0.91
+  version: 0.0.92
   contact:
     name: Flowrapp Team
     url: https://flowrapp.github.io
@@ -212,6 +212,9 @@ paths:
   "/api/v1/businesses/{businessId}/contracts/current":
     $ref: "v1/services/contracts/contracts-operations.yml#/contracts/current\
       -contracts-batch"
+  "/api/v1/businesses/{businessId}/contracts/current/job-role-counts":
+    $ref: "v1/services/contracts/contracts-operations.yml#/contracts/current\
+      -job-role-counts"
   "/api/v1/businesses/{businessId}/users/{userId}/contracts":
     $ref: "v1/services/contracts/contracts-operations.yml#/contracts/busines\
       s-user-contracts"
