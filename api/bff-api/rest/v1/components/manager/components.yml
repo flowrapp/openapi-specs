@@ -1267,6 +1267,61 @@ components:
       required:
         [id, businessId, code, name, color, icon, active, createdAt, updatedAt]
 
+    ManagerJobRoleListItemDTO:
+      type: object
+      description: >
+        Job-role row of the manager catalog list. Same fields as `ManagerJobRoleResponseDTO`
+        plus required `memberCount`. POST/PUT keep `ManagerJobRoleResponseDTO` and do not
+        compute or return `memberCount`.
+      properties:
+        id:
+          type: integer
+          format: int64
+          minimum: 1
+          example: 10
+        businessId:
+          type: integer
+          format: int64
+          minimum: 1
+          example: 101
+        code:
+          type: string
+          example: WAITER
+        name:
+          type: string
+          example: Waiter
+        description:
+          type: [string, "null"]
+        color:
+          type: string
+          pattern: "^#[0-9A-Fa-f]{6}$"
+          example: "#1A2B3C"
+        icon:
+          type: string
+          pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+          example: front-of-house
+        active:
+          type: boolean
+          example: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        memberCount:
+          type: integer
+          format: int32
+          minimum: 0
+          description: >
+            Distinct active non-ADMIN members with a current contract on this job role for
+            the business-local today, forwarded from Main `getBusinessJobRoles`. Always present,
+            including 0 and for archived roles. Never invented: if the count call fails, the
+            whole list fails.
+          example: 3
+      required:
+        [id, businessId, code, name, color, icon, active, createdAt, updatedAt, memberCount]
+
     ManagerJobRoleSliceResponseDTO:
       type: object
       description: Slice of manager job roles without a total-count query
@@ -1275,7 +1330,7 @@ components:
           type: array
           description: Job roles ordered by active state descending, name ascending, and ID ascending
           items:
-            $ref: "#/components/schemas/ManagerJobRoleResponseDTO"
+            $ref: "#/components/schemas/ManagerJobRoleListItemDTO"
         page:
           type: integer
           format: int32
@@ -1305,6 +1360,7 @@ components:
             active: true
             createdAt: "2025-06-01T10:00:00+00:00"
             updatedAt: "2025-06-01T10:00:00+00:00"
+            memberCount: 3
           - id: 11
             businessId: 101
             code: HOST
@@ -1315,6 +1371,7 @@ components:
             active: false
             createdAt: "2025-06-02T10:00:00+00:00"
             updatedAt: "2025-06-02T10:00:00+00:00"
+            memberCount: 0
         page: 0
         size: 20
         hasNext: false
