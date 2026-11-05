@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased (documentation only)
+
+- Clarified `ManagerHomeNextWeekDTO.gapCount`: it counts people still missing (sum per cell of
+  `max(max(minimum, target) - assigned, 0)`), as decided by Sergio on 2026-11-06. It is not the
+  Horario H5 `publishCoverageGaps` unit (one gap per under-covered cell). Documentation only:
+  no schema, version or behavior change; the merged Home BFF implementation already counts people.
+- Corrected the `clockInNotice` reference in the Home attention-row documentation to
+  `AttendanceClockInNoticeStateDTO` (`lastNotice` + `blocker`). No contract change.
+
 ## 0.0.81
 
 Next repository tag: `v0.0.104` (BFF API 0.0.81), after `v0.0.103`. Spec only; no BFF implementation in this change.
@@ -10,8 +19,8 @@ Next repository tag: `v0.0.104` (BFF API 0.0.81), after `v0.0.103`. Spec only; n
   - `workingNow.byJobRole[]`: `{jobRole: {id,name,color}|null, working, scheduledNow}` — fichados (`clocked.open`) vs planificados ahora (`planned.startAt <= asOf < planned.endAt`) grouped by `row.jobRole` from `getDailyAttendance(today)`; `jobRole: null` for without puesto. Not plantilla / contracts / P4a `memberCount`.
   - `attendanceToday.missing` (CRITICAL rows with chips `NO_SHOW` / `MISSING_CLOCK_IN`) and `attendanceToday.upcoming` (`counts.upcoming`).
   - `teamHours.clockedSeconds` and `teamHours.plannedSeconds` from the same BFF `getAttendanceHours` totals. Home «Horas semana» must use that pair; legacy `teamHours.totalSeconds` stays for compatibility and must not be mixed with `plannedSeconds`. `plannedSeconds` null = no published plan; `clockedSeconds` still present for OWNER.
-  - `attention` (`incidentCount` = `counts.incidents`, `rows` ≤3 first INCIDENTS): flat row with ids, name, jobRole, `chipType` (`AttendanceChipTypeDTO`), `severity`, `plannedStartAt`, `clockInNotice` (`AttendanceClockInNoticeDTO`). Recordar = existing `notifyAttendanceShiftClockIn`; Revisar = attendance detail.
-  - `nextWeek` (`week` YYYY-Www, `status` planning enum or `NONE`, `gapCount`): real assignment gaps with Horario H5 `publishCoverageGaps` semantics (planning × coverage); not `shortfallSeconds`. Without planning → `NONE` + `gapCount` null. CTA PlanWeek.
+  - `attention` (`incidentCount` = `counts.incidents`, `rows` ≤3 first INCIDENTS): flat row with ids, name, jobRole, `chipType` (`AttendanceChipTypeDTO`), `severity`, `plannedStartAt`, `clockInNotice` (`AttendanceClockInNoticeStateDTO`). Recordar = existing `notifyAttendanceShiftClockIn`; Revisar = attendance detail.
+  - `nextWeek` (`week` YYYY-Www, `status` planning enum or `NONE`, `gapCount`): people still missing, sum per cell of `max(max(minimum, target) - assigned, 0)`; not Horario H5 cell count and not `shortfallSeconds`. Without planning → `NONE` + `gapCount` null. CTA PlanWeek.
 
 ## 0.0.80
 
