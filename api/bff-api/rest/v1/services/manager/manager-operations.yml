@@ -742,8 +742,19 @@ manager:
         the same one sent originally. The email is sent asynchronously: the Main API publishes
         again, through the outbox, the existing invitation creation event.
         An invitation in a terminal status (ACCEPTED or DECLINED) cannot be resent and returns
-        403 (1013). There is no request body. Pass-through to the main API
-        (resendBusinessInvitation); status, body and functional errors are forwarded unchanged.
+        403 (1013). There is no request body.
+        Each invitation can be resent at most once every 10 minutes; the Main API records each
+        resend and checks the cooldown after the owner, invitation and status checks. If the
+        same invitation was resent less than 10 minutes ago, the response is 429 (1141) with a
+        `Retry-After` header: the whole seconds until the next resend is allowed, rounded up
+        and at least 1. The cooldown is per invitation, not per user, business or caller. The
+        email sent when the invitation is created does not count, so the first resend is always
+        accepted, and exactly 10 minutes after the previous resend a new one is accepted. If
+        several resends of the same invitation arrive at the same time, only one is accepted
+        and the others receive 429 (1141). A 429 does not change the invitation and does not
+        publish the email. Pass-through to the main API (resendBusinessInvitation); status,
+        body, functional errors and the `Retry-After` header of the 429 are forwarded
+        unchanged.
       tags:
         - Manager
       operationId: managerResendInvitation
@@ -815,7 +826,25 @@ manager:
                 INVITATION_NOT_FOUND:
                   summary: "1005 - invitation not found"
                   value: {status: 404, detail: "1005 - invitation not found"}
-      x-functional-errors: [1005, 1006, 1013, 1020]
+        '429':
+          description: >
+            The same invitation was resent less than 10 minutes ago (1141). The invitation is not
+            changed and no email is published.
+          headers:
+            Retry-After:
+              description: >
+                Whole seconds until the next resend of this invitation is allowed, rounded up,
+                forwarded from the Main API
+              schema: {type: integer, minimum: 1, example: 420}
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              examples:
+                INVITATION_RESENT_TOO_RECENTLY:
+                  summary: "1141 - invitation was resent too recently"
+                  value: {status: 429, detail: "1141 - invitation was resent too recently"}
+      x-functional-errors: [1005, 1006, 1013, 1020, 1141]
 
   export-worked-hours-report:
     get:

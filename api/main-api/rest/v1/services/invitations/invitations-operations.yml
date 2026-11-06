@@ -453,6 +453,18 @@ invitations:
         An invitation in a terminal status (ACCEPTED or DECLINED) cannot be resent and returns
         403 (1013). The response is the reactivated invitation, with status PENDING and the
         same mapping as createBusinessInvitation. There is no request body.
+        Each invitation can be resent at most once every 10 minutes. The checks run in this
+        order: owner and business (1020, 1006), invitation of the business (1005), status
+        (1013), and then the resend cooldown. If the same invitation was resent less than 10
+        minutes ago, the response is 429 (1141) with a `Retry-After` header: the whole seconds
+        until the next resend is allowed, rounded up and at least 1. The cooldown is per
+        invitation, not per user, business or caller, and the server records when each resend
+        happens. The email sent when the invitation is created does not count, so the first
+        resend of an invitation is always accepted. Exactly 10 minutes after the previous
+        resend, a new resend is accepted. If several resends of the same invitation arrive at
+        the same time, only one is accepted and the others receive 429 (1141). A 429 does not
+        change the invitation and does not publish the email. The response does not expose
+        when the invitation was last resent.
       tags:
         - Invitations
       operationId: resendBusinessInvitation
@@ -529,11 +541,31 @@ invitations:
                   value:
                     status: 404
                     detail: "1005 - invitation not found"
+        '429':
+          description: >
+            The same invitation was resent less than 10 minutes ago (1141). The invitation is not
+            changed and no email is published.
+          headers:
+            Retry-After:
+              description: >
+                Whole seconds until the next resend of this invitation is allowed, rounded up.
+              schema: {type: integer, minimum: 1, example: 420}
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+              examples:
+                INVITATION_RESENT_TOO_RECENTLY:
+                  summary: "1141 - invitation was resent too recently"
+                  value:
+                    status: 429
+                    detail: "1141 - invitation was resent too recently"
       x-functional-errors:
         - 1005
         - 1006
         - 1013
         - 1020
+        - 1141
 
   get-invitations:
     get:
