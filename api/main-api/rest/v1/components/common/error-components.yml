@@ -165,12 +165,28 @@ components:
         | 1124 | 422 | PLANNING_GENERATION_NO_DEMAND | a week of the generation period has no shift with staffing demand |
         | 1125 | 404 | PLANNING_GENERATION_NOT_FOUND | planning generation not found |
         | 1126 | 404 | BUSINESS_MEMBER_NOT_FOUND | user is not an active member of the business |
+        | 1127 | 409 | REQUEST_STATE_CONFLICT | shift change request is not in a state that accepts this command |
+        | 1128 | 409 | REQUEST_VERSION_CONFLICT | shift change request version does not match |
+        | 1129 | 409 | PLANNING_VERSION_CONFLICT | planning version does not match the captured snapshot |
+        | 1130 | 409 | ASSIGNMENT_REQUEST_ALREADY_OPEN | an open request already covers this assignment |
+        | 1131 | 409 | REQUEST_EXPIRED | shift change request has expired |
+        | 1132 | 409 | OVERRIDE_REQUIRED | owner override is required to apply the planning warnings |
+        | 1133 | 409 | WARNINGS_CHANGED | planning warnings changed since they were read |
+        | 1134 | 404 | SHIFT_EXCHANGE_REQUEST_NOT_FOUND | shift exchange request not found |
+        | 1135 | 404 | SCHEDULE_CHANGE_REQUEST_NOT_FOUND | schedule change request not found |
+        | 1136 | 400 | INVALID_SHIFT_EXCHANGE_REQUEST | shift exchange request is invalid |
+        | 1137 | 400 | INVALID_SCHEDULE_CHANGE_REQUEST | schedule change request is invalid |
+        | 1138 | 400 | INVALID_SHIFT_CHANGE_CURSOR | shift change cursor is invalid or does not match this query |
+        | 1139 | 409 | SHIFT_CHANGE_IDEMPOTENCY_CONFLICT | idempotency key was reused with different command content |
+        | 1140 | 400 | INVALID_SHIFT_CHANGE_COMMAND | shift change command is invalid |
 
         Codes 1086, 1087 and 1088 are the backend enum: SESSION_EXPIRED, PLANNING_ALREADY_EXISTS and PLANNING_VERSION_MISMATCH. Codes 1089–1092 belonged to weekly attendance periods, which were never implemented, and are removed with those routes. Code 1095 remains a separate PLANNING_ALREADY_EXISTS entry and is unchanged here. Code 1115 is raised by the BFF attendance screens (invalid `week` or `date`, or a `date` outside `week`); no Main API operation returns it.
 
         Codes 1116–1119 belong to notifyShiftClockIn and 1120–1125 to the planning generation operations (Main API 0.0.88). Codes 1099, 1100, 1101 and 1104 are used by the backend enum but are not documented here yet; they are not free and must not be reused.
 
         Code 1126 is raised by the BFF member profile (`getBusinessMemberProfile`, BFF 0.0.69) when the user is not an active member of the business; no Main API operation returns it. Code 1011 (`USER_INVITATION_NOT_OWNER`) stays in the backend enum, but no operation returns it: the business invitation operations reject a non-owner with 1020.
+
+        Codes 1127–1140 belong to shift exchange requests and schedule change requests (Main API 0.0.94, passed through by BFF 0.0.82). Code 1088 (`PLANNING_VERSION_MISMATCH`) stays the draft scheduled-shift replacement code and is not reused for these requests. Code 1129 (`PLANNING_VERSION_CONFLICT`) is the snapshot check of this contract. A request the caller must not see uses 1134 or 1135, the same body as a missing id.
 
         Code 1020 (`USER_NOT_OWNER_OF_BUSINESS`) stays in the catalog. Owner-only operations keep the message `user is not the owner of business`. An operation that allows an OWNER or a MANAGER uses the same code with the message `user is not an owner or manager of the business`.
       enum:
@@ -293,3 +309,17 @@ components:
         - 1124
         - 1125
         - 1126
+        - 1127
+        - 1128
+        - 1129
+        - 1130
+        - 1131
+        - 1132
+        - 1133
+        - 1134
+        - 1135
+        - 1136
+        - 1137
+        - 1138
+        - 1139
+        - 1140

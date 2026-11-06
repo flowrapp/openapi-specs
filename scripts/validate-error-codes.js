@@ -63,20 +63,17 @@ function collectYamlFiles(dir) {
 
 // ---------------------------------------------------------------------------
 // 3. Extract x-functional-errors arrays from a parsed YAML document.
-//    The extension can appear at the operation level inside any path item.
+//    Operation files nest path items under a domain key
+//    (`worklogs -> clock-in -> post`), so the extension is collected at any
+//    depth, not only on the first two levels.
 // ---------------------------------------------------------------------------
-function extractFunctionalErrors(doc) {
-  const found = [];
-  if (!doc || typeof doc !== 'object') return found;
-
-  for (const [, pathItem] of Object.entries(doc)) {
-    if (!pathItem || typeof pathItem !== 'object') continue;
-    for (const [, operation] of Object.entries(pathItem)) {
-      if (!operation || typeof operation !== 'object') continue;
-      if (Array.isArray(operation['x-functional-errors'])) {
-        found.push(...operation['x-functional-errors'].map(Number));
-      }
-    }
+function extractFunctionalErrors(node, found = []) {
+  if (!node || typeof node !== 'object') return found;
+  if (Array.isArray(node['x-functional-errors'])) {
+    found.push(...node['x-functional-errors'].map(Number));
+  }
+  for (const value of Object.values(node)) {
+    if (value && typeof value === 'object') extractFunctionalErrors(value, found);
   }
   return found;
 }

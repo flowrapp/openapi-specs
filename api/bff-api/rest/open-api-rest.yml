@@ -7,7 +7,7 @@ info:
     This BFF aggregates and shapes data from the Flowrapp main API to serve
     the specific needs of the mobile frontend, providing role-based endpoints
     for workers and managers.
-  version: 0.0.81
+  version: 0.0.82
   contact:
     name: Flowrapp Team
     url: https://flowrapp.github.io
@@ -61,6 +61,16 @@ tags:
     description: >
       Owner-only automatic generation of draft plans for an explicit period, under
       /api/v1/businesses/{businessId}/planning-generations. Pass-through to the Main API.
+  - name: Shift Exchanges
+    description: >
+      Reciprocal swap of two concrete published assignments, under
+      /api/v1/businesses/{businessId}/shift-exchange-requests. Pass-through to
+      the Main API. Cross-week is allowed. Not a dashboard.
+  - name: Schedule Changes
+    description: >
+      OWNER correction of one concrete published assignment, under
+      /api/v1/businesses/{businessId}/schedule-change-requests. Pass-through to
+      the Main API. Not a dashboard.
 
 paths:
   # ── System ──────────────────────────────────────────────────────────────
@@ -192,6 +202,44 @@ paths:
     $ref: "v1/services/planning/planning-operations.yml#/planning/generation"
   "/api/v1/businesses/{businessId}/schedule/coverage":
     $ref: "v1/services/planning/planning-operations.yml#/planning/week-coverage"
+
+  # ── Shift changes (pass-through; same paths as the Main API) ────────────
+  "/api/v1/businesses/{businessId}/shift-exchange-requests":
+    $ref: "v1/services/shiftChanges/shift-exchange-operations.yml#/shiftExch\
+      angeRequests/collection"
+  "/api/v1/businesses/{businessId}/shift-exchange-requests/{requestId}":
+    $ref: "v1/services/shiftChanges/shift-exchange-operations.yml#/shiftExch\
+      angeRequests/item"
+  "/api/v1/businesses/{businessId}/shift-exchange-requests/{requestId}/acceptance":
+    $ref: "v1/services/shiftChanges/shift-exchange-operations.yml#/shiftExch\
+      angeRequests/acceptance"
+  "/api/v1/businesses/{businessId}/shift-exchange-requests/{requestId}/approval":
+    $ref: "v1/services/shiftChanges/shift-exchange-operations.yml#/shiftExch\
+      angeRequests/approval"
+  "/api/v1/businesses/{businessId}/shift-exchange-requests/{requestId}/rejection":
+    $ref: "v1/services/shiftChanges/shift-exchange-operations.yml#/shiftExch\
+      angeRequests/rejection"
+  "/api/v1/businesses/{businessId}/shift-exchange-requests/{requestId}/cancellation":
+    $ref: "v1/services/shiftChanges/shift-exchange-operations.yml#/shiftExch\
+      angeRequests/cancellation"
+  "/api/v1/businesses/{businessId}/schedule-change-requests":
+    $ref: "v1/services/shiftChanges/schedule-change-operations.yml#/schedul\
+      eChangeRequests/collection"
+  "/api/v1/businesses/{businessId}/schedule-change-requests/{requestId}":
+    $ref: "v1/services/shiftChanges/schedule-change-operations.yml#/schedul\
+      eChangeRequests/item"
+  "/api/v1/businesses/{businessId}/schedule-change-requests/{requestId}/acceptance":
+    $ref: "v1/services/shiftChanges/schedule-change-operations.yml#/schedul\
+      eChangeRequests/acceptance"
+  "/api/v1/businesses/{businessId}/schedule-change-requests/{requestId}/approval":
+    $ref: "v1/services/shiftChanges/schedule-change-operations.yml#/schedul\
+      eChangeRequests/approval"
+  "/api/v1/businesses/{businessId}/schedule-change-requests/{requestId}/rejection":
+    $ref: "v1/services/shiftChanges/schedule-change-operations.yml#/schedul\
+      eChangeRequests/rejection"
+  "/api/v1/businesses/{businessId}/schedule-change-requests/{requestId}/cancellation":
+    $ref: "v1/services/shiftChanges/schedule-change-operations.yml#/schedul\
+      eChangeRequests/cancellation"
 
   # ── Manager ─────────────────────────────────────────────────────────────
   "/api/v1/manager/businesses":

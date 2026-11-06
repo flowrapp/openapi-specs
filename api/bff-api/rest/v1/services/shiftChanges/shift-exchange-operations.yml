@@ -1,0 +1,503 @@
+# Reciprocal shift exchange. Main API enforces the rules. The BFF exposes the
+# same paths and representations and forwards each call unchanged: no dashboard
+# aggregate and no transition of its own. Contract only.
+shiftExchangeRequests:
+  collection:
+    get:
+      tags: [Shift Exchanges]
+      operationId: listShiftExchangeRequests
+      summary: List shift exchange requests
+      description: >
+        Returns one cursor page. An OWNER sees every exchange of the business.
+        Any other active member, including a MANAGER, sees only an exchange
+        where they are the requester or the counterpart. No query parameter
+        widens that scope, and this list is not a dashboard. A member with
+        nothing to show gets 200 with `content: []`, `hasNext: false` and
+        `nextCursor: null`. A caller who is not a member gets 403. An unknown
+        business gets 404.
+      security: [{bearerAuth: []}]
+      parameters:
+        - $ref: "../../components/shiftChanges/components.yml#/components/parameters/BusinessId"
+        - $ref: "../../components/shiftChanges/components.yml#/components/parameters/ExchangeStatus"
+        - $ref: "../../components/shiftChanges/components.yml#/components/parameters/Cursor"
+        - $ref: "../../components/shiftChanges/components.yml#/components/parameters/Limit"
+      responses:
+        "200":
+          description: Page of exchanges visible to the caller. May be empty.
+          content:
+            application/json:
+              schema:
+                $ref: "../../components/shiftChanges/components.yml#/components/schemas/ShiftExchangeRequestPageDTO"
+              examples:
+                empty:
+                  summary: Nothing visible for this caller and filter
+                  value:
+                    content: []
+                    hasNext: false
+                    nextCursor: null
+        "400":
+          $ref: "../../components/shiftChanges/components.yml#/components/responses/ShiftChangeListBadRequest"
+        "401":
+          $ref: "../../components/shiftChanges/components.yml#/components/responses/Unauthorized"
+        "403":
+          $ref: "../../components/shiftChanges/components.yml#/components/responses/NotMember"
+        "404":
+          $ref: "../../components/shiftChanges/components.yml#/components/responses/BusinessNotFound"
+      x-functional-errors: [1006, 1015, 1138, 1140]
+    post:
+      tags: [Shift Exchanges]
+      operationId: createShiftExchangeRequest
+      summary: Propose a reciprocal shift exchange
+      description: >
+        The authenticated holder of `sourceScheduledShiftId` asks to swap it
+        with `counterpartScheduledShiftId`. Cross-week is allowed: the two
+        assignments may sit in different plannings. Both assignments are
+        required, so this cannot express a cession. The caller must be an active
+        member and the current holder of the source assignment. A MANAGER or an
+        OWNER uses the same rule when they are that holder; creating is not an
+        owner privilege. Only an OWNER later approves and applies the swap.
+
+        Both assignments must be published scheduled shifts of this business
+        that have not started. The two ids and the two holders must differ.
+        The server stores SOURCE and COUNTERPART snapshots. On an exchange the
+        window, the puesto and the catalog Shift stay on the assignment; the
+        holders swap. `expiresAt` is the earlier start. The status is
+        `PENDING_PEER`, `version` is 1, and the only acceptance slot is `PEER`.
+
+        The exchange reserves both assignments atomically. The open-request key
+        is `business_id` + `scheduled_shifts.id` + `original_user_id`. The
+        intended constraint is a partial unique index on (`scheduled_shift_id`,
+        `original_user_id`) while the request is open. The first commit wins
+        and the other create receives 409 `1130`. This contract does not assert
+        that the index has been applied. The same `Idempotency-Key` and the same
+        body replay this 201 instead of reserving again.
+
+        The 201 body follows the caller. An OWNER receives `warnings` and
+        `warningsFingerprint`. Any other caller does not, and must not read the
+        omission as an empty warning list.
+      security: [{bearerAuth: []}]
+      parameters:
+        - $ref: "../../components/shiftChanges/components.yml#/components/parameters/BusinessId"
+        - $ref: "../../components/shiftChanges/components.yml#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "../../components/shiftChanges/components.yml#/components/schemas/CreateShiftExchangeRequestDTO"
+            examples:
+              crossWeek:
+                summary: Ana's Monday week 46 for Luis's Wednesday week 47
+                description: >
+                  Two published assignments in different plannings. Ana keeps
+                  neither shift; Luis takes Monday and Ana takes Wednesday.
+                value:
+                  sourceScheduledShiftId: 900
+                  counterpartScheduledShiftId: 940
+                  reason: Cambio de semana por una cita médica
+      responses:
+        "201":
+          description: Exchange created, or an identical idempotent retry of that create.
+          headers:
+            Location:
+              description: URI of the exchange.
+              schema:
+                type: string
+                example: /api/v1/businesses/101/shift-exchange-requests/701
+          content:
+            application/json:
+              schema:
+                $ref: "../../components/shiftChanges/components.yml#/components/schemas/ShiftExchangeRequestDTO"
+              examples:
+                crossWeek:
+                  summary: Pending the counterpart, across two planning weeks
+                  description: >
+                    Returned to Ana, who is not the OWNER, so the warning fields
+                    are omitted. Monday 9 November 2026 is week 46; Wednesday
+                    18 November 2026 is week 47.
+                  value:
+                    id: 701
+                    businessId: 101
+                    status: PENDING_PEER
+                    version: 1
+                    reason: Cambio de semana por una cita médica
+                    createdBy:
+                      userId: 41
+                      displayName: Ana Ruiz
+                    createdAt: "2026-11-06T18:30:00+01:00"
+                    updatedAt: "2026-11-06T18:30:00+01:00"
+                    expiresAt: "2026-11-09T09:00:00+01:00"
+                    resolvedAt: null
+                    affectedShifts:
+                      - scheduledShiftId: 900
+                        planningId: 501
+                        planningVersion: 4
+                        role: SOURCE
+                        before:
+                          user: {userId: 41, displayName: Ana Ruiz}
+                          jobRole: {id: 10, name: Waiter}
+                          shiftId: 20
+                          shiftName: Morning service
+                          shiftColor: "#1A2B3C"
+                          startAt: "2026-11-09T09:00:00+01:00"
+                          endAt: "2026-11-09T17:00:00+01:00"
+                          breakMinutes: 30
+                        after:
+                          user: {userId: 42, displayName: Luis Mora}
+                          jobRole: {id: 10, name: Waiter}
+                          shiftId: 20
+                          shiftName: Morning service
+                          shiftColor: "#1A2B3C"
+                          startAt: "2026-11-09T09:00:00+01:00"
+                          endAt: "2026-11-09T17:00:00+01:00"
+                          breakMinutes: 30
+                      - scheduledShiftId: 940
+                        planningId: 502
+                        planningVersion: 2
+                        role: COUNTERPART
+                        before:
+                          user: {userId: 42, displayName: Luis Mora}
+                          jobRole: {id: 10, name: Waiter}
+                          shiftId: 21
+                          shiftName: Evening service
+                          shiftColor: "#C45C26"
+                          startAt: "2026-11-18T17:00:00+01:00"
+                          endAt: "2026-11-18T23:00:00+01:00"
+                          breakMinutes: 20
+                        after:
+                          user: {userId: 41, displayName: Ana Ruiz}
+                          jobRole: {id: 10, name: Waiter}
+                          shiftId: 21
+                          shiftName: Evening service
+                          shiftColor: "#C45C26"
+                          startAt: "2026-11-18T17:00:00+01:00"
+                          endAt: "2026-11-18T23:00:00+01:00"
+                          breakMinutes: 20
+                    acceptances:
+                      - slot: PEER
+                        user: {userId: 42, displayName: Luis Mora}
+                        status: PENDING
+                        decidedAt: null
+        "400":
+          $ref: "../../components/shiftChanges/components.yml#/components/responses/ExchangeCreateBadRequest"
+        "401":
+          $ref: "../../components/shiftChanges/components.yml#/components/responses/Unauthorized"
+        "403":
+          $ref: "../../components/shiftChanges/components.yml#/components/responses/NotMember"
+        "404":
+          $ref: "../../components/shiftChanges/components.yml#/components/responses/ExchangeCreateNotFound"
+        "409":
+          $ref: "../../components/shiftChanges/components.yml#/components/responses/ExchangeCreateConflict"
+      x-functional-errors: [1006, 1015, 1076, 1129, 1130, 1131, 1136, 1139, 1140]
+  item:
+    get:
+      tags: [Shift Exchanges]
+      operationId: getShiftExchangeRequest
+      summary: Get a shift exchange request
+      description: >
+        Returns the exchange with both affected assignments fully snapshotted.
+        An OWNER sees every exchange of the business and, on this detail only,
+        the typed warnings, their fingerprint and the override record. A
+        requester or counterpart sees the same assignments and acceptances
+        without those owner fields. Anyone else, a MANAGER with no part in the
+        exchange included, gets 404 `1134`, the same body as a missing id.
+
+        Loading compares `expiresAt` and each captured `planningVersion`. An
+        open exchange that has reached `expiresAt` is persisted as `EXPIRED`.
+        An open exchange whose planning version no longer matches is persisted
+        as `SUPERSEDED`. The response is 200 with that status. Commands against
+        it then fail with 409.
+      security: [{bearerAuth: []}]
+      parameters:
+        - $ref: "../../components/shiftChanges/components.yml#/components/parameters/BusinessId"
+        - $ref: "../../components/shiftChanges/components.yml#/components/parameters/ExchangeRequestId"
+      responses:
+        "200":
+          description: The exchange, including a row just persisted as expired or superseded.
+          content:
+            application/json:
+              schema:
+                $ref: "../../components/shiftChanges/components.yml#/components/schemas/ShiftExchangeRequestDTO"
+              examples:
+                ownerCrossWeek:
+                  summary: OWNER detail while the counterpart has not accepted
+                  description: >
+                    Same cross-week exchange as create. The OWNER also receives
+                    the warning that applying it would overlap another shift.
+                  value:
+                    id: 701
+                    businessId: 101
+                    status: PENDING_PEER
+                    version: 1
+                    reason: Cambio de semana por una cita médica
+                    createdBy:
+                      userId: 41
+                      displayName: Ana Ruiz
+                    createdAt: "2026-11-06T18:30:00+01:00"
+                    updatedAt: "2026-11-06T18:30:00+01:00"
+                    expiresAt: "2026-11-09T09:00:00+01:00"
+                    resolvedAt: null
+                    affectedShifts:
+                      - scheduledShiftId: 900
+                        planningId: 501
+                        planningVersion: 4
+                        role: SOURCE
+                        before:
+                          user: {userId: 41, displayName: Ana Ruiz}
+                          jobRole: {id: 10, name: Waiter}
+                          shiftId: 20
+                          shiftName: Morning service
+                          shiftColor: "#1A2B3C"
+                          startAt: "2026-11-09T09:00:00+01:00"
+                          endAt: "2026-11-09T17:00:00+01:00"
+                          breakMinutes: 30
+                        after:
+                          user: {userId: 42, displayName: Luis Mora}
+                          jobRole: {id: 10, name: Waiter}
+                          shiftId: 20
+                          shiftName: Morning service
+                          shiftColor: "#1A2B3C"
+                          startAt: "2026-11-09T09:00:00+01:00"
+                          endAt: "2026-11-09T17:00:00+01:00"
+                          breakMinutes: 30
+                      - scheduledShiftId: 940
+                        planningId: 502
+                        planningVersion: 2
+                        role: COUNTERPART
+                        before:
+                          user: {userId: 42, displayName: Luis Mora}
+                          jobRole: {id: 10, name: Waiter}
+                          shiftId: 21
+                          shiftName: Evening service
+                          shiftColor: "#C45C26"
+                          startAt: "2026-11-18T17:00:00+01:00"
+                          endAt: "2026-11-18T23:00:00+01:00"
+                          breakMinutes: 20
+                        after:
+                          user: {userId: 41, displayName: Ana Ruiz}
+                          jobRole: {id: 10, name: Waiter}
+                          shiftId: 21
+                          shiftName: Evening service
+                          shiftColor: "#C45C26"
+                          startAt: "2026-11-18T17:00:00+01:00"
+                          endAt: "2026-11-18T23:00:00+01:00"
+                          breakMinutes: 20
+                    acceptances:
+                      - slot: PEER
+                        user: {userId: 42, displayName: Luis Mora}
+                        status: PENDING
+                        decidedAt: null
+                    warnings:
+                      - code: SHIFT_OVERLAP
+                        scheduledShiftId: 900
+                        message: The proposed holder already has a scheduled shift that overlaps this assignment.
+                        otherScheduledShiftId: 955
+                    warningsFingerprint: fp-7c2a
+                    override: null
+        "401":
+          $ref: "../../components/shiftChanges/components.yml#/components/responses/Unauthorized"
+        "403":
+          $ref: "../../components/shiftChanges/components.yml#/components/responses/NotMember"
+        "404":
+          $ref: "../../components/shiftChanges/components.yml#/components/responses/BusinessOrExchangeNotFound"
+      x-functional-errors: [1006, 1015, 1134]
+  acceptance:
+    post:
+      tags: [Shift Exchanges]
+      operationId: acceptShiftExchangeRequest
+      summary: Accept a shift exchange as the counterpart
+      description: >
+        The counterpart accepts their `PEER` slot. The caller must be that
+        person, the status must be `PENDING_PEER`, and the body carries the
+        `version` they read. There is no user id in the body. Success moves the
+        exchange to `PENDING_OWNER`, marks the slot `ACCEPTED` and increments
+        `version`. It does not swap the assignments. The OWNER approves that
+        later. The requester, a MANAGER, or an OWNER who is not the counterpart
+        gets 409 `1127` when they can see the exchange.
+      security: [{bearerAuth: []}]
+      parameters:
+        - $ref: "../../components/shiftChanges/components.yml#/components/parameters/BusinessId"
+        - $ref: "../../components/shiftChanges/components.yml#/components/parameters/ExchangeRequestId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "../../components/shiftChanges/components.yml#/components/schemas/ShiftChangeVersionCommandDTO"
+            example:
+              version: 1
+      responses:
+        "200":
+          description: Counterpart accepted. The exchange waits for an OWNER.
+          content:
+            application/json:
+              schema:
+                $ref: "../../components/shiftChanges/components.yml#/components/schemas/ShiftExchangeRequestDTO"
+        "400":
+          $ref: "../../components/shiftChanges/components.yml#/components/responses/CommandBadRequest"
+        "401":
+          $ref: "../../components/shiftChanges/components.yml#/components/responses/Unauthorized"
+        "403":
+          $ref: "../../components/shiftChanges/components.yml#/components/responses/NotMember"
+        "404":
+          $ref: "../../components/shiftChanges/components.yml#/components/responses/BusinessOrExchangeNotFound"
+        "409":
+          $ref: "../../components/shiftChanges/components.yml#/components/responses/ExchangeCommandConflict"
+      x-functional-errors: [1006, 1015, 1127, 1128, 1129, 1131, 1134, 1140]
+  approval:
+    post:
+      tags: [Shift Exchanges]
+      operationId: approveShiftExchangeRequest
+      summary: Approve and apply a shift exchange
+      description: >
+        Only an OWNER, and only while the exchange is `PENDING_OWNER`. Approval
+        applies the swap: each assignment takes the other holder's identity and
+        keeps its own window, puesto and catalog Shift. Both plannings are
+        updated in one transaction and each `planning.version` increments. The
+        captured `planningVersion` on the exchange is not rewritten. The
+        exchange becomes `APPLIED`. The approving OWNER may be the requester;
+        the counterpart must still have accepted. A MANAGER cannot approve.
+
+        The OWNER sends the `warningsFingerprint` from their detail. When
+        `warnings` is empty, `override` is omitted. When it is not empty,
+        `override` with `accepted: true` and a non-blank reason is required and
+        is stored for audit. A stale fingerprint is 409 `1133`. A missing
+        override while warnings exist is 409 `1132`. The override never waives
+        a failed identity, permission, future instant, version, foreign key or
+        attendance check: a shift that already has attendance stays 409 `1127`,
+        a moved planning stays 409 `1129` and is persisted as `SUPERSEDED`, and
+        a started shift stays 409 `1131` and is persisted as `EXPIRED`.
+      security: [{bearerAuth: []}]
+      parameters:
+        - $ref: "../../components/shiftChanges/components.yml#/components/parameters/BusinessId"
+        - $ref: "../../components/shiftChanges/components.yml#/components/parameters/ExchangeRequestId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "../../components/shiftChanges/components.yml#/components/schemas/ShiftChangeApprovalRequestDTO"
+            examples:
+              withOverlap:
+                summary: Apply the cross-week swap despite one overlap
+                value:
+                  version: 2
+                  warningsFingerprint: fp-7c2a
+                  override:
+                    accepted: true
+                    reason: El solape del lunes es asumido; el miércoles queda libre.
+              noWarnings:
+                summary: Apply when the OWNER detail has an empty warning list
+                value:
+                  version: 2
+                  warningsFingerprint: fp-none
+      responses:
+        "200":
+          description: Swap applied. Owner responses include the override when one was required.
+          content:
+            application/json:
+              schema:
+                $ref: "../../components/shiftChanges/components.yml#/components/schemas/ShiftExchangeRequestDTO"
+        "400":
+          $ref: "../../components/shiftChanges/components.yml#/components/responses/CommandBadRequest"
+        "401":
+          $ref: "../../components/shiftChanges/components.yml#/components/responses/Unauthorized"
+        "403":
+          $ref: "../../components/shiftChanges/components.yml#/components/responses/NotOwner"
+        "404":
+          $ref: "../../components/shiftChanges/components.yml#/components/responses/BusinessOrExchangeNotFound"
+        "409":
+          $ref: "../../components/shiftChanges/components.yml#/components/responses/ExchangeApprovalConflict"
+      x-functional-errors: [1006, 1015, 1020, 1127, 1128, 1129, 1131, 1132, 1133, 1134, 1140]
+  rejection:
+    post:
+      tags: [Shift Exchanges]
+      operationId: rejectShiftExchangeRequest
+      summary: Reject a shift exchange
+      description: >
+        The counterpart may reject while the exchange is `PENDING_PEER`. An
+        OWNER may reject while it is `PENDING_OWNER`. The actor comes from the
+        JWT. The body has no user id. The exchange becomes `REJECTED` and the
+        declining slot, when it is the counterpart, becomes `REJECTED`. The
+        requester does not reject their own proposal; they cancel it. A MANAGER
+        has no reject permission beyond being the counterpart.
+      security: [{bearerAuth: []}]
+      parameters:
+        - $ref: "../../components/shiftChanges/components.yml#/components/parameters/BusinessId"
+        - $ref: "../../components/shiftChanges/components.yml#/components/parameters/ExchangeRequestId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "../../components/shiftChanges/components.yml#/components/schemas/ShiftChangeActorCommandDTO"
+            examples:
+              peer:
+                summary: Counterpart declines
+                value:
+                  version: 1
+                  reason: No puedo ese miércoles
+              owner:
+                summary: OWNER declines to apply
+                value:
+                  version: 2
+      responses:
+        "200":
+          description: Exchange rejected.
+          content:
+            application/json:
+              schema:
+                $ref: "../../components/shiftChanges/components.yml#/components/schemas/ShiftExchangeRequestDTO"
+        "400":
+          $ref: "../../components/shiftChanges/components.yml#/components/responses/CommandBadRequest"
+        "401":
+          $ref: "../../components/shiftChanges/components.yml#/components/responses/Unauthorized"
+        "403":
+          $ref: "../../components/shiftChanges/components.yml#/components/responses/NotMember"
+        "404":
+          $ref: "../../components/shiftChanges/components.yml#/components/responses/BusinessOrExchangeNotFound"
+        "409":
+          $ref: "../../components/shiftChanges/components.yml#/components/responses/ExchangeCommandConflict"
+      x-functional-errors: [1006, 1015, 1127, 1128, 1129, 1131, 1134, 1140]
+  cancellation:
+    post:
+      tags: [Shift Exchanges]
+      operationId: cancelShiftExchangeRequest
+      summary: Cancel an open shift exchange
+      description: >
+        The requester may withdraw the exchange while it is `PENDING_PEER` or
+        `PENDING_OWNER`. An OWNER may cancel it in those same open statuses.
+        The counterpart does not cancel; they reject. The actor comes from the
+        JWT. The body has no user id. The status becomes `CANCELLED`. A MANAGER
+        who is not the requester cannot cancel.
+      security: [{bearerAuth: []}]
+      parameters:
+        - $ref: "../../components/shiftChanges/components.yml#/components/parameters/BusinessId"
+        - $ref: "../../components/shiftChanges/components.yml#/components/parameters/ExchangeRequestId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "../../components/shiftChanges/components.yml#/components/schemas/ShiftChangeActorCommandDTO"
+            example:
+              version: 1
+              reason: Ya no hace falta
+      responses:
+        "200":
+          description: Exchange cancelled.
+          content:
+            application/json:
+              schema:
+                $ref: "../../components/shiftChanges/components.yml#/components/schemas/ShiftExchangeRequestDTO"
+        "400":
+          $ref: "../../components/shiftChanges/components.yml#/components/responses/CommandBadRequest"
+        "401":
+          $ref: "../../components/shiftChanges/components.yml#/components/responses/Unauthorized"
+        "403":
+          $ref: "../../components/shiftChanges/components.yml#/components/responses/NotMember"
+        "404":
+          $ref: "../../components/shiftChanges/components.yml#/components/responses/BusinessOrExchangeNotFound"
+        "409":
+          $ref: "../../components/shiftChanges/components.yml#/components/responses/ExchangeCommandConflict"
+      x-functional-errors: [1006, 1015, 1127, 1128, 1129, 1131, 1134, 1140]

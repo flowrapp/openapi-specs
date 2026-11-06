@@ -1,0 +1,638 @@
+# OWNER correction of one published assignment. Main API enforces the rules.
+# The BFF exposes the same paths and representations and forwards each call
+# unchanged: no dashboard aggregate and no transition of its own. Contract only.
+scheduleChangeRequests:
+  collection:
+    get:
+      tags: [Schedule Changes]
+      operationId: listScheduleChangeRequests
+      summary: List schedule change requests
+      description: >
+        Returns one cursor page. An OWNER sees every schedule change of the
+        business. Any other active member, including a MANAGER, sees only a
+        change where they are the current holder, the proposed holder or the
+        outgoing person of a reassignment. No query parameter widens that scope,
+        and this list is not a dashboard. A member with nothing to show gets
+        200 with `content: []`, `hasNext: false` and `nextCursor: null`.
+      security: [{bearerAuth: []}]
+      parameters:
+        - $ref: "../../components/shiftChanges/components.yml#/components/parameters/BusinessId"
+        - $ref: "../../components/shiftChanges/components.yml#/components/parameters/ScheduleChangeStatus"
+        - $ref: "../../components/shiftChanges/components.yml#/components/parameters/Cursor"
+        - $ref: "../../components/shiftChanges/components.yml#/components/parameters/Limit"
+      responses:
+        "200":
+          description: Page of schedule changes visible to the caller. May be empty.
+          content:
+            application/json:
+              schema:
+                $ref: "../../components/shiftChanges/components.yml#/components/schemas/ScheduleChangeRequestPageDTO"
+              examples:
+                empty:
+                  summary: Nothing visible for this caller and filter
+                  value:
+                    content: []
+                    hasNext: false
+                    nextCursor: null
+        "400":
+          $ref: "../../components/shiftChanges/components.yml#/components/responses/ShiftChangeListBadRequest"
+        "401":
+          $ref: "../../components/shiftChanges/components.yml#/components/responses/Unauthorized"
+        "403":
+          $ref: "../../components/shiftChanges/components.yml#/components/responses/NotMember"
+        "404":
+          $ref: "../../components/shiftChanges/components.yml#/components/responses/BusinessNotFound"
+      x-functional-errors: [1006, 1015, 1138, 1140]
+    post:
+      tags: [Schedule Changes]
+      operationId: createScheduleChangeRequest
+      summary: Propose a correction of one assignment
+      description: >
+        OWNER only. Corrects one published assignment that has not started.
+        `before` is the window the OWNER read and `planningVersion` is that
+        planning's current version. `after` is the proposal and is required:
+        this contract does not delete an assignment. A MANAGER gets 403 `1020`.
+
+        The server derives `changeKind`. A holder-only difference is a
+        `REASSIGNMENT`: the incoming person must accept, and the outgoing holder
+        is notified through `outgoingNotice` without an acceptance slot. Any
+        change of puesto, catalog Shift, instants or break is
+        `HOLDER_AND_SCHEDULE`: both the incoming person and the current holder
+        must accept. When those two are the same person, one later acceptance
+        covers both slots. Creation itself is not an acceptance, even when the
+        OWNER is the current holder.
+
+        The status starts at `PENDING_ACCEPTANCES` and `version` at 1. The
+        assignment is reserved with the same open-request key as an exchange
+        (`scheduled_shifts.id` + `original_user_id`). The intended constraint is
+        a partial unique index on that pair while the request is open. This
+        contract does not assert that the index has been applied. The first
+        commit wins (409 `1130`). The same `Idempotency-Key` and the same body
+        replay this 201.
+
+        Warnings are not decided at creation. They are evaluated when the last
+        required acceptance is recorded. The 201 follows the caller: the OWNER
+        receives `warnings` (empty at creation) and `warningsFingerprint`.
+      security: [{bearerAuth: []}]
+      parameters:
+        - $ref: "../../components/shiftChanges/components.yml#/components/parameters/BusinessId"
+        - $ref: "../../components/shiftChanges/components.yml#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "../../components/shiftChanges/components.yml#/components/schemas/CreateScheduleChangeRequestDTO"
+            examples:
+              holderAndSchedule:
+                summary: Ana's Monday morning becomes Luis's Monday midday
+                description: >
+                  Holder, catalog Shift and instants change, so both Ana and
+                  Luis must accept.
+                value:
+                  scheduledShiftId: 900
+                  planningId: 501
+                  planningVersion: 4
+                  reason: Luis cubre el mediodía del lunes
+                  before:
+                    userId: 41
+                    jobRoleId: 10
+                    shiftId: 20
+                    startAt: "2026-11-09T09:00:00+01:00"
+                    endAt: "2026-11-09T17:00:00+01:00"
+                    breakMinutes: 30
+                  after:
+                    userId: 42
+                    jobRoleId: 10
+                    shiftId: 22
+                    startAt: "2026-11-09T12:00:00+01:00"
+                    endAt: "2026-11-09T20:00:00+01:00"
+                    breakMinutes: 30
+              reassignment:
+                summary: Same window, Luis takes Ana's shift
+                description: >
+                  Only the holder changes. Luis accepts. Ana is notified and
+                  does not accept.
+                value:
+                  scheduledShiftId: 900
+                  planningId: 501
+                  planningVersion: 4
+                  reason: Luis cubre el turno de Ana
+                  before:
+                    userId: 41
+                    jobRoleId: 10
+                    shiftId: 20
+                    startAt: "2026-11-09T09:00:00+01:00"
+                    endAt: "2026-11-09T17:00:00+01:00"
+                    breakMinutes: 30
+                  after:
+                    userId: 42
+                    jobRoleId: 10
+                    shiftId: 20
+                    startAt: "2026-11-09T09:00:00+01:00"
+                    endAt: "2026-11-09T17:00:00+01:00"
+                    breakMinutes: 30
+      responses:
+        "201":
+          description: Correction proposed, or an identical idempotent retry of that create.
+          headers:
+            Location:
+              description: URI of the schedule change.
+              schema:
+                type: string
+                example: /api/v1/businesses/101/schedule-change-requests/801
+          content:
+            application/json:
+              schema:
+                $ref: "../../components/shiftChanges/components.yml#/components/schemas/ScheduleChangeRequestDTO"
+              examples:
+                holderAndSchedule:
+                  summary: Waiting for Ana and Luis
+                  value:
+                    id: 801
+                    businessId: 101
+                    changeKind: HOLDER_AND_SCHEDULE
+                    status: PENDING_ACCEPTANCES
+                    version: 1
+                    reason: Luis cubre el mediodía del lunes
+                    createdBy:
+                      userId: 1
+                      displayName: Carmen Ortiz
+                    createdAt: "2026-11-06T19:00:00+01:00"
+                    updatedAt: "2026-11-06T19:00:00+01:00"
+                    expiresAt: "2026-11-09T09:00:00+01:00"
+                    resolvedAt: null
+                    affectedShifts:
+                      - scheduledShiftId: 900
+                        planningId: 501
+                        planningVersion: 4
+                        role: SOURCE
+                        before:
+                          user: {userId: 41, displayName: Ana Ruiz}
+                          jobRole: {id: 10, name: Waiter}
+                          shiftId: 20
+                          shiftName: Morning service
+                          shiftColor: "#1A2B3C"
+                          startAt: "2026-11-09T09:00:00+01:00"
+                          endAt: "2026-11-09T17:00:00+01:00"
+                          breakMinutes: 30
+                        after:
+                          user: {userId: 42, displayName: Luis Mora}
+                          jobRole: {id: 10, name: Waiter}
+                          shiftId: 22
+                          shiftName: Midday service
+                          shiftColor: "#2F6F4E"
+                          startAt: "2026-11-09T12:00:00+01:00"
+                          endAt: "2026-11-09T20:00:00+01:00"
+                          breakMinutes: 30
+                    acceptances:
+                      - slot: INCOMING
+                        user: {userId: 42, displayName: Luis Mora}
+                        status: PENDING
+                        decidedAt: null
+                      - slot: CURRENT
+                        user: {userId: 41, displayName: Ana Ruiz}
+                        status: PENDING
+                        decidedAt: null
+                    warnings: []
+                    warningsFingerprint: fp-none
+                    override: null
+        "400":
+          $ref: "../../components/shiftChanges/components.yml#/components/responses/ScheduleChangeCreateBadRequest"
+        "401":
+          $ref: "../../components/shiftChanges/components.yml#/components/responses/Unauthorized"
+        "403":
+          $ref: "../../components/shiftChanges/components.yml#/components/responses/NotOwner"
+        "404":
+          $ref: "../../components/shiftChanges/components.yml#/components/responses/ScheduleChangeCreateNotFound"
+        "409":
+          $ref: "../../components/shiftChanges/components.yml#/components/responses/ScheduleChangeCreateConflict"
+      x-functional-errors:
+        [1006, 1015, 1020, 1034, 1046, 1061, 1076, 1129, 1130, 1131, 1137, 1139, 1140]
+  item:
+    get:
+      tags: [Schedule Changes]
+      operationId: getScheduleChangeRequest
+      summary: Get a schedule change request
+      description: >
+        Returns the single affected assignment with `before` and `after`
+        already filled, plus the acceptance slots the server requires. An OWNER
+        also receives the typed warnings, the fingerprint and the override.
+        A current holder, the proposed holder or the outgoing person of a
+        reassignment sees the assignment and the slots without those fields.
+        The omission is not an empty warning list. Anyone else gets 404 `1135`,
+        the same body as a missing id.
+
+        Loading persists `EXPIRED` or `SUPERSEDED` under the same rules as an
+        exchange detail, and still responds 200.
+      security: [{bearerAuth: []}]
+      parameters:
+        - $ref: "../../components/shiftChanges/components.yml#/components/parameters/BusinessId"
+        - $ref: "../../components/shiftChanges/components.yml#/components/parameters/ScheduleChangeRequestId"
+      responses:
+        "200":
+          description: The schedule change.
+          content:
+            application/json:
+              schema:
+                $ref: "../../components/shiftChanges/components.yml#/components/schemas/ScheduleChangeRequestDTO"
+              examples:
+                ownerAfterBothAcceptances:
+                  summary: OWNER detail after Ana and Luis have both accepted
+                  description: >
+                    Holder and schedule both changed. The overlap does not apply
+                    the correction yet; the status is `PENDING_OWNER` until the
+                    OWNER overrides it.
+                  value:
+                    id: 801
+                    businessId: 101
+                    changeKind: HOLDER_AND_SCHEDULE
+                    status: PENDING_OWNER
+                    version: 3
+                    reason: Luis cubre el mediodía del lunes
+                    createdBy:
+                      userId: 1
+                      displayName: Carmen Ortiz
+                    createdAt: "2026-11-06T19:00:00+01:00"
+                    updatedAt: "2026-11-06T19:40:00+01:00"
+                    expiresAt: "2026-11-09T09:00:00+01:00"
+                    resolvedAt: null
+                    affectedShifts:
+                      - scheduledShiftId: 900
+                        planningId: 501
+                        planningVersion: 4
+                        role: SOURCE
+                        before:
+                          user: {userId: 41, displayName: Ana Ruiz}
+                          jobRole: {id: 10, name: Waiter}
+                          shiftId: 20
+                          shiftName: Morning service
+                          shiftColor: "#1A2B3C"
+                          startAt: "2026-11-09T09:00:00+01:00"
+                          endAt: "2026-11-09T17:00:00+01:00"
+                          breakMinutes: 30
+                        after:
+                          user: {userId: 42, displayName: Luis Mora}
+                          jobRole: {id: 10, name: Waiter}
+                          shiftId: 22
+                          shiftName: Midday service
+                          shiftColor: "#2F6F4E"
+                          startAt: "2026-11-09T12:00:00+01:00"
+                          endAt: "2026-11-09T20:00:00+01:00"
+                          breakMinutes: 30
+                    acceptances:
+                      - slot: INCOMING
+                        user: {userId: 42, displayName: Luis Mora}
+                        status: ACCEPTED
+                        decidedAt: "2026-11-06T19:25:00+01:00"
+                      - slot: CURRENT
+                        user: {userId: 41, displayName: Ana Ruiz}
+                        status: ACCEPTED
+                        decidedAt: "2026-11-06T19:40:00+01:00"
+                    warnings:
+                      - code: SHIFT_OVERLAP
+                        scheduledShiftId: 900
+                        message: The proposed assignment overlaps another scheduled shift of the incoming person.
+                        otherScheduledShiftId: 955
+                    warningsFingerprint: fp-7c2a
+                    override: null
+                participantAfterBothAcceptances:
+                  summary: Same request as Luis or Ana see it
+                  description: >
+                    The participant sees both snapshots and both acceptances.
+                    Warnings, the fingerprint and the override are omitted.
+                  value:
+                    id: 801
+                    businessId: 101
+                    changeKind: HOLDER_AND_SCHEDULE
+                    status: PENDING_OWNER
+                    version: 3
+                    reason: Luis cubre el mediodía del lunes
+                    createdBy:
+                      userId: 1
+                      displayName: Carmen Ortiz
+                    createdAt: "2026-11-06T19:00:00+01:00"
+                    updatedAt: "2026-11-06T19:40:00+01:00"
+                    expiresAt: "2026-11-09T09:00:00+01:00"
+                    resolvedAt: null
+                    affectedShifts:
+                      - scheduledShiftId: 900
+                        planningId: 501
+                        planningVersion: 4
+                        role: SOURCE
+                        before:
+                          user: {userId: 41, displayName: Ana Ruiz}
+                          jobRole: {id: 10, name: Waiter}
+                          shiftId: 20
+                          shiftName: Morning service
+                          shiftColor: "#1A2B3C"
+                          startAt: "2026-11-09T09:00:00+01:00"
+                          endAt: "2026-11-09T17:00:00+01:00"
+                          breakMinutes: 30
+                        after:
+                          user: {userId: 42, displayName: Luis Mora}
+                          jobRole: {id: 10, name: Waiter}
+                          shiftId: 22
+                          shiftName: Midday service
+                          shiftColor: "#2F6F4E"
+                          startAt: "2026-11-09T12:00:00+01:00"
+                          endAt: "2026-11-09T20:00:00+01:00"
+                          breakMinutes: 30
+                    acceptances:
+                      - slot: INCOMING
+                        user: {userId: 42, displayName: Luis Mora}
+                        status: ACCEPTED
+                        decidedAt: "2026-11-06T19:25:00+01:00"
+                      - slot: CURRENT
+                        user: {userId: 41, displayName: Ana Ruiz}
+                        status: ACCEPTED
+                        decidedAt: "2026-11-06T19:40:00+01:00"
+        "401":
+          $ref: "../../components/shiftChanges/components.yml#/components/responses/Unauthorized"
+        "403":
+          $ref: "../../components/shiftChanges/components.yml#/components/responses/NotMember"
+        "404":
+          $ref: "../../components/shiftChanges/components.yml#/components/responses/BusinessOrScheduleChangeNotFound"
+      x-functional-errors: [1006, 1015, 1135]
+  acceptance:
+    post:
+      tags: [Schedule Changes]
+      operationId: acceptScheduleChangeRequest
+      summary: Accept a schedule change
+      description: >
+        The authenticated user accepts every still `PENDING` slot assigned to
+        them. The body is only the `version` they read; it has no user id and
+        no slot. A `REASSIGNMENT` can be accepted only by the incoming person.
+        A `HOLDER_AND_SCHEDULE` can be accepted by the incoming person and by
+        the current holder. When both slots belong to the same person, this
+        call accepts both. The outgoing person of a reassignment is not an
+        acceptor and receives 409 `1127` if they can see the request.
+
+        While another slot remains `PENDING`, the status stays
+        `PENDING_ACCEPTANCES`. When this call accepts the last slot, the server
+        evaluates planning warnings at the captured planning version. No
+        warnings: the assignment is updated in the same transaction, the
+        planning version increments, and the status becomes `APPLIED`. One or
+        more warnings: nothing is written to the assignment yet, the status
+        becomes `PENDING_OWNER`, and only a later OWNER approval can apply it.
+        The response omits warning fields unless the caller is the OWNER.
+      security: [{bearerAuth: []}]
+      parameters:
+        - $ref: "../../components/shiftChanges/components.yml#/components/parameters/BusinessId"
+        - $ref: "../../components/shiftChanges/components.yml#/components/parameters/ScheduleChangeRequestId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "../../components/shiftChanges/components.yml#/components/schemas/ShiftChangeVersionCommandDTO"
+            examples:
+              currentHolder:
+                summary: Ana accepts the shift she currently holds
+                value:
+                  version: 2
+              incoming:
+                summary: Luis accepts the shift he would receive
+                value:
+                  version: 1
+      responses:
+        "200":
+          description: >
+            The caller's slots are accepted. The status is still
+            `PENDING_ACCEPTANCES`, or it has moved to `PENDING_OWNER` or
+            `APPLIED` when this was the last acceptance.
+          content:
+            application/json:
+              schema:
+                $ref: "../../components/shiftChanges/components.yml#/components/schemas/ScheduleChangeRequestDTO"
+        "400":
+          $ref: "../../components/shiftChanges/components.yml#/components/responses/CommandBadRequest"
+        "401":
+          $ref: "../../components/shiftChanges/components.yml#/components/responses/Unauthorized"
+        "403":
+          $ref: "../../components/shiftChanges/components.yml#/components/responses/NotMember"
+        "404":
+          $ref: "../../components/shiftChanges/components.yml#/components/responses/BusinessOrScheduleChangeNotFound"
+        "409":
+          $ref: "../../components/shiftChanges/components.yml#/components/responses/ScheduleChangeCommandConflict"
+      x-functional-errors: [1006, 1015, 1127, 1128, 1129, 1131, 1135, 1140]
+  approval:
+    post:
+      tags: [Schedule Changes]
+      operationId: approveScheduleChangeRequest
+      summary: Apply a schedule change that has planning warnings
+      description: >
+        OWNER only, and only while the status is `PENDING_OWNER`. That status
+        means every required acceptance is already recorded and the proposal
+        has planning warnings. A correction with no warnings never stops here:
+        the last acceptance applies it. Calling approval in any other status is
+        409 `1127`. A MANAGER gets 403 `1020` when they can see the request, and
+        404 `1135` when they cannot.
+
+        The OWNER echoes `warningsFingerprint` and sends
+        `override.accepted: true` with a non-blank reason. The reason is stored
+        with the fingerprint and the OWNER identity. A different fingerprint is
+        409 `1133`. A missing override is 409 `1132`. Success updates the
+        assignment from the `after` snapshot, increments `planning.version`,
+        leaves the captured `planningVersion` as it was, and moves the request
+        to `APPLIED`.
+
+        The override does not waive identity, permissions, a start that is no
+        longer in the future, the captured planning version, a foreign key or
+        attendance. Those still fail with 1127, 1128, 1129 or 1131, and 1129 or
+        1131 persist `SUPERSEDED` or `EXPIRED`.
+      security: [{bearerAuth: []}]
+      parameters:
+        - $ref: "../../components/shiftChanges/components.yml#/components/parameters/BusinessId"
+        - $ref: "../../components/shiftChanges/components.yml#/components/parameters/ScheduleChangeRequestId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "../../components/shiftChanges/components.yml#/components/schemas/ShiftChangeApprovalRequestDTO"
+            examples:
+              overrideOverlap:
+                summary: Apply Ana-to-Luis midday correction despite the overlap
+                value:
+                  version: 3
+                  warningsFingerprint: fp-7c2a
+                  override:
+                    accepted: true
+                    reason: Luis cubre el mediodía; el solape con el otro turno es asumido.
+      responses:
+        "200":
+          description: Correction applied. The OWNER response includes the recorded override.
+          content:
+            application/json:
+              schema:
+                $ref: "../../components/shiftChanges/components.yml#/components/schemas/ScheduleChangeRequestDTO"
+              examples:
+                applied:
+                  summary: Both acceptances plus the OWNER override
+                  value:
+                    id: 801
+                    businessId: 101
+                    changeKind: HOLDER_AND_SCHEDULE
+                    status: APPLIED
+                    version: 4
+                    reason: Luis cubre el mediodía del lunes
+                    createdBy:
+                      userId: 1
+                      displayName: Carmen Ortiz
+                    createdAt: "2026-11-06T19:00:00+01:00"
+                    updatedAt: "2026-11-06T19:45:00+01:00"
+                    expiresAt: "2026-11-09T09:00:00+01:00"
+                    resolvedAt: "2026-11-06T19:45:00+01:00"
+                    affectedShifts:
+                      - scheduledShiftId: 900
+                        planningId: 501
+                        planningVersion: 4
+                        role: SOURCE
+                        before:
+                          user: {userId: 41, displayName: Ana Ruiz}
+                          jobRole: {id: 10, name: Waiter}
+                          shiftId: 20
+                          shiftName: Morning service
+                          shiftColor: "#1A2B3C"
+                          startAt: "2026-11-09T09:00:00+01:00"
+                          endAt: "2026-11-09T17:00:00+01:00"
+                          breakMinutes: 30
+                        after:
+                          user: {userId: 42, displayName: Luis Mora}
+                          jobRole: {id: 10, name: Waiter}
+                          shiftId: 22
+                          shiftName: Midday service
+                          shiftColor: "#2F6F4E"
+                          startAt: "2026-11-09T12:00:00+01:00"
+                          endAt: "2026-11-09T20:00:00+01:00"
+                          breakMinutes: 30
+                    acceptances:
+                      - slot: INCOMING
+                        user: {userId: 42, displayName: Luis Mora}
+                        status: ACCEPTED
+                        decidedAt: "2026-11-06T19:25:00+01:00"
+                      - slot: CURRENT
+                        user: {userId: 41, displayName: Ana Ruiz}
+                        status: ACCEPTED
+                        decidedAt: "2026-11-06T19:40:00+01:00"
+                    warnings:
+                      - code: SHIFT_OVERLAP
+                        scheduledShiftId: 900
+                        message: The proposed assignment overlaps another scheduled shift of the incoming person.
+                        otherScheduledShiftId: 955
+                    warningsFingerprint: fp-7c2a
+                    override:
+                      accepted: true
+                      reason: Luis cubre el mediodía; el solape con el otro turno es asumido.
+                      warningsFingerprint: fp-7c2a
+                      decidedBy:
+                        userId: 1
+                        displayName: Carmen Ortiz
+                      decidedAt: "2026-11-06T19:45:00+01:00"
+        "400":
+          $ref: "../../components/shiftChanges/components.yml#/components/responses/CommandBadRequest"
+        "401":
+          $ref: "../../components/shiftChanges/components.yml#/components/responses/Unauthorized"
+        "403":
+          $ref: "../../components/shiftChanges/components.yml#/components/responses/NotOwner"
+        "404":
+          $ref: "../../components/shiftChanges/components.yml#/components/responses/BusinessOrScheduleChangeNotFound"
+        "409":
+          $ref: "../../components/shiftChanges/components.yml#/components/responses/ScheduleChangeApprovalConflict"
+      x-functional-errors: [1006, 1015, 1020, 1127, 1128, 1129, 1131, 1132, 1133, 1135, 1140]
+  rejection:
+    post:
+      tags: [Schedule Changes]
+      operationId: rejectScheduleChangeRequest
+      summary: Reject a schedule change
+      description: >
+        A person with a `PENDING` slot may reject while the status is
+        `PENDING_ACCEPTANCES`. One rejection rejects the whole request and marks
+        that person's slots `REJECTED`. An OWNER may reject while the status is
+        `PENDING_OWNER`, which declines to override the warnings. The actor
+        comes from the JWT. The body has no user id. The OWNER withdraws a
+        proposal that is still waiting for acceptances by cancelling it, not by
+        rejecting it. A MANAGER has no reject permission beyond holding a
+        pending slot.
+      security: [{bearerAuth: []}]
+      parameters:
+        - $ref: "../../components/shiftChanges/components.yml#/components/parameters/BusinessId"
+        - $ref: "../../components/shiftChanges/components.yml#/components/parameters/ScheduleChangeRequestId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "../../components/shiftChanges/components.yml#/components/schemas/ShiftChangeActorCommandDTO"
+            examples:
+              incoming:
+                summary: Luis declines the shift he would receive
+                value:
+                  version: 1
+                  reason: No puedo el mediodía
+              owner:
+                summary: OWNER declines to override the warnings
+                value:
+                  version: 3
+      responses:
+        "200":
+          description: Schedule change rejected.
+          content:
+            application/json:
+              schema:
+                $ref: "../../components/shiftChanges/components.yml#/components/schemas/ScheduleChangeRequestDTO"
+        "400":
+          $ref: "../../components/shiftChanges/components.yml#/components/responses/CommandBadRequest"
+        "401":
+          $ref: "../../components/shiftChanges/components.yml#/components/responses/Unauthorized"
+        "403":
+          $ref: "../../components/shiftChanges/components.yml#/components/responses/NotMember"
+        "404":
+          $ref: "../../components/shiftChanges/components.yml#/components/responses/BusinessOrScheduleChangeNotFound"
+        "409":
+          $ref: "../../components/shiftChanges/components.yml#/components/responses/ScheduleChangeCommandConflict"
+      x-functional-errors: [1006, 1015, 1127, 1128, 1129, 1131, 1135, 1140]
+  cancellation:
+    post:
+      tags: [Schedule Changes]
+      operationId: cancelScheduleChangeRequest
+      summary: Withdraw an open schedule change
+      description: >
+        The OWNER who proposed the correction may withdraw it while it is
+        `PENDING_ACCEPTANCES` or `PENDING_OWNER`. The actor comes from the JWT.
+        The body has no user id. A caller who can see the request and is not
+        the OWNER receives 403 `1020`. Participants reject a pending slot; they
+        do not cancel. A caller who cannot see the request receives 404 `1135`.
+        The status becomes `CANCELLED`.
+      security: [{bearerAuth: []}]
+      parameters:
+        - $ref: "../../components/shiftChanges/components.yml#/components/parameters/BusinessId"
+        - $ref: "../../components/shiftChanges/components.yml#/components/parameters/ScheduleChangeRequestId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "../../components/shiftChanges/components.yml#/components/schemas/ShiftChangeActorCommandDTO"
+            example:
+              version: 1
+              reason: Lo dejamos como está
+      responses:
+        "200":
+          description: Schedule change cancelled.
+          content:
+            application/json:
+              schema:
+                $ref: "../../components/shiftChanges/components.yml#/components/schemas/ScheduleChangeRequestDTO"
+        "400":
+          $ref: "../../components/shiftChanges/components.yml#/components/responses/CommandBadRequest"
+        "401":
+          $ref: "../../components/shiftChanges/components.yml#/components/responses/Unauthorized"
+        "403":
+          $ref: "../../components/shiftChanges/components.yml#/components/responses/NotOwner"
+        "404":
+          $ref: "../../components/shiftChanges/components.yml#/components/responses/BusinessOrScheduleChangeNotFound"
+        "409":
+          $ref: "../../components/shiftChanges/components.yml#/components/responses/ScheduleChangeCommandConflict"
+      x-functional-errors: [1006, 1015, 1020, 1127, 1128, 1129, 1131, 1135, 1140]

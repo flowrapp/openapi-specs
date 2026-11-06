@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.0.82
+
+Spec only. No BFF implementation and no repository tag in this change. Requires the Main API 0.0.94 contract. The BFF does not apply the partial unique index; that constraint is documented on the Main API and is not claimed as an applied migration.
+
+### Added
+
+- Pass-through of Main API 0.0.94 shift exchanges and schedule changes, on the same paths: `/api/v1/businesses/{businessId}/shift-exchange-requests` and `/api/v1/businesses/{businessId}/schedule-change-requests`, including detail, acceptance, approval, rejection and cancellation. The BFF forwards the status, the body and the functional errors unchanged. It does not compose a dashboard, does not filter in memory and does not decide transitions. Visibility, the open-request reservation, snapshots, warnings and the OWNER override stay rules of the Main API. A non-owner response still omits warnings, `warningsFingerprint` and `override`.
+
 ## Unreleased (documentation only)
 
 - Clarified `ManagerHomeNextWeekDTO.gapCount`: it counts people still missing (sum per cell of
