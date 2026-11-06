@@ -148,8 +148,10 @@ components:
     WeekCoverageDayReasonDTO:
       type: string
       description: >
-        Why a date has its status: CLOSED (no shifts), NO_DEMAND (shifts, but no target above 0),
-        BELOW_MINIMUM_AT_ONCE (a role has fewer people than its minimum at once),
+        Why a date has its status: CLOSED («Cerrado»: the effective day has no opening interval),
+        NO_DEMAND (open, with at least one opening interval, but no target above 0: no shifts, or
+        shifts without any targetEmployees above 0), BELOW_MINIMUM_AT_ONCE (a role has fewer
+        people than its minimum at once),
         SHORT_AT_ONCE (fewer people than the target at once), TIGHT_AT_ONCE (exactly the
         target at once). Open set: clients must tolerate unknown values.
       enum: [CLOSED, NO_DEMAND, BELOW_MINIMUM_AT_ONCE, SHORT_AT_ONCE, TIGHT_AT_ONCE]
@@ -454,7 +456,9 @@ components:
           example: null
         open:
           type: boolean
-          description: True when the effective day has at least one shift
+          description: >
+            True when the effective day has at least one opening interval (`openingIntervals` of
+            Main API getPlanningGenerationInput), with or without shifts. False = closed («Cerrado»)
           example: true
         status:
           description: Worst shift-role status of the date; null when CLOSED or NO_DEMAND
@@ -533,7 +537,7 @@ components:
           format: int32
           minimum: 0
           maximum: 7
-          description: Dates with at least one shift («6 días abiertos»)
+          description: Dates with at least one opening interval, with or without shifts («6 días abiertos»)
           example: 6
         shiftOccurrences:
           type: integer
