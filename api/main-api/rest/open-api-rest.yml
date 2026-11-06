@@ -3,7 +3,7 @@ openapi: 3.1.0
 info:
   title: Flowrapp API
   description: REST API for Flowrapp Backend
-  version: 0.0.95
+  version: 0.0.96
   contact:
     name: Flowrapp Team
     url: https://flowrapp.github.io
@@ -330,6 +330,14 @@ paths:
       dent-justification"
   "/api/v1/businesses/{businessId}/attendance":
     $ref: "v1/services/attendance/attendance-operations.yml#/attendance/daily"
+  "/api/v1/businesses/{businessId}/attendance-incidents":
+    $ref: "v1/services/attendanceInbox/attendance-inbox-operations.yml#/attendanceInbox/incidents"
+  "/api/v1/businesses/{businessId}/attendance-inbox/badge":
+    $ref: "v1/services/attendanceInbox/attendance-inbox-operations.yml#/attendanceInbox/badge"
+  "/api/v1/businesses/{businessId}/worklog-change-confirmations":
+    $ref: "v1/services/attendanceInbox/attendance-inbox-operations.yml#/attendanceInbox/confirmations"
+  "/api/v1/worklog-changes/{worklogChangeId}/confirmation":
+    $ref: "v1/services/attendanceInbox/attendance-inbox-operations.yml#/attendanceInbox/confirmation-response"
   "/api/v1/businesses/{businessId}/attendance-tolerance":
     $ref: "v1/services/attendance/attendance-operations.yml#/attendance/tole\
       rance"

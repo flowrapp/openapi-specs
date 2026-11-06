@@ -339,7 +339,11 @@ components:
 
     WorkerDayHistoryResponseDTO:
       type: object
-      description: Detailed work history for a single day, including all individual sessions
+      description: >
+        Detailed work history for a single day. `totalSeconds` and `sessions` are unchanged.
+        `attendances` (BFF 0.0.85) adds the day as attendance rows (one per shift and one per
+        worklog without a shift), each with its worklogs, change history with confirmation,
+        and incidents with their state.
       properties:
         date:
           type: string
@@ -356,10 +360,21 @@ components:
           description: Individual work sessions for this date
           items:
             $ref: '../common/components.yml#/components/schemas/SessionDTO'
+        attendances:
+          type: array
+          description: >
+            The caller's attendance rows of this business-local date, from one Main API
+            `getDailyAttendance` call restricted to the caller. Empty when the day has no shift
+            of the caller and no worklog without a shift. A worklog whose match is
+            NOT_APPLICABLE (no published planning that day) is not an attendance row; it stays
+            in `sessions` only. Not added to the week or month history.
+          items:
+            $ref: './inbox-components.yml#/components/schemas/WorkerAttendanceRowDTO'
       required:
         - date
         - totalSeconds
         - sessions
+        - attendances
 
     WorkerWeekHistoryResponseDTO:
       type: object

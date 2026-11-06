@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.0.85
+
+Spec only. No BFF implementation and no repository tag in this change. Requires the Main API 0.0.96 contract deployed first (new routes and the required `WorklogChangeDTO.confirmation`). Design notes: `docs/worker-inbox-confirmations.md`.
+
+### Added
+
+- `GET /api/v1/worker/businesses/{businessId}/attendance-incidents` (`getWorkerAttendanceIncidents`): one call to Main `getCurrentUserAttendanceIncidents`, cursor and limit forwarded unchanged. Items `WorkerAttendanceIncidentItemDTO` (`incident` as `WorkerAttendanceIncidentDTO` with `canJustify`, `anchor` forwarded). Errors forwarded: `400` `1142`, `403` `1015`, `404` `1006`.
+- `GET /api/v1/worker/businesses/{businessId}/worklog-change-confirmations` (`getWorkerWorklogChangeConfirmations`): one call to Main `getCurrentUserWorklogChangeConfirmations`. Items `WorkerWorklogChangeConfirmationItemDTO` (`change` as `WorkerWorklogChangeDTO`, `anchor`). Same errors.
+- `GET /api/v1/worker/businesses/{businessId}/attendance-inbox/badge` (`getWorkerAttendanceInboxBadge`): one call to Main `getCurrentUserAttendanceInboxBadge`; `incidentCount` and `confirmationCount`. Peticiones are not counted.
+- `PUT /api/v1/worker/attendance-incidents/{incidentId}/justification` (`justifyWorkerAttendanceIncident`): forwards to the literal Main `POST /api/v1/attendance-incidents/{incidentId}/justification`; returns `WorkerAttendanceIncidentDTO`. Errors forwarded: `400` `1113`, `404` `1085`, `409` `1112`, `409` `1049`.
+- `PUT /api/v1/worker/worklog-changes/{worklogChangeId}/confirmation` (`respondToWorkerWorklogChangeConfirmation`): forwards to Main `PUT /api/v1/worklog-changes/{worklogChangeId}/confirmation`; returns `WorkerWorklogChangeDTO`. Errors forwarded: `404` `1143`, `409` `1049`; invalid body plain `400`.
+- `WorklogChangeConfirmationDTO` and `WorklogChangeConfirmationStatusDTO` in common components, shared by worker and OWNER views.
+
+### Changed
+
+- `getWorkerDayHistory`: required `attendances` (`WorkerAttendanceRowDTO[]`, SHIFT and UNMATCHED rows with `scheduledShiftId`/`attendanceMatchId`, `planned`, `worklogs` with `matchKind`, breaks and `changes[]` with `confirmation`, `incidents` with lifecycle, resolution, justification and `canJustify`). Adds one Main `getDailyAttendance` call (`userIds` = caller) in the existing stage and one `getWorklogHistory` per worklog of the day, at most 8 in flight. `totalSeconds` and `sessions` unchanged. `403` and `404` now document their problem bodies (`1015`, `1006`).
+- `getWorkerWeekHistory` and `getWorkerMonthHistory`: unchanged; documented that they make no `getDailyAttendance` call.
+- `AttendanceWorklogChangeDTO` (OWNER attendance detail and every action that returns it) gains the required, nullable, read-only `confirmation`, forwarded from the `getWorklogHistory` call the detail already makes. No owner inbox and no owner action.
+
 ## 0.0.84
 
 Spec only. No BFF implementation and no repository tag in this change. Main API unchanged (0.0.95): `getPlanningGenerationInput` already returns `openingIntervals` per date.
