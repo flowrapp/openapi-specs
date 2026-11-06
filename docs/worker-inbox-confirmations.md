@@ -53,8 +53,8 @@ Phases requested by Frontend and Backend:
 - Worklogs carry their `attendanceMatchId` and `matchKind`. In a SHIFT row, an AMBIGUOUS
   worklog is a candidate (Main API includes candidates). The same worklog also has its own
   UNMATCHED row. The BFF never pairs sessions and shifts by time.
-- Each worklog has its EFFECTIVE breaks and `changes[]`, the exact subset of
-  `WorklogChangeDTO` fields plus `confirmation`.
+- Each worklog has its current `version` (from `WorkLogResponseDTO`), EFFECTIVE breaks
+  and `changes[]`, the exact subset of `WorklogChangeDTO` fields plus `confirmation`.
 - Incidents keep lifecycle, resolution, justification (`text`, `justifiedAt`) and the
   resolution `reason`, and add `canJustify` (true while OPEN).
 
@@ -183,10 +183,10 @@ The brief allowed refinements to fit repository conventions. Each one is listed 
 ## Known limitations and open points
 
 - `getDailyAttendance` does not list a worklog whose match is NOT_APPLICABLE (no published
-  planning that day). If Main API opens a MATCH incident on such a worklog (for example
-  AUTOMATIC_CLOSE), it shows in the inbox with `scheduledShiftId: null`, but no day row
-  carries it. The worker can still justify it from the inbox. Backend should confirm whether
-  this case exists.
+  planning that day). A MATCH item in this state has both `anchor.scheduledShiftId` and
+  `anchor.attendanceMatchId` null. The client can justify it or review/answer its correction
+  directly from the inbox and must not offer a broken day-history link. The anchor does not
+  infer a match relation that the daily query cannot currently provide.
 - `getWorklogHistory` must accept the worker of the worklog, as the spec already says. The
   team study recorded that an earlier implementation (#169) required OWNER or MANAGER. Backend
   must verify this before the BFF day enrichment ships.

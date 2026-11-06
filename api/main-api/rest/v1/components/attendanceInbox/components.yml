@@ -21,7 +21,7 @@ components:
       in: query
       required: false
       description: >
-        Opaque cursor returned as `nextCursor`. Omit it for the first page. It is bound to the
+        Opaque base64-encoded text cursor returned as `nextCursor`. Omit it for the first page. It is bound to the
         business, the authenticated caller and the collection (incidents or confirmations).
         Reusing it with another business, another caller or the other collection, or sending a
         value that cannot be decoded, is 400 `1142` `INVALID_ATTENDANCE_INBOX_CURSOR`.
@@ -87,7 +87,8 @@ components:
           minimum: 1
           description: >
             MATCH-scoped incident: its match. Worklog change: the current match of the worklog.
-            Null for a SHIFT-scoped incident.
+            Null for a SHIFT-scoped incident, or for a NOT_APPLICABLE match which has no
+            attendance UI row.
           example: 700
         worklogId:
           type: ['integer', 'null']

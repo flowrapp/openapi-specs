@@ -582,6 +582,7 @@ worker:
                             clockIn: "2026-10-30T09:18:00+01:00"
                             clockOut: "2026-10-30T16:30:00+01:00"
                             durationSeconds: 24120
+                            version: 0
                             reviewStatus: APPROVED
                             breaks:
                               - id: 456

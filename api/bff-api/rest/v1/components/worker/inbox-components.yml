@@ -17,7 +17,8 @@ components:
       in: query
       required: false
       description: >
-        Opaque `nextCursor` of the previous page, forwarded unchanged to the Main API. Omit it
+        Opaque base64-encoded text `nextCursor` of the previous page,
+        forwarded unchanged to the Main API. Omit it
         for the first page. Bound to the business, the caller and the collection; reusing it
         elsewhere or sending a value that cannot be decoded is 400 `1142`.
       schema:
@@ -286,6 +287,14 @@ components:
           minimum: 0
           description: Same rule as `SessionDTO.durationSeconds` (net of EFFECTIVE breaks); null while open.
           example: 24120
+        version:
+          type: integer
+          format: int64
+          minimum: 0
+          description: >
+            Main API `WorkLogResponseDTO.version` of this worklog, forwarded
+            unchanged. This is not the nested confirmation's version.
+          example: 0
         reviewStatus:
           $ref: "../attendance/components.yml#/components/schemas/AttendanceReviewStatusDTO"
         breaks:
@@ -300,7 +309,7 @@ components:
             each with its `confirmation`. Empty when unchanged.
           items:
             $ref: "#/components/schemas/WorkerWorklogChangeDTO"
-      required: [worklogId, attendanceMatchId, matchKind, clockIn, clockOut, durationSeconds, reviewStatus, breaks, changes]
+      required: [worklogId, attendanceMatchId, matchKind, clockIn, clockOut, durationSeconds, version, reviewStatus, breaks, changes]
 
     WorkerAttendanceRowDTO:
       type: object

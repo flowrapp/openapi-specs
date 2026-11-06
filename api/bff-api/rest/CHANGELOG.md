@@ -15,7 +15,7 @@ Spec only. No BFF implementation and no repository tag in this change. Requires 
 
 ### Changed
 
-- `getWorkerDayHistory`: required `attendances` (`WorkerAttendanceRowDTO[]`, SHIFT and UNMATCHED rows with `scheduledShiftId`/`attendanceMatchId`, `planned`, `worklogs` with `matchKind`, breaks and `changes[]` with `confirmation`, `incidents` with lifecycle, resolution, justification and `canJustify`). Adds one Main `getDailyAttendance` call (`userIds` = caller) in the existing stage and one `getWorklogHistory` per worklog of the day, at most 8 in flight. `totalSeconds` and `sessions` unchanged. `403` and `404` now document their problem bodies (`1015`, `1006`).
+- `getWorkerDayHistory`: required `attendances` (`WorkerAttendanceRowDTO[]`, SHIFT and UNMATCHED rows with `scheduledShiftId`/`attendanceMatchId`, `planned`, `worklogs` with `matchKind`, worklog `version`, breaks and `changes[]` with `confirmation`, `incidents` with lifecycle, resolution, justification and `canJustify`). Adds one Main `getDailyAttendance` call (`userIds` = caller) in the existing stage and one `getWorklogHistory` per worklog of the day, at most 8 in flight. `totalSeconds` and `sessions` unchanged. `403` and `404` now document their problem bodies (`1015`, `1006`).
 - `getWorkerWeekHistory` and `getWorkerMonthHistory`: unchanged; documented that they make no `getDailyAttendance` call.
 - `AttendanceWorklogChangeDTO` (OWNER attendance detail and every action that returns it) gains the required, nullable, read-only `confirmation`, forwarded from the `getWorklogHistory` call the detail already makes. No owner inbox and no owner action.
 
