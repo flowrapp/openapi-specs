@@ -592,7 +592,7 @@ components:
         cancelled it, while it was open. `EXPIRED`: the earliest affected start
         was reached before apply. `SUPERSEDED`: a later change moved either
         captured planning version. Open statuses are `PENDING_PEER` and
-        `PENDING_OWNER`. The other four are terminal. There is no cession status.
+        `PENDING_OWNER`. The other five are terminal. There is no cession status.
       enum:
         [PENDING_PEER, PENDING_OWNER, APPLIED, REJECTED, CANCELLED, EXPIRED, SUPERSEDED]
       example: PENDING_PEER
