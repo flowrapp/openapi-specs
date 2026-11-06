@@ -612,11 +612,11 @@ components:
         `JOB_ROLE_MISMATCH` warning on the OWNER detail. The server writes both
         snapshots; the client does not send them.
 
-        At most one open request may cover a concrete assignment. The assignment
+        At most one open request may cover the same original holder of a concrete assignment. The reservation
         key is `business_id` + `scheduled_shifts.id` + `original_user_id`
         (`before.user.userId`). An exchange reserves both assignments in one
         transaction. The first committed request wins. The intended persistence
-        constraint is a partial unique index on (`scheduled_shift_id`,
+        constraint is a partial unique index on (`business_id`, `scheduled_shift_id`,
         `original_user_id`) while the request is open. This contract does not
         assert that the index, or any other DDL, has been applied.
       properties:
