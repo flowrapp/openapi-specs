@@ -30,8 +30,11 @@ shiftExchangeRequests:
 
         Each of those queries is 200 with `content: []`, `hasNext: false` and
         `nextCursor: null` when the tab is empty. Order is `createdAt`
-        descending, then `id` descending. Items are `ShiftExchangeRequestDTO`
-        and never include warnings.
+        descending, then `id` descending. Items are
+        `ShiftExchangeRequestListItemDTO`: `viewerRole` is the caller, and a
+        rejected row includes `rejection` (actor, reason, `rejectedAt`). Items
+        never include warnings or blockers. GET detail uses `viewerRole` as the
+        discriminator between the participant schema and the OWNER schema.
       security: [{bearerAuth: []}]
       parameters:
         - $ref: "../../components/shiftChanges/components.yml#/components/parameters/BusinessId"
@@ -166,6 +169,7 @@ shiftExchangeRequests:
                   value:
                     id: 701
                     businessId: 101
+                    viewerRole: PARTICIPANT
                     status: PENDING_PEER
                     version: 1
                     reason: Cambio de semana por una cita médica
@@ -176,6 +180,7 @@ shiftExchangeRequests:
                     updatedAt: "2026-11-06T18:30:00+01:00"
                     expiresAt: "2026-11-09T09:00:00+01:00"
                     resolvedAt: null
+                    rejection: null
                     affectedShifts:
                       - scheduledShiftId: 900
                         planningId: 501
@@ -275,6 +280,7 @@ shiftExchangeRequests:
                   value:
                     id: 701
                     businessId: 101
+                    viewerRole: OWNER
                     status: PENDING_PEER
                     version: 1
                     reason: Cambio de semana por una cita médica
@@ -285,6 +291,7 @@ shiftExchangeRequests:
                     updatedAt: "2026-11-06T18:30:00+01:00"
                     expiresAt: "2026-11-09T09:00:00+01:00"
                     resolvedAt: null
+                    rejection: null
                     affectedShifts:
                       - scheduledShiftId: 900
                         planningId: 501
@@ -349,6 +356,7 @@ shiftExchangeRequests:
                         message: The proposed holder already has a scheduled shift that overlaps this assignment.
                         otherScheduledShiftId: 955
                     warningsFingerprint: fp-7c2a
+                    blockers: []
                     override: null
         "401":
           $ref: "../../components/shiftChanges/components.yml#/components/responses/Unauthorized"

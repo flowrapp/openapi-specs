@@ -7,7 +7,7 @@ Spec only. No BFF implementation and no repository tag in this change. Requires 
 ### Added
 
 - Pass-through of Main API 0.0.94 shift exchanges and schedule changes, on the same paths: `/api/v1/businesses/{businessId}/shift-exchange-requests` and `/api/v1/businesses/{businessId}/schedule-change-requests`, including detail, acceptance, approval, rejection and cancellation. The BFF forwards the status, the body and the functional errors unchanged. It does not compose a dashboard, does not filter in memory and does not decide transitions. Visibility, the open-request reservation, snapshots and the OWNER override stay rules of the Main API.
-- Pass-through of the Solicitudes filters on those two lists: `direction=RECEIVED|SENT` for the worker tabs and `lifecycle=OPEN|TERMINAL` for the OWNER tabs. The BFF does not merge them and does not add a vacation type. Participant responses have no warnings.
+- Pass-through of the Solicitudes filters on those two lists: `direction=RECEIVED|SENT` for the worker tabs and `lifecycle=OPEN|TERMINAL` for the OWNER tabs. The BFF does not merge them and does not add a vacation type. Participant responses have no warnings. GET detail discriminates on `viewerRole`. A rejected row includes `rejection`. OWNER detail adds non-overridable `blockers`.
 
 ## Unreleased (documentation only)
 

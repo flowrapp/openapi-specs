@@ -32,7 +32,9 @@ scheduleChangeRequests:
         Each query is 200 with `content: []`, `hasNext: false` and
         `nextCursor: null` when the tab is empty. Order is `createdAt`
         descending, then `id` descending. Items are
-        `ScheduleChangeRequestDTO` and never include warnings.
+        `ScheduleChangeRequestListItemDTO`, with `viewerRole` and, when
+        `REJECTED`, `rejection`. They never include warnings or blockers. GET
+        detail discriminates on `viewerRole`.
       security: [{bearerAuth: []}]
       parameters:
         - $ref: "../../components/shiftChanges/components.yml#/components/parameters/BusinessId"
@@ -206,6 +208,7 @@ scheduleChangeRequests:
                   value:
                     id: 801
                     businessId: 101
+                    viewerRole: OWNER
                     changeKind: HOLDER_AND_SCHEDULE
                     status: PENDING_ACCEPTANCES
                     version: 1
@@ -217,6 +220,7 @@ scheduleChangeRequests:
                     updatedAt: "2026-11-06T19:00:00+01:00"
                     expiresAt: "2026-11-09T09:00:00+01:00"
                     resolvedAt: null
+                    rejection: null
                     affectedShifts:
                       - scheduledShiftId: 900
                         planningId: 501
@@ -251,6 +255,7 @@ scheduleChangeRequests:
                         decidedAt: null
                     warnings: []
                     warningsFingerprint: fp-none
+                    blockers: []
                     override: null
         "400":
           $ref: "../../components/shiftChanges/components.yml#/components/responses/ScheduleChangeCreateBadRequest"
@@ -301,6 +306,7 @@ scheduleChangeRequests:
                   value:
                     id: 801
                     businessId: 101
+                    viewerRole: OWNER
                     changeKind: HOLDER_AND_SCHEDULE
                     status: PENDING_OWNER
                     version: 3
@@ -312,6 +318,7 @@ scheduleChangeRequests:
                     updatedAt: "2026-11-06T19:40:00+01:00"
                     expiresAt: "2026-11-09T09:00:00+01:00"
                     resolvedAt: null
+                    rejection: null
                     affectedShifts:
                       - scheduledShiftId: 900
                         planningId: 501
@@ -350,6 +357,7 @@ scheduleChangeRequests:
                         message: The proposed assignment overlaps another scheduled shift of the incoming person.
                         otherScheduledShiftId: 955
                     warningsFingerprint: fp-7c2a
+                    blockers: []
                     override: null
                 participantAfterBothAcceptances:
                   summary: Same request as Luis or Ana see it
@@ -359,6 +367,7 @@ scheduleChangeRequests:
                   value:
                     id: 801
                     businessId: 101
+                    viewerRole: PARTICIPANT
                     changeKind: HOLDER_AND_SCHEDULE
                     status: PENDING_OWNER
                     version: 3
@@ -370,6 +379,7 @@ scheduleChangeRequests:
                     updatedAt: "2026-11-06T19:40:00+01:00"
                     expiresAt: "2026-11-09T09:00:00+01:00"
                     resolvedAt: null
+                    rejection: null
                     affectedShifts:
                       - scheduledShiftId: 900
                         planningId: 501
@@ -528,6 +538,7 @@ scheduleChangeRequests:
                   value:
                     id: 801
                     businessId: 101
+                    viewerRole: OWNER
                     changeKind: HOLDER_AND_SCHEDULE
                     status: APPLIED
                     version: 4
@@ -539,6 +550,7 @@ scheduleChangeRequests:
                     updatedAt: "2026-11-06T19:45:00+01:00"
                     expiresAt: "2026-11-09T09:00:00+01:00"
                     resolvedAt: "2026-11-06T19:45:00+01:00"
+                    rejection: null
                     affectedShifts:
                       - scheduledShiftId: 900
                         planningId: 501
@@ -577,6 +589,7 @@ scheduleChangeRequests:
                         message: The proposed assignment overlaps another scheduled shift of the incoming person.
                         otherScheduledShiftId: 955
                     warningsFingerprint: fp-7c2a
+                    blockers: []
                     override:
                       accepted: true
                       reason: Luis cubre el mediodía; el solape con el otro turno es asumido.

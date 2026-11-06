@@ -69,7 +69,8 @@ components:
         an empty page, not an error. The OWNER Pendientes view is
         `lifecycle=OPEN` (PENDING_PEER and PENDING_OWNER). The equivalent
         explicit set is `status=PENDING_PEER&status=PENDING_OWNER`. Historial
-        is `lifecycle=TERMINAL`, or those four terminal statuses repeated.
+        is `lifecycle=TERMINAL`, or the five terminal statuses repeated:
+        APPLIED, REJECTED, CANCELLED, EXPIRED and SUPERSEDED.
         The filter never widens visibility.
       style: form
       explode: true
@@ -703,6 +704,15 @@ components:
           description: The single `PEER` slot of the counterpart.
           items:
             $ref: "#/components/schemas/ShiftChangeAcceptanceDTO"
+        rejection:
+          description: >
+            Null unless `status` is `REJECTED`. A rejected GET, and the same
+            list item, then carries the actor taken from the JWT, the mandatory
+            reason and the instant of the rejection. No user id is taken from
+            the command body. This is not a warning and it has no contract data.
+          oneOf:
+            - $ref: "#/components/schemas/ShiftChangeRejectionDTO"
+            - type: "null"
       required:
         [
           id,
@@ -717,29 +727,119 @@ components:
           resolvedAt,
           affectedShifts,
           acceptances,
+          rejection,
         ]
+
+    ShiftChangeRejectionDTO:
+      type: object
+      additionalProperties: false
+      description: >
+        Rejection as returned by GET. `actor` is the authenticated user who
+        rejected. `reason` is the non-blank text they sent. `rejectedAt` is when
+        the request entered `REJECTED`.
+      properties:
+        actor:
+          $ref: "#/components/schemas/ShiftChangePersonDTO"
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 500
+          example: No puedo ese miércoles
+        rejectedAt:
+          type: string
+          format: date-time
+          example: "2026-11-06T20:05:00+01:00"
+      required: [actor, reason, rejectedAt]
+      example:
+        actor:
+          userId: 42
+          displayName: Luis Mora
+        reason: No puedo ese miércoles
+        rejectedAt: "2026-11-06T20:05:00+01:00"
+
+    ShiftChangeBlockerCodeDTO:
+      type: string
+      description: >
+        Hard blocker on the OWNER detail. An override never clears it and never
+        relaxes it. `ASSIGNMENT_NOT_FUTURE` is the expiry rule (409 `1131`).
+        `PLANNING_VERSION_STALE` is the captured planning version (409 `1129`).
+        `ATTENDANCE_PRESENT` means the assignment already has attendance.
+        `FOREIGN_KEY_INVALID` means a scheduled shift, catalog Shift, puesto or
+        membership reference does not hold. `IDENTITY_INVALID` means the caller
+        or a holder is not the required person. Those last three stay
+        409 `1127`. A missing permission stays 403 and is not a blocker in this
+        list.
+      enum:
+        [
+          ASSIGNMENT_NOT_FUTURE,
+          PLANNING_VERSION_STALE,
+          ATTENDANCE_PRESENT,
+          FOREIGN_KEY_INVALID,
+          IDENTITY_INVALID,
+        ]
+      example: ATTENDANCE_PRESENT
+
+    ShiftChangeBlockerDTO:
+      type: object
+      additionalProperties: false
+      description: >
+        One non-overridable blocker. Owner detail only. The message is
+        qualitative and has no contract, payroll or other administrative data.
+      properties:
+        code:
+          $ref: "#/components/schemas/ShiftChangeBlockerCodeDTO"
+        scheduledShiftId:
+          type: integer
+          format: int64
+          minimum: 1
+          description: Affected `scheduled_shifts.id`, when the blocker is about one assignment.
+          example: 900
+        message:
+          type: string
+          minLength: 1
+          maxLength: 300
+          example: This assignment already has attendance.
+      required: [code, scheduledShiftId, message]
+
+    ShiftChangeViewerRoleDTO:
+      type: string
+      description: >
+        Discriminator of a GET detail. `PARTICIPANT` is the representation
+        without warnings. `OWNER` is the representation with warnings and
+        blockers. The client does not infer the variant by looking for fields.
+      enum: [PARTICIPANT, OWNER]
+      example: PARTICIPANT
 
     ShiftExchangeRequestDTO:
       description: >
-        Participant representation of one shift exchange, and every list item
-        of this collection. `affectedShifts` is the full SOURCE and COUNTERPART
-        pair of this request. This schema has no `warnings`,
-        `warningsFingerprint` or `override` properties. A worker response that
-        included them would not match. A request the caller does not participate
-        in is not returned; the detail is 404 `1134`.
+        Participant GET detail of one shift exchange. `viewerRole` is
+        `PARTICIPANT`. `affectedShifts` is the full SOURCE and COUNTERPART pair.
+        This schema has no `warnings`, `warningsFingerprint`, `blockers` or
+        `override`. A request the caller does not participate in is not
+        returned; the detail is 404 `1134`. The list uses
+        `ShiftExchangeRequestListItemDTO` instead, so an OWNER page can say
+        `viewerRole: OWNER` without carrying warnings.
       unevaluatedProperties: false
       allOf:
         - $ref: "#/components/schemas/ShiftExchangeRequestCoreDTO"
+        - type: object
+          required: [viewerRole]
+          properties:
+            viewerRole:
+              type: string
+              const: PARTICIPANT
+              description: Discriminator value of the participant GET detail.
 
     ShiftChangeOwnerReviewDTO:
       type: object
       description: >
         Owner-only review of planning warnings. Composed into the OWNER detail
         schemas and into no participant schema. `warnings` is the full typed
-        list, possibly empty. `warningsFingerprint` is the opaque fingerprint of
-        that list, in the order returned; the OWNER echoes it and does not
-        recompute it. `override` is null until an override is recorded. Nothing
-        here is a contract hour, a rate or another administrative field.
+        list, possibly empty. `warningsFingerprint` covers that list only, not
+        `blockers`. `blockers` are hard failures an override cannot clear; an
+        empty array means none are currently present. `override` is null until
+        an override is recorded. Nothing here is a contract hour, a rate or
+        another administrative field.
       properties:
         warnings:
           type: array
@@ -749,11 +849,18 @@ components:
           type: string
           minLength: 1
           example: fp-7c2a
+        blockers:
+          type: array
+          description: >
+            Non-overridable blockers. Not part of `warningsFingerprint`. Approval
+            still fails with 1127, 1129 or 1131 while this array is not empty.
+          items:
+            $ref: "#/components/schemas/ShiftChangeBlockerDTO"
         override:
           oneOf:
             - $ref: "#/components/schemas/ShiftChangeOverrideRecordDTO"
             - type: "null"
-      required: [warnings, warningsFingerprint, override]
+      required: [warnings, warningsFingerprint, blockers, override]
 
     ShiftExchangeRequestOwnerDTO:
       description: >
@@ -764,6 +871,13 @@ components:
       allOf:
         - $ref: "#/components/schemas/ShiftExchangeRequestCoreDTO"
         - $ref: "#/components/schemas/ShiftChangeOwnerReviewDTO"
+        - type: object
+          required: [viewerRole]
+          properties:
+            viewerRole:
+              type: string
+              const: OWNER
+              description: Discriminator value of the OWNER GET detail.
 
     ShiftExchangeRequestViewDTO:
       description: >
@@ -774,6 +888,26 @@ components:
       oneOf:
         - $ref: "#/components/schemas/ShiftExchangeRequestDTO"
         - $ref: "#/components/schemas/ShiftExchangeRequestOwnerDTO"
+      discriminator:
+        propertyName: viewerRole
+        mapping:
+          PARTICIPANT: "#/components/schemas/ShiftExchangeRequestDTO"
+          OWNER: "#/components/schemas/ShiftExchangeRequestOwnerDTO"
+
+    ShiftExchangeRequestListItemDTO:
+      description: >
+        One list row. `viewerRole` is the caller's role for this response:
+        `OWNER` on an owner page and `PARTICIPANT` on a worker page. The row
+        never includes warnings, blockers, the fingerprint or an override.
+        `rejection` is null unless the row is `REJECTED`.
+      unevaluatedProperties: false
+      allOf:
+        - $ref: "#/components/schemas/ShiftExchangeRequestCoreDTO"
+        - type: object
+          required: [viewerRole]
+          properties:
+            viewerRole:
+              $ref: "#/components/schemas/ShiftChangeViewerRoleDTO"
 
     ShiftExchangeRequestPageDTO:
       type: object
@@ -786,10 +920,10 @@ components:
         `content: []`, `hasNext: false` and `nextCursor: null`, including when
         a Solicitudes tab has no rows. Order is `createdAt` descending, then
         `id` descending, and does not change between pages. Every item is
-        `ShiftExchangeRequestDTO`, including on an OWNER's page: status, the
-        creation reason, `createdBy`, `expiresAt`, both assignments with display
-        names, puesto, instants and acceptance slots. Warnings are not on this
-        list. This collection is only shift exchanges. Solicitudes is a separate
+        `ShiftExchangeRequestListItemDTO`. `viewerRole` says whether the caller
+        is the OWNER or a participant; the row still has no warnings. A rejected
+        row includes `rejection` (actor, reason, rejectedAt). This collection is
+        only shift exchanges. Solicitudes is a separate
         screen; Horario links to it and does not embed another resource. The
         screen also calls the schedule-change list with the same `direction` or
         `lifecycle`. No vacation type and no combined endpoint exist here.
@@ -797,7 +931,7 @@ components:
         content:
           type: array
           items:
-            $ref: "#/components/schemas/ShiftExchangeRequestDTO"
+            $ref: "#/components/schemas/ShiftExchangeRequestListItemDTO"
         hasNext:
           type: boolean
           example: false
@@ -979,6 +1113,13 @@ components:
             $ref: "#/components/schemas/ShiftChangeAcceptanceDTO"
         outgoingNotice:
           $ref: "#/components/schemas/ShiftChangeNoticeDTO"
+        rejection:
+          description: >
+            Null unless `status` is `REJECTED`. A rejected GET then carries the
+            actor from the JWT, the mandatory reason and `rejectedAt`.
+          oneOf:
+            - $ref: "#/components/schemas/ShiftChangeRejectionDTO"
+            - type: "null"
       required:
         [
           id,
@@ -994,18 +1135,26 @@ components:
           resolvedAt,
           affectedShifts,
           acceptances,
+          rejection,
         ]
 
     ScheduleChangeRequestDTO:
       description: >
-        Participant representation and every list item of this collection.
-        One SOURCE assignment with `before` and `after`. No `warnings`,
-        `warningsFingerprint` or `override`. A worker response that included
-        them would not match. A request the caller cannot see is 404 `1135`,
-        the same body as a missing id.
+        Participant GET detail. `viewerRole` is `PARTICIPANT`. One SOURCE
+        assignment with `before` and `after`. No `warnings`,
+        `warningsFingerprint`, `blockers` or `override`. A request the caller
+        cannot see is 404 `1135`, the same body as a missing id. The list uses
+        `ScheduleChangeRequestListItemDTO`.
       unevaluatedProperties: false
       allOf:
         - $ref: "#/components/schemas/ScheduleChangeRequestCoreDTO"
+        - type: object
+          required: [viewerRole]
+          properties:
+            viewerRole:
+              type: string
+              const: PARTICIPANT
+              description: Discriminator value of the participant GET detail.
 
     ScheduleChangeRequestOwnerDTO:
       description: >
@@ -1016,6 +1165,13 @@ components:
       allOf:
         - $ref: "#/components/schemas/ScheduleChangeRequestCoreDTO"
         - $ref: "#/components/schemas/ShiftChangeOwnerReviewDTO"
+        - type: object
+          required: [viewerRole]
+          properties:
+            viewerRole:
+              type: string
+              const: OWNER
+              description: Discriminator value of the OWNER GET detail.
 
     ScheduleChangeRequestViewDTO:
       description: >
@@ -1025,6 +1181,25 @@ components:
       oneOf:
         - $ref: "#/components/schemas/ScheduleChangeRequestDTO"
         - $ref: "#/components/schemas/ScheduleChangeRequestOwnerDTO"
+      discriminator:
+        propertyName: viewerRole
+        mapping:
+          PARTICIPANT: "#/components/schemas/ScheduleChangeRequestDTO"
+          OWNER: "#/components/schemas/ScheduleChangeRequestOwnerDTO"
+
+    ScheduleChangeRequestListItemDTO:
+      description: >
+        One list row. `viewerRole` is `OWNER` or `PARTICIPANT` for the caller.
+        No warnings or blockers. `rejection` is null unless the row is
+        `REJECTED`.
+      unevaluatedProperties: false
+      allOf:
+        - $ref: "#/components/schemas/ScheduleChangeRequestCoreDTO"
+        - type: object
+          required: [viewerRole]
+          properties:
+            viewerRole:
+              $ref: "#/components/schemas/ShiftChangeViewerRoleDTO"
 
     ScheduleChangeRequestPageDTO:
       type: object
@@ -1036,9 +1211,8 @@ components:
         outgoing person of a reassignment. A MANAGER has no wider scope. An empty
         page is `content: []`, `hasNext: false` and `nextCursor: null`, including
         an empty Solicitudes tab. Order is `createdAt` descending, then `id`
-        descending. Every item is `ScheduleChangeRequestDTO`: kind, status,
-        reason, `createdBy`, `expiresAt`, the assignment's before/after,
-        acceptance slots and, for a reassignment, `outgoingNotice`. No warnings.
+        descending. Every item is `ScheduleChangeRequestListItemDTO`, with
+        `viewerRole` and without warnings. A rejected row includes `rejection`.
         This collection is only schedule changes. Solicitudes also calls the
         exchange list with the same `direction` or `lifecycle`. There is no
         vacation type and no combined collection.
@@ -1046,7 +1220,7 @@ components:
         content:
           type: array
           items:
-            $ref: "#/components/schemas/ScheduleChangeRequestDTO"
+            $ref: "#/components/schemas/ScheduleChangeRequestListItemDTO"
         hasNext:
           type: boolean
           example: false
