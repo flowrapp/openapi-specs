@@ -729,11 +729,20 @@ manager:
     post:
       summary: Resend a business invitation
       description: >
-        Resends an existing PENDING invitation of the business so the invitee receives the
-        invitation email again. Requires an OWNER membership in the business; a MANAGER
-        receives 403 (1020). No new invitation is created: the Main API publishes again the
-        existing invitation event and renews expiresAt exactly as for a new invitation, seven
-        days from the resend. There is no request body. Pass-through to the main API
+        Resends an existing invitation of the business and reactivates it, so the invitee
+        receives the invitation email again. Requires an OWNER membership in the business; a
+        MANAGER or EMPLOYEE receives 403 (1020). A business that does not exist returns 404
+        (1006); an invitation that does not exist or belongs to another business returns 404
+        (1005).
+        An invitation can be resent when its stored status is PENDING (whether or not its
+        expiresAt has already passed) or EXPIRED. The Main API reactivates the same
+        invitation: status becomes PENDING again and expiresAt becomes the moment of the
+        resend plus seven days. No new invitation is created; id, token, invitee email, role,
+        contract, createdAt and every other field are preserved, so the invitation token is
+        the same one sent originally. The email is sent asynchronously: the Main API publishes
+        again, through the outbox, the existing invitation creation event.
+        An invitation in a terminal status (ACCEPTED or DECLINED) cannot be resent and returns
+        403 (1013). There is no request body. Pass-through to the main API
         (resendBusinessInvitation); status, body and functional errors are forwarded unchanged.
       tags:
         - Manager
@@ -757,7 +766,9 @@ manager:
             format: int64
       responses:
         '200':
-          description: Invitation resent successfully; expiresAt is seven days from the resend
+          description: >
+            Invitation reactivated and resent; status is PENDING and expiresAt is seven days
+            from the resend. The email is sent asynchronously.
           content:
             application/json:
               schema:
@@ -773,11 +784,13 @@ manager:
                   endDate: null
                 status: "PENDING"
                 createdAt: "2026-09-26T14:30:00+00:00"
-                expiresAt: "2026-10-08T09:00:00+00:00"
+                expiresAt: "2026-10-12T09:00:00+00:00"
         '401':
           description: Unauthorized
         '403':
-          description: User is not an owner of this business, or the invitation is not pending or has expired
+          description: >
+            User is not an owner of this business (1020), or the invitation is in a terminal
+            status, ACCEPTED or DECLINED, and cannot be resent (1013)
           content:
             application/problem+json:
               schema:
@@ -789,9 +802,6 @@ manager:
                 INVITATION_NOT_PENDING:
                   summary: "1013 - invitation not pending"
                   value: {status: 403, detail: "1013 - invitation not pending"}
-                INVITATION_EXPIRED:
-                  summary: "1010 - invitation expired"
-                  value: {status: 403, detail: "1010 - invitation expired"}
         '404':
           description: Business or invitation not found
           content:
@@ -805,7 +815,7 @@ manager:
                 INVITATION_NOT_FOUND:
                   summary: "1005 - invitation not found"
                   value: {status: 404, detail: "1005 - invitation not found"}
-      x-functional-errors: [1005, 1006, 1010, 1013, 1020]
+      x-functional-errors: [1005, 1006, 1013, 1020]
 
   export-worked-hours-report:
     get:

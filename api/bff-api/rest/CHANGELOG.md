@@ -6,7 +6,7 @@ Spec only. No BFF implementation and no repository tag in this change. Requires 
 
 ### Added
 
-- `POST /api/v1/manager/businesses/{businessId}/invitations/{invitationId}/resend` (`managerResendInvitation`, tag Manager, OWNER only): pass-through to Main API `resendBusinessInvitation`. Resends an existing `PENDING` invitation without creating one; the Main API publishes again the existing invitation event and renews `expiresAt` as for a new invitation, seven days from the resend. No request body. `200` returns `InvitationResponseDTO` (same mapping as `managerCreateInvitation`). Functional errors forwarded unchanged, existing codes only: `404` `1006`, `404` `1005`, `403` `1020`, `403` `1013`, `403` `1010`.
+- `POST /api/v1/manager/businesses/{businessId}/invitations/{invitationId}/resend` (`managerResendInvitation`, tag Manager, OWNER only): pass-through to Main API `resendBusinessInvitation`. Resends and reactivates an existing invitation whose stored status is `PENDING` (expired by date or not) or `EXPIRED`, without creating one: the Main API sets it back to `PENDING` and renews `expiresAt` to the resend moment plus seven days, preserving `id`, token, invitee, role, contract, `createdAt` and the remaining data (the token is not regenerated). The email is sent asynchronously: the Main API publishes again the existing invitation creation event through the outbox. No request body. `200` returns `InvitationResponseDTO` with status `PENDING` (same mapping as `managerCreateInvitation`). Functional errors forwarded unchanged, existing codes only: `404` `1006`, `404` `1005`, `403` `1020`, `403` `1013` (terminal status `ACCEPTED` or `DECLINED`).
 
 ## 0.0.82
 
