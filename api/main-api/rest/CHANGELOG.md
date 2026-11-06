@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.0.95
+
+Spec only. No backend implementation and no repository tag in this change. Coordinate with BFF API 0.0.83.
+
+### Added
+
+- `POST /api/v1/businesses/{businessId}/invitations/{invitationId}/resend` (`resendBusinessInvitation`, tag Invitations, OWNER only): resends an existing `PENDING` invitation. It does not create an invitation; it publishes again the event that `createBusinessInvitation` publishes, so the invitee receives the invitation email again. `expiresAt` is renewed as for a new invitation: seven days from the resend. No request body. `200` returns `InvitationResponseDTO` (same mapping as `createBusinessInvitation`). Existing functional errors only: `404` `1006` (business), `404` `1005` (invitation), `403` `1020` (not the OWNER), `403` `1013` (invitation not pending), `403` `1010` (invitation expired). No new error codes, fields, rate limit or migration.
+
 ## 0.0.94
 
 Spec only. No backend implementation and no repository tag in this change. The partial unique index described on open shift-change requests is the intended constraint, not an applied migration.

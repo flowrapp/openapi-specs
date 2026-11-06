@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.0.83
+
+Spec only. No BFF implementation and no repository tag in this change. Requires the Main API 0.0.95 contract.
+
+### Added
+
+- `POST /api/v1/manager/businesses/{businessId}/invitations/{invitationId}/resend` (`managerResendInvitation`, tag Manager, OWNER only): pass-through to Main API `resendBusinessInvitation`. Resends an existing `PENDING` invitation without creating one; the Main API publishes again the existing invitation event and renews `expiresAt` as for a new invitation, seven days from the resend. No request body. `200` returns `InvitationResponseDTO` (same mapping as `managerCreateInvitation`). Functional errors forwarded unchanged, existing codes only: `404` `1006`, `404` `1005`, `403` `1020`, `403` `1013`, `403` `1010`.
+
 ## 0.0.82
 
 Spec only. No BFF implementation and no repository tag in this change. Requires the Main API 0.0.94 contract. The BFF does not apply the partial unique index; that constraint is documented on the Main API and is not claimed as an applied migration.
