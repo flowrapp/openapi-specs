@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.0.94
+
+Spec only. No backend implementation and no repository tag in this change. The partial unique index described on open shift-change requests is the intended constraint, not an applied migration.
+
+### Added
+
+- Shift exchange requests under `/api/v1/businesses/{businessId}/shift-exchange-requests`: reciprocal swap of two concrete published assignments (`scheduled_shifts.id`), including across planning weeks. `PENDING_PEER` → `PENDING_OWNER` → `APPLIED`, plus terminal `REJECTED`, `CANCELLED`, `EXPIRED` and `SUPERSEDED`. The counterpart accepts. Only an OWNER approves and applies. A MANAGER has no new permission.
+- Schedule change requests under `/api/v1/businesses/{businessId}/schedule-change-requests`: an OWNER proposes `before` and `after` for one future assignment. A holder-only change is accepted by the incoming person and the outgoing person is notified. A holder-and-schedule change is accepted by the incoming person and the current holder. With no planning warnings the last acceptance applies it. With warnings the status stops at `PENDING_OWNER` until the OWNER approves with `warningsFingerprint` and `override.accepted: true`.
+- At most one open request per (`scheduled_shift_id`, `original_user_id`). An exchange reserves both assignments in one transaction. Detail returns full before/after snapshots. Owner detail adds typed warnings. Participants do not receive those fields. List pages are cursor pages (`content`, `hasNext`, `nextCursor`); an empty page is `content: []` and `nextCursor: null`.
+- List filters for the independent Solicitudes screen, which Horario only links to. Worker `direction=RECEIVED` (the caller must answer and did not create the request) or `direction=SENT` (`createdBy`). OWNER `lifecycle=OPEN` is every non-terminal status, including those not yet waiting on the OWNER, and `lifecycle=TERMINAL` is Historial. The two collections stay separate. No vacation type and no combined endpoint. Empty tabs are `content: []` and `nextCursor: null`.
+- A different puesto does not reject an exchange or a reassignment. It is a `JOB_ROLE_MISMATCH` warning on the OWNER detail (`ShiftExchangeRequestOwnerDTO` / `ScheduleChangeRequestOwnerDTO`). Participant and list schemas have no warning fields. Rejection `reason` is required for the worker and the OWNER.
+- GET detail adds `viewerRole` (`PARTICIPANT` or `OWNER`) as the discriminator. A rejected request includes `rejection` (actor from the JWT, reason, `rejectedAt`) on GET and on the list row. The OWNER detail adds `blockers`, which an override cannot clear. Historial's explicit status list is the five terminal statuses.
+- Functional errors `1127`–`1140`. A request the caller must not see is `404` `1134` or `1135`, the same body as a missing id.
+
 ## Unreleased
 
 ### Added
