@@ -3,7 +3,7 @@ openapi: 3.1.0
 info:
   title: Flowrapp API
   description: REST API for Flowrapp Backend
-  version: 0.0.94
+  version: 0.0.95
   contact:
     name: Flowrapp Team
     url: https://flowrapp.github.io
@@ -205,6 +205,9 @@ paths:
   "/api/v1/businesses/{businessId}/invitations/{invitationId}":
     $ref: "v1/services/invitations/invitations-operations.yml#/invitations/d\
       elete-business-invitation"
+  "/api/v1/businesses/{businessId}/invitations/{invitationId}/resend":
+    $ref: "v1/services/invitations/invitations-operations.yml#/invitations/r\
+      esend-business-invitation"
   "/api/v1/invitations":
     $ref: "v1/services/invitations/invitations-operations.yml#/invitations/g\
       et-invitations"
