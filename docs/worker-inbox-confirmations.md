@@ -82,10 +82,16 @@ one call, cursor forwarded.
 - Order: `updatedAt` descending, then `id` descending, keyset cursor. New or changed incidents
   sort before the cursor and appear on the next refresh. They never make the next page skip
   or repeat an unchanged row. No exact total.
+- `updatedAt` is the persisted incident value, read literally. The Main entity (verified at
+  `d35b137`) stores it as the `Instant` column `updated_at` with `@UpdateTimestamp`. It is not
+  derived or recomputed at read time. This contract adds no other update trigger and no
+  delivery guarantee.
 - `anchor` (`date`, `scheduledShiftId`, `attendanceMatchId`, `worklogId`) comes from stored
   relationships. For an AMBIGUOUS or UNSCHEDULED match `scheduledShiftId` is null: the server
   never picks the original or a candidate shift. The route already gives the business, so the
   item does not repeat it.
+- `anchor.date` only opens the day history. It is never a sort key, a filter or part of the
+  cursor, and it never replaces `updatedAt`.
 - No read or unread state. An item is listed while it is actionable.
 
 Justification from the worker app: `PUT /api/v1/worker/attendance-incidents/{incidentId}/justification`
@@ -157,6 +163,34 @@ The OWNER attendance detail (`AttendanceWorklogChangeDTO`) gains the read-only
 `confirmation`. It comes from the `getWorklogHistory` call the detail already makes. There is
 no owner inbox, no filter and no owner action.
 
+The OWNER reads each change on its own through the existing `getWorklogHistory` and the
+read-only, nullable `WorklogChangeDTO.confirmation`: `null` (no confirmation requested),
+`PENDING`, `ACKNOWLEDGED` or `DISPUTED`, with the worker's `comment`, `respondedBy` and
+`respondedAt`. That is the whole minimal slice. Grouping, a DISPUTED filter and owner actions
+are out of the initial phase and a future separate decision, not ruled out for good. Existing
+incident management keeps resolving incidents through the existing Main API contracts; F2 adds
+no admin command. An ACKNOWLEDGED answer supports no legal conclusion.
+
+## Delivery slices
+
+Each slice ships on its own. F1 never depends on anything F2 creates.
+
+- **F1**: day history rows with incidents, `canJustify` and `justification`; the
+  justification command (the existing Main API POST behind the BFF PUT); and the worker-only
+  incident list (`getCurrentUserAttendanceIncidents`), which returns incident items only. Its
+  filter is what `incidentCount` counts, but the badge endpoint ships in F2.
+- **F2**: the confirmation commands and reads, independent of F1: the answer
+  (`respondToWorklogChangeConfirmation`), the worker pending list
+  (`getCurrentUserWorklogChangeConfirmations`), the complete badge with `incidentCount` and
+  `confirmationCount`, and the nullable `WorklogChangeDTO.confirmation` the OWNER already
+  reads.
+- Before F2 no confirmation exists, so every `confirmation` reads `null`. The versioned shape
+  stays as published: the field is not removed, swapped or given another meaning before F2.
+- Not in the first delivery and not a gate for F1: new OWNER aggregation, a DISPUTED filter or
+  list, push notifications and admin commands. The outbox event names in
+  `docs/worker-inbox-events.md` are optional future additions, not implemented.
+- No new release or version bump: Main API 0.0.96 and BFF API 0.0.85 stay as they are.
+
 ## Decisions that differ from the brief
 
 The brief allowed refinements to fit repository conventions. Each one is listed here.
@@ -179,6 +213,7 @@ The brief allowed refinements to fit repository conventions. Each one is listed 
    (`getBusinessUsers`) is OWNER or MANAGER only. Worker DTOs keep `authorId`. A non-null
    `confirmation` already shows the change came from management.
 6. **No owner action or filter on DISPUTED.** As in the brief: visibility only.
+   This scopes the initial phase; anything more is a future separate decision.
 
 ## Known limitations and open points
 

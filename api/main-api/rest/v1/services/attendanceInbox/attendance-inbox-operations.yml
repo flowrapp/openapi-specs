@@ -29,9 +29,26 @@ attendanceInbox:
         total; the badge (`getCurrentUserAttendanceInboxBadge`) gives the count.
 
 
+        `incident.updatedAt` is the value persisted on the incident, read as stored: the order
+        and the cursor use it literally, and it is never derived or recomputed at read time
+        from the justification, the resolution, the match or the shift. Only the existing
+        update timestamp of the Main incident entity sets it when the incident is updated; this
+        contract adds no other trigger and no delivery guarantee. A changed incident is seen
+        only by reading again from the first page.
+
+
         Each item carries an `anchor` for navigation: `date`, the shift row or the match row,
         and the worklog derived on the server from the match. Errors: a non-member gets 403
         1015 and an unknown business 404 1006; an invalid or foreign cursor is 400 1142.
+
+
+        `anchor.date` only opens the day history (`getDailyAttendance`). It is never a sort
+        key, a filter or part of the cursor, and it never replaces `incident.updatedAt`.
+
+
+        Delivery slice F1: this list returns incident items only and ships with the day
+        history and `justifyAttendanceIncident`. It does not depend on worklog change
+        confirmations. The full two-count badge ships in F2 with the confirmation collection.
       security:
         - bearerAuth: []
       parameters:
@@ -223,6 +240,11 @@ attendanceInbox:
         not pagination; the client does no arithmetic over pages. Shift change requests are
         not counted here and are unchanged. The app keeps incidents and confirmations in
         separate sections. A non-member gets 403 1015 and an unknown business 404 1006.
+
+
+        Delivery slice F2: this endpoint ships complete, with both required counts, together
+        with `getCurrentUserWorklogChangeConfirmations`. There is no F1 variant with
+        `confirmationCount` absent or defaulted; in F1 the client reads the incident list.
       security:
         - bearerAuth: []
       parameters:
