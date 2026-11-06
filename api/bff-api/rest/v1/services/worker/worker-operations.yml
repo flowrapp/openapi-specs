@@ -505,9 +505,9 @@ worker:
         Returns the detailed work history for a specific day, including all individual
         clock-in/clock-out sessions and total seconds worked. From BFF 0.0.85 it also returns
         `attendances`: the caller's attendance rows of the day («por turno»), each with its
-        planned shift, worklogs, change history with the worker confirmation, and incidents
-        with lifecycle, resolution, justification and `canJustify`. `totalSeconds` and
-        `sessions` are computed exactly as before.
+        planned shift and job role (SHIFT rows), worklogs, change history with the worker
+        confirmation, and incidents with lifecycle, resolution, justification and
+        `canJustify`. `totalSeconds` and `sessions` are computed exactly as before.
 
         Main API calls added for `attendances` (the existing calls for `totalSeconds` and
         `sessions` are unchanged and run in the same stage):
@@ -516,14 +516,31 @@ worker:
            `userIds` is always the caller's own id, so an OWNER or MANAGER using the worker
            screen also gets only their own shifts and worklogs; for an EMPLOYEE the Main API
            already restricts the day to their own data.
-        2. Stage 2: `getWorklogHistory` (`GET /api/v1/worklogs/{worklogId}/history`) once per
-           distinct worklog present in the rows (usually one to three), at most 8 in flight
-           (`Semaphore(8)`). No call for a day without worklogs.
+        2. Stage 2, at most 8 in flight (`Semaphore(8)`):
+           - `getWorklogHistory` (`GET /api/v1/worklogs/{worklogId}/history`) once per
+             distinct worklog present in the rows (usually one to three). No call for a day
+             without worklogs.
+           - `getBusinessTeamSchedule`
+             (`GET /api/v1/businesses/{businessId}/team-schedules/{weekStart}?userIds={callerId}`,
+             `weekStart` the Monday of `date`), once, only when the day has a SHIFT row. It is
+             the member-visible schedule that already backs `getWorkerTeamSchedule`; it gives
+             the name of the job role of each own shift (`jobRole`). Its 404 (no
+             member-visible planning for that week) only leaves `jobRole` null.
+
+        Rows are built as defined in `WorkerAttendanceRowDTO`: a SHIFT row holds only the
+        worklogs MATCHED to it; UNSCHEDULED and AMBIGUOUS worklogs are UNMATCHED rows
+        (deduplicated by match id, also when Main lists an AMBIGUOUS worklog as a candidate of
+        a shift); NOT_APPLICABLE worklogs are no row (they stay in `sessions` and are read with
+        `getWorkerAttendanceMatch`); each incident goes only to the row of the match or shift
+        that owns it. The BFF regroups by match id and kind only; it never pairs sessions and
+        shifts by time and never chooses a candidate shift. Tests the BFF implementation must
+        add: the number of worklogs in `attendances` equals the number of distinct non
+        NOT_APPLICABLE worklogs of the Main day (no duplicate for an ambiguous candidate), and
+        every incident lands on its owner row for each match kind.
 
         One day only: the week and month history do not call `getDailyAttendance` (no seven
-        daily calls per week). The BFF does not pair sessions and shifts by time and does not
-        filter rows in memory. An error of any of these calls fails the response with the
-        Main API status and body, as before.
+        daily calls per week). Apart from the 404 above, an error of any of these calls fails
+        the response with the Main API status and body, as before.
       tags:
         - Worker
       operationId: getWorkerDayHistory
@@ -575,6 +592,10 @@ worker:
                           endAt: "2026-10-30T17:00:00+01:00"
                           breakMinutes: 30
                           plannedSeconds: 27000
+                        jobRoleId: 10
+                        jobRole:
+                          id: 10
+                          name: Barra
                         worklogs:
                           - worklogId: 3051
                             attendanceMatchId: 700
@@ -599,7 +620,6 @@ worker:
                                 oldClockOut: "2026-10-30T17:00:00+01:00"
                                 newClockOut: "2026-10-30T16:30:00+01:00"
                                 breakChange: null
-                                authorId: 12
                                 reason: The register was closed at 16:30.
                                 occurredAt: "2026-10-30T19:02:11+01:00"
                                 confirmation:
@@ -624,6 +644,9 @@ worker:
                             resolvedAt: null
                             reason: null
                             canJustify: true
+                            createdAt: "2026-10-30T09:20:00+01:00"
+                            updatedAt: "2026-10-30T09:40:00+01:00"
+                            version: 2
                 noShow:
                   summary: A no-show is a SHIFT row without worklogs
                   value:
@@ -642,6 +665,10 @@ worker:
                           endAt: "2026-10-31T23:00:00+01:00"
                           breakMinutes: 30
                           plannedSeconds: 23400
+                        jobRoleId: 11
+                        jobRole:
+                          id: 11
+                          name: Cocina
                         worklogs: []
                         incidents:
                           - id: 905
@@ -657,6 +684,99 @@ worker:
                             resolvedAt: null
                             reason: null
                             canJustify: true
+                            createdAt: "2026-10-31T17:05:00+01:00"
+                            updatedAt: "2026-10-31T17:05:00+01:00"
+                            version: 0
+                ambiguousClockIn:
+                  summary: An ambiguous clock-in is one UNMATCHED row; its candidate shifts keep no worklog
+                  value:
+                    date: "2026-11-03"
+                    totalSeconds: 14640
+                    sessions:
+                      - id: 3120
+                        clockIn: "2026-11-03T15:58:00+01:00"
+                        clockOut: "2026-11-03T20:02:00+01:00"
+                        durationSeconds: 14640
+                    attendances:
+                      - kind: SHIFT
+                        scheduledShiftId: 930
+                        attendanceMatchId: null
+                        planned:
+                          shiftId: 13
+                          shiftName: Tarde
+                          shiftColor: "#F59E0B"
+                          startAt: "2026-11-03T16:00:00+01:00"
+                          endAt: "2026-11-03T20:00:00+01:00"
+                          breakMinutes: 0
+                          plannedSeconds: 14400
+                        jobRoleId: 10
+                        jobRole:
+                          id: 10
+                          name: Barra
+                        worklogs: []
+                        incidents: []
+                      - kind: SHIFT
+                        scheduledShiftId: 931
+                        attendanceMatchId: null
+                        planned:
+                          shiftId: 13
+                          shiftName: Tarde
+                          shiftColor: "#F59E0B"
+                          startAt: "2026-11-03T16:00:00+01:00"
+                          endAt: "2026-11-03T20:00:00+01:00"
+                          breakMinutes: 0
+                          plannedSeconds: 14400
+                        jobRoleId: 11
+                        jobRole: null
+                        worklogs: []
+                        incidents: []
+                      - kind: UNMATCHED
+                        scheduledShiftId: null
+                        attendanceMatchId: 745
+                        planned: null
+                        jobRoleId: null
+                        jobRole: null
+                        worklogs:
+                          - worklogId: 3120
+                            attendanceMatchId: 745
+                            matchKind: AMBIGUOUS
+                            clockIn: "2026-11-03T15:58:00+01:00"
+                            clockOut: "2026-11-03T20:02:00+01:00"
+                            durationSeconds: 14640
+                            version: 0
+                            reviewStatus: PENDING_REVIEW
+                            breaks: []
+                            changes: []
+                        incidents:
+                          - id: 901
+                            scope: MATCH
+                            attendanceMatchId: 745
+                            scheduledShiftId: null
+                            type: AMBIGUOUS_MATCH
+                            lifecycle: OPEN
+                            resolution: null
+                            measuredSeconds: null
+                            toleranceSeconds: null
+                            justification:
+                              text: I covered the afternoon bar shift.
+                              justifiedAt: "2026-11-03T16:10:00+01:00"
+                            resolvedAt: null
+                            reason: null
+                            canJustify: true
+                            createdAt: "2026-11-03T15:58:02+01:00"
+                            updatedAt: "2026-11-03T16:10:00+01:00"
+                            version: 1
+                notApplicable:
+                  summary: A day without a published planning has sessions but no attendance rows
+                  value:
+                    date: "2026-11-02"
+                    totalSeconds: 14280
+                    sessions:
+                      - id: 3104
+                        clockIn: "2026-11-02T10:02:00+01:00"
+                        clockOut: "2026-11-02T14:00:00+01:00"
+                        durationSeconds: 14280
+                    attendances: []
         '401':
           description: Unauthorized
         '403':

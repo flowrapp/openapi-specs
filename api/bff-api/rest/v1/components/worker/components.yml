@@ -367,7 +367,8 @@ components:
             `getDailyAttendance` call restricted to the caller. Empty when the day has no shift
             of the caller and no worklog without a shift. A worklog whose match is
             NOT_APPLICABLE (no published planning that day) is not an attendance row; it stays
-            in `sessions` only. Not added to the week or month history.
+            in `sessions` only and its detail is read with `getWorkerAttendanceMatch`. Each
+            worklog appears in at most one row. Not added to the week or month history.
           items:
             $ref: './inbox-components.yml#/components/schemas/WorkerAttendanceRowDTO'
       required:

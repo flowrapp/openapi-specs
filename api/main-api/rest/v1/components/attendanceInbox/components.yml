@@ -57,20 +57,24 @@ components:
     AttendanceAnchorDTO:
       type: object
       description: >
-        Where an inbox item lives in the worker's day history, for navigation (inbox row tap or
-        push deep link). Every value is read from stored relationships; nothing is guessed.
-        Open the day `date`; then the SHIFT row of `scheduledShiftId` when it is not null,
-        otherwise the UNMATCHED row of `attendanceMatchId`. For an AMBIGUOUS or UNSCHEDULED
-        match, `scheduledShiftId` is null: the original or candidate shifts of an ambiguous
-        match are never chosen for the client. The route business is not repeated.
+        Where an inbox item can be opened (inbox row tap or push deep link). Every value is
+        read from stored relationships; nothing is guessed. Every worklog has exactly one
+        current attendance match of some kind (created with the worklog; worklogs older than
+        matching were backfilled), so a MATCH-scoped incident and a worklog change always
+        have a real `attendanceMatchId`. With `scheduledShiftId` not null (SHIFT scope or a
+        MATCHED match) the client opens the day `date` and that SHIFT row; otherwise it opens
+        the match itself by `attendanceMatchId` (UNSCHEDULED, AMBIGUOUS or NOT_APPLICABLE).
+        The original or candidate shifts of an ambiguous match are never chosen for the
+        client. The route business is not repeated.
       properties:
         date:
           type: string
           format: date
           description: >
-            Business-local date under which `getDailyAttendance` lists the attendance: the
-            start date of the scheduled shift when there is one (SHIFT scope, or a MATCHED
-            match), otherwise the business-local date of the worklog clock-in.
+            Business-local date of the item, for navigation only: the start date of the
+            scheduled shift when there is one (SHIFT scope, or a MATCHED match), otherwise the
+            business-local date of the worklog clock-in. Never a sort key, a filter or part of
+            a cursor.
           example: "2026-10-30"
         scheduledShiftId:
           type: ['integer', 'null']
@@ -87,8 +91,9 @@ components:
           minimum: 1
           description: >
             MATCH-scoped incident: its match. Worklog change: the current match of the worklog.
-            Null for a SHIFT-scoped incident, or for a NOT_APPLICABLE match which has no
-            attendance UI row.
+            Always the real `id` of that current match, whatever its kind (MATCHED, UNSCHEDULED,
+            AMBIGUOUS or NOT_APPLICABLE). Null only for a SHIFT-scoped incident (NO_SHOW), which
+            has no worklog and no match.
           example: 700
         worklogId:
           type: ['integer', 'null']
@@ -142,13 +147,27 @@ components:
       description: >
         One PENDING confirmation of the caller. `change` is the same `WorklogChangeDTO` as in
         `getWorklogHistory` (worklog, parent change id, action, old and new times, author,
-        reason, `occurredAt`), with `confirmation.status` PENDING.
+        reason, `occurredAt`), with `confirmation.status` PENDING, plus its `anchor` and
+        `laterChangeExists`.
       properties:
         change:
           $ref: '../worklogs/components.yml#/components/schemas/WorklogChangeDTO'
         anchor:
           $ref: '#/components/schemas/AttendanceAnchorDTO'
-      required: [change, anchor]
+        laterChangeExists:
+          type: boolean
+          description: >
+            True when the same worklog has at least one other `WorklogChange` that is more
+            recent than `change` in the order (`occurredAt`, `id`), whatever its action or
+            author: management corrections and rejections, the worker's own corrections,
+            break corrections and voids, AUTO_CLOSED and MEMBER_REMOVED_CLOSE all count. False
+            otherwise. Computed in the same page query (for example an EXISTS on the worklog
+            changes), never one lookup per item. It cancels and invalidates nothing: this
+            confirmation stays PENDING and is answered on its own, with the same request,
+            version and state rules. It is not part of the order, the filter or the cursor, and
+            it can turn true between two reads.
+          example: false
+      required: [change, anchor, laterChangeExists]
 
     CurrentUserWorklogChangeConfirmationPageDTO:
       type: object

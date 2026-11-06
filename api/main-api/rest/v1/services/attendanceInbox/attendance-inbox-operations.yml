@@ -8,7 +8,8 @@ attendanceInbox:
       summary: List the caller's actionable attendance incidents
       description: >
         Independent persistent query of the authenticated user's own attendance incidents of
-        the business that still need the worker: lifecycle OPEN and no justification. A
+        the business that still need the worker: lifecycle OPEN and current `justification`
+        null (`justification IS NULL`), nothing else. A
         MATCH-scoped incident is the caller's when the caller is the worker of the worklog of
         the match; a SHIFT-scoped incident (NO_SHOW) when the caller is the assignee of the
         shift. Any member role may call it and always gets only their own incidents; an OWNER
@@ -16,9 +17,12 @@ attendanceInbox:
 
 
         Once justified (`justifyAttendanceIncident`) an incident leaves this collection and
-        stays visible in the day history (`getDailyAttendance`), where the worker can still
-        replace the justification while it is OPEN. A RESOLVED incident is only history. There
-        is no read or unread state: an item is listed while it is actionable.
+        stays visible in the day history (`getDailyAttendance`) and in `getAttendanceMatch`,
+        where the worker can still replace the justification while it is OPEN. An OPEN
+        incident with no justification, new or brought back by reconciliation, is listed; one
+        that keeps a saved text is not (this contract never deletes a saved text). A RESOLVED
+        incident is only history. There is no read or unread state: an item is listed while
+        it is actionable.
 
 
         Order is `incident.updatedAt` descending, then `incident.id` descending, with a keyset
@@ -37,9 +41,11 @@ attendanceInbox:
         only by reading again from the first page.
 
 
-        Each item carries an `anchor` for navigation: `date`, the shift row or the match row,
-        and the worklog derived on the server from the match. Errors: a non-member gets 403
-        1015 and an unknown business 404 1006; an invalid or foreign cursor is 400 1142.
+        Each item carries an `anchor` for navigation: `date`, the shift (SHIFT scope or a
+        MATCHED match), the real current match of a MATCH-scoped incident whatever its kind
+        (NOT_APPLICABLE included), and the worklog derived on the server from the match.
+        Errors: a non-member gets 403 1015 and an unknown business 404 1006; an invalid or
+        foreign cursor is 400 1142.
 
 
         `anchor.date` only opens the day history (`getDailyAttendance`). It is never a sort
@@ -154,9 +160,13 @@ attendanceInbox:
 
 
         Each item is the full `WorklogChangeDTO` (worklog, parent `worklogChangeId`, action,
-        old and new times, author, reason, `occurredAt`, confirmation) plus an `anchor`. The
-        anchor is read with an explicit join from the change to the current match of its
-        worklog in the same query, never one lookup per item. This is not a shift change
+        old and new times, author, reason, `occurredAt`, confirmation) plus an `anchor` and
+        `laterChangeExists`. The anchor is read with an explicit join from the change to the
+        current match of its worklog, and `laterChangeExists` with an aggregate over the
+        changes of the same worklog that sort after it in (`occurredAt`, `id`), both in the
+        same page query, never one lookup per item. A later change of any action or author
+        sets `laterChangeExists` to true without cancelling or invalidating this
+        confirmation: it stays PENDING and is answered on its own. This is not a shift change
         request: no accepted or rejected request is synthesized, and it is unrelated to
         shift exchanges, schedule changes and `confirmWorklog`.
 
@@ -209,6 +219,39 @@ attendanceInbox:
                           scheduledShiftId: 900
                           attendanceMatchId: 700
                           worklogId: 3051
+                        laterChangeExists: true
+                    hasNext: false
+                    nextCursor: null
+                notApplicable:
+                  summary: A correction of a worklog on a day without a published planning
+                  value:
+                    content:
+                      - change:
+                          id: 1230
+                          worklogId: 3104
+                          userId: 41
+                          businessId: 101
+                          action: CORRECTED
+                          oldClockIn: "2026-11-02T09:02:00Z"
+                          newClockIn: "2026-11-02T09:02:00Z"
+                          oldClockOut: "2026-11-02T13:30:00Z"
+                          newClockOut: "2026-11-02T13:00:00Z"
+                          breakChange: null
+                          authorId: 12
+                          reason: "Closed at 14:00."
+                          occurredAt: "2026-11-02T17:10:00Z"
+                          confirmation:
+                            status: PENDING
+                            comment: null
+                            respondedBy: null
+                            respondedAt: null
+                            version: 0
+                        anchor:
+                          date: "2026-11-02"
+                          scheduledShiftId: null
+                          attendanceMatchId: 731
+                          worklogId: 3104
+                        laterChangeExists: false
                     hasNext: false
                     nextCursor: null
                 empty:

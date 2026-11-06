@@ -1,6 +1,7 @@
-# Worker attendance inbox (BFF 0.0.85, Main API 0.0.96). Each operation is one
-# Main API call; the BFF maps fields and forwards status, body and functional
-# errors unchanged. Contract only: no BFF implementation is implied.
+# Worker attendance inbox (BFF 0.0.85, Main API 0.0.96). Each list and command
+# is one Main API call; the BFF maps fields and forwards status, body and
+# functional errors unchanged. The match detail (`attendance-match`) composes
+# own reads only. Contract only: no BFF implementation is implied.
 workerInbox:
   incidents:
     get:
@@ -8,20 +9,24 @@ workerInbox:
       operationId: getWorkerAttendanceIncidents
       summary: List my attendance incidents to justify
       description: |
-        Bandeja section «Incidencias»: the caller's own OPEN incidents of the business without a
-        justification, newest change first. Separate from Peticiones (shift exchanges and
-        schedule changes), whose collections and screens are unchanged; the app shows separate
-        sections and never merges these rows with requests.
+        Bandeja section «Incidencias»: the caller's own OPEN incidents of the business whose
+        current `justification` is null, newest change first. Separate from Peticiones (shift
+        exchanges and schedule changes), whose collections and screens are unchanged; the app
+        shows separate sections and never merges these rows with requests.
 
         Main API call: one `getCurrentUserAttendanceIncidents`
         (`GET /api/v1/businesses/{businessId}/attendance-incidents?cursor=&limit=`), with
         `cursor` and `limit` forwarded unchanged. `hasNext`, `nextCursor` and the order
         (`updatedAt` descending, then id) are the Main API's; there is no total (use the
         badge). Each Main API item is mapped to `WorkerAttendanceIncidentDTO` (`canJustify`
-        is true: every item is OPEN) plus its `anchor`, forwarded unchanged.
+        is true: every item is OPEN) plus its `anchor`, forwarded unchanged. Tapping an item
+        opens the SHIFT row of the day history when `anchor.scheduledShiftId` is set, and
+        `getWorkerAttendanceMatch` with `anchor.attendanceMatchId` otherwise.
 
-        After a justification the incident leaves this list on the next read and stays in the
-        day history, where it can still be replaced while OPEN. There is no read or unread
+        Inbox and history are split only by the current `justification`: once a text is saved
+        the incident leaves this list on the next read and stays in the day history (and in
+        the match detail), where it can still be replaced while OPEN. An OPEN incident with
+        `justification` null, new or brought back, is listed. There is no read or unread
         state. Functional errors are forwarded unchanged: 400 1142, 403 1015, 404 1006.
       security:
         - bearerAuth: []
@@ -55,6 +60,9 @@ workerInbox:
                           resolvedAt: null
                           reason: null
                           canJustify: true
+                          createdAt: "2026-10-30T09:20:00+01:00"
+                          updatedAt: "2026-10-30T09:20:00+01:00"
+                          version: 1
                         anchor:
                           date: "2026-10-30"
                           scheduledShiftId: 900
@@ -93,9 +101,11 @@ workerInbox:
         (`GET /api/v1/businesses/{businessId}/worklog-change-confirmations?cursor=&limit=`),
         `cursor` and `limit` forwarded unchanged; same order (`occurredAt` descending, then
         id), `hasNext` and `nextCursor`; no total. Each item is the change mapped to
-        `WorkerWorklogChangeDTO` (same structure as `changes[]` of the day history) plus its
-        `anchor`, forwarded unchanged. Functional errors forwarded unchanged: 400 1142, 403
-        1015, 404 1006.
+        `WorkerWorklogChangeDTO` (same structure as `changes[]` of the day history, without
+        the author) plus its `anchor` and `laterChangeExists`, both forwarded unchanged. No
+        extra Main API call per item. `laterChangeExists` true shows «Hay un cambio
+        posterior»; the item stays PENDING and is answered on its own. Functional errors
+        forwarded unchanged: 400 1142, 403 1015, 404 1006.
       security:
         - bearerAuth: []
       parameters:
@@ -123,7 +133,6 @@ workerInbox:
                           oldClockOut: "2026-10-29T23:40:00+01:00"
                           newClockOut: "2026-10-29T23:40:00+01:00"
                           breakChange: null
-                          authorId: 12
                           reason: Clocked in after the shift was cancelled.
                           occurredAt: "2026-10-30T10:15:00+01:00"
                           confirmation:
@@ -137,6 +146,36 @@ workerInbox:
                           scheduledShiftId: null
                           attendanceMatchId: 712
                           worklogId: 3060
+                        laterChangeExists: false
+                    hasNext: false
+                    nextCursor: null
+                laterChange:
+                  summary: A correction still PENDING after a later change of the same worklog
+                  value:
+                    content:
+                      - change:
+                          id: 1201
+                          worklogId: 3051
+                          action: CORRECTED
+                          oldClockIn: "2026-10-30T09:18:00+01:00"
+                          newClockIn: "2026-10-30T09:18:00+01:00"
+                          oldClockOut: "2026-10-30T17:00:00+01:00"
+                          newClockOut: "2026-10-30T16:30:00+01:00"
+                          breakChange: null
+                          reason: The register was closed at 16:30.
+                          occurredAt: "2026-10-30T19:02:11+01:00"
+                          confirmation:
+                            status: PENDING
+                            comment: null
+                            respondedBy: null
+                            respondedAt: null
+                            version: 0
+                        anchor:
+                          date: "2026-10-30"
+                          scheduledShiftId: 900
+                          attendanceMatchId: 700
+                          worklogId: 3051
+                        laterChangeExists: true
                     hasNext: false
                     nextCursor: null
                 empty:
@@ -199,8 +238,18 @@ workerInbox:
       summary: Write or replace my justification of an incident
       description: |
         Writes or replaces the caller's justification of one of their own OPEN incidents, from
-        the inbox or from the day history. The incident stays OPEN: management still resolves
-        it. Replacing is allowed while OPEN; a RESOLVED incident cannot be justified.
+        the inbox, the day history or the match detail. The incident stays OPEN: management
+        still resolves it. Replacing is allowed while OPEN, as many times as needed; a
+        RESOLVED incident cannot be justified.
+
+        Replacement semantics: the whole text is overwritten by the latest saved one, with a
+        new `justification.justifiedAt` and a new `updatedAt`; `createdAt` keeps the creation
+        of the incident. Earlier texts are not kept and there is no revision history. The
+        body has no expected version: the Main API checks no version sent by the client, so
+        between two writes of the same worker the later persisted one is the stored text
+        (last write wins, not first). `version` in the response is output metadata only.
+        Once saved, the incident leaves the inbox (its filter is `justification` null) and
+        stays editable from the history while OPEN.
 
         Main API call: one `justifyAttendanceIncident`
         (`POST /api/v1/attendance-incidents/{incidentId}/justification`), the literal existing
@@ -210,8 +259,9 @@ workerInbox:
         `WorkerAttendanceIncidentDTO` (`canJustify` true while OPEN).
 
         Functional errors forwarded unchanged: 400 1113 (blank or longer than 500), 404 1085
-        (missing or not the caller's, same body), 409 1112 (not OPEN) and 409 1049
-        (concurrent change).
+        (missing or not the caller's, same body), 409 1112 (not OPEN, including an incident
+        resolved by management in between) and 409 1049 (the existing concurrent-modification
+        error of the Main API).
       security:
         - bearerAuth: []
       parameters:
@@ -248,6 +298,9 @@ workerInbox:
                 resolvedAt: null
                 reason: null
                 canJustify: true
+                createdAt: "2026-10-30T09:20:00+01:00"
+                updatedAt: "2026-10-30T09:40:00+01:00"
+                version: 2
         '400':
           description: Justification text is blank or longer than 500 characters (1113).
           content:
@@ -335,7 +388,6 @@ workerInbox:
                 oldClockOut: "2026-10-30T17:00:00+01:00"
                 newClockOut: "2026-10-30T16:30:00+01:00"
                 breakChange: null
-                authorId: 12
                 reason: The register was closed at 16:30.
                 occurredAt: "2026-10-30T19:02:11+01:00"
                 confirmation:
@@ -367,3 +419,205 @@ workerInbox:
                 $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
               example: {status: 409, detail: "1049 - resource was modified concurrently"}
       x-functional-errors: [1049, 1143]
+
+  attendance-match:
+    get:
+      tags: [Worker]
+      operationId: getWorkerAttendanceMatch
+      summary: Get one of my attendance matches with its worklog and incidents
+      description: |
+        Safe detail of one of the caller's own attendance matches, of any kind: MATCHED,
+        UNSCHEDULED, AMBIGUOUS or NOT_APPLICABLE. It is where an inbox item or a push opens
+        when `anchor.scheduledShiftId` is null, and it is the only worker view of a
+        NOT_APPLICABLE match (no published planning that day), which is never a day history
+        row. A MATCHED match also answers, with `scheduledShiftId` to open its SHIFT row of
+        the day history `date`. For UNSCHEDULED and NOT_APPLICABLE there is no shift to open:
+        the worklog, its change history and its incidents are shown here.
+
+        Main API calls, all with the caller's token. No OWNER or MANAGER route (such as
+        `getBusinessAttendanceMatch` or `getShiftAttendance`) and no date-range listing (such as
+        `getUserWorklogs` or `getDailyAttendance`) is used, and no permission is conditional:
+        1. Stage 1, in parallel: `getAttendanceMatch` (`GET /api/v1/attendance-matches/{attendanceMatchId}`),
+           which returns the match only to the worker of its worklog, whatever its kind, and
+           404 1074 otherwise; and `getUserBusinesses` (`GET /api/v1/businesses`), the
+           caller's own memberships, read for the business time zone exactly as the existing
+           worker endpoints do.
+        2. Stage 2, in parallel: `getWorklogById` (`GET /api/v1/worklogs/{worklogId}`) and
+           `getWorklogHistory` (`GET /api/v1/worklogs/{worklogId}/history`) for the
+           `worklogId` of that match. Both accept the worker of the worklog.
+
+        Mapping: `matchKind`, `attendanceMatchId` and `incidents` come from the match;
+        `scheduledShiftId` is `scheduledShift.id` only for MATCHED; `candidateShifts` and
+        incident `evidence.candidateShiftIds` and `evidence.geofenceChecks` are dropped, as are
+        reconciliation, origin and management identities (`resolvedBy`, `authorId`). The
+        worklog is mapped as in the day history (`WorkerAttendanceWorklogDTO`, EFFECTIVE breaks,
+        `changes[]` without the author). `date` is the business-local date of the shift start
+        (MATCHED) or of the worklog `clockIn` (other kinds). If the match business is not
+        among the caller's businesses, the BFF answers the same 404 1074. Any other Main API
+        error is forwarded unchanged.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '../../components/worker/inbox-components.yml#/components/parameters/AttendanceMatchId'
+      responses:
+        '200':
+          description: The match with its worklog and incidents.
+          content:
+            application/json:
+              schema:
+                $ref: '../../components/worker/inbox-components.yml#/components/schemas/WorkerAttendanceMatchDetailDTO'
+              examples:
+                notApplicable:
+                  summary: A worklog on a day without a published planning, with a pending correction
+                  value:
+                    attendanceMatchId: 731
+                    matchKind: NOT_APPLICABLE
+                    date: "2026-11-02"
+                    scheduledShiftId: null
+                    worklog:
+                      worklogId: 3104
+                      attendanceMatchId: 731
+                      matchKind: NOT_APPLICABLE
+                      clockIn: "2026-11-02T10:02:00+01:00"
+                      clockOut: "2026-11-02T14:00:00+01:00"
+                      durationSeconds: 14280
+                      version: 1
+                      reviewStatus: APPROVED
+                      breaks: []
+                      changes:
+                        - id: 1230
+                          worklogId: 3104
+                          action: CORRECTED
+                          oldClockIn: "2026-11-02T10:02:00+01:00"
+                          newClockIn: "2026-11-02T10:02:00+01:00"
+                          oldClockOut: "2026-11-02T14:30:00+01:00"
+                          newClockOut: "2026-11-02T14:00:00+01:00"
+                          breakChange: null
+                          reason: Closed at 14:00.
+                          occurredAt: "2026-11-02T18:10:00+01:00"
+                          confirmation:
+                            status: PENDING
+                            comment: null
+                            respondedBy: null
+                            respondedAt: null
+                            version: 0
+                    incidents: []
+                unscheduled:
+                  summary: Work without a planned shift, with an open incident to justify
+                  value:
+                    attendanceMatchId: 712
+                    matchKind: UNSCHEDULED
+                    date: "2026-10-29"
+                    scheduledShiftId: null
+                    worklog:
+                      worklogId: 3060
+                      attendanceMatchId: 712
+                      matchKind: UNSCHEDULED
+                      clockIn: "2026-10-29T22:05:00+01:00"
+                      clockOut: "2026-10-29T23:40:00+01:00"
+                      durationSeconds: 5700
+                      version: 0
+                      reviewStatus: PENDING_REVIEW
+                      breaks: []
+                      changes: []
+                    incidents:
+                      - id: 890
+                        scope: MATCH
+                        attendanceMatchId: 712
+                        scheduledShiftId: null
+                        type: UNSCHEDULED_WORK
+                        lifecycle: OPEN
+                        resolution: null
+                        measuredSeconds: null
+                        toleranceSeconds: null
+                        justification: null
+                        resolvedAt: null
+                        reason: null
+                        canJustify: true
+                        createdAt: "2026-10-29T23:40:05+01:00"
+                        updatedAt: "2026-10-29T23:40:05+01:00"
+                        version: 0
+                ambiguous:
+                  summary: Clock-in that fits several shifts; no candidate is shown
+                  value:
+                    attendanceMatchId: 745
+                    matchKind: AMBIGUOUS
+                    date: "2026-11-03"
+                    scheduledShiftId: null
+                    worklog:
+                      worklogId: 3120
+                      attendanceMatchId: 745
+                      matchKind: AMBIGUOUS
+                      clockIn: "2026-11-03T15:58:00+01:00"
+                      clockOut: "2026-11-03T20:02:00+01:00"
+                      durationSeconds: 14640
+                      version: 0
+                      reviewStatus: PENDING_REVIEW
+                      breaks: []
+                      changes: []
+                    incidents:
+                      - id: 901
+                        scope: MATCH
+                        attendanceMatchId: 745
+                        scheduledShiftId: null
+                        type: AMBIGUOUS_MATCH
+                        lifecycle: OPEN
+                        resolution: null
+                        measuredSeconds: null
+                        toleranceSeconds: null
+                        justification:
+                          text: I covered the afternoon bar shift.
+                          justifiedAt: "2026-11-03T16:10:00+01:00"
+                        resolvedAt: null
+                        reason: null
+                        canJustify: true
+                        createdAt: "2026-11-03T15:58:02+01:00"
+                        updatedAt: "2026-11-03T16:10:00+01:00"
+                        version: 1
+                matched:
+                  summary: A matched clock-in; the shift row of the day history has the plan
+                  value:
+                    attendanceMatchId: 700
+                    matchKind: MATCHED
+                    date: "2026-10-30"
+                    scheduledShiftId: 900
+                    worklog:
+                      worklogId: 3051
+                      attendanceMatchId: 700
+                      matchKind: MATCHED
+                      clockIn: "2026-10-30T09:18:00+01:00"
+                      clockOut: "2026-10-30T16:30:00+01:00"
+                      durationSeconds: 24120
+                      version: 0
+                      reviewStatus: APPROVED
+                      breaks:
+                        - id: 456
+                          worklogId: 3051
+                          startedAt: "2026-10-30T12:00:00+01:00"
+                          endedAt: "2026-10-30T12:30:00+01:00"
+                          durationSeconds: 1800
+                      changes: []
+                    incidents:
+                      - id: 880
+                        scope: MATCH
+                        attendanceMatchId: 700
+                        scheduledShiftId: null
+                        type: LATE_ENTRY
+                        lifecycle: RESOLVED
+                        resolution: ACCEPTED
+                        measuredSeconds: 1080
+                        toleranceSeconds: 300
+                        justification:
+                          text: The bus was late.
+                          justifiedAt: "2026-10-30T09:40:00+01:00"
+                        resolvedAt: "2026-10-30T19:00:00+01:00"
+                        reason: null
+                        canJustify: false
+                        createdAt: "2026-10-30T09:20:00+01:00"
+                        updatedAt: "2026-10-30T19:00:00+01:00"
+                        version: 3
+        '401':
+          $ref: '../../components/worker/inbox-components.yml#/components/responses/Unauthorized'
+        '404':
+          $ref: '../../components/worker/inbox-components.yml#/components/responses/AttendanceMatchNotFound'
+      x-functional-errors: [1074]

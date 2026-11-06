@@ -32,12 +32,14 @@ The two notifications below are additional outbox rows in their respective trans
 | `occurredAt` | date-time | yes | Change time (pending) or answer time (disputed) |
 | `date` | date | yes | `AttendanceAnchorDTO.date` |
 | `scheduledShiftId` | int64 \| null | yes | `AttendanceAnchorDTO.scheduledShiftId`; null when not MATCHED |
-| `attendanceMatchId` | int64 \| null | yes | `AttendanceAnchorDTO.attendanceMatchId` |
+| `attendanceMatchId` | int64 | yes | `AttendanceAnchorDTO.attendanceMatchId`: the real current match of the worklog, any kind (a change always has one) |
 
 The navigation fields are the same values as the inbox `anchor`. A deep link opens the day
-history on `date`, then the SHIFT row of `scheduledShiftId` when it is set, otherwise the
-UNMATCHED row of `attendanceMatchId`. It never derives a shift from `date` alone and never picks
-a candidate of an ambiguous match.
+history on `date` and the SHIFT row of `scheduledShiftId` when it is set (MATCHED), otherwise
+the own match detail `GET /api/v1/worker/attendance-matches/{attendanceMatchId}` (UNSCHEDULED,
+AMBIGUOUS or NOT_APPLICABLE). It never derives a shift from `date` alone and never picks a
+candidate of an ambiguous match. `authorId` stays in this internal payload; a push consumer
+must not forward it to the worker app.
 
 ## Consumers (to be decided, not specified here)
 
