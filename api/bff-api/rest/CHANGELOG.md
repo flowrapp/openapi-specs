@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.0.84
+
+Spec only. No BFF implementation and no repository tag in this change. Main API unchanged (0.0.95): `getPlanningGenerationInput` already returns `openingIntervals` per date.
+
+### Changed
+
+- `getWeekCoverage` (`GET /api/v1/businesses/{businessId}/schedule/coverage`): whether a date is open now depends on its opening intervals, not on its shifts, as decided by Sergio (bug «No puedo abrir un día ya cerrado»). Same response shape; `open` is still a boolean and no field is added.
+  - `days[].open`: true when the effective day has at least one opening interval (`openingIntervals` of Main `getPlanningGenerationInput`), with or without shifts; false = closed («Cerrado»). Before: true when the day had at least one shift.
+  - `openDays`: dates with at least one opening interval. Before: dates with at least one shift.
+  - `WeekCoverageDayReasonDTO` `CLOSED`: the effective day has no opening interval. Before: no shifts.
+  - `WeekCoverageDayReasonDTO` `NO_DEMAND`: the day is open (has opening intervals) but no target above 0, which now includes an open day without shifts as well as an open day whose shifts have no target above 0.
+
 ## 0.0.83
 
 Spec only. No BFF implementation and no repository tag in this change. Requires the Main API 0.0.95 contract.

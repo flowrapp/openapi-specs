@@ -237,8 +237,8 @@ planning:
         - `roles` lists every job role with N > 0 or E > 0 this week, ordered by job-role name
           and id.
         Week `status` is the worst role status (null without roles); `openDays`,
-        `shiftOccurrences` and `memberCount` count dates with shifts, shifts and distinct people
-        with a contract in the week.
+        `shiftOccurrences` and `memberCount` count dates with at least one opening interval (open
+        dates, with or without shifts), shifts and distinct people with a contract in the week.
 
         Totals: `requiredSeconds` = ΣN, `contractedSeconds` = ΣE, `coveredSeconds` = Σ min(N, E)
         over `roles`, and `coveragePercent` = round half up of 100 * coveredSeconds /
@@ -254,8 +254,9 @@ planning:
           when targetAtOnce is 0. `belowMinimum`: minimumAtOnce > people, a warning only that
           never changes `status` (it can only be true when the status is already SHORT).
         - Day `status` is the worst shift-role status of the date, and `reason` says why:
-          `CLOSED` (no shifts, status null), `NO_DEMAND` (shifts without any target, status
-          null), `BELOW_MINIMUM_AT_ONCE` (SHORT and a shift-role of the date is `belowMinimum`),
+          `CLOSED` (no opening interval, `open: false`, status null), `NO_DEMAND` (open, but
+          no target above 0: no shifts, or shifts without any target; status null),
+          `BELOW_MINIMUM_AT_ONCE` (SHORT and a shift-role of the date is `belowMinimum`),
           `SHORT_AT_ONCE`, `TIGHT_AT_ONCE`, or null when COVERED.
           `reasonJobRoleId` is the job role that sets it (worst first, then job-role name and id).
 
@@ -263,8 +264,11 @@ planning:
         dates `source: NONE` and closed (special days still count), so with no demand
         `coveragePercent` is null and `generation.blocker` is NO_DEMAND.
 
-        Each date has `source` (RECURRING_SCHEDULE, EXCEPTION or NONE), `scheduleExceptionId`
-        and `roles` (Σ targetEmployees of each role over its shifts, with the worst status). Each
+        Each date has `open`: true when its effective day has at least one opening interval
+        (`openingIntervals` of `getPlanningGenerationInput`), even without shifts; false means
+        closed («Cerrado»). Shifts do not decide whether a date is open. Each date also has
+        `source` (RECURRING_SCHEDULE, EXCEPTION or NONE), `scheduleExceptionId` and `roles` (Σ
+        targetEmployees of each role over its shifts, with the worst status). Each
         shift has `targetEmployees` (Σ of its roles) and its worst `status`.
 
         `planning` is the existing planning of the week (`id`, `status`) or null. `generation`
