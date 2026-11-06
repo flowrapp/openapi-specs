@@ -8,15 +8,36 @@ scheduleChangeRequests:
       operationId: listScheduleChangeRequests
       summary: List schedule change requests
       description: >
-        Returns one cursor page. An OWNER sees every schedule change of the
-        business. Any other active member, including a MANAGER, sees only a
-        change where they are the current holder, the proposed holder or the
-        outgoing person of a reassignment. No query parameter widens that scope,
-        and this list is not a dashboard. A member with nothing to show gets
-        200 with `content: []`, `hasNext: false` and `nextCursor: null`.
+        Returns one cursor page of schedule changes only. Solicitudes composes
+        this call and `GET /api/v1/businesses/{businessId}/shift-exchange-requests`
+        with the same `direction` or `lifecycle`. The screen is independent.
+        Horario only links to it. There is no combined collection and no
+        vacation type.
+
+        Visibility is unchanged. An OWNER sees every schedule change of the
+        business. Any other active member sees only a change where they are
+        the current holder, the proposed holder or the outgoing person of a
+        reassignment.
+
+        Worker Recibidas: `?direction=RECEIVED`. The caller has an acceptance
+        slot and did not create the request. A person who is only notified
+        (`outgoingNotice`) is not in Recibidas or Enviadas.
+        Worker Enviadas: `?direction=SENT` (the caller is `createdBy`). An
+        employee who has proposed nothing gets an empty page.
+        OWNER Pendientes: `?lifecycle=OPEN`, which is PENDING_ACCEPTANCES and
+        PENDING_OWNER. Both are follow-up, not only the ones waiting on the
+        OWNER. OWNER Historial: `?lifecycle=TERMINAL`. The OWNER tabs omit
+        `direction`.
+
+        Each query is 200 with `content: []`, `hasNext: false` and
+        `nextCursor: null` when the tab is empty. Order is `createdAt`
+        descending, then `id` descending. Items are
+        `ScheduleChangeRequestDTO` and never include warnings.
       security: [{bearerAuth: []}]
       parameters:
         - $ref: "../../components/shiftChanges/components.yml#/components/parameters/BusinessId"
+        - $ref: "../../components/shiftChanges/components.yml#/components/parameters/ScheduleChangeDirection"
+        - $ref: "../../components/shiftChanges/components.yml#/components/parameters/ScheduleChangeLifecycle"
         - $ref: "../../components/shiftChanges/components.yml#/components/parameters/ScheduleChangeStatus"
         - $ref: "../../components/shiftChanges/components.yml#/components/parameters/Cursor"
         - $ref: "../../components/shiftChanges/components.yml#/components/parameters/Limit"
@@ -28,8 +49,32 @@ scheduleChangeRequests:
               schema:
                 $ref: "../../components/shiftChanges/components.yml#/components/schemas/ScheduleChangeRequestPageDTO"
               examples:
-                empty:
-                  summary: Nothing visible for this caller and filter
+                receivedEmpty:
+                  summary: Worker Recibidas with nothing to answer
+                  description: "`GET .../schedule-change-requests?direction=RECEIVED`"
+                  value:
+                    content: []
+                    hasNext: false
+                    nextCursor: null
+                sentEmpty:
+                  summary: Worker Enviadas with nothing created by the caller
+                  description: "`GET .../schedule-change-requests?direction=SENT`"
+                  value:
+                    content: []
+                    hasNext: false
+                    nextCursor: null
+                ownerOpenEmpty:
+                  summary: OWNER Pendientes with no open schedule change
+                  description: >
+                    `GET .../schedule-change-requests?lifecycle=OPEN`. OPEN is
+                    PENDING_ACCEPTANCES and PENDING_OWNER.
+                  value:
+                    content: []
+                    hasNext: false
+                    nextCursor: null
+                ownerHistoryEmpty:
+                  summary: OWNER Historial with no finished schedule change
+                  description: "`GET .../schedule-change-requests?lifecycle=TERMINAL`"
                   value:
                     content: []
                     hasNext: false
@@ -61,6 +106,14 @@ scheduleChangeRequests:
         must accept. When those two are the same person, one later acceptance
         covers both slots. Creation itself is not an acceptance, even when the
         OWNER is the current holder.
+
+        The incoming member may hold a different puesto from the assignment.
+        Same-position is not an invariant and is not `1137`. `changeKind` stays
+        `REASSIGNMENT` when the assignment's puesto, catalog Shift, instants
+        and break are unchanged. The person's other puesto is a
+        `JOB_ROLE_MISMATCH` warning. Any warning, including that one, stops the
+        request in `PENDING_OWNER` after the last acceptance so the OWNER can
+        review it. It is not applied on acceptance alone.
 
         The status starts at `PENDING_ACCEPTANCES` and `version` at 1. The
         assignment is reserved with the same open-request key as an exchange
@@ -111,8 +164,10 @@ scheduleChangeRequests:
               reassignment:
                 summary: Same window, Luis takes Ana's shift
                 description: >
-                  Only the holder changes. Luis accepts. Ana is notified and
-                  does not accept.
+                  Only the holder changes, so this stays a REASSIGNMENT even
+                  when Luis holds another puesto. Luis accepts. Ana is notified
+                  and does not accept. A puesto mismatch is an OWNER warning,
+                  not a 400.
                 value:
                   scheduledShiftId: 900
                   planningId: 501
@@ -144,7 +199,7 @@ scheduleChangeRequests:
           content:
             application/json:
               schema:
-                $ref: "../../components/shiftChanges/components.yml#/components/schemas/ScheduleChangeRequestDTO"
+                $ref: "../../components/shiftChanges/components.yml#/components/schemas/ScheduleChangeRequestOwnerDTO"
               examples:
                 holderAndSchedule:
                   summary: Waiting for Ana and Luis
@@ -235,7 +290,7 @@ scheduleChangeRequests:
           content:
             application/json:
               schema:
-                $ref: "../../components/shiftChanges/components.yml#/components/schemas/ScheduleChangeRequestDTO"
+                $ref: "../../components/shiftChanges/components.yml#/components/schemas/ScheduleChangeRequestViewDTO"
               examples:
                 ownerAfterBothAcceptances:
                   summary: OWNER detail after Ana and Luis have both accepted
@@ -404,7 +459,7 @@ scheduleChangeRequests:
           content:
             application/json:
               schema:
-                $ref: "../../components/shiftChanges/components.yml#/components/schemas/ScheduleChangeRequestDTO"
+                $ref: "../../components/shiftChanges/components.yml#/components/schemas/ScheduleChangeRequestViewDTO"
         "400":
           $ref: "../../components/shiftChanges/components.yml#/components/responses/CommandBadRequest"
         "401":
@@ -466,7 +521,7 @@ scheduleChangeRequests:
           content:
             application/json:
               schema:
-                $ref: "../../components/shiftChanges/components.yml#/components/schemas/ScheduleChangeRequestDTO"
+                $ref: "../../components/shiftChanges/components.yml#/components/schemas/ScheduleChangeRequestOwnerDTO"
               examples:
                 applied:
                   summary: Both acceptances plus the OWNER override
@@ -548,11 +603,12 @@ scheduleChangeRequests:
       summary: Reject a schedule change
       description: >
         A person with a `PENDING` slot may reject while the status is
-        `PENDING_ACCEPTANCES`. One rejection rejects the whole request and marks
-        that person's slots `REJECTED`. An OWNER may reject while the status is
-        `PENDING_OWNER`, which declines to override the warnings. The actor
-        comes from the JWT. The body has no user id. The OWNER withdraws a
-        proposal that is still waiting for acceptances by cancelling it, not by
+        `PENDING_ACCEPTANCES`. One rejection rejects the whole request.
+        An OWNER may reject while the status is `PENDING_OWNER`. `reason` is
+        required for the worker and for the OWNER. After trim it must be
+        non-empty; a missing or blank reason is 400 `1140`. The actor comes
+        from the JWT. The body has no user id. The OWNER withdraws a proposal
+        that is still waiting for acceptances by cancelling it, not by
         rejecting it. A MANAGER has no reject permission beyond holding a
         pending slot.
       security: [{bearerAuth: []}]
@@ -564,7 +620,7 @@ scheduleChangeRequests:
         content:
           application/json:
             schema:
-              $ref: "../../components/shiftChanges/components.yml#/components/schemas/ShiftChangeActorCommandDTO"
+              $ref: "../../components/shiftChanges/components.yml#/components/schemas/RejectShiftChangeRequestDTO"
             examples:
               incoming:
                 summary: Luis declines the shift he would receive
@@ -575,15 +631,16 @@ scheduleChangeRequests:
                 summary: OWNER declines to override the warnings
                 value:
                   version: 3
+                  reason: No asumimos el solape
       responses:
         "200":
           description: Schedule change rejected.
           content:
             application/json:
               schema:
-                $ref: "../../components/shiftChanges/components.yml#/components/schemas/ScheduleChangeRequestDTO"
+                $ref: "../../components/shiftChanges/components.yml#/components/schemas/ScheduleChangeRequestViewDTO"
         "400":
-          $ref: "../../components/shiftChanges/components.yml#/components/responses/CommandBadRequest"
+          $ref: "../../components/shiftChanges/components.yml#/components/responses/RejectionBadRequest"
         "401":
           $ref: "../../components/shiftChanges/components.yml#/components/responses/Unauthorized"
         "403":
@@ -624,7 +681,7 @@ scheduleChangeRequests:
           content:
             application/json:
               schema:
-                $ref: "../../components/shiftChanges/components.yml#/components/schemas/ScheduleChangeRequestDTO"
+                $ref: "../../components/shiftChanges/components.yml#/components/schemas/ScheduleChangeRequestOwnerDTO"
         "400":
           $ref: "../../components/shiftChanges/components.yml#/components/responses/CommandBadRequest"
         "401":

@@ -39,9 +39,9 @@ components:
       required: false
       description: >
         Opaque cursor returned as `nextCursor`. It is bound to the business,
-        the authenticated caller and the status filter. Reusing it with another
-        filter, another caller or another business is
-        400 `1138` `INVALID_SHIFT_CHANGE_CURSOR`.
+        the authenticated caller, `direction`, `lifecycle` and the status
+        filter. Reusing it with another filter, another caller or another
+        business is 400 `1138` `INVALID_SHIFT_CHANGE_CURSOR`.
       schema:
         type: string
         minLength: 1
@@ -64,9 +64,13 @@ components:
       in: query
       required: false
       description: >
-        Optional status filter. Repeat the parameter to include more than one
-        status (`status=PENDING_PEER&status=PENDING_OWNER`). Omitted means every
-        status. The filter never widens visibility.
+        Repeat to include more than one status. Omitted means every status.
+        Intersected with `lifecycle` when both are present; a contradiction is
+        an empty page, not an error. The OWNER Pendientes view is
+        `lifecycle=OPEN` (PENDING_PEER and PENDING_OWNER). The equivalent
+        explicit set is `status=PENDING_PEER&status=PENDING_OWNER`. Historial
+        is `lifecycle=TERMINAL`, or those four terminal statuses repeated.
+        The filter never widens visibility.
       style: form
       explode: true
       schema:
@@ -78,14 +82,70 @@ components:
       in: query
       required: false
       description: >
-        Optional status filter. Repeat the parameter to include more than one
-        status. Omitted means every status. The filter never widens visibility.
+        Repeat to include more than one status. Omitted means every status.
+        Intersected with `lifecycle` when both are present; a contradiction is
+        an empty page. OWNER Pendientes is `lifecycle=OPEN`
+        (PENDING_ACCEPTANCES and PENDING_OWNER), not only PENDING_OWNER. The
+        equivalent explicit set repeats those two statuses. Historial repeats
+        APPLIED, REJECTED, CANCELLED, EXPIRED and SUPERSEDED, or sends
+        `lifecycle=TERMINAL`. The filter never widens visibility.
       style: form
       explode: true
       schema:
         type: array
         items:
           $ref: "#/components/schemas/ScheduleChangeStatusDTO"
+    ExchangeDirection:
+      name: direction
+      in: query
+      required: false
+      description: >
+        Worker tabs of the independent Solicitudes screen, inside the caller's
+        existing visibility. `RECEIVED`: the caller is the counterpart (the
+        PEER slot) and did not create the exchange. `SENT`: the caller is
+        `createdBy`. The requester is never RECEIVED. Omitted returns every
+        visible exchange. An OWNER building Pendientes or Historial omits this
+        parameter. Passing it does not widen visibility; it keeps only the
+        caller's own relationship.
+      schema:
+        $ref: "#/components/schemas/ShiftChangeDirectionDTO"
+    ScheduleChangeDirection:
+      name: direction
+      in: query
+      required: false
+      description: >
+        Worker tabs of Solicitudes for this collection only. `RECEIVED`: the
+        caller has an acceptance slot (INCOMING and/or CURRENT) and is not
+        `createdBy`. `SENT`: the caller is `createdBy`. A person who is only
+        `outgoingNotice` is in neither tab; they still appear when `direction`
+        is omitted. An OWNER building Pendientes or Historial omits this
+        parameter. It never widens visibility.
+      schema:
+        $ref: "#/components/schemas/ShiftChangeDirectionDTO"
+    ExchangeLifecycle:
+      name: lifecycle
+      in: query
+      required: false
+      description: >
+        OWNER tabs of Solicitudes for exchanges. `OPEN` is every non-terminal
+        status: PENDING_PEER and PENDING_OWNER. PENDING_PEER is included
+        because the request still needs follow-up, even though the OWNER
+        cannot approve it yet. `TERMINAL` is APPLIED, REJECTED, CANCELLED,
+        EXPIRED and SUPERSEDED. Omitted means every status. This is not a
+        dashboard and it does not change who can see a row.
+      schema:
+        $ref: "#/components/schemas/ShiftChangeLifecycleDTO"
+    ScheduleChangeLifecycle:
+      name: lifecycle
+      in: query
+      required: false
+      description: >
+        OWNER tabs of Solicitudes for schedule changes. `OPEN` is every
+        non-terminal status: PENDING_ACCEPTANCES and PENDING_OWNER. Both need
+        follow-up. `TERMINAL` is APPLIED, REJECTED, CANCELLED, EXPIRED and
+        SUPERSEDED. Omitted means every status.
+      schema:
+        $ref: "#/components/schemas/ShiftChangeLifecycleDTO"
     IdempotencyKey:
       name: Idempotency-Key
       in: header
@@ -102,6 +162,23 @@ components:
         format: uuid
         example: 3fa85f64-5717-4562-b3fc-2c963f66afa6
   schemas:
+    ShiftChangeDirectionDTO:
+      type: string
+      description: >
+        Which worker tab of Solicitudes a row belongs to. The server applies
+        it. The client does not classify rows itself.
+      enum: [RECEIVED, SENT]
+      example: RECEIVED
+
+    ShiftChangeLifecycleDTO:
+      type: string
+      description: >
+        OWNER split of Solicitudes. `OPEN` means every non-terminal status of
+        that collection. `TERMINAL` means every terminal status. The client
+        does not decide which statuses are terminal.
+      enum: [OPEN, TERMINAL]
+      example: OPEN
+
     ShiftChangePersonDTO:
       type: object
       additionalProperties: false
@@ -294,21 +371,27 @@ components:
         Planning warning that does not block the proposal by itself. An OWNER
         may apply it only with an explicit override. These codes never replace a
         hard failure of identity, permission, a future not-started instant, a
-        version, a foreign key or attendance. `SHIFT_OVERLAP`: the proposal
-        overlaps another scheduled shift of the same person.
+        version, a foreign key or attendance. A candidate, a counterpart or an
+        incoming member may hold a different puesto. That difference is not a
+        hard failure and same-position is not an invariant. `JOB_ROLE_MISMATCH`:
+        the proposed holder does not hold the assignment's puesto. `SHIFT_OVERLAP`:
+        the proposal overlaps another scheduled shift of the same person.
         `COVERAGE_SHORTFALL`: the proposal leaves a staffing demand below its
-        minimum. The message stays qualitative and carries no contract hours,
-        rates or other administrative data.
-      enum: [SHIFT_OVERLAP, COVERAGE_SHORTFALL]
-      example: SHIFT_OVERLAP
+        minimum. Any of these is a relevant difference the OWNER reviews. The
+        message stays qualitative and carries no contract hours, rates or other
+        administrative data.
+      enum: [JOB_ROLE_MISMATCH, SHIFT_OVERLAP, COVERAGE_SHORTFALL]
+      example: JOB_ROLE_MISMATCH
 
     ShiftChangeWarningDTO:
       type: object
       additionalProperties: false
       description: >
-        One planning warning. Present only inside an OWNER detail. Participants
-        do not receive this object, its fingerprint, or a null placeholder they
-        could read as "there were no warnings".
+        One planning warning. This object exists only on `ShiftExchangeRequestOwnerDTO`
+        and `ScheduleChangeRequestOwnerDTO`. A worker, a MANAGER and any other
+        non-owner never receive it, not even as null. It carries no contract,
+        payroll or other administrative fields, and no request the caller does
+        not already have open.
       properties:
         code:
           $ref: "#/components/schemas/ShiftChangeWarningCodeDTO"
@@ -399,9 +482,9 @@ components:
       type: object
       additionalProperties: false
       description: >
-        Rejection or cancellation by the authenticated user. The body has no
-        user id. `reason`, when sent, must be non-blank after trim and at most
-        500 characters.
+        Cancellation by the authenticated user. The body has no user id.
+        `reason`, when sent, must be non-blank after trim and at most 500
+        characters. Rejection does not use this schema.
       properties:
         version:
           $ref: "#/components/schemas/ShiftChangeRequestVersion"
@@ -409,9 +492,30 @@ components:
           type: string
           minLength: 1
           maxLength: 500
-          description: Optional note. Omit it to decide without a note.
-          example: No puedo ese día
+          description: Optional note. Omit it to cancel without a note.
+          example: Ya no hace falta
       required: [version]
+
+    RejectShiftChangeRequestDTO:
+      type: object
+      additionalProperties: false
+      description: >
+        Rejection by the counterpart, by a worker who holds a required
+        acceptance slot, or by the OWNER. The actor is the authenticated user.
+        The body has no user id. `reason` is required for every one of those
+        actors. After trim it must be a non-empty string of at most 500
+        characters. A missing reason, a null, or whitespace only is
+        400 `1140` `INVALID_SHIFT_CHANGE_COMMAND`.
+      properties:
+        version:
+          $ref: "#/components/schemas/ShiftChangeRequestVersion"
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 500
+          description: Mandatory rejection reason. Whitespace alone is rejected.
+          example: No puedo ese miércoles
+      required: [version, reason]
 
     ShiftChangeApprovalRequestDTO:
       type: object
@@ -499,9 +603,13 @@ components:
         Reciprocal exchange of two concrete published assignments that have not
         started. Cross-week is allowed: the assignments may belong to different
         plannings and different ISO weeks. Both ids are required; omitting one
-        would be a cession and is rejected. The caller must be the current holder
+        would be a cession and is rejected.         The caller must be the current holder
         of `sourceScheduledShiftId`. The two ids and the two holders must differ.
-        The server writes both snapshots; the client does not send them.
+        The assignments may have different puestos, and each person may hold a
+        puesto other than the assignment they would take. Same-position is not
+        an invariant and that difference is not `1136`. It becomes a
+        `JOB_ROLE_MISMATCH` warning on the OWNER detail. The server writes both
+        snapshots; the client does not send them.
 
         At most one open request may cover a concrete assignment. The assignment
         key is `business_id` + `scheduled_shifts.id` + `original_user_id`
@@ -535,22 +643,11 @@ components:
           example: Cambio de semana por una cita médica
       required: [sourceScheduledShiftId, counterpartScheduledShiftId, reason]
 
-    ShiftExchangeRequestDTO:
+    ShiftExchangeRequestCoreDTO:
       type: object
-      additionalProperties: false
       description: >
-        One shift exchange. `affectedShifts` is always the full SOURCE and
-        COUNTERPART pair, each with `before` and `after`, including when the
-        weeks differ. `expiresAt` is the earliest `startAt` among those
-        snapshots. The request stays open only while now is strictly before
-        `expiresAt`.
-
-        `warnings`, `warningsFingerprint` and `override` are owner-detail fields.
-        They are omitted on every list item and on every response to a caller
-        who is not the OWNER. Omission does not mean that there were no warnings.
-        On an OWNER detail, `warnings` is always an array (empty when there are
-        none), `warningsFingerprint` is the fingerprint of that array, and
-        `override` is null until an OWNER applies with an override.
+        Fields shared by the participant and OWNER exchange representations.
+        Not returned by itself. No contract, payroll, email or membership role.
       properties:
         id:
           type: integer
@@ -606,27 +703,6 @@ components:
           description: The single `PEER` slot of the counterpart.
           items:
             $ref: "#/components/schemas/ShiftChangeAcceptanceDTO"
-        warnings:
-          type: array
-          description: >
-            OWNER detail only. Derived from the captured proposal at the captured
-            planning versions. Empty when there is nothing to override.
-          items:
-            $ref: "#/components/schemas/ShiftChangeWarningDTO"
-        warningsFingerprint:
-          type: string
-          minLength: 1
-          description: >
-            OWNER detail only. Opaque fingerprint of `warnings` in the order
-            returned. Echo it on approval. Do not recompute it.
-          example: fp-7c2a
-        override:
-          description: >
-            OWNER detail only. Null until an override is recorded. Omitted, not
-            null, for every non-owner response and for every list item.
-          oneOf:
-            - $ref: "#/components/schemas/ShiftChangeOverrideRecordDTO"
-            - type: "null"
       required:
         [
           id,
@@ -643,6 +719,62 @@ components:
           acceptances,
         ]
 
+    ShiftExchangeRequestDTO:
+      description: >
+        Participant representation of one shift exchange, and every list item
+        of this collection. `affectedShifts` is the full SOURCE and COUNTERPART
+        pair of this request. This schema has no `warnings`,
+        `warningsFingerprint` or `override` properties. A worker response that
+        included them would not match. A request the caller does not participate
+        in is not returned; the detail is 404 `1134`.
+      unevaluatedProperties: false
+      allOf:
+        - $ref: "#/components/schemas/ShiftExchangeRequestCoreDTO"
+
+    ShiftChangeOwnerReviewDTO:
+      type: object
+      description: >
+        Owner-only review of planning warnings. Composed into the OWNER detail
+        schemas and into no participant schema. `warnings` is the full typed
+        list, possibly empty. `warningsFingerprint` is the opaque fingerprint of
+        that list, in the order returned; the OWNER echoes it and does not
+        recompute it. `override` is null until an override is recorded. Nothing
+        here is a contract hour, a rate or another administrative field.
+      properties:
+        warnings:
+          type: array
+          items:
+            $ref: "#/components/schemas/ShiftChangeWarningDTO"
+        warningsFingerprint:
+          type: string
+          minLength: 1
+          example: fp-7c2a
+        override:
+          oneOf:
+            - $ref: "#/components/schemas/ShiftChangeOverrideRecordDTO"
+            - type: "null"
+      required: [warnings, warningsFingerprint, override]
+
+    ShiftExchangeRequestOwnerDTO:
+      description: >
+        Detail returned only when the caller is the OWNER. A worker, a MANAGER
+        or any other participant receives `ShiftExchangeRequestDTO` instead, and
+        a caller who is not a participant receives 404 `1134`.
+      unevaluatedProperties: false
+      allOf:
+        - $ref: "#/components/schemas/ShiftExchangeRequestCoreDTO"
+        - $ref: "#/components/schemas/ShiftChangeOwnerReviewDTO"
+
+    ShiftExchangeRequestViewDTO:
+      description: >
+        Caller-specific exchange representation. The OWNER receives
+        `ShiftExchangeRequestOwnerDTO`. A participant who is not the OWNER
+        receives `ShiftExchangeRequestDTO`, which cannot carry warnings. Anyone
+        else receives 404 `1134`, the same body as a missing id.
+      oneOf:
+        - $ref: "#/components/schemas/ShiftExchangeRequestDTO"
+        - $ref: "#/components/schemas/ShiftExchangeRequestOwnerDTO"
+
     ShiftExchangeRequestPageDTO:
       type: object
       additionalProperties: false
@@ -652,9 +784,15 @@ components:
         sees only requests where they are the requester or the counterpart.
         There is no parameter that widens that scope. An empty page is
         `content: []`, `hasNext: false` and `nextCursor: null`, including when
-        the caller simply has no requests. Order is `createdAt` descending, then
-        `id` descending. List items omit `warnings`, `warningsFingerprint` and
-        `override`.
+        a Solicitudes tab has no rows. Order is `createdAt` descending, then
+        `id` descending, and does not change between pages. Every item is
+        `ShiftExchangeRequestDTO`, including on an OWNER's page: status, the
+        creation reason, `createdBy`, `expiresAt`, both assignments with display
+        names, puesto, instants and acceptance slots. Warnings are not on this
+        list. This collection is only shift exchanges. Solicitudes is a separate
+        screen; Horario links to it and does not embed another resource. The
+        screen also calls the schedule-change list with the same `direction` or
+        `lifecycle`. No vacation type and no combined endpoint exist here.
       properties:
         content:
           type: array
@@ -674,8 +812,10 @@ components:
       description: >
         Derived by the server. The client does not send it. `REASSIGNMENT`: the
         only difference between `before` and `after` is the holder. The incoming
-        person accepts (`INCOMING`); the outgoing holder is notified and has no
-        acceptance slot. `HOLDER_AND_SCHEDULE`: the puesto, the catalog Shift,
+        person may hold another puesto; that does not change the kind and does
+        not reject the request. The incoming person accepts (`INCOMING`); the
+        outgoing holder is notified and has no acceptance slot.
+        `HOLDER_AND_SCHEDULE`: the assignment's puesto, the catalog Shift,
         the instants or the break changes, whether or not the holder also
         changes. The incoming person and the current holder both accept
         (`INCOMING` and `CURRENT`). When those two slots are the same person,
@@ -732,8 +872,13 @@ components:
         planning's current version. `after` is required: removing an assignment
         is not part of this contract. `before` and `after` must differ in the
         holder, the puesto, the catalog Shift, the instants or the break.
-        The proposed holder must be an active member. The proposed window must
-        still be in the future, and its break must be shorter than its duration.
+        The proposed holder must be an active member and may hold a different
+        puesto from the assignment. Same-position is not an invariant. A
+        different puesto is a `JOB_ROLE_MISMATCH` warning for the OWNER, not
+        `1137`. The proposed window must still be in the future, and its break
+        must be shorter than its duration. Changing the assignment's own puesto
+        is `HOLDER_AND_SCHEDULE` and still requires the new puesto to be an
+        active job role of the business (`1034`).
 
         The same open-request rule as an exchange applies to this single
         assignment: at most one open request for (`scheduled_shift_id`,
@@ -772,19 +917,11 @@ components:
       required:
         [scheduledShiftId, planningId, planningVersion, before, after, reason]
 
-    ScheduleChangeRequestDTO:
+    ScheduleChangeRequestCoreDTO:
       type: object
-      additionalProperties: false
       description: >
-        One schedule change. `affectedShifts` contains exactly one `SOURCE`
-        assignment, with the published window in `before` and the proposal in
-        `after`. `expiresAt` is the earliest `startAt` of those two windows.
-        The request stays open only while now is strictly before `expiresAt`.
-
-        `warnings`, `warningsFingerprint` and `override` follow the same owner
-        detail rule as an exchange: present for an OWNER reading the detail,
-        omitted for everyone else and on every list item. A participant must
-        not treat the omission as an empty warning list.
+        Fields shared by the participant and OWNER schedule-change
+        representations. Not returned by itself.
       properties:
         id:
           type: integer
@@ -842,23 +979,6 @@ components:
             $ref: "#/components/schemas/ShiftChangeAcceptanceDTO"
         outgoingNotice:
           $ref: "#/components/schemas/ShiftChangeNoticeDTO"
-        warnings:
-          type: array
-          description: OWNER detail only. Empty when the proposal has no planning warning.
-          items:
-            $ref: "#/components/schemas/ShiftChangeWarningDTO"
-        warningsFingerprint:
-          type: string
-          minLength: 1
-          description: OWNER detail only. Opaque fingerprint of `warnings`. Echo it on approval.
-          example: fp-7c2a
-        override:
-          description: >
-            OWNER detail only. Null until an override is recorded. Omitted for
-            every non-owner response and for every list item.
-          oneOf:
-            - $ref: "#/components/schemas/ShiftChangeOverrideRecordDTO"
-            - type: "null"
       required:
         [
           id,
@@ -876,6 +996,36 @@ components:
           acceptances,
         ]
 
+    ScheduleChangeRequestDTO:
+      description: >
+        Participant representation and every list item of this collection.
+        One SOURCE assignment with `before` and `after`. No `warnings`,
+        `warningsFingerprint` or `override`. A worker response that included
+        them would not match. A request the caller cannot see is 404 `1135`,
+        the same body as a missing id.
+      unevaluatedProperties: false
+      allOf:
+        - $ref: "#/components/schemas/ScheduleChangeRequestCoreDTO"
+
+    ScheduleChangeRequestOwnerDTO:
+      description: >
+        Detail returned only when the caller is the OWNER. Anyone else who can
+        see the request receives `ScheduleChangeRequestDTO`. Anyone who cannot
+        see it receives 404 `1135`.
+      unevaluatedProperties: false
+      allOf:
+        - $ref: "#/components/schemas/ScheduleChangeRequestCoreDTO"
+        - $ref: "#/components/schemas/ShiftChangeOwnerReviewDTO"
+
+    ScheduleChangeRequestViewDTO:
+      description: >
+        OWNER receives `ScheduleChangeRequestOwnerDTO`. A participant who is
+        not the OWNER receives `ScheduleChangeRequestDTO`. Anyone else receives
+        404 `1135`.
+      oneOf:
+        - $ref: "#/components/schemas/ScheduleChangeRequestDTO"
+        - $ref: "#/components/schemas/ScheduleChangeRequestOwnerDTO"
+
     ScheduleChangeRequestPageDTO:
       type: object
       additionalProperties: false
@@ -884,9 +1034,14 @@ components:
         every request of the business. Any other active member sees only a
         request where they are the current holder, the proposed holder or the
         outgoing person of a reassignment. A MANAGER has no wider scope. An empty
-        page is `content: []`, `hasNext: false` and `nextCursor: null`. Order is
-        `createdAt` descending, then `id` descending. List items omit owner-only
-        warning fields.
+        page is `content: []`, `hasNext: false` and `nextCursor: null`, including
+        an empty Solicitudes tab. Order is `createdAt` descending, then `id`
+        descending. Every item is `ScheduleChangeRequestDTO`: kind, status,
+        reason, `createdBy`, `expiresAt`, the assignment's before/after,
+        acceptance slots and, for a reassignment, `outgoingNotice`. No warnings.
+        This collection is only schedule changes. Solicitudes also calls the
+        exchange list with the same `direction` or `lifecycle`. There is no
+        vacation type and no combined collection.
       properties:
         content:
           type: array
@@ -990,8 +1145,8 @@ components:
                 detail: "1135 - schedule change request not found"
     ShiftChangeListBadRequest:
       description: >
-        The cursor does not match this query (1138), or `limit` is outside 1–50
-        (1140).
+        The cursor does not match this query (1138), `limit` is outside 1–50,
+        or `direction` or `lifecycle` is not one of its enum values (1140).
       content:
         application/problem+json:
           schema:
@@ -1091,6 +1246,22 @@ components:
           examples:
             invalidCommand:
               summary: "1140 - shift change command is invalid"
+              value:
+                status: 400
+                detail: "1140 - shift change command is invalid"
+    RejectionBadRequest:
+      description: >
+        The rejection reason is missing, empty or whitespace after trim (1140).
+        The same response is used for the counterpart, for a worker with a
+        required acceptance slot, and for the OWNER.
+      content:
+        application/problem+json:
+          schema:
+            $ref: "../common/error-components.yml#/components/schemas/ProblemDetail"
+          examples:
+            reasonRequired:
+              summary: "1140 - shift change command is invalid"
+              description: "Body was {version: 1} or {version: 1, reason: \" \" }."
               value:
                 status: 400
                 detail: "1140 - shift change command is invalid"

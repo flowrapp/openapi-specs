@@ -65,12 +65,13 @@ tags:
     description: >
       Reciprocal swap of two concrete published assignments, under
       /api/v1/businesses/{businessId}/shift-exchange-requests. Pass-through to
-      the Main API. Cross-week is allowed. Not a dashboard.
+      the Main API. Solicitudes calls this list with direction or lifecycle.
+      Not a dashboard.
   - name: Schedule Changes
     description: >
       OWNER correction of one concrete published assignment, under
       /api/v1/businesses/{businessId}/schedule-change-requests. Pass-through to
-      the Main API. Not a dashboard.
+      the Main API. Solicitudes calls this list separately. Not a dashboard.
 
 paths:
   # ── System ──────────────────────────────────────────────────────────────

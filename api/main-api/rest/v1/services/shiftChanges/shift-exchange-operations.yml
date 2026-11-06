@@ -8,16 +8,35 @@ shiftExchangeRequests:
       operationId: listShiftExchangeRequests
       summary: List shift exchange requests
       description: >
-        Returns one cursor page. An OWNER sees every exchange of the business.
-        Any other active member, including a MANAGER, sees only an exchange
-        where they are the requester or the counterpart. No query parameter
-        widens that scope, and this list is not a dashboard. A member with
-        nothing to show gets 200 with `content: []`, `hasNext: false` and
-        `nextCursor: null`. A caller who is not a member gets 403. An unknown
+        Returns one cursor page of shift exchanges only. Solicitudes is an
+        independent screen. The employee Horario and the admin Horario link to
+        it; they do not add an endpoint. The screen composes this call and
+        `GET /api/v1/businesses/{businessId}/schedule-change-requests` with the
+        same `direction` or `lifecycle`. There is no combined collection and
+        no vacation type.
+
+        Visibility is unchanged. An OWNER sees every exchange of the business.
+        Any other active member sees only an exchange where they are the
+        requester or the counterpart. A non-member gets 403. An unknown
         business gets 404.
+
+        Worker Recibidas: `?direction=RECEIVED` (the caller is the counterpart).
+        Worker Enviadas: `?direction=SENT` (the caller created the exchange).
+        OWNER Pendientes: `?lifecycle=OPEN`, which is PENDING_PEER and
+        PENDING_OWNER. PENDING_PEER stays in Pendientes because it still needs
+        follow-up. OWNER Historial: `?lifecycle=TERMINAL`. The OWNER tabs omit
+        `direction`. Repeating `status` is the same split and is optional when
+        `lifecycle` is set.
+
+        Each of those queries is 200 with `content: []`, `hasNext: false` and
+        `nextCursor: null` when the tab is empty. Order is `createdAt`
+        descending, then `id` descending. Items are `ShiftExchangeRequestDTO`
+        and never include warnings.
       security: [{bearerAuth: []}]
       parameters:
         - $ref: "../../components/shiftChanges/components.yml#/components/parameters/BusinessId"
+        - $ref: "../../components/shiftChanges/components.yml#/components/parameters/ExchangeDirection"
+        - $ref: "../../components/shiftChanges/components.yml#/components/parameters/ExchangeLifecycle"
         - $ref: "../../components/shiftChanges/components.yml#/components/parameters/ExchangeStatus"
         - $ref: "../../components/shiftChanges/components.yml#/components/parameters/Cursor"
         - $ref: "../../components/shiftChanges/components.yml#/components/parameters/Limit"
@@ -29,8 +48,32 @@ shiftExchangeRequests:
               schema:
                 $ref: "../../components/shiftChanges/components.yml#/components/schemas/ShiftExchangeRequestPageDTO"
               examples:
-                empty:
-                  summary: Nothing visible for this caller and filter
+                receivedEmpty:
+                  summary: Worker Recibidas with nothing to answer
+                  description: "`GET .../shift-exchange-requests?direction=RECEIVED`"
+                  value:
+                    content: []
+                    hasNext: false
+                    nextCursor: null
+                sentEmpty:
+                  summary: Worker Enviadas with nothing created by the caller
+                  description: "`GET .../shift-exchange-requests?direction=SENT`"
+                  value:
+                    content: []
+                    hasNext: false
+                    nextCursor: null
+                ownerOpenEmpty:
+                  summary: OWNER Pendientes with no open exchange
+                  description: >
+                    `GET .../shift-exchange-requests?lifecycle=OPEN`. OPEN is
+                    PENDING_PEER and PENDING_OWNER.
+                  value:
+                    content: []
+                    hasNext: false
+                    nextCursor: null
+                ownerHistoryEmpty:
+                  summary: OWNER Historial with no finished exchange
+                  description: "`GET .../shift-exchange-requests?lifecycle=TERMINAL`"
                   value:
                     content: []
                     hasNext: false
@@ -59,9 +102,13 @@ shiftExchangeRequests:
 
         Both assignments must be published scheduled shifts of this business
         that have not started. The two ids and the two holders must differ.
-        The server stores SOURCE and COUNTERPART snapshots. On an exchange the
-        window, the puesto and the catalog Shift stay on the assignment; the
-        holders swap. `expiresAt` is the earlier start. The status is
+        The server stores SOURCE and COUNTERPART snapshots. Holders swap. Each
+        assignment keeps its own window, puesto and catalog Shift, and the two
+        assignments may use different puestos. A person may also hold a puesto
+        other than the assignment they take. Same-position is not an invariant
+        and is not `1136`. That difference is a `JOB_ROLE_MISMATCH` warning on
+        the OWNER detail, reviewed at approval together with any overlap or
+        coverage warning. `expiresAt` is the earlier start. The status is
         `PENDING_PEER`, `version` is 1, and the only acceptance slot is `PEER`.
 
         The exchange reserves both assignments atomically. The open-request key
@@ -72,9 +119,10 @@ shiftExchangeRequests:
         that the index has been applied. The same `Idempotency-Key` and the same
         body replay this 201 instead of reserving again.
 
-        The 201 body follows the caller. An OWNER receives `warnings` and
-        `warningsFingerprint`. Any other caller does not, and must not read the
-        omission as an empty warning list.
+        The 201 body follows the caller. An OWNER receives
+        `ShiftExchangeRequestOwnerDTO` (`warnings`, `warningsFingerprint`,
+        `override`). Any other caller receives `ShiftExchangeRequestDTO`, which
+        has none of those properties. Omission is not an empty warning list.
       security: [{bearerAuth: []}]
       parameters:
         - $ref: "../../components/shiftChanges/components.yml#/components/parameters/BusinessId"
@@ -107,7 +155,7 @@ shiftExchangeRequests:
           content:
             application/json:
               schema:
-                $ref: "../../components/shiftChanges/components.yml#/components/schemas/ShiftExchangeRequestDTO"
+                $ref: "../../components/shiftChanges/components.yml#/components/schemas/ShiftExchangeRequestViewDTO"
               examples:
                 crossWeek:
                   summary: Pending the counterpart, across two planning weeks
@@ -157,7 +205,7 @@ shiftExchangeRequests:
                         role: COUNTERPART
                         before:
                           user: {userId: 42, displayName: Luis Mora}
-                          jobRole: {id: 10, name: Waiter}
+                          jobRole: {id: 11, name: Cook}
                           shiftId: 21
                           shiftName: Evening service
                           shiftColor: "#C45C26"
@@ -166,7 +214,7 @@ shiftExchangeRequests:
                           breakMinutes: 20
                         after:
                           user: {userId: 41, displayName: Ana Ruiz}
-                          jobRole: {id: 10, name: Waiter}
+                          jobRole: {id: 11, name: Cook}
                           shiftId: 21
                           shiftName: Evening service
                           shiftColor: "#C45C26"
@@ -217,7 +265,7 @@ shiftExchangeRequests:
           content:
             application/json:
               schema:
-                $ref: "../../components/shiftChanges/components.yml#/components/schemas/ShiftExchangeRequestDTO"
+                $ref: "../../components/shiftChanges/components.yml#/components/schemas/ShiftExchangeRequestViewDTO"
               examples:
                 ownerCrossWeek:
                   summary: OWNER detail while the counterpart has not accepted
@@ -266,7 +314,7 @@ shiftExchangeRequests:
                         role: COUNTERPART
                         before:
                           user: {userId: 42, displayName: Luis Mora}
-                          jobRole: {id: 10, name: Waiter}
+                          jobRole: {id: 11, name: Cook}
                           shiftId: 21
                           shiftName: Evening service
                           shiftColor: "#C45C26"
@@ -275,7 +323,7 @@ shiftExchangeRequests:
                           breakMinutes: 20
                         after:
                           user: {userId: 41, displayName: Ana Ruiz}
-                          jobRole: {id: 10, name: Waiter}
+                          jobRole: {id: 11, name: Cook}
                           shiftId: 21
                           shiftName: Evening service
                           shiftColor: "#C45C26"
@@ -288,6 +336,14 @@ shiftExchangeRequests:
                         status: PENDING
                         decidedAt: null
                     warnings:
+                      - code: JOB_ROLE_MISMATCH
+                        scheduledShiftId: 900
+                        message: The proposed holder does not hold this assignment's puesto.
+                        otherScheduledShiftId: null
+                      - code: JOB_ROLE_MISMATCH
+                        scheduledShiftId: 940
+                        message: The proposed holder does not hold this assignment's puesto.
+                        otherScheduledShiftId: null
                       - code: SHIFT_OVERLAP
                         scheduledShiftId: 900
                         message: The proposed holder already has a scheduled shift that overlaps this assignment.
@@ -332,7 +388,7 @@ shiftExchangeRequests:
           content:
             application/json:
               schema:
-                $ref: "../../components/shiftChanges/components.yml#/components/schemas/ShiftExchangeRequestDTO"
+                $ref: "../../components/shiftChanges/components.yml#/components/schemas/ShiftExchangeRequestViewDTO"
         "400":
           $ref: "../../components/shiftChanges/components.yml#/components/responses/CommandBadRequest"
         "401":
@@ -397,7 +453,7 @@ shiftExchangeRequests:
           content:
             application/json:
               schema:
-                $ref: "../../components/shiftChanges/components.yml#/components/schemas/ShiftExchangeRequestDTO"
+                $ref: "../../components/shiftChanges/components.yml#/components/schemas/ShiftExchangeRequestViewDTO"
         "400":
           $ref: "../../components/shiftChanges/components.yml#/components/responses/CommandBadRequest"
         "401":
@@ -417,8 +473,9 @@ shiftExchangeRequests:
       description: >
         The counterpart may reject while the exchange is `PENDING_PEER`. An
         OWNER may reject while it is `PENDING_OWNER`. The actor comes from the
-        JWT. The body has no user id. The exchange becomes `REJECTED` and the
-        declining slot, when it is the counterpart, becomes `REJECTED`. The
+        JWT. The body has no user id. `reason` is required for the counterpart
+        and for the OWNER; after trim it must be non-empty, and a missing or
+        blank reason is 400 `1140`. The exchange becomes `REJECTED`. The
         requester does not reject their own proposal; they cancel it. A MANAGER
         has no reject permission beyond being the counterpart.
       security: [{bearerAuth: []}]
@@ -430,7 +487,7 @@ shiftExchangeRequests:
         content:
           application/json:
             schema:
-              $ref: "../../components/shiftChanges/components.yml#/components/schemas/ShiftChangeActorCommandDTO"
+              $ref: "../../components/shiftChanges/components.yml#/components/schemas/RejectShiftChangeRequestDTO"
             examples:
               peer:
                 summary: Counterpart declines
@@ -441,15 +498,16 @@ shiftExchangeRequests:
                 summary: OWNER declines to apply
                 value:
                   version: 2
+                  reason: No cubrimos ese lunes
       responses:
         "200":
           description: Exchange rejected.
           content:
             application/json:
               schema:
-                $ref: "../../components/shiftChanges/components.yml#/components/schemas/ShiftExchangeRequestDTO"
+                $ref: "../../components/shiftChanges/components.yml#/components/schemas/ShiftExchangeRequestViewDTO"
         "400":
-          $ref: "../../components/shiftChanges/components.yml#/components/responses/CommandBadRequest"
+          $ref: "../../components/shiftChanges/components.yml#/components/responses/RejectionBadRequest"
         "401":
           $ref: "../../components/shiftChanges/components.yml#/components/responses/Unauthorized"
         "403":
@@ -489,7 +547,7 @@ shiftExchangeRequests:
           content:
             application/json:
               schema:
-                $ref: "../../components/shiftChanges/components.yml#/components/schemas/ShiftExchangeRequestDTO"
+                $ref: "../../components/shiftChanges/components.yml#/components/schemas/ShiftExchangeRequestViewDTO"
         "400":
           $ref: "../../components/shiftChanges/components.yml#/components/responses/CommandBadRequest"
         "401":
