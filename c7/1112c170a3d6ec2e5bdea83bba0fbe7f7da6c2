@@ -1,0 +1,25 @@
+openspec/changes/migrate-auth-to-clerk/design.md
+  s_88371660cd48e1::t_d77f6251548c8e 15-17,23
+openspec/changes/migrate-auth-to-clerk/proposal.md
+  s_88371660cd48e1::t_b8faa77f797353 9-10
+openspec/changes/migrate-auth-to-clerk/specs/api-authentication/spec.md
+  s_88371660cd48e1::t_61bd44656081df 8,12,48-49,51-53,55-57
+openspec/changes/migrate-auth-to-clerk/tasks.md
+  s_88371660cd48e1::t_f23b85ff197e38 11,13-20
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.6",
+  "base_commit_sha": "c71112c170a3d6ec2e5bdea83bba0fbe7f7da6c2",
+  "prompts": {},
+  "sessions": {
+    "s_88371660cd48e1": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_e48c7a6c0ffeE3gDwOA4iMYEdp",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "sergiobpa <sergiobpa@ext.inditex.com>"
+    }
+  }
+}
