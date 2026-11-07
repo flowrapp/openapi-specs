@@ -1,0 +1,35 @@
+api/bff-api/rest/open-api-rest.yml
+  s_aeac464dd555dc::t_446f2a5631cda6 10,184-187
+api/bff-api/rest/v1/components/auth/components.yml
+  s_aeac464dd555dc::t_868ab790ae6478 105,107
+api/bff-api/rest/v1/services/auth/auth-operations.yml
+  s_aeac464dd555dc::t_748086d8f08e8d 4,33,61,87,113,141,171-176,180-181,204-205,207-222,225-228
+api/bff-api/rest/v1/services/user/user-operations.yml
+  s_aeac464dd555dc::t_2a351a5615c996 25
+api/main-api/rest/open-api-rest.yml
+  s_aeac464dd555dc::t_7e15a0ffc38239 6,457-461
+api/main-api/rest/v1/components/invitations/components.yml
+  s_aeac464dd555dc::t_9f5198e7ae4c5f 18,20
+api/main-api/rest/v1/services/auth/auth-operations.yml
+  s_aeac464dd555dc::t_36a76f9ab1121a 4,44,95,125,155,193
+api/main-api/rest/v1/services/invitations/invitations-operations.yml
+  s_aeac464dd555dc::t_9925a30f6102f3 5-11,15-16,39-40,42,48-52,72
+api/main-api/rest/v1/services/users/user-operations.yml
+  s_aeac464dd555dc::t_0c57a9d2e23453 43
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.6",
+  "base_commit_sha": "5cc6828c2572f1688258815a3dd33607098274a6",
+  "prompts": {},
+  "sessions": {
+    "s_aeac464dd555dc": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_e48327002ffeJidA8jok219juc",
+        "model": "gpt-6-luna"
+      },
+      "human_author": "sergiobpa <sergiobpa@ext.inditex.com>"
+    }
+  }
+}
