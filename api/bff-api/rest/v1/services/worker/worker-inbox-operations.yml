@@ -1,0 +1,189 @@
+workerInbox:
+  incidents:
+    get:
+      tags: [Worker]
+      operationId: getWorkerAttendanceIncidents
+      summary: List my legacy individual attendance incidents
+      description: |
+        Legacy BFF 0.0.85 contract retained from approved source commit `92f0504`. The
+        caller's own OPEN incidents with current justification null, ordered by persisted
+        updatedAt descending then id descending. The BFF forwards cursor and limit unchanged
+        to Main `getCurrentUserAttendanceIncidents`, maps its full incident and anchor to the
+        worker DTO and preserves page metadata. Any active membership role may call it; data
+        always remains caller-scoped. The anchor is navigation only. An item leaves this
+        list when justified but remains OPEN/editable through the existing individual route;
+        resolved incidents are history only. There is no total or read/unread state.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '../../components/worker/inbox-components.yml#/components/parameters/BusinessId'
+        - $ref: '../../components/worker/inbox-components.yml#/components/parameters/Cursor'
+        - $ref: '../../components/worker/inbox-components.yml#/components/parameters/Limit'
+      responses:
+        '200':
+          description: Page of my individual incidents to justify.
+          content:
+            application/json:
+              schema: {$ref: '../../components/worker/inbox-components.yml#/components/schemas/WorkerAttendanceIncidentPageDTO'}
+              example: {content: [], hasNext: false, nextCursor: null}
+        '400':
+          $ref: '../../components/worker/inbox-components.yml#/components/responses/InboxListBadRequest'
+        '401':
+          $ref: '../../components/worker/inbox-components.yml#/components/responses/Unauthorized'
+        '403':
+          $ref: '../../components/worker/inbox-components.yml#/components/responses/NotMember'
+        '404':
+          $ref: '../../components/worker/inbox-components.yml#/components/responses/BusinessNotFound'
+      x-functional-errors: [1006, 1015, 1142]
+
+  badge:
+    get:
+      tags: [Worker]
+      operationId: getWorkerAttendanceInboxBadge
+      summary: Count my incidents and legacy pending confirmations
+      description: |
+        Legacy badge from BFF 0.0.85 source commit `92f0504`; it forwards both required Main
+        API counts unchanged: `incidentCount` (own OPEN incidents without justification)
+        and `confirmationCount` (own PENDING worklog-change confirmations). Both counts stay
+        distinct. The badge is not a confirmation list and this contract adds no confirmation
+        collection or response route. Any active membership role receives caller-only counts.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '../../components/worker/inbox-components.yml#/components/parameters/BusinessId'
+      responses:
+        '200':
+          description: Both independent caller-scoped counts.
+          content:
+            application/json:
+              schema: {$ref: '../../components/worker/inbox-components.yml#/components/schemas/WorkerAttendanceInboxBadgeDTO'}
+              example: {incidentCount: 2, confirmationCount: 1}
+        '401':
+          $ref: '../../components/worker/inbox-components.yml#/components/responses/Unauthorized'
+        '403':
+          $ref: '../../components/worker/inbox-components.yml#/components/responses/NotMember'
+        '404':
+          $ref: '../../components/worker/inbox-components.yml#/components/responses/BusinessNotFound'
+      x-functional-errors: [1006, 1015]
+
+  groups:
+    get:
+      tags: [Worker]
+      operationId: getWorkerAttendanceIncidentGroups
+      summary: List my attendance incident groups
+      description: |
+        Caller-owned groups only; OWNER, MANAGER and EMPLOYEE memberships are treated
+        equally. The BFF forwards date, justification, cursor and limit to Main API
+        `getCurrentUserAttendanceIncidentGroups` and maps the complete groups. It does
+        not compose attendance history or filter groups in memory. SHIFT is `S-{shiftId}`;
+        UNMATCHED is `M-{matchId}` and GET uses the canonical S- identity after a match
+        becomes MATCHED. Historical RESOLVED incidents are excluded. Date boundaries use
+        business ZoneId, including DST and overnight shifts. Page order is anchorAt DESC,
+        kind rank SHIFT before UNMATCHED, then anchor id DESC. Cursor is bound to business,
+        caller, date, filter and zone. It is a live keyset, with no global snapshot
+        guarantee; refresh from page one when the anchor, membership or eligibility changes.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '../../components/worker/inbox-components.yml#/components/parameters/BusinessId'
+        - $ref: '../../components/worker/inbox-components.yml#/components/parameters/GroupDate'
+        - $ref: '../../components/worker/inbox-components.yml#/components/parameters/JustificationFilter'
+        - $ref: '../../components/worker/inbox-components.yml#/components/parameters/GroupCursor'
+        - $ref: '../../components/worker/inbox-components.yml#/components/parameters/GroupLimit'
+      responses:
+        '200':
+          description: Page of complete incident groups.
+          content:
+            application/json:
+              schema: {$ref: '../../components/worker/inbox-components.yml#/components/schemas/WorkerAttendanceIncidentGroupPageDTO'}
+              examples:
+                empty:
+                  value: {content: [], hasNext: false, nextCursor: null, asOf: '2026-11-07T10:00:00Z'}
+        '400':
+          $ref: '../../components/worker/inbox-components.yml#/components/responses/GroupListBadRequest'
+        '401':
+          $ref: '../../components/worker/inbox-components.yml#/components/responses/Unauthorized'
+        '403':
+          $ref: '../../components/worker/inbox-components.yml#/components/responses/NotMember'
+        '404':
+          $ref: '../../components/worker/inbox-components.yml#/components/responses/BusinessNotFound'
+      x-functional-errors: [1006, 1015, 1144, 1145]
+
+  group:
+    get:
+      tags: [Worker]
+      operationId: getWorkerAttendanceIncidentGroup
+      summary: Get one of my complete incident groups
+      description: >-
+        Forwards the group read to Main API and returns the complete caller-owned group. If
+        an M- id has become MATCHED, Main canonicalizes the GET response to S-. A stale M-
+        id on PUT returns 409 with `currentGroupId`. Only OPEN members are included.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '../../components/worker/inbox-components.yml#/components/parameters/BusinessId'
+        - $ref: '../../components/worker/inbox-components.yml#/components/parameters/GroupId'
+      responses:
+        '200':
+          description: Complete group with its OPEN members.
+          content:
+            application/json:
+              schema: {$ref: '../../components/worker/inbox-components.yml#/components/schemas/WorkerAttendanceIncidentGroupDTO'}
+        '401':
+          $ref: '../../components/worker/inbox-components.yml#/components/responses/Unauthorized'
+        '403':
+          $ref: '../../components/worker/inbox-components.yml#/components/responses/NotMember'
+        '404':
+          $ref: '../../components/worker/inbox-components.yml#/components/responses/GroupNotFound'
+      x-functional-errors: [1006, 1015, 1146]
+
+  group-justification:
+    put:
+      tags: [Worker]
+      operationId: justifyWorkerAttendanceIncidentGroup
+      summary: Apply one common justification to my whole group
+      description: |
+        Forwards one atomic group command to Main API. The request names no individual
+        incident ids and applies the exact untrimmed text to every current OPEN member
+        using the supplied expectedRevision. The Main API is authoritative for active
+        membership and caller ownership; no role-only EMPLOYEE check is added.
+
+        A stale revision or M- canonicalization returns 409 1147; `currentGroupId` gives
+        the S- canonical id when applicable. An empty/non-open group returns 409 1148.
+        Lock timeout 503 1149 and `Retry-After: 1` is forwarded. Existing individual
+        justifications are not silently represented as common: the returned group reports
+        COMMON, LEGACY_SINGLE, PARTIAL, NOT_COMMON or NONE. This BFF contract is a proposed
+        new capability, not a claim of implementation. See the repository design note for
+        writer adoption, append-only evidence, history protection and pending retention gate.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '../../components/worker/inbox-components.yml#/components/parameters/BusinessId'
+        - $ref: '../../components/worker/inbox-components.yml#/components/parameters/GroupId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '../../components/worker/inbox-components.yml#/components/schemas/WorkerAttendanceIncidentGroupJustificationRequestDTO'}
+            example:
+              text: The bus was delayed; I arrived as soon as possible.
+              expectedRevision: rv1-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+      responses:
+        '400':
+          $ref: '../../components/worker/inbox-components.yml#/components/responses/GroupRequestBadRequest'
+        '200':
+          description: APPLIED or exact idempotent REPLAYED result.
+          content:
+            application/json:
+              schema: {$ref: '../../components/worker/inbox-components.yml#/components/schemas/WorkerAttendanceIncidentGroupJustificationResponseDTO'}
+        '401':
+          $ref: '../../components/worker/inbox-components.yml#/components/responses/Unauthorized'
+        '403':
+          $ref: '../../components/worker/inbox-components.yml#/components/responses/NotMember'
+        '404':
+          $ref: '../../components/worker/inbox-components.yml#/components/responses/GroupNotFound'
+        '409':
+          $ref: '../../components/worker/inbox-components.yml#/components/responses/GroupConflict'
+        '503':
+          $ref: '../../components/worker/inbox-components.yml#/components/responses/GroupLockTimeout'
+      x-functional-errors: [1006, 1015, 1144, 1147, 1148, 1149]

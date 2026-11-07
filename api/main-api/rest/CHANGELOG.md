@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.0.97 (local spec draft; not a release or repository tag)
+
+Spec only. No Main API implementation is included. Requires coordinated BFF 0.0.86 and the explicit runtime/codegen/persistence gates in `docs/attendance-incident-groups.md`.
+
+### Added
+
+- Caller-scoped `GET /api/v1/businesses/{businessId}/attendance-incident-groups`, `GET .../{groupId}` and `POST .../{groupId}/justification`. Any active membership role may read or justify only their own data. Groups are canonical `S-{scheduledShiftId}` SHIFT groups or `M-{attendanceMatchId}` UNMATCHED groups; OPEN incident aggregation, business-zone date filtering, JUSTIFIED/UNJUSTIFIED filtering, live keyset pagination, full-member response snapshots and revision-safe atomic common justification are specified in the new design note.
+- Legacy `getCurrentUserAttendanceIncidents` listing and `getCurrentUserAttendanceInboxBadge` contracts from approved source commit `92f0504`, restricted to those two operations and their necessary DTOs/refs. Legacy list retains OPEN + justification IS NULL, `limit` 1..50/default 20 and updatedAt DESC/id DESC; the badge preserves both `incidentCount` and `confirmationCount`. No confirmation endpoint is added. Code 1142 remains the legacy list cursor error.
+- New functional codes 1144–1149 for grouped request validation, scoped cursor, group not found, revision/canonicalization conflict, no-open group and lock timeout. Code 1150 is catalogued as a future-writer history-protection requirement only; these GET/POST routes do not emit it.
+- Bumped local OpenAPI version to 0.0.97. This is a draft increment, not a release or tag.
+
 ## 0.0.95
 
 Spec only. No backend implementation and no repository tag in this change. Coordinate with BFF API 0.0.83.

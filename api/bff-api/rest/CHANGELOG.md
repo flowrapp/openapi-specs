@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.0.86 (local spec draft; not a release or repository tag)
+
+Spec only. No BFF implementation is included. Requires Main API contract 0.0.97 and the explicit runtime/codegen/persistence gates in `docs/attendance-incident-groups.md`.
+
+### Added
+
+- Worker `GET /api/v1/worker/businesses/{businessId}/attendance-incident-groups`, `GET .../{groupId}` and `PUT .../{groupId}/justification`, mirroring the caller-scoped Main group contract and forwarding group filters, revision conflicts, lock timeout and `Retry-After: 1`. Any active membership role may access only their own attendance data.
+- Retained the approved legacy `getWorkerAttendanceIncidents` list and two-count `getWorkerAttendanceInboxBadge` from source commit `92f0504`, limited to those operations and necessary DTOs/refs. The list preserves OPEN + justification IS NULL, default limit 20/range 1..50 and updatedAt DESC/id DESC; `incidentCount` and `confirmationCount` remain distinct. No confirmation collection or response endpoint is included.
+- New functional codes 1144–1149 are shared with Main; 1150 is a future history-writer protection requirement, not emitted by these endpoints.
+- Bumped local OpenAPI version to 0.0.86. This is a draft increment, not a release or tag.
+
 ## 0.0.84
 
 Spec only. No BFF implementation and no repository tag in this change. Main API unchanged (0.0.95): `getPlanningGenerationInput` already returns `openingIntervals` per date.
