@@ -1,0 +1,21 @@
+api/bff-api/rest/v1/services/auth/auth-operations.yml
+  s_88371660cd48e1::t_ef7c57fca2b658 66
+api/main-api/rest/v1/services/auth/auth-operations.yml
+  s_88371660cd48e1::t_638e2e241754fc 78
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.6",
+  "base_commit_sha": "a1f532b55eba08e274b49b1d86d686a042522748",
+  "prompts": {},
+  "sessions": {
+    "s_88371660cd48e1": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_e48c7a6c0ffeE3gDwOA4iMYEdp",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "sergiobpa <sergiobpa@ext.inditex.com>"
+    }
+  }
+}
