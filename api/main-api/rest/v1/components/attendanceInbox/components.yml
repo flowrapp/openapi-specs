@@ -86,10 +86,10 @@ components:
         hasNext: {type: boolean}
         nextCursor: {type: [string, 'null'], description: 'Opaque cursor; null on the final page.'}
       required: [content, hasNext, nextCursor]
-    AttendanceInboxBadgeDTO:
+    AttendanceInboxSummaryDTO:
       type: object
       additionalProperties: false
-      description: Preserves both legacy badge counters; confirmationCount has no matching route in this delivery.
+      description: Global caller/business counts returned as group-page summary; confirmationCount has no matching route in this delivery.
       properties:
         incidentCount: {type: integer, format: int32, minimum: 0, example: 2}
         confirmationCount: {type: integer, format: int32, minimum: 0, example: 1}
@@ -213,7 +213,7 @@ components:
       additionalProperties: false
       description: >-
         One response snapshot of complete matching OPEN groups, their exact filtered total,
-        and caller-scoped global badge summary. The total is counted after date and
+        and caller-scoped global summary. The total is counted after date and
         justification filters but before cursor/limit; summary is independent of every list
         filter and pagination parameter. If any count cannot be computed, the request fails
         rather than returning an invented zero. Later pages are live responses and may have
@@ -230,8 +230,8 @@ components:
           example: 0
         summary:
           allOf:
-            - $ref: '#/components/schemas/AttendanceInboxBadgeDTO'
-          description: Global caller-scoped legacy badge counts for this business, unaffected by list filters or pagination.
+            - $ref: '#/components/schemas/AttendanceInboxSummaryDTO'
+          description: Global caller-scoped counts for this business, unaffected by list filters or pagination.
         hasNext: {type: boolean}
         nextCursor: {type: [string, 'null'], description: Null iff hasNext is false.}
         asOf: {type: string, format: date-time, description: Informational response timestamp in UTC.}

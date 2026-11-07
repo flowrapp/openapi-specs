@@ -36,41 +36,6 @@ workerInbox:
           $ref: '../../components/worker/inbox-components.yml#/components/responses/BusinessNotFound'
       x-functional-errors: [1006, 1015, 1142]
 
-  badge:
-    get:
-      tags: [Worker]
-      operationId: getWorkerAttendanceInboxBadge
-      summary: Count my incidents and legacy pending confirmations
-      deprecated: true
-      description: |
-        Legacy badge from BFF 0.0.85 source commit `92f0504`; it forwards both required Main
-        API counts unchanged: `incidentCount` (own OPEN incidents without justification)
-        and `confirmationCount` (own PENDING worklog-change confirmations). Both counts stay
-        distinct. The badge is not a confirmation list and this contract adds no confirmation
-        collection or response route. Any active membership role receives caller-only counts.
-        This operation remains operational with its unchanged route and response for existing
-        consumers. New consumers should use `summary` on `getWorkerAttendanceIncidentGroups`,
-        which forwards the same global counts alongside the group page in one Main response;
-        the BFF makes no separate badge call.
-      security:
-        - bearerAuth: []
-      parameters:
-        - $ref: '../../components/worker/inbox-components.yml#/components/parameters/BusinessId'
-      responses:
-        '200':
-          description: Both independent caller-scoped counts.
-          content:
-            application/json:
-              schema: {$ref: '../../components/worker/inbox-components.yml#/components/schemas/WorkerAttendanceInboxBadgeDTO'}
-              example: {incidentCount: 2, confirmationCount: 1}
-        '401':
-          $ref: '../../components/worker/inbox-components.yml#/components/responses/Unauthorized'
-        '403':
-          $ref: '../../components/worker/inbox-components.yml#/components/responses/NotMember'
-        '404':
-          $ref: '../../components/worker/inbox-components.yml#/components/responses/BusinessNotFound'
-      x-functional-errors: [1006, 1015]
-
   groups:
     get:
       tags: [Worker]
@@ -91,11 +56,11 @@ workerInbox:
         `totalGroupsMatchingFilters` is the exact number of complete caller-owned OPEN groups
         matching date and justification filters, counted before cursor and limit; it is not
         the page length and is not accumulated across pages. `summary` forwards the legacy
-        `WorkerAttendanceInboxBadgeDTO` from the same Main response: `incidentCount` counts
+        `WorkerAttendanceInboxSummaryDTO` from the same Main response: `incidentCount` counts
         individual OPEN incidents without justification (not groups), and `confirmationCount`
         counts pending worklog-change confirmations. It is global to this business and caller,
         independent of all list filters and pagination. The initial page therefore needs no
-        separate badge call or N+1 composition.
+        separate count call or N+1 composition.
 
         Main reads the list, total, global summary and complete members under one REPEATABLE
         READ READ ONLY transaction per response, using aggregate counts by business/caller
@@ -121,7 +86,7 @@ workerInbox:
               schema: {$ref: '../../components/worker/inbox-components.yml#/components/schemas/WorkerAttendanceIncidentGroupPageDTO'}
               examples:
                 empty:
-                  summary: No groups match the filters; global legacy badge counts remain nonzero.
+                  summary: No groups match the filters; global summary counts remain nonzero.
                   value: {content: [], totalGroupsMatchingFilters: 0, summary: {incidentCount: 2, confirmationCount: 1}, hasNext: false, nextCursor: null, asOf: '2026-11-07T10:00:00Z'}
                 filteredNoResults:
                   summary: Filtered page is empty while global counts still include caller items.

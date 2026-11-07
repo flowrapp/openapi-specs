@@ -79,44 +79,6 @@ attendanceInbox:
           $ref: '../../components/attendanceInbox/components.yml#/components/responses/BusinessNotFound'
       x-functional-errors: [1006, 1015, 1142]
 
-  badge:
-    get:
-      tags: [Attendance]
-      operationId: getCurrentUserAttendanceInboxBadge
-      summary: Count the caller's incidents and pending confirmations
-      deprecated: true
-      description: |
-        Legacy two-count badge retained from Main API 0.0.96 source commit `92f0504`.
-        Returns independent server counts for the caller: `incidentCount` is own OPEN
-        incidents without a justification; `confirmationCount` is own PENDING worklog
-        change confirmations. Both properties are required and retained as existing badge
-        contract data. This specification adds no confirmation collection or response route.
-        Any active business membership role is allowed; only the authenticated caller's own
-        counts are returned. The client does not count by paging. This operation remains
-        operational with unchanged route and response for existing consumers. New consumers
-        should use `summary` on `getCurrentUserAttendanceIncidentGroups`, which returns these
-        same global counts with the group page in one consistent response and avoids a
-        separate badge request.
-      security:
-        - bearerAuth: []
-      parameters:
-        - $ref: '../../components/attendanceInbox/components.yml#/components/parameters/BusinessId'
-      responses:
-        '200':
-          description: Both independent caller-scoped counts.
-          content:
-            application/json:
-              schema:
-                $ref: '../../components/attendanceInbox/components.yml#/components/schemas/AttendanceInboxBadgeDTO'
-              example: {incidentCount: 2, confirmationCount: 1}
-        '401':
-          $ref: '../../components/attendanceInbox/components.yml#/components/responses/Unauthorized'
-        '403':
-          $ref: '../../components/attendanceInbox/components.yml#/components/responses/NotMember'
-        '404':
-          $ref: '../../components/attendanceInbox/components.yml#/components/responses/BusinessNotFound'
-      x-functional-errors: [1006, 1015]
-
   groups:
     get:
       tags: [Attendance]
@@ -147,11 +109,11 @@ attendanceInbox:
         `totalGroupsMatchingFilters` is the exact number of complete OPEN groups matching
         caller scope plus date and justification filters, counted before cursor and limit;
         it is not the page length and is not accumulated across pages. `summary` reuses the
-        legacy `AttendanceInboxBadgeDTO` semantics: `incidentCount` counts the caller's
+        `AttendanceInboxSummaryDTO` semantics: `incidentCount` counts the caller's
         individual OPEN incidents without justification (not groups), while
         `confirmationCount` counts the caller's pending worklog-change confirmations. It is
         global to this business and caller and ignores date, justification, cursor and limit.
-        The initial page includes both counts, so clients need no separate badge call.
+        The initial page includes both counts, so clients need no separate count request.
 
         The list, filtered total, global summary and complete members are read under one
         REPEATABLE READ READ ONLY transaction per response. Count queries are aggregated by
@@ -195,7 +157,7 @@ attendanceInbox:
                     nextCursor: null
                     asOf: '2026-11-07T10:00:00Z'
                 filteredNoResults:
-                  summary: No groups match the filters; global legacy badge counts remain nonzero.
+                  summary: No groups match the filters; global summary counts remain nonzero.
                   value:
                     content: []
                     totalGroupsMatchingFilters: 0

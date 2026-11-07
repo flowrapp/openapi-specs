@@ -115,10 +115,10 @@ components:
         attendanceMatchId: {type: [integer, 'null'], format: int64, minimum: 1, description: Required for MATCH scope; null iff scope is SHIFT.}
         worklogId: {type: [integer, 'null'], format: int64, minimum: 1, description: Required for MATCH scope; null iff scope is SHIFT.}
       required: [date, scheduledShiftId, attendanceMatchId, worklogId]
-    WorkerAttendanceInboxBadgeDTO:
+    WorkerAttendanceInboxSummaryDTO:
       type: object
       additionalProperties: false
-      description: Legacy Main API badge with its two distinct counts preserved.
+      description: Global caller/business counts forwarded from the Main API group-page summary.
       properties:
         incidentCount: {type: integer, format: int32, minimum: 0, example: 2}
         confirmationCount: {type: integer, format: int32, minimum: 0, example: 1}
@@ -208,7 +208,7 @@ components:
       additionalProperties: false
       description: >-
         One response snapshot forwarded from Main, with complete matching OPEN groups, their
-        exact filtered total, and the caller-scoped global badge summary. The total is counted
+        exact filtered total, and the caller-scoped global summary. The total is counted
         after date and justification filters but before cursor/limit; summary is independent
         of all list filters and pagination parameters. If Main cannot compute any count, the
         BFF forwards failure rather than manufacturing a zero. Later pages are live responses
@@ -225,8 +225,8 @@ components:
           example: 0
         summary:
           allOf:
-            - $ref: '#/components/schemas/WorkerAttendanceInboxBadgeDTO'
-          description: Global caller-scoped legacy badge counts forwarded in the same Main response, unaffected by list filters or pagination.
+            - $ref: '#/components/schemas/WorkerAttendanceInboxSummaryDTO'
+          description: Global caller-scoped counts forwarded in the same Main response, unaffected by list filters or pagination.
         hasNext: {type: boolean}
         nextCursor: {type: [string, 'null'], description: Null iff hasNext is false.}
         asOf: {type: string, format: date-time}

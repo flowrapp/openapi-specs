@@ -147,8 +147,6 @@ paths:
     $ref: "v1/services/worker/worker-operations.yml#/worker/history-month"
   "/api/v1/worker/businesses/{businessId}/attendance-incidents":
     $ref: "v1/services/worker/worker-inbox-operations.yml#/workerInbox/incidents"
-  "/api/v1/worker/businesses/{businessId}/attendance-inbox/badge":
-    $ref: "v1/services/worker/worker-inbox-operations.yml#/workerInbox/badge"
   "/api/v1/worker/businesses/{businessId}/attendance-incident-groups":
     $ref: "v1/services/worker/worker-inbox-operations.yml#/workerInbox/groups"
   "/api/v1/worker/businesses/{businessId}/attendance-incident-groups/{groupId}":
