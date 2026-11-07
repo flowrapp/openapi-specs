@@ -1,0 +1,27 @@
+api/main-api/rest/open-api-rest.yml
+  s_88371660cd48e1::t_07ac40eccb3a8b 6
+api/main-api/rest/v1/components/common/error-components.yml
+  s_88371660cd48e1::t_363a622297e92f 65
+api/main-api/rest/v1/services/contracts/contracts-operations.yml
+  s_88371660cd48e1::t_dd6310e44ecbcf 681,688
+api/main-api/rest/v1/services/users/user-operations.yml
+  s_88371660cd48e1::t_0ed187e9b8f633 62-65,74
+openspec/changes/migrate-auth-to-clerk/tasks.md
+  s_88371660cd48e1::t_e5ed4f2ed9d6ba 10
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.6",
+  "base_commit_sha": "eca053f9dc0409f911147d5a79465f3b8ee60a7a",
+  "prompts": {},
+  "sessions": {
+    "s_88371660cd48e1": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_e48c7a6c0ffeE3gDwOA4iMYEdp",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "sergiobpa <sergiobpa@ext.inditex.com>"
+    }
+  }
+}
