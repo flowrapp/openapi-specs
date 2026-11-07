@@ -22,6 +22,35 @@ components:
           type: string
           description: Document National Identity of the user
           example: 12345678A
+    CurrentUserResponseDTO:
+      type: object
+      description: Profile of the authenticated user
+      properties:
+        id:
+          type: integer
+          format: int32
+          description: Flowrapp user id
+          example: 1
+        name:
+          type: string
+          example: John Doe
+        email:
+          type: string
+          format: email
+          example: john.doe@example.com
+        phone:
+          type: string
+          example: "+34612345678"
+        role:
+          type: string
+          description: Global role of the user
+          enum: [ADMIN, USER]
+          example: USER
+      required:
+        - id
+        - name
+        - email
+        - role
     PasswordChangeRequestDTO:
       type: object
       description: Request object for changing user password

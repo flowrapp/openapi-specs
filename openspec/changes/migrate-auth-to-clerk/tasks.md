@@ -5,6 +5,7 @@
 - [x] 1.3 BFF `auth-operations.yml#register-from-invitation` and `components/auth/components.yml#RegisterUserFromInvitationRequestDTO`: same changes as 1.1–1.2 (BFF pass-through)
 - [x] 1.4 Update `bearerAuth` description in both root specs (Clerk issuer, `mail`/`name`/`roles` claims, default `USER`, legacy HMAC accepted temporarily)
 - [x] 1.5 Mark `/api/v1/auth/**` and change-password operations `deprecated: true` in both specs
+- [x] 1.7 Main: add `GET /api/v1/users/me` (`getCurrentUser`, `CurrentUserResponseDTO`: id, name, email, phone, role) so the BFF can resolve the profile when the Clerk `sub` is not a Flowrapp id
 - [ ] 1.6 Bump `info.version` (Main, BFF); `redocly lint` both specs clean; tag A published
 
 ## 2. Tag B — cleanup removals (consume only after new app is published)

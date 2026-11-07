@@ -38,6 +38,42 @@ users:
       x-functional-errors:
         - 1000
 
+  me:
+    get:
+      summary: Get the current user
+      description: >-
+        Returns the Flowrapp profile of the authenticated caller, resolved from the
+        mail claim of the bearer token. Used by the BFF when the token subject is not
+        a Flowrapp user id (Clerk session tokens).
+      tags:
+        - Users
+      operationId: getCurrentUser
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Current user profile
+          content:
+            application/json:
+              schema:
+                "$ref": "../../components/users/components.yml#/components/schemas/CurrentUserResponseDTO"
+        '401':
+          description: Missing or invalid bearer token
+        '500':
+          description: The token mail does not match any Flowrapp user
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+              examples:
+                CURRENT_USER_NOT_FOUND:
+                  summary: "1016 - Current user not found"
+                  value:
+                    status: 500
+                    detail: "1016 - Current user not found"
+      x-functional-errors:
+        - 1016
+
   change-password:
     put:
       deprecated: true
