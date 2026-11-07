@@ -2124,6 +2124,30 @@
         "enum" : [ "NONE", "SOLVE" ],
         "type" : "string"
       },
+      "PriorAssignmentInput" : {
+        "required" : [ "workerId", "start", "end" ],
+        "type" : "object",
+        "properties" : {
+          "workerId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "start" : {
+            "description" : "Start endpoint with its business-zone offset; scored in local wall-clock time.",
+            "type" : "string",
+            "allOf" : [ {
+              "$ref" : "#/components/schemas/OffsetDateTime"
+            } ]
+          },
+          "end" : {
+            "description" : "End endpoint with its business-zone offset; scored in local wall-clock time.",
+            "type" : "string",
+            "allOf" : [ {
+              "$ref" : "#/components/schemas/OffsetDateTime"
+            } ]
+          }
+        }
+      },
       "ResourcesConfiguration" : {
         "type" : "object",
         "properties" : {
@@ -2188,6 +2212,14 @@
             "type" : "array",
             "items" : {
               "$ref" : "#/components/schemas/DemandInput"
+            }
+          },
+          "priorAssignments" : {
+            "description" : "Fixed intervals from the prior week; used only for overlap and rest, never assigned or output.",
+            "default" : [ ],
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/PriorAssignmentInput"
             }
           }
         }
