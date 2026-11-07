@@ -733,6 +733,11 @@ worklogs:
         route for attendance. The contract does not add a correction action on the incident.
         Reconciliation may later record the incident resolution CORRECTED.
         Only the OWNER of the business may call this operation; a MANAGER receives 403 (1020).
+        From 0.0.96, when the author is not the worker of the worklog, the CORRECTED change
+        gets a PENDING worker confirmation (`WorklogChangeDTO.confirmation`) in the same
+        transaction. The correction is still approved immediately: the confirmation never
+        gates it, never reverts it and never changes `reviewStatus`. The response body is
+        unchanged.
       tags:
         - Worklogs
       operationId: correctBusinessWorklog
@@ -872,6 +877,10 @@ worklogs:
         on the incident. Reconciliation may later record the incident resolution
         WORKLOG_REJECTED.
         Only the OWNER of the business may call this operation; a MANAGER receives 403 (1020).
+        From 0.0.96, when the author is not the worker of the worklog, the REJECTED change gets
+        a PENDING worker confirmation (`WorklogChangeDTO.confirmation`) in the same
+        transaction. The rejection is unchanged: the confirmation never gates or reverts it.
+        The response body is unchanged.
       tags:
         - Worklogs
       operationId: rejectWorklog
@@ -951,6 +960,11 @@ worklogs:
         A worklog without changes returns an empty list.
         The worker who owns the worklog and the OWNER of its business may read it; anyone else,
         including a MANAGER, receives 403 (1020).
+        From 0.0.96 every item carries `confirmation`: the worker confirmation of a management
+        CORRECTED or REJECTED change recorded after the rollout (PENDING, ACKNOWLEDGED or
+        DISPUTED), or null for every other change and for every earlier change (no backfill).
+        Null does not mean that the change was reviewed or accepted. The OWNER reads the
+        answer here; there is no owner inbox.
       tags:
         - Worklogs
       operationId: getWorklogHistory

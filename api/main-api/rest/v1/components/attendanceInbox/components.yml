@@ -1,0 +1,262 @@
+# Worker attendance inbox: own actionable attendance incidents, own pending
+# worklog change confirmations and their badge counts (Main API 0.0.96).
+# Contract only. Nothing here asserts that a table, an index or any other DDL
+# has already been applied.
+components:
+  parameters:
+    BusinessId:
+      name: businessId
+      in: path
+      required: true
+      description: >
+        Business of the inbox. The caller must be a member of it (any role). Items are always
+        the caller's own; no role widens the scope.
+      schema:
+        type: integer
+        format: int64
+        minimum: 1
+        example: 101
+    Cursor:
+      name: cursor
+      in: query
+      required: false
+      description: >
+        Opaque base64-encoded text cursor returned as `nextCursor`. Omit it for the first page. It is bound to the
+        business, the authenticated caller and the collection (incidents or confirmations).
+        Reusing it with another business, another caller or the other collection, or sending a
+        value that cannot be decoded, is 400 `1142` `INVALID_ATTENDANCE_INBOX_CURSOR`.
+      schema:
+        type: string
+        minLength: 1
+    Limit:
+      name: limit
+      in: query
+      required: false
+      description: >
+        Page size, 1–50. Defaults to 20. A value outside 1–50 is a plain 400 without a
+        functional code.
+      schema:
+        type: integer
+        format: int32
+        minimum: 1
+        maximum: 50
+        default: 20
+        example: 20
+    WorklogChangeId:
+      name: worklogChangeId
+      in: path
+      required: true
+      description: Worklog change (`WorklogChangeDTO.id`) whose confirmation is answered.
+      schema:
+        type: integer
+        format: int64
+        minimum: 1
+        example: 1201
+
+  schemas:
+    AttendanceAnchorDTO:
+      type: object
+      description: >
+        Where an inbox item can be opened (inbox row tap or push deep link). Every value is
+        read from stored relationships; nothing is guessed. Every worklog has exactly one
+        current attendance match of some kind (created with the worklog; worklogs older than
+        matching were backfilled), so a MATCH-scoped incident and a worklog change always
+        have a real `attendanceMatchId`. With `scheduledShiftId` not null (SHIFT scope or a
+        MATCHED match) the client opens the day `date` and that SHIFT row; otherwise it opens
+        the match itself by `attendanceMatchId` (UNSCHEDULED, AMBIGUOUS or NOT_APPLICABLE).
+        The original or candidate shifts of an ambiguous match are never chosen for the
+        client. The route business is not repeated.
+      properties:
+        date:
+          type: string
+          format: date
+          description: >
+            Business-local date of the item, for navigation only: the start date of the
+            scheduled shift when there is one (SHIFT scope, or a MATCHED match), otherwise the
+            business-local date of the worklog clock-in. Never a sort key, a filter or part of
+            a cursor.
+          example: "2026-10-30"
+        scheduledShiftId:
+          type: ['integer', 'null']
+          format: int64
+          minimum: 1
+          description: >
+            SHIFT-scoped incident: its shift. MATCH-scoped incident or worklog change: the shift
+            of the current match when the match is MATCHED; null when it is UNSCHEDULED,
+            AMBIGUOUS or NOT_APPLICABLE.
+          example: 900
+        attendanceMatchId:
+          type: ['integer', 'null']
+          format: int64
+          minimum: 1
+          description: >
+            MATCH-scoped incident: its match. Worklog change: the current match of the worklog.
+            Always the real `id` of that current match, whatever its kind (MATCHED, UNSCHEDULED,
+            AMBIGUOUS or NOT_APPLICABLE). Null only for a SHIFT-scoped incident (NO_SHOW), which
+            has no worklog and no match.
+          example: 700
+        worklogId:
+          type: ['integer', 'null']
+          format: int64
+          minimum: 1
+          description: >
+            Worklog of the match, derived on the server from the match (MATCH scope) or from
+            the change. Null for a SHIFT-scoped incident (a NO_SHOW has no worklog).
+          example: 3051
+      required: [date, scheduledShiftId, attendanceMatchId, worklogId]
+
+    CurrentUserAttendanceIncidentDTO:
+      type: object
+      description: >
+        One actionable incident of the caller: OPEN, owned by the caller (the worker of the
+        worklog for MATCH scope, the assignee of the shift for SHIFT scope) and without a
+        justification. `incident` is the same `AttendanceIncidentDTO` as in
+        `getDailyAttendance`.
+      properties:
+        incident:
+          $ref: '../attendance/components.yml#/components/schemas/AttendanceIncidentDTO'
+        anchor:
+          $ref: '#/components/schemas/AttendanceAnchorDTO'
+      required: [incident, anchor]
+
+    CurrentUserAttendanceIncidentPageDTO:
+      type: object
+      additionalProperties: false
+      description: >
+        One cursor page of the caller's actionable incidents. Order is `incident.updatedAt`
+        descending, then `incident.id` descending (keyset). There is no total count: use
+        `getCurrentUserAttendanceInboxBadge`. An empty inbox is `content: []`,
+        `hasNext: false`, `nextCursor: null`.
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/CurrentUserAttendanceIncidentDTO'
+          example: []
+        hasNext:
+          type: boolean
+          example: false
+        nextCursor:
+          type: ['string', 'null']
+          description: Opaque cursor for the next page, or null on the last page.
+          example: null
+      required: [content, hasNext, nextCursor]
+
+    CurrentUserWorklogChangeConfirmationDTO:
+      type: object
+      description: >
+        One PENDING confirmation of the caller. `change` is the same `WorklogChangeDTO` as in
+        `getWorklogHistory` (worklog, parent change id, action, old and new times, author,
+        reason, `occurredAt`), with `confirmation.status` PENDING, plus its `anchor` and
+        `laterChangeExists`.
+      properties:
+        change:
+          $ref: '../worklogs/components.yml#/components/schemas/WorklogChangeDTO'
+        anchor:
+          $ref: '#/components/schemas/AttendanceAnchorDTO'
+        laterChangeExists:
+          type: boolean
+          description: >
+            True when the same worklog has at least one other `WorklogChange` that is more
+            recent than `change` in the order (`occurredAt`, `id`), whatever its action or
+            author: management corrections and rejections, the worker's own corrections,
+            break corrections and voids, AUTO_CLOSED and MEMBER_REMOVED_CLOSE all count. False
+            otherwise. Computed in the same page query (for example an EXISTS on the worklog
+            changes), never one lookup per item. It cancels and invalidates nothing: this
+            confirmation stays PENDING and is answered on its own, with the same request,
+            version and state rules. It is not part of the order, the filter or the cursor, and
+            it can turn true between two reads.
+          example: false
+      required: [change, anchor, laterChangeExists]
+
+    CurrentUserWorklogChangeConfirmationPageDTO:
+      type: object
+      additionalProperties: false
+      description: >
+        One cursor page of the caller's PENDING confirmations. Order is `change.occurredAt`
+        descending, then `change.id` descending (keyset). There is no total count: use
+        `getCurrentUserAttendanceInboxBadge`. An empty list is `content: []`,
+        `hasNext: false`, `nextCursor: null`.
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/CurrentUserWorklogChangeConfirmationDTO'
+          example: []
+        hasNext:
+          type: boolean
+          example: false
+        nextCursor:
+          type: ['string', 'null']
+          description: Opaque cursor for the next page, or null on the last page.
+          example: null
+      required: [content, hasNext, nextCursor]
+
+    AttendanceInboxBadgeDTO:
+      type: object
+      additionalProperties: false
+      description: >
+        Server counts of the caller's own actionable items in the business, with the same
+        filters as the two collections, so the client never pages to count. Two separate
+        numbers: the app keeps incidents and confirmations in separate sections and decides
+        how to show the badge.
+      properties:
+        incidentCount:
+          type: integer
+          format: int32
+          minimum: 0
+          description: >
+            Own OPEN incidents of the business without a justification (the rows of
+            `getCurrentUserAttendanceIncidents`).
+          example: 2
+        confirmationCount:
+          type: integer
+          format: int32
+          minimum: 0
+          description: >
+            Own PENDING worklog change confirmations of the business (the rows of
+            `getCurrentUserWorklogChangeConfirmations`).
+          example: 1
+      required: [incidentCount, confirmationCount]
+
+  responses:
+    Unauthorized:
+      description: No authenticated session.
+    NotMember:
+      description: The caller is not a member of the business (1015).
+      content:
+        application/problem+json:
+          schema:
+            $ref: '../common/error-components.yml#/components/schemas/ProblemDetail'
+          examples:
+            notMember:
+              summary: "1015 - user is not member of business"
+              value:
+                status: 403
+                detail: "1015 - user is not member of business"
+    BusinessNotFound:
+      description: The business does not exist (1006).
+      content:
+        application/problem+json:
+          schema:
+            $ref: '../common/error-components.yml#/components/schemas/ProblemDetail'
+          examples:
+            businessNotFound:
+              summary: "1006 - business does not exist"
+              value:
+                status: 404
+                detail: "1006 - business does not exist"
+    InboxListBadRequest:
+      description: >
+        The cursor cannot be decoded or does not match this business, caller and collection
+        (1142). A `limit` outside 1–50 is a plain 400 without a functional code.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '../common/error-components.yml#/components/schemas/ProblemDetail'
+          examples:
+            cursor:
+              summary: "1142 - attendance inbox cursor is invalid or does not match this query"
+              value:
+                status: 400
+                detail: "1142 - attendance inbox cursor is invalid or does not match this query"

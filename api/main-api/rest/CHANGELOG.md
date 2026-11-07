@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.0.96
+
+Spec only. No backend implementation, migration or repository tag in this change. Coordinate with BFF API 0.0.85, which requires this version deployed first. Design notes: `docs/worker-inbox-confirmations.md`; domain events to implement: `docs/worker-inbox-events.md`.
+
+### Added
+
+- `GET /api/v1/businesses/{businessId}/attendance-incidents` (`getCurrentUserAttendanceIncidents`, tag Attendance, any member): independent persistent query of the caller's own OPEN incidents of the business without a justification (MATCH: worker of the worklog; SHIFT: assignee of the shift). Keyset cursor page (`content`, `hasNext`, `nextCursor`, no total), order `incident.updatedAt` descending then `incident.id` descending, `limit` 1–50 (default 20). Items are `CurrentUserAttendanceIncidentDTO`: the existing `AttendanceIncidentDTO` plus `anchor` (`AttendanceAnchorDTO`: `date`, `scheduledShiftId`, `attendanceMatchId`, `worklogId`), all read from stored relationships. `scheduledShiftId` is set only for SHIFT scope and a MATCHED match. `attendanceMatchId` is always the real current match id, NOT_APPLICABLE included, and null only for a SHIFT-scoped incident. The filter is OPEN and `justification IS NULL`: a justified incident leaves this list and stays in `getDailyAttendance` and `getAttendanceMatch`. No read/unread state.
+- `GET /api/v1/businesses/{businessId}/worklog-change-confirmations` (`getCurrentUserWorklogChangeConfirmations`, tag Worklogs, any member): the caller's own PENDING worklog change confirmations, keyset cursor page ordered by `change.occurredAt` descending then `change.id` descending. Items are `CurrentUserWorklogChangeConfirmationDTO`: the full `WorklogChangeDTO`, `anchor` and the required `laterChangeExists` (true when the same worklog has any later change in (`occurredAt`, `id`) order, any action or author). All are read in the same page query, with no lookup per item. The flag cancels nothing: the confirmation stays PENDING and is answered on its own.
+- `GET /api/v1/businesses/{businessId}/attendance-inbox/badge` (`getCurrentUserAttendanceInboxBadge`, tag Attendance, any member): `AttendanceInboxBadgeDTO` with `incidentCount` and `confirmationCount`, count queries with exactly the filters of the two lists. Shift change requests are not counted.
+- `PUT /api/v1/worklog-changes/{worklogChangeId}/confirmation` (`respondToWorklogChangeConfirmation`, tag Worklogs, worker of the change only): body `WorklogChangeConfirmationRequestDTO` (`status` ACKNOWLEDGED or DISPUTED, optional `comment` trimmed 1–500, `version`). Returns the `WorklogChangeDTO`. Idempotent for the same answer and version; stale version or a different answer after it was answered is `409` `1049`; missing, foreign or without confirmation is `404` `1143`, same body. It never reverts the change, never changes the worklog or its `reviewStatus`, never gates reports and never resolves incidents.
+- `WorklogChangeConfirmationDTO` (`status` PENDING, ACKNOWLEDGED, DISPUTED; `comment`; `respondedBy`; `respondedAt`; `version`), persistent and unique per worklog change.
+- Functional errors `1142` `INVALID_ATTENDANCE_INBOX_CURSOR` (400) and `1143` `WORKLOG_CHANGE_CONFIRMATION_NOT_FOUND` (404).
+
+### Changed
+
+- `WorklogChangeDTO` gains the required, nullable `confirmation` (`getWorklogHistory` and the new operations). Non-null only for a management CORRECTED or REJECTED change of another person's worklog recorded after this rollout. Null for a worker's own correction, break corrections and voids, AUTO_CLOSED, MEMBER_REMOVED_CLOSE and every earlier change (no backfill). Null does not mean reviewed or agreed.
+- `correctBusinessWorklog` and `rejectWorklog`: when the author is not the worker, the CORRECTED or REJECTED change is created with a PENDING confirmation in the same transaction. Corrections stay approved immediately and rejections are unchanged; response bodies are unchanged. Management break corrections and voids do not create a confirmation.
+- `justifyAttendanceIncident` is unchanged (same route, POST, replace while OPEN). No `attendance/incidents` alias is added.
+
 ## 0.0.95
 
 Spec only. No backend implementation and no repository tag in this change. Coordinate with BFF API 0.0.83.

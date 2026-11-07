@@ -1,0 +1,421 @@
+# Worker attendance inbox (Main API 0.0.96). The caller only ever reads and
+# answers their own items. Contract only: no backend implementation is implied.
+attendanceInbox:
+  incidents:
+    get:
+      tags: [Attendance]
+      operationId: getCurrentUserAttendanceIncidents
+      summary: List the caller's actionable attendance incidents
+      description: >
+        Independent persistent query of the authenticated user's own attendance incidents of
+        the business that still need the worker: lifecycle OPEN and current `justification`
+        null (`justification IS NULL`), nothing else. A
+        MATCH-scoped incident is the caller's when the caller is the worker of the worklog of
+        the match; a SHIFT-scoped incident (NO_SHOW) when the caller is the assignee of the
+        shift. Any member role may call it and always gets only their own incidents; an OWNER
+        or MANAGER does not see other workers here.
+
+
+        Once justified (`justifyAttendanceIncident`) an incident leaves this collection and
+        stays visible in the day history (`getDailyAttendance`) and in `getAttendanceMatch`,
+        where the worker can still replace the justification while it is OPEN. An OPEN
+        incident with no justification, new or brought back by reconciliation, is listed; one
+        that keeps a saved text is not (this contract never deletes a saved text). A RESOLVED
+        incident is only history. There is no read or unread state: an item is listed while
+        it is actionable.
+
+
+        Order is `incident.updatedAt` descending, then `incident.id` descending, with a keyset
+        cursor. Pages stay stable while incidents are created or change: a new or updated
+        incident sorts before the cursor and appears on the next refresh from the first page;
+        it never makes the next page skip or repeat an item that did not change. An incident
+        that stops being actionable between pages simply does not appear. There is no exact
+        total; the badge (`getCurrentUserAttendanceInboxBadge`) gives the count.
+
+
+        `incident.updatedAt` is the value persisted on the incident, read as stored: the order
+        and the cursor use it literally, and it is never derived or recomputed at read time
+        from the justification, the resolution, the match or the shift. Only the existing
+        update timestamp of the Main incident entity sets it when the incident is updated; this
+        contract adds no other trigger and no delivery guarantee. A changed incident is seen
+        only by reading again from the first page.
+
+
+        Each item carries an `anchor` for navigation: `date`, the shift (SHIFT scope or a
+        MATCHED match), the real current match of a MATCH-scoped incident whatever its kind
+        (NOT_APPLICABLE included), and the worklog derived on the server from the match.
+        Errors: a non-member gets 403 1015 and an unknown business 404 1006; an invalid or
+        foreign cursor is 400 1142.
+
+
+        `anchor.date` only opens the day history (`getDailyAttendance`). It is never a sort
+        key, a filter or part of the cursor, and it never replaces `incident.updatedAt`.
+
+
+        Delivery slice F1: this list returns incident items only and ships with the day
+        history and `justifyAttendanceIncident`. It does not depend on worklog change
+        confirmations. The full two-count badge ships in F2 with the confirmation collection.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '../../components/attendanceInbox/components.yml#/components/parameters/BusinessId'
+        - $ref: '../../components/attendanceInbox/components.yml#/components/parameters/Cursor'
+        - $ref: '../../components/attendanceInbox/components.yml#/components/parameters/Limit'
+      responses:
+        '200':
+          description: Page of the caller's actionable incidents. May be empty.
+          content:
+            application/json:
+              schema:
+                $ref: '../../components/attendanceInbox/components.yml#/components/schemas/CurrentUserAttendanceIncidentPageDTO'
+              examples:
+                lateEntry:
+                  summary: One late entry on a matched shift, more pages
+                  value:
+                    content:
+                      - incident:
+                          id: 880
+                          scope: MATCH
+                          attendanceMatchId: 700
+                          scheduledShiftId: null
+                          evidence:
+                            type: LATE_ENTRY
+                            measuredSeconds: 1080
+                            toleranceSeconds: 300
+                            candidateShiftIds: []
+                          lifecycle: OPEN
+                          resolution: null
+                          resolvedBy: null
+                          resolvedAt: null
+                          reason: null
+                          justification: null
+                          version: 1
+                          createdAt: "2026-10-30T09:20:00+01:00"
+                          updatedAt: "2026-10-30T09:20:00+01:00"
+                        anchor:
+                          date: "2026-10-30"
+                          scheduledShiftId: 900
+                          attendanceMatchId: 700
+                          worklogId: 3051
+                    hasNext: true
+                    nextCursor: "eyJ1IjoiMjAyNi0xMC0zMFQwODoyMDowMFoiLCJpIjo4ODB9"
+                noShow:
+                  summary: A no-show has no match and no worklog
+                  value:
+                    content:
+                      - incident:
+                          id: 905
+                          scope: SHIFT
+                          attendanceMatchId: null
+                          scheduledShiftId: 912
+                          evidence:
+                            type: NO_SHOW
+                            measuredSeconds: null
+                            toleranceSeconds: null
+                            candidateShiftIds: []
+                          lifecycle: OPEN
+                          resolution: null
+                          resolvedBy: null
+                          resolvedAt: null
+                          reason: null
+                          justification: null
+                          version: 0
+                          createdAt: "2026-10-31T17:05:00+01:00"
+                          updatedAt: "2026-10-31T17:05:00+01:00"
+                        anchor:
+                          date: "2026-10-31"
+                          scheduledShiftId: 912
+                          attendanceMatchId: null
+                          worklogId: null
+                    hasNext: false
+                    nextCursor: null
+                empty:
+                  summary: Nothing to justify
+                  value:
+                    content: []
+                    hasNext: false
+                    nextCursor: null
+        '400':
+          $ref: '../../components/attendanceInbox/components.yml#/components/responses/InboxListBadRequest'
+        '401':
+          $ref: '../../components/attendanceInbox/components.yml#/components/responses/Unauthorized'
+        '403':
+          $ref: '../../components/attendanceInbox/components.yml#/components/responses/NotMember'
+        '404':
+          $ref: '../../components/attendanceInbox/components.yml#/components/responses/BusinessNotFound'
+      x-functional-errors: [1006, 1015, 1142]
+
+  confirmations:
+    get:
+      tags: [Worklogs]
+      operationId: getCurrentUserWorklogChangeConfirmations
+      summary: List the caller's pending worklog change confirmations
+      description: >
+        Independent persistent query of the authenticated user's own PENDING confirmations in
+        the business. A confirmation is the caller's when the caller is the immutable `userId`
+        of its worklog change. It always filters `status` PENDING; answered confirmations stay
+        in the worklog history (`getWorklogHistory`, `WorklogChangeDTO.confirmation`). Any
+        member role may call it and gets only their own items. There is no read or unread
+        state.
+
+
+        Each item is the full `WorklogChangeDTO` (worklog, parent `worklogChangeId`, action,
+        old and new times, author, reason, `occurredAt`, confirmation) plus an `anchor` and
+        `laterChangeExists`. The anchor is read with an explicit join from the change to the
+        current match of its worklog, and `laterChangeExists` with an aggregate over the
+        changes of the same worklog that sort after it in (`occurredAt`, `id`), both in the
+        same page query, never one lookup per item. A later change of any action or author
+        sets `laterChangeExists` to true without cancelling or invalidating this
+        confirmation: it stays PENDING and is answered on its own. This is not a shift change
+        request: no accepted or rejected request is synthesized, and it is unrelated to
+        shift exchanges, schedule changes and `confirmWorklog`.
+
+
+        Order is `change.occurredAt` descending, then `change.id` descending, with a keyset
+        cursor. A PENDING row never changes until it is answered and then leaves the list, so
+        pages are stable while new confirmations arrive; there is no exact total (see the
+        badge). Errors: a non-member gets 403 1015 and an unknown business 404 1006; an
+        invalid or foreign cursor is 400 1142.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '../../components/attendanceInbox/components.yml#/components/parameters/BusinessId'
+        - $ref: '../../components/attendanceInbox/components.yml#/components/parameters/Cursor'
+        - $ref: '../../components/attendanceInbox/components.yml#/components/parameters/Limit'
+      responses:
+        '200':
+          description: Page of the caller's PENDING confirmations. May be empty.
+          content:
+            application/json:
+              schema:
+                $ref: '../../components/attendanceInbox/components.yml#/components/schemas/CurrentUserWorklogChangeConfirmationPageDTO'
+              examples:
+                correction:
+                  summary: An owner correction of the clock-out waiting for the worker
+                  value:
+                    content:
+                      - change:
+                          id: 1201
+                          worklogId: 3051
+                          userId: 41
+                          businessId: 101
+                          action: CORRECTED
+                          oldClockIn: "2026-10-30T08:18:00Z"
+                          newClockIn: "2026-10-30T08:18:00Z"
+                          oldClockOut: "2026-10-30T16:00:00Z"
+                          newClockOut: "2026-10-30T15:30:00Z"
+                          breakChange: null
+                          authorId: 12
+                          reason: "The register was closed at 16:30."
+                          occurredAt: "2026-10-30T18:02:11Z"
+                          confirmation:
+                            status: PENDING
+                            comment: null
+                            respondedBy: null
+                            respondedAt: null
+                            version: 0
+                        anchor:
+                          date: "2026-10-30"
+                          scheduledShiftId: 900
+                          attendanceMatchId: 700
+                          worklogId: 3051
+                        laterChangeExists: true
+                    hasNext: false
+                    nextCursor: null
+                notApplicable:
+                  summary: A correction of a worklog on a day without a published planning
+                  value:
+                    content:
+                      - change:
+                          id: 1230
+                          worklogId: 3104
+                          userId: 41
+                          businessId: 101
+                          action: CORRECTED
+                          oldClockIn: "2026-11-02T09:02:00Z"
+                          newClockIn: "2026-11-02T09:02:00Z"
+                          oldClockOut: "2026-11-02T13:30:00Z"
+                          newClockOut: "2026-11-02T13:00:00Z"
+                          breakChange: null
+                          authorId: 12
+                          reason: "Closed at 14:00."
+                          occurredAt: "2026-11-02T17:10:00Z"
+                          confirmation:
+                            status: PENDING
+                            comment: null
+                            respondedBy: null
+                            respondedAt: null
+                            version: 0
+                        anchor:
+                          date: "2026-11-02"
+                          scheduledShiftId: null
+                          attendanceMatchId: 731
+                          worklogId: 3104
+                        laterChangeExists: false
+                    hasNext: false
+                    nextCursor: null
+                empty:
+                  summary: Nothing to confirm
+                  value:
+                    content: []
+                    hasNext: false
+                    nextCursor: null
+        '400':
+          $ref: '../../components/attendanceInbox/components.yml#/components/responses/InboxListBadRequest'
+        '401':
+          $ref: '../../components/attendanceInbox/components.yml#/components/responses/Unauthorized'
+        '403':
+          $ref: '../../components/attendanceInbox/components.yml#/components/responses/NotMember'
+        '404':
+          $ref: '../../components/attendanceInbox/components.yml#/components/responses/BusinessNotFound'
+      x-functional-errors: [1006, 1015, 1142]
+
+  badge:
+    get:
+      tags: [Attendance]
+      operationId: getCurrentUserAttendanceInboxBadge
+      summary: Count the caller's actionable inbox items
+      description: >
+        Two server counts for the caller in the business, with exactly the filters of the two
+        collections: `incidentCount` (own OPEN incidents without a justification, as
+        `getCurrentUserAttendanceIncidents`) and `confirmationCount` (own PENDING worklog
+        change confirmations, as `getCurrentUserWorklogChangeConfirmations`). Count queries,
+        not pagination; the client does no arithmetic over pages. Shift change requests are
+        not counted here and are unchanged. The app keeps incidents and confirmations in
+        separate sections. A non-member gets 403 1015 and an unknown business 404 1006.
+
+
+        Delivery slice F2: this endpoint ships complete, with both required counts, together
+        with `getCurrentUserWorklogChangeConfirmations`. There is no F1 variant with
+        `confirmationCount` absent or defaulted; in F1 the client reads the incident list.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '../../components/attendanceInbox/components.yml#/components/parameters/BusinessId'
+      responses:
+        '200':
+          description: Counts of the caller's actionable items.
+          content:
+            application/json:
+              schema:
+                $ref: '../../components/attendanceInbox/components.yml#/components/schemas/AttendanceInboxBadgeDTO'
+              example:
+                incidentCount: 2
+                confirmationCount: 1
+        '401':
+          $ref: '../../components/attendanceInbox/components.yml#/components/responses/Unauthorized'
+        '403':
+          $ref: '../../components/attendanceInbox/components.yml#/components/responses/NotMember'
+        '404':
+          $ref: '../../components/attendanceInbox/components.yml#/components/responses/BusinessNotFound'
+      x-functional-errors: [1006, 1015]
+
+  confirmation-response:
+    put:
+      tags: [Worklogs]
+      operationId: respondToWorklogChangeConfirmation
+      summary: Answer the confirmation of one worklog change
+      description: >
+        The worker answers the PENDING confirmation of one management change of their worklog:
+        ACKNOWLEDGED (seen and reviewed) or DISPUTED (records disagreement). It is not an
+        approval, not a legal consent and not a legal claim. It does not revert or change the
+        worklog, its `reviewStatus` or reports, and does not resolve any attendance incident;
+        a comment is not a justification. Management is not asked to act by this route.
+
+
+        Ownership is the immutable `userId` of the worklog change; the body never names a
+        user. A change that does not exist, belongs to another worker (the OWNER who authored
+        it included), or has no confirmation (`confirmation: null`: legacy, own, break or
+        system changes) returns the same 404 1143.
+
+
+        `version` is the `confirmation.version` the worker read. Rules: PENDING and the same
+        version: the answer is stored, `respondedBy` and `respondedAt` are set and `version`
+        increments. Already answered with the same `status`, the same trimmed `comment` and the
+        `version` it was answered from: idempotent retry, 200 with the stored change and no
+        write. Any other answer to an answered confirmation, or a stale version: 409 1049.
+        Of two concurrent answers one wins; the other gets 409 1049 unless it is the same
+        answer, which a retry then sees as idempotent. A later management change of the same
+        worklog is a different change with its own PENDING confirmation.
+
+
+        `comment` is optional with both answers, trimmed, non-empty after trimming when
+        supplied and at most 500 characters. A body that does not validate is a plain 400
+        without a functional code.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '../../components/attendanceInbox/components.yml#/components/parameters/WorklogChangeId'
+      requestBody:
+        required: true
+        description: The worker's answer, optional comment and the confirmation version read.
+        content:
+          application/json:
+            schema:
+              $ref: '../../components/worklogs/components.yml#/components/schemas/WorklogChangeConfirmationRequestDTO'
+            examples:
+              acknowledged:
+                summary: Seen and reviewed, no comment
+                value: {status: ACKNOWLEDGED, version: 0}
+              disputed:
+                summary: Disagreement with a comment
+                value: {status: DISPUTED, comment: "I left at 17:00, not at 16:30.", version: 0}
+      responses:
+        '200':
+          description: >
+            The change with its answered confirmation (also returned unchanged on an
+            idempotent retry).
+          content:
+            application/json:
+              schema:
+                $ref: '../../components/worklogs/components.yml#/components/schemas/WorklogChangeDTO'
+              example:
+                id: 1201
+                worklogId: 3051
+                userId: 41
+                businessId: 101
+                action: CORRECTED
+                oldClockIn: "2026-10-30T08:18:00Z"
+                newClockIn: "2026-10-30T08:18:00Z"
+                oldClockOut: "2026-10-30T16:00:00Z"
+                newClockOut: "2026-10-30T15:30:00Z"
+                breakChange: null
+                authorId: 12
+                reason: "The register was closed at 16:30."
+                occurredAt: "2026-10-30T18:02:11Z"
+                confirmation:
+                  status: DISPUTED
+                  comment: "I left at 17:00, not at 16:30."
+                  respondedBy: 41
+                  respondedAt: "2026-10-31T08:12:40Z"
+                  version: 1
+        '400':
+          description: >
+            The body does not validate: `status` not ACKNOWLEDGED or DISPUTED, `comment` blank
+            after trimming or longer than 500 characters, `version` missing or negative. Plain
+            400 without a functional code.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+        '401':
+          description: Unauthorized.
+        '404':
+          description: >
+            The change does not exist, is not the caller's, or has no confirmation (1143). The
+            same body in every case.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+              example: {status: 404, detail: '1143 - worklog change confirmation not found'}
+        '409':
+          description: >
+            Stale `version`, or a different answer to a confirmation that was already
+            answered (1049). Refetch and show the stored answer.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+              example: {status: 409, detail: '1049 - resource was modified concurrently'}
+      x-functional-errors: [1049, 1143]

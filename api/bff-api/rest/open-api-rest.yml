@@ -7,7 +7,7 @@ info:
     This BFF aggregates and shapes data from the Flowrapp main API to serve
     the specific needs of the mobile frontend, providing role-based endpoints
     for workers and managers.
-  version: 0.0.84
+  version: 0.0.85
   contact:
     name: Flowrapp Team
     url: https://flowrapp.github.io
@@ -34,7 +34,9 @@ tags:
       Push notification token management. Pass-through to the main API.
   - name: Worker
     description: >
-      Worker-facing endpoints for clock-in/out and work history views.
+      Worker-facing endpoints for clock-in/out, work history views and the attendance
+      inbox (own incidents to justify, own worklog changes to confirm, badge counts, own
+      attendance match detail).
       These endpoints are scoped to the authenticated worker's own data.
   - name: Manager
     description: >
@@ -145,6 +147,18 @@ paths:
     $ref: "v1/services/worker/worker-operations.yml#/worker/history-week"
   "/api/v1/worker/businesses/{businessId}/history/month":
     $ref: "v1/services/worker/worker-operations.yml#/worker/history-month"
+  "/api/v1/worker/businesses/{businessId}/attendance-incidents":
+    $ref: "v1/services/worker/worker-inbox-operations.yml#/workerInbox/incidents"
+  "/api/v1/worker/businesses/{businessId}/worklog-change-confirmations":
+    $ref: "v1/services/worker/worker-inbox-operations.yml#/workerInbox/confirmations"
+  "/api/v1/worker/businesses/{businessId}/attendance-inbox/badge":
+    $ref: "v1/services/worker/worker-inbox-operations.yml#/workerInbox/badge"
+  "/api/v1/worker/attendance-incidents/{incidentId}/justification":
+    $ref: "v1/services/worker/worker-inbox-operations.yml#/workerInbox/incident-justification"
+  "/api/v1/worker/worklog-changes/{worklogChangeId}/confirmation":
+    $ref: "v1/services/worker/worker-inbox-operations.yml#/workerInbox/confirmation-response"
+  "/api/v1/worker/attendance-matches/{attendanceMatchId}":
+    $ref: "v1/services/worker/worker-inbox-operations.yml#/workerInbox/attendance-match"
 
   # ── Reports (owner-only) ─────────────────────────────────────────────────
   "/api/v1/businesses/{businessId}/reports/worked-hours":

@@ -229,6 +229,7 @@ components:
                 author: null
                 reason: null
                 occurredAt: "2026-10-30T06:00:05+01:00"
+                confirmation: null
         timeline:
           from: "2026-10-29T06:00:00+01:00"
           to: "2026-10-30T07:00:00+01:00"
@@ -1520,7 +1521,20 @@ components:
           type: string
           format: date-time
           example: "2026-10-30T18:02:11+01:00"
-      required: [id, action, oldClockIn, newClockIn, oldClockOut, newClockOut, breakChange, author, reason, occurredAt]
+        confirmation:
+          description: >
+            Read-only worker confirmation of this change (Main API 0.0.96
+            `WorklogChangeDTO.confirmation`, forwarded unchanged; no extra Main API call: it
+            comes in the `getWorklogHistory` the detail already reads). Non-null only for an
+            owner CORRECTED or REJECTED change of another person's worklog recorded after the
+            Main API rollout. Null for every other change and for every earlier change: null
+            does not mean that the worker reviewed or accepted it. The OWNER has no action
+            here and no owner inbox; DISPUTED changes nothing in the attendance.
+          oneOf:
+            - $ref: "../common/components.yml#/components/schemas/WorklogChangeConfirmationDTO"
+            - type: "null"
+          example: null
+      required: [id, action, oldClockIn, newClockIn, oldClockOut, newClockOut, breakChange, author, reason, occurredAt, confirmation]
 
     AttendanceIncidentDTO:
       type: object
