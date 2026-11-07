@@ -6,8 +6,8 @@ Flowrapp is moving login (email/password, Google, GitHub, password recovery) to 
 
 - `POST /api/v1/invitations/register?token=` (Main and BFF) becomes authenticated with `bearerAuth` (Clerk session JWT). Body: `username`, `phone` only. New semantics: not-enabled invited user ⇒ enable + update profile + accept; already-enabled ⇒ just accept (no more `1014 USER_ALREADY_ENABLED`); session `mail` ≠ invited email ⇒ `1009 INVITATION_NOT_FOR_CURRENT_USER` (403). Adds 401.
 - `bearerAuth` description in both specs documents Clerk session tokens (claims `mail`, `name`, optional `roles`, default `USER`) and the transitional acceptance of legacy Flowrapp HMAC tokens.
-- **BREAKING (tag B, cleanup)**: remove `/api/v1/auth/login`, `/logout`, `/token-refresh`, `/forgot-password`, `/reset-password`, `/oauth/github`, `/oauth/google` and change-password (Main `users/change-password`, BFF `user/change-password`) from both specs, plus orphaned auth schemas/components and the `Authentication` tag where empty.
-- Published in two version tags: **A** (register authenticated, password optional/deprecated, compatible for current app) and **B** (removals + `password` dropped).
+- **Tag B (cleanup)**: legacy `/api/v1/auth/**` and change-password operations stay in both specs, deprecated, documenting `410 Gone` (the backends keep the code but disable it by flag); `basicAuth` and the register `password` property are removed; `bearerAuth` describes Clerk tokens only (`mail`, `name`; role comes from Flowrapp).
+- Published in two version tags: **A** (register authenticated, password optional/deprecated, compatible for current app) and **B** (legacy ops answer 410, `password` and `basicAuth` dropped).
 
 ## Capabilities
 

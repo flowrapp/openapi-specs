@@ -12,15 +12,15 @@ Main (`version 0.0.97`) and BFF (`version 0.0.86`) roots declare `bearerAuth` (M
 
 - **Two tags.**
   - *Tag A (compatible-ish)*: register gets `security: [bearerAuth: []]`, `401`, new description/semantics, `1014` removed from register; `password` removed from `required` and marked `deprecated: true` (ignored). `bearerAuth` description updated (Clerk + legacy). Auth/change-password ops stay but are marked `deprecated: true`. Main/BFF can ship dual-token support and the new register while the old app keeps working (old app's register is anonymous ⇒ it breaks only for not-yet-installed flows; acceptable, no prod users).
-  - *Tag B (cleanup)*: delete auth paths, change-password, orphaned schemas/files, `password` property, empty `Authentication` tag; drop legacy wording from `bearerAuth`. Published now, consumed only in phase 6 after the new app is live.
-  - Alternative (one tag) rejected: Main/BFF codegen would delete auth controllers immediately, violating "don't deploy auth/** removal before the new app is published".
-- **Move BFF register schema**: keep it in `components/auth` in tag A (minimal diff); in tag B move register op/schema to an `invitations` file only if `auth` becomes empty — otherwise leave it.
+  - *Tag B (cleanup)*: legacy auth and change-password operations are kept, deprecated, with a documented `410 Gone` (decision 2026-11-07: keep legacy code and tables, disabled by flag, "just in case"). Remove `password` from register, `basicAuth`, and legacy/`roles` wording in `bearerAuth`. Consumed only after the new app is live.
+  - Alternative (one tag) rejected: tag B semantics must not reach consumers before the new app is published.
+- **BFF register schema** stays in `components/auth` (auth files are kept).
 - **Version bumps**: patch bump per spec per tag, following existing practice (`info.version`).
 
 ## Risks / Trade-offs
 
 - oasdiff flags the security change and removals as breaking → note in `.oasdiff-err-ignore.md` if CI requires it.
-- Codegen in Main/BFF may change interface names when operations disappear (tag B) → done in cleanup phase only.
+- Global role: the token `roles` claim is no longer used; Main reads USER/ADMIN from `users.role`.
 
 ## Open Questions
 

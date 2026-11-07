@@ -8,11 +8,13 @@
 - [x] 1.7 Main: add `GET /api/v1/users/me` (`getCurrentUser`, `CurrentUserResponseDTO`: id, name, email, phone, role) so the BFF can resolve the profile when the Clerk `sub` is not a Flowrapp id
 - [ ] 1.6 Bump `info.version` (Main, BFF); `redocly lint` both specs clean; tag A published
 
-## 2. Tag B — cleanup removals (consume only after new app is published)
+## 2. Tag B — cleanup (consume only after new app is published)
 
-- [ ] 2.1 Main root: remove `/api/v1/auth/*` and `/api/v1/users/change-password` paths and `Authentication` tag; delete `services/auth/auth-operations.yml` and `components/auth/auth-components.yml`; remove change-password op/schema from `services/users/user-operations.yml` and its components
-- [ ] 2.2 BFF root: remove `/api/v1/auth/*` and `/api/v1/user/change-password`; move `register-from-invitation` + its DTO out of `auth/*` (e.g. `services/invitations`, `components/invitations`), delete remaining auth files; remove change-password op/schema; drop `Authentication` tag
-- [ ] 2.3 Remove `password` property from both `RegisterUserFromInvitationRequestDTO`; remove legacy/login wording from `bearerAuth`
-- [ ] 2.4 Main: remove the `basicAuth` security scheme from the root spec and every `basicAuth` entry in operation `security` lists (attendance, businesses, admin, users, geofenceEvents, timesheet, worklogs, reports, pushTokens, invitations); verify `grep -rn basicAuth api` is empty
-- [ ] 2.5 `grep -rn "auth/\|change-password\|TokenResponseDTO\|OAuthCredential" api` returns no references; `redocly lint` both specs clean; `validate-error-codes.js` passes
-- [ ] 2.6 Bump `info.version`; record intended breaking changes in `.oasdiff-err-ignore.md` if CI requires; tag B published
+Decision 2026-11-07: legacy auth code and tables stay in Main/BFF, disabled by a flag. The contract keeps the legacy operations, deprecated, and documents `410 Gone`.
+
+- [ ] 2.1 Main and BFF: keep `/api/v1/auth/**` and change-password operations `deprecated: true`; add a `410 Gone` response ("legacy authentication disabled; use Clerk") to each; keep schemas and files
+- [ ] 2.2 Remove the `password` property from both `RegisterUserFromInvitationRequestDTO`
+- [ ] 2.3 `bearerAuth` (both specs): drop legacy-token and `roles` wording — Clerk session JWT with `mail` and `name`; the global role (USER/ADMIN) comes from Flowrapp's user record, not from the token
+- [ ] 2.4 Main: remove the `basicAuth` security scheme from the root spec and every `basicAuth` entry in operation `security` lists; verify `grep -rn basicAuth api` is empty
+- [ ] 2.5 `redocly lint` both specs clean (no new errors); `validate-error-codes.js` passes
+- [ ] 2.6 Bump `info.version`; record intended breaking changes in `.oasdiff-err-ignore.md` if CI requires; merge to main and tag B on main

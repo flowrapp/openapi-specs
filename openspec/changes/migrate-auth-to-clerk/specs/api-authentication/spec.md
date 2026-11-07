@@ -5,11 +5,11 @@ Defines how the Flowrapp Main and BFF API contracts authenticate callers with Cl
 ## ADDED Requirements
 
 ### Requirement: Bearer authentication with Clerk session tokens
-Main and BFF specs SHALL declare a `bearerAuth` HTTP bearer JWT security scheme whose description states that tokens are Clerk session JWTs carrying the `mail`, `name` and optional `roles` claims, that a missing `roles` claim means `USER`, and that legacy Flowrapp-issued tokens are accepted only during the transition.
+Main and BFF specs SHALL declare a `bearerAuth` HTTP bearer JWT security scheme whose description states that tokens are Clerk session JWTs carrying the `mail` and `name` claims, that the global role (USER/ADMIN) is read from Flowrapp's user record, and that legacy Flowrapp-issued tokens are accepted only during the transition.
 
 #### Scenario: Scheme documents Clerk claims
 - **WHEN** a consumer reads `components.securitySchemes.bearerAuth` in either spec
-- **THEN** it is `type: http`, `scheme: bearer`, `bearerFormat: JWT` and its description names Clerk as issuer and the `mail`, `name`, `roles` claims with `USER` as default role
+- **THEN** it is `type: http`, `scheme: bearer`, `bearerFormat: JWT` and its description names Clerk as issuer and the `mail` and `name` claims, and states the role comes from Flowrapp
 
 #### Scenario: No in-house token issuance referenced
 - **WHEN** the bearer scheme description is read after tag B
@@ -45,13 +45,13 @@ After tag B the Main spec SHALL NOT declare a `basicAuth` security scheme nor li
 - **WHEN** the Main spec is bundled after tag B
 - **THEN** `components.securitySchemes` has no `basicAuth` and no operation references it
 
-### Requirement: No in-house credential endpoints
-Main and BFF specs SHALL NOT expose login, logout, token refresh, forgot/reset password, GitHub/Google OAuth exchange or change-password operations; credential and password management belong to Clerk.
+### Requirement: Legacy credential endpoints disabled
+After tag B, Main and BFF specs SHALL keep the legacy login, logout, token refresh, forgot/reset password, GitHub/Google OAuth exchange and change-password operations marked `deprecated: true`, and each SHALL document a `410 Gone` response meaning legacy authentication is disabled and Clerk must be used.
 
-#### Scenario: Auth paths absent
-- **WHEN** the `paths` of either spec are listed after tag B
-- **THEN** no path starts with `/api/v1/auth/` and no `change-password` path exists
+#### Scenario: Legacy operation documents 410
+- **WHEN** any `/api/v1/auth/**` or change-password operation is read after tag B
+- **THEN** it is `deprecated: true` and lists a `410` response
 
-#### Scenario: No orphaned auth schemas
-- **WHEN** both specs are bundled and linted after tag B
-- **THEN** `LoginRequestDTO`, `LogoutRequestDTO`, `TokenResponseDTO`, `RefreshRequestDTO`, `ForgotPasswordRequestDTO`, `ResetPasswordRequestDTO`, `OAuthCredentialRequestDTO` and change-password request schemas are not defined or referenced
+#### Scenario: Register has no password
+- **WHEN** `RegisterUserFromInvitationRequestDTO` is read in either spec after tag B
+- **THEN** it has no `password` property
