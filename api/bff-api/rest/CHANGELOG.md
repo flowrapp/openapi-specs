@@ -2,7 +2,7 @@
 
 ## 0.0.86 (local spec draft; not a release or repository tag)
 
-Spec only. No BFF implementation is included. Requires Main API contract 0.0.97 and the explicit runtime/codegen/persistence gates in `docs/attendance-incident-groups.md`.
+Spec only. No BFF implementation is included. Requires Main API contract 0.0.97. Java/codegen was omitted by Sergio's direct decision (t37u: «No hace falta que valides nada con Java») and is not a phase-1 delivery gate. Runtime/concurrency/database and application/UI behavior remains unverified; persistence activation and release remain gated on compatible writer-lock adoption and an approved retention policy, as described in `docs/attendance-incident-groups.md`.
 
 ### Added
 

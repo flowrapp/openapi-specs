@@ -56,4 +56,4 @@ For 1150, candidate future routes/writers that must consult the protection guard
 
 ## Validation and release gates
 
-Run the local contract checks documented with this change. Code generation was not executed: Java/codegen is not available on the inspected PATH. This is an explicit pending gate; lint/ref checks do not substitute for codegen. Runtime, concurrency/database and application/UI tests are not run and must not be reported as passing. Persistence activation is gated on writer lock adoption and an approved retention policy. Versions 0.0.97/0.0.86 are local specification drafts only, not tags/releases.
+Code generation was omitted by Sergio's direct decision (t37u: «No hace falta que valides nada con Java»); Java/codegen is not a phase-1 delivery gate. Runtime behavior, concurrency/database behavior and application/UI behavior remain unverified. Persistence activation and release remain gated on adoption of the compatible writer-lock protocol and an approved retention policy. Versions 0.0.97/0.0.86 are local specification drafts only, not tags/releases.
