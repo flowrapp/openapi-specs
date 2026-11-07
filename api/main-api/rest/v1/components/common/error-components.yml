@@ -62,7 +62,7 @@ components:
         | 1013 | 403 | INVITATION_NOT_PENDING | invitation not pending |
         | 1014 | 409 | USER_ALREADY_ENABLED | user already enabled |
         | 1015 | 403 | USER_IS_NOT_MEMBER_OF_BUSINESS | user is not member of business |
-        | 1016 | 500 | CURRENT_USER_NOT_FOUND | Current user not found |
+        | 1016 | 403 | CURRENT_USER_NOT_FOUND | Current user not found |
         | 1017 | 404 | WORKLOG_NOT_FOUND | worklog not found |
         | 1018 | 403 | WORKLOG_CLOSED | worklog already closed |
         | 1019 | 403 | WORKLOG_NOT_OWNER | user is not the owner of worklog |

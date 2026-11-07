@@ -678,14 +678,14 @@ contracts:
                 hasNext: false
         '401':
           description: Unauthorized
-        '500':
+        '403':
           description: Authenticated user could not be resolved
           content:
             application/problem+json:
               schema:
                 $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
               example:
-                status: 500
+                status: 403
                 detail: "1016 - Current user not found"
       x-functional-errors:
         - 1016

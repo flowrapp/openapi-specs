@@ -59,8 +59,10 @@ users:
                 "$ref": "../../components/users/components.yml#/components/schemas/CurrentUserResponseDTO"
         '401':
           description: Missing or invalid bearer token
-        '500':
-          description: The token mail does not match any Flowrapp user
+        '403':
+          description: >-
+            The token mail does not match any Flowrapp user (1016), or the user is
+            not enabled yet (plain 403 without functional code)
           content:
             application/problem+json:
               schema:
@@ -69,7 +71,7 @@ users:
                 CURRENT_USER_NOT_FOUND:
                   summary: "1016 - Current user not found"
                   value:
-                    status: 500
+                    status: 403
                     detail: "1016 - Current user not found"
       x-functional-errors:
         - 1016

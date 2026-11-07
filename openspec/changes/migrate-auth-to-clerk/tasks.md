@@ -7,6 +7,7 @@
 - [x] 1.5 Mark `/api/v1/auth/**` and change-password operations `deprecated: true` in both specs
 - [x] 1.7 Main: add `GET /api/v1/users/me` (`getCurrentUser`, `CurrentUserResponseDTO`: id, name, email, phone, role) so the BFF can resolve the profile when the Clerk `sub` is not a Flowrapp id
 - [ ] 1.6 Bump `info.version` (Main, BFF); `redocly lint` both specs clean; tag A published
+- [x] 1.8 Main: `1016 CURRENT_USER_NOT_FOUND` is a 403 (was 500) on `GET /api/v1/users/me` and contracts; error table updated (tag v1.0.2)
 
 ## 2. Tag B — cleanup (consume only after new app is published)
 
