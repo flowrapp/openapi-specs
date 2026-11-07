@@ -84,6 +84,7 @@ attendanceInbox:
       tags: [Attendance]
       operationId: getCurrentUserAttendanceInboxBadge
       summary: Count the caller's incidents and pending confirmations
+      deprecated: true
       description: |
         Legacy two-count badge retained from Main API 0.0.96 source commit `92f0504`.
         Returns independent server counts for the caller: `incidentCount` is own OPEN
@@ -91,7 +92,11 @@ attendanceInbox:
         change confirmations. Both properties are required and retained as existing badge
         contract data. This specification adds no confirmation collection or response route.
         Any active business membership role is allowed; only the authenticated caller's own
-        counts are returned. The client does not count by paging.
+        counts are returned. The client does not count by paging. This operation remains
+        operational with unchanged route and response for existing consumers. New consumers
+        should use `summary` on `getCurrentUserAttendanceIncidentGroups`, which returns these
+        same global counts with the group page in one consistent response and avoids a
+        separate badge request.
       security:
         - bearerAuth: []
       parameters:
@@ -139,6 +144,25 @@ attendanceInbox:
         JUSTIFIED and UNJUSTIFIED filter by current justification presence. Filtering and
         caller scoping occur before keyset pagination. `limit` defaults to 20, range 1..50.
 
+        `totalGroupsMatchingFilters` is the exact number of complete OPEN groups matching
+        caller scope plus date and justification filters, counted before cursor and limit;
+        it is not the page length and is not accumulated across pages. `summary` reuses the
+        legacy `AttendanceInboxBadgeDTO` semantics: `incidentCount` counts the caller's
+        individual OPEN incidents without justification (not groups), while
+        `confirmationCount` counts the caller's pending worklog-change confirmations. It is
+        global to this business and caller and ignores date, justification, cursor and limit.
+        The initial page includes both counts, so clients need no separate badge call.
+
+        The list, filtered total, global summary and complete members are read under one
+        REPEATABLE READ READ ONLY transaction per response. Count queries are aggregated by
+        business and caller, not run per item. If any count cannot be computed, this request
+        fails with an HTTP error; it never returns null, unknown or a fabricated zero. An
+        empty `content` has total 0 only when no groups match, and its global summary may
+        still be nonzero. `asOf` is informational. Each page request is a new live snapshot;
+        writes between pages may change totals and counters, so clients show the latest
+        coherent response and refresh rather than summing or merging page counters. Clients
+        treat an HTTP error or a missing/null count as an error, never as zero.
+
         Groups are ordered by `anchorAt` descending, `kindRank` ascending (SHIFT=0,
         UNMATCHED=1), then `anchorId` descending. The opaque cursor is bound to business,
         caller, date, justification filter and business zone; changed scope/filter is 400
@@ -156,7 +180,7 @@ attendanceInbox:
         - $ref: '../../components/attendanceInbox/components.yml#/components/parameters/GroupLimit'
       responses:
         '200':
-          description: Cursor page of complete groups.
+          description: Cursor page of complete groups with exact filtered total and global caller-scoped summary from one response snapshot.
           content:
             application/json:
               schema:
@@ -165,6 +189,17 @@ attendanceInbox:
                 empty:
                   value:
                     content: []
+                    totalGroupsMatchingFilters: 0
+                    summary: {incidentCount: 2, confirmationCount: 1}
+                    hasNext: false
+                    nextCursor: null
+                    asOf: '2026-11-07T10:00:00Z'
+                filteredNoResults:
+                  summary: No groups match the filters; global legacy badge counts remain nonzero.
+                  value:
+                    content: []
+                    totalGroupsMatchingFilters: 0
+                    summary: {incidentCount: 2, confirmationCount: 1}
                     hasNext: false
                     nextCursor: null
                     asOf: '2026-11-07T10:00:00Z'

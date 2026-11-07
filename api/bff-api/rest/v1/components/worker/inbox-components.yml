@@ -206,14 +206,31 @@ components:
     WorkerAttendanceIncidentGroupPageDTO:
       type: object
       additionalProperties: false
+      description: >-
+        One response snapshot forwarded from Main, with complete matching OPEN groups, their
+        exact filtered total, and the caller-scoped global badge summary. The total is counted
+        after date and justification filters but before cursor/limit; summary is independent
+        of all list filters and pagination parameters. If Main cannot compute any count, the
+        BFF forwards failure rather than manufacturing a zero. Later pages are live responses
+        and may have different totals and summaries; do not add or merge counters across pages.
       properties:
         content:
           type: array
           items: {$ref: '#/components/schemas/WorkerAttendanceIncidentGroupDTO'}
+        totalGroupsMatchingFilters:
+          type: integer
+          format: int64
+          minimum: 0
+          description: Complete OPEN groups matching date and justification filters, before cursor and limit; forwarded from Main.
+          example: 0
+        summary:
+          allOf:
+            - $ref: '#/components/schemas/WorkerAttendanceInboxBadgeDTO'
+          description: Global caller-scoped legacy badge counts forwarded in the same Main response, unaffected by list filters or pagination.
         hasNext: {type: boolean}
         nextCursor: {type: [string, 'null'], description: Null iff hasNext is false.}
         asOf: {type: string, format: date-time}
-      required: [content, hasNext, nextCursor, asOf]
+      required: [content, totalGroupsMatchingFilters, summary, hasNext, nextCursor, asOf]
     WorkerAttendanceIncidentGroupJustificationRequestDTO:
       type: object
       additionalProperties: false

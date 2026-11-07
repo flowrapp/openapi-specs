@@ -10,6 +10,8 @@ Spec only. No Main API implementation is included. Requires coordinated BFF 0.0.
 - Legacy `getCurrentUserAttendanceIncidents` listing and `getCurrentUserAttendanceInboxBadge` contracts from approved source commit `92f0504`, restricted to those two operations and their necessary DTOs/refs. Legacy list retains OPEN + justification IS NULL, `limit` 1..50/default 20 and updatedAt DESC/id DESC; the badge preserves both `incidentCount` and `confirmationCount`. No confirmation endpoint is added. Code 1142 remains the legacy list cursor error.
 - New functional codes 1144–1149 for grouped request validation, scoped cursor, group not found, revision/canonicalization conflict, no-open group and lock timeout. Code 1150 is catalogued as a future-writer history-protection requirement only; these GET/POST routes do not emit it.
 - Bumped local OpenAPI version to 0.0.97. This is a draft increment, not a release or tag.
+- Group-list pages now require `totalGroupsMatchingFilters` (complete matching OPEN groups after filters, before cursor/limit) and the existing `AttendanceInboxBadgeDTO` as global caller/business `summary`. The list, exact total, global summary and complete members are specified to share one `REPEATABLE READ READ ONLY` transaction per response; count failure fails the response, while later pages remain independent live snapshots. The existing badge operation remains unchanged and is marked deprecated in favor of the page summary.
+- Group-list examples include required counts and an empty filtered result with nonzero global summary; acceptance/runtime gates are updated in `docs/attendance-incident-groups.md`.
 
 ## 0.0.95
 

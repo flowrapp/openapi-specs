@@ -10,6 +10,8 @@ Spec only. No BFF implementation is included. Requires Main API contract 0.0.97.
 - Retained the approved legacy `getWorkerAttendanceIncidents` list and two-count `getWorkerAttendanceInboxBadge` from source commit `92f0504`, limited to those operations and necessary DTOs/refs. The list preserves OPEN + justification IS NULL, default limit 20/range 1..50 and updatedAt DESC/id DESC; `incidentCount` and `confirmationCount` remain distinct. No confirmation collection or response endpoint is included.
 - New functional codes 1144–1149 are shared with Main; 1150 is a future history-writer protection requirement, not emitted by these endpoints.
 - Bumped local OpenAPI version to 0.0.86. This is a draft increment, not a release or tag.
+- Worker group-list pages now require `totalGroupsMatchingFilters` forwarded from Main and the existing `WorkerAttendanceInboxBadgeDTO` as the global caller/business `summary`. The BFF forwards the single Main response without a separate badge call or per-item count composition; Main's one-response transaction and failure semantics are documented, and pages remain independent live snapshots. The existing worker badge operation remains unchanged and is marked deprecated in favor of the page summary.
+- Group-list examples include required counts and an empty filtered result with nonzero global summary; acceptance/runtime gates are updated in `docs/attendance-incident-groups.md`.
 
 ## 0.0.84
 

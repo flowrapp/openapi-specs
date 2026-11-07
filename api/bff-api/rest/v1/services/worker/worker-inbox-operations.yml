@@ -41,12 +41,17 @@ workerInbox:
       tags: [Worker]
       operationId: getWorkerAttendanceInboxBadge
       summary: Count my incidents and legacy pending confirmations
+      deprecated: true
       description: |
         Legacy badge from BFF 0.0.85 source commit `92f0504`; it forwards both required Main
         API counts unchanged: `incidentCount` (own OPEN incidents without justification)
         and `confirmationCount` (own PENDING worklog-change confirmations). Both counts stay
         distinct. The badge is not a confirmation list and this contract adds no confirmation
         collection or response route. Any active membership role receives caller-only counts.
+        This operation remains operational with its unchanged route and response for existing
+        consumers. New consumers should use `summary` on `getWorkerAttendanceIncidentGroups`,
+        which forwards the same global counts alongside the group page in one Main response;
+        the BFF makes no separate badge call.
       security:
         - bearerAuth: []
       parameters:
@@ -82,6 +87,24 @@ workerInbox:
         kind rank SHIFT before UNMATCHED, then anchor id DESC. Cursor is bound to business,
         caller, date, filter and zone. It is a live keyset, with no global snapshot
         guarantee; refresh from page one when the anchor, membership or eligibility changes.
+
+        `totalGroupsMatchingFilters` is the exact number of complete caller-owned OPEN groups
+        matching date and justification filters, counted before cursor and limit; it is not
+        the page length and is not accumulated across pages. `summary` forwards the legacy
+        `WorkerAttendanceInboxBadgeDTO` from the same Main response: `incidentCount` counts
+        individual OPEN incidents without justification (not groups), and `confirmationCount`
+        counts pending worklog-change confirmations. It is global to this business and caller,
+        independent of all list filters and pagination. The initial page therefore needs no
+        separate badge call or N+1 composition.
+
+        Main reads the list, total, global summary and complete members under one REPEATABLE
+        READ READ ONLY transaction per response, using aggregate counts by business/caller
+        rather than per-item queries. Count failure fails the response; the BFF never returns
+        null, unknown or an invented zero. Empty content has total 0 only when no group
+        matches, while global summary can remain nonzero. `asOf` is informational. Each page
+        is a new live snapshot and may differ after writes; clients use the latest coherent
+        response and refresh, never sum or merge counters across pages. Clients treat an HTTP
+        error or a missing/null count as an error, never as zero.
       security:
         - bearerAuth: []
       parameters:
@@ -92,13 +115,17 @@ workerInbox:
         - $ref: '../../components/worker/inbox-components.yml#/components/parameters/GroupLimit'
       responses:
         '200':
-          description: Page of complete incident groups.
+          description: Page of complete incident groups with Main's exact filtered total and global caller-scoped summary from one response snapshot.
           content:
             application/json:
               schema: {$ref: '../../components/worker/inbox-components.yml#/components/schemas/WorkerAttendanceIncidentGroupPageDTO'}
               examples:
                 empty:
-                  value: {content: [], hasNext: false, nextCursor: null, asOf: '2026-11-07T10:00:00Z'}
+                  summary: No groups match the filters; global legacy badge counts remain nonzero.
+                  value: {content: [], totalGroupsMatchingFilters: 0, summary: {incidentCount: 2, confirmationCount: 1}, hasNext: false, nextCursor: null, asOf: '2026-11-07T10:00:00Z'}
+                filteredNoResults:
+                  summary: Filtered page is empty while global counts still include caller items.
+                  value: {content: [], totalGroupsMatchingFilters: 0, summary: {incidentCount: 2, confirmationCount: 1}, hasNext: false, nextCursor: null, asOf: '2026-11-07T10:00:00Z'}
         '400':
           $ref: '../../components/worker/inbox-components.yml#/components/responses/GroupListBadRequest'
         '401':
