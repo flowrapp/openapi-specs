@@ -2,11 +2,18 @@ invitations:
   register-user-from-invitation:
     post:
       summary: Register user from invitation
-      description: Registers a new user an accepts the invitation.
+      description: >-
+        Requires a Clerk session whose mail claim matches the invited email.
+        A not-yet-enabled invited user is enabled, their username and phone are
+        updated, and the invitation is accepted. An already-enabled invited
+        user only has the invitation accepted. A session email that does not
+        match the invited email is rejected with 1009 - invitation not for
+        current user.
       tags:
         - Invitations
       operationId: registerUserFromInvitation
-      security: []
+      security:
+        - bearerAuth: []
       parameters:
         - name: token
           in: query
@@ -26,17 +33,23 @@ invitations:
             example:
               username: "johndoe"
               phone: "+1234567890"
-              password: "securePassword123"
       responses:
         '201':
           description: User registered successfully
+        '401':
+          description: Unauthorized - missing or invalid bearer token
         '403':
-          description: Invitation expired
+          description: Invitation expired or does not belong to the current user
           content:
             application/problem+json:
               schema:
                 $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
               examples:
+                INVITATION_NOT_FOR_CURRENT_USER:
+                  summary: "1009 - invitation not for current user"
+                  value:
+                    status: 403
+                    detail: "1009 - invitation not for current user"
                 INVITATION_EXPIRED:
                   summary: "1010 - invitation expired"
                   value:
@@ -54,22 +67,10 @@ invitations:
                   value:
                     status: 404
                     detail: "1005 - invitation not found"
-        '409':
-          description: User is already registered
-          content:
-            application/problem+json:
-              schema:
-                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
-              examples:
-                USER_ALREADY_ENABLED:
-                  summary: "1014 - user already enabled"
-                  value:
-                    status: 409
-                    detail: "1014 - user already enabled"
       x-functional-errors:
         - 1005
+        - 1009
         - 1010
-        - 1014
 
   accept-invitation:
     post:

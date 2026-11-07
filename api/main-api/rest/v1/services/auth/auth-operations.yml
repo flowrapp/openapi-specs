@@ -1,6 +1,7 @@
 auth:
   login:
     post:
+      deprecated: true
       summary: Authenticate a user
       description: >
         Authenticates the user and returns access and refresh tokens. Omitting
@@ -128,6 +129,7 @@ auth:
 
   token-refresh:
     post:
+      deprecated: true
       summary: Refresh authentication tokens
       description: >
         Renews authentication using a valid refresh token. Legacy refresh tokens
@@ -185,6 +187,7 @@ auth:
 
   forgot-password:
     post:
+      deprecated: true
       summary: Request a password reset
       description: >
         Sends a password reset code to the supplied email address when an
@@ -214,6 +217,7 @@ auth:
 
   reset-password:
     post:
+      deprecated: true
       summary: Reset a forgotten password
       description: >
         Sets a new password using the single-use verification code sent
@@ -243,6 +247,7 @@ auth:
 
   github:
     post:
+      deprecated: true
       summary: Authenticate via GitHub OAuth
       description: >
         Exchanges a GitHub OAuth authorization code for access and refresh tokens.
@@ -305,6 +310,7 @@ auth:
 
   google:
     post:
+      deprecated: true
       summary: Authenticate via Google OAuth
       description: >
         Exchanges a Google OAuth credential (such as an ID token or authorization

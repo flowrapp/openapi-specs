@@ -3,7 +3,7 @@ openapi: 3.1.0
 info:
   title: Flowrapp API
   description: REST API for Flowrapp Backend
-  version: 0.0.97
+  version: 0.0.98
   contact:
     name: Flowrapp Team
     url: https://flowrapp.github.io
@@ -490,9 +490,9 @@ components:
       scheme: bearer
       bearerFormat: JWT
       description: >-
-        JWT-based authentication. Legacy tokens without device binding remain
-        valid under the existing validation rules, without forced reauthentication.
-        Tokens issued with deviceId identify a server-side user/device session;
-        every bearer-authenticated request using such a token must verify that
-        the session is active. Missing or revoked sessions are rejected immediately,
-        even before token expiration, and must never fall back to legacy validation.
+        Clerk session JWT issued by the configured Clerk instance. Tokens carry
+        the mail, name and roles claims; when roles is absent, the default role
+        is USER. During the migration, legacy Flowrapp-issued tokens are still
+        accepted under their existing rules: tokens issued with deviceId must
+        match an active server-side user/device session and are rejected
+        immediately when that session is missing or revoked.

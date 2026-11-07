@@ -1,6 +1,7 @@
 auth:
   login:
     post:
+      deprecated: true
       summary: Authenticate a user
       description: >
         Authenticates a user by validating their email and password credentials.
@@ -116,6 +117,7 @@ auth:
 
   token-refresh:
     post:
+      deprecated: true
       summary: Refresh authentication tokens
       description: >
         Renews authentication using a valid refresh token. Legacy refresh tokens
@@ -149,6 +151,7 @@ auth:
 
   forgot-password:
     post:
+      deprecated: true
       summary: Request a password reset
       description: >
         Requests a password reset code by email. The response does not reveal
@@ -174,6 +177,7 @@ auth:
 
   reset-password:
     post:
+      deprecated: true
       summary: Reset a forgotten password
       description: >
         Sets a new password using the verification code sent to the user's
@@ -199,6 +203,7 @@ auth:
 
   github:
     post:
+      deprecated: true
       summary: Authenticate via GitHub OAuth
       description: >
         Exchanges a GitHub OAuth authorization code for access and refresh tokens.
@@ -250,6 +255,7 @@ auth:
 
   google:
     post:
+      deprecated: true
       summary: Authenticate via Google OAuth
       description: >
         Exchanges a Google OAuth credential (ID token) for access and refresh
@@ -303,12 +309,17 @@ auth:
     post:
       summary: Register user from invitation
       description: >
-        Registers a new user and accepts the invitation associated with the token.
-        This is a pass-through to the main API.
+        Requires a Clerk session whose mail claim matches the invited email.
+        A not-yet-enabled invited user is enabled, their username and phone are
+        updated, and the invitation is accepted. An already-enabled invited
+        user only has the invitation accepted. A session email that does not
+        match the invited email is rejected with 1009 - invitation not for
+        current user. This is a pass-through to the main API.
       tags:
         - Authentication
       operationId: registerUserFromInvitation
-      security: []
+      security:
+        - bearerAuth: []
       parameters:
         - name: token
           in: query
@@ -328,13 +339,31 @@ auth:
             example:
               username: "johndoe"
               phone: "+1234567890"
-              password: "securePassword123"
       responses:
         '201':
           description: User registered and invitation accepted successfully
+        '401':
+          description: Unauthorized - missing or invalid bearer token
         '403':
-          description: Invitation expired
+          description: Invitation expired or does not belong to the current user
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              examples:
+                INVITATION_NOT_FOR_CURRENT_USER:
+                  summary: "1009 - invitation not for current user"
+                  value:
+                    status: 403
+                    detail: "1009 - invitation not for current user"
+                INVITATION_EXPIRED:
+                  summary: "1010 - invitation expired"
+                  value:
+                    status: 403
+                    detail: "1010 - invitation expired"
         '404':
           description: Invitation token not found
-        '409':
-          description: User is already registered
+      x-functional-errors:
+        - 1005
+        - 1009
+        - 1010

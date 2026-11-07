@@ -40,6 +40,7 @@ users:
 
   change-password:
     put:
+      deprecated: true
       summary: Change user password
       description: Updates the password for the authenticated user.
       tags:
