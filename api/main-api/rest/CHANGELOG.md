@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.0.97 (local spec draft; not a release or repository tag)
+
+Spec only. No Main API implementation is included. Requires coordinated BFF 0.0.86. Java/codegen was omitted by Sergio's direct decision (t37u: «No hace falta que valides nada con Java») and is not a phase-1 delivery gate. Runtime/concurrency/database behavior remains unverified; persistence activation and release remain gated on compatible writer-lock adoption and an approved retention policy, as described in `docs/attendance-incident-groups.md`.
+
+### Added
+
+- Caller-scoped `GET /api/v1/businesses/{businessId}/attendance-incident-groups`, `GET .../{groupId}` and `POST .../{groupId}/justification`. Any active membership role may read or justify only their own data. Groups are canonical `S-{scheduledShiftId}` SHIFT groups or `M-{attendanceMatchId}` UNMATCHED groups; OPEN incident aggregation, business-zone date filtering, JUSTIFIED/UNJUSTIFIED filtering, live keyset pagination, full-member response snapshots and revision-safe atomic common justification are specified in the new design note.
+- Legacy `getCurrentUserAttendanceIncidents` listing from approved source commit `92f0504`, restricted to that operation and its necessary DTOs/refs. Legacy list retains OPEN + justification IS NULL, `limit` 1..50/default 20 and updatedAt DESC/id DESC. Source `92f0504` also had a standalone badge; it is not carried over, and its two counts are exposed only as group-page `summary`. No confirmation endpoint is added. Code 1142 remains the legacy list cursor error.
+- New functional codes 1144–1149 for grouped request validation, scoped cursor, group not found, revision/canonicalization conflict, no-open group and lock timeout. Code 1150 is catalogued as a future-writer history-protection requirement only; these GET/POST routes do not emit it.
+- Bumped local OpenAPI version to 0.0.97. This is a draft increment, not a release or tag.
+- Group-list pages now require `totalGroupsMatchingFilters` (complete matching OPEN groups after filters, before cursor/limit) and `AttendanceInboxSummaryDTO` as global caller/business `summary`. The list, exact total, global summary and complete members are specified to share one `REPEATABLE READ READ ONLY` transaction per response; count failure fails the response, while later pages remain independent live snapshots.
+- Group-list examples include required counts and an empty filtered result with nonzero global summary; acceptance/runtime gates are updated in `docs/attendance-incident-groups.md`.
+
 ## 0.0.95
 
 Spec only. No backend implementation and no repository tag in this change. Coordinate with BFF API 0.0.83.

@@ -3,7 +3,7 @@ openapi: 3.1.0
 info:
   title: Flowrapp API
   description: REST API for Flowrapp Backend
-  version: 0.0.95
+  version: 0.0.97
   contact:
     name: Flowrapp Team
     url: https://flowrapp.github.io
@@ -72,7 +72,8 @@ tags:
       lists this collection separately from exchanges. Not a dashboard.
   - name: Attendance
     description: >-
-      Daily reconciliation between published shifts and recorded worklogs.
+      Daily reconciliation between published shifts, recorded worklogs and caller-scoped
+      attendance incident groups.
 
 paths:
   "/api/v1/ping":
@@ -330,6 +331,14 @@ paths:
       dent-justification"
   "/api/v1/businesses/{businessId}/attendance":
     $ref: "v1/services/attendance/attendance-operations.yml#/attendance/daily"
+  "/api/v1/businesses/{businessId}/attendance-incidents":
+    $ref: "v1/services/attendanceInbox/attendance-inbox-operations.yml#/attendanceInbox/incidents"
+  "/api/v1/businesses/{businessId}/attendance-incident-groups":
+    $ref: "v1/services/attendanceInbox/attendance-inbox-operations.yml#/attendanceInbox/groups"
+  "/api/v1/businesses/{businessId}/attendance-incident-groups/{groupId}":
+    $ref: "v1/services/attendanceInbox/attendance-inbox-operations.yml#/attendanceInbox/group"
+  "/api/v1/businesses/{businessId}/attendance-incident-groups/{groupId}/justification":
+    $ref: "v1/services/attendanceInbox/attendance-inbox-operations.yml#/attendanceInbox/group-justification"
   "/api/v1/businesses/{businessId}/attendance-tolerance":
     $ref: "v1/services/attendance/attendance-operations.yml#/attendance/tole\
       rance"

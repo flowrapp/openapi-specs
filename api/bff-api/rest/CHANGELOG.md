@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.0.86 (local spec draft; not a release or repository tag)
+
+Spec only. No BFF implementation is included. Requires Main API contract 0.0.97. Java/codegen was omitted by Sergio's direct decision (t37u: «No hace falta que valides nada con Java») and is not a phase-1 delivery gate. Runtime/concurrency/database and application/UI behavior remains unverified; persistence activation and release remain gated on compatible writer-lock adoption and an approved retention policy, as described in `docs/attendance-incident-groups.md`.
+
+### Added
+
+- Worker `GET /api/v1/worker/businesses/{businessId}/attendance-incident-groups`, `GET .../{groupId}` and `PUT .../{groupId}/justification`, mirroring the caller-scoped Main group contract and forwarding group filters, revision conflicts, lock timeout and `Retry-After: 1`. Any active membership role may access only their own attendance data.
+- Retained the approved legacy `getWorkerAttendanceIncidents` list from source commit `92f0504`, limited to that operation and necessary DTOs/refs. The list preserves OPEN + justification IS NULL, default limit 20/range 1..50 and updatedAt DESC/id DESC. Source `92f0504` also had a standalone badge; it is not carried over, and its two counts are exposed only as group-page `summary`. No confirmation collection or response endpoint is included.
+- New functional codes 1144–1149 are shared with Main; 1150 is a future history-writer protection requirement, not emitted by these endpoints.
+- Bumped local OpenAPI version to 0.0.86. This is a draft increment, not a release or tag.
+- Worker group-list pages now require `totalGroupsMatchingFilters` forwarded from Main and `WorkerAttendanceInboxSummaryDTO` as the global caller/business `summary`. The BFF forwards the single Main response without a separate count call or per-item count composition; Main's one-response transaction and failure semantics are documented, and pages remain independent live snapshots.
+- Group-list examples include required counts and an empty filtered result with nonzero global summary; acceptance/runtime gates are updated in `docs/attendance-incident-groups.md`.
+
 ## 0.0.84
 
 Spec only. No BFF implementation and no repository tag in this change. Main API unchanged (0.0.95): `getPlanningGenerationInput` already returns `openingIntervals` per date.

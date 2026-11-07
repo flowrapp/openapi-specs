@@ -1,0 +1,329 @@
+components:
+  parameters:
+    BusinessId:
+      name: businessId
+      in: path
+      required: true
+      description: Business of the caller-scoped attendance inbox.
+      schema: {type: integer, format: int64, minimum: 1, example: 101}
+    Cursor:
+      name: cursor
+      in: query
+      required: false
+      description: >-
+        Opaque cursor bound to business, caller and legacy incident collection. Invalid,
+        undecodable or foreign cursor returns 400 1142.
+      schema: {type: string, minLength: 1}
+    Limit:
+      name: limit
+      in: query
+      required: false
+      description: Legacy list page size; defaults to 20, from 1 to 50.
+      schema: {type: integer, format: int32, minimum: 1, maximum: 50, default: 20}
+    GroupDate:
+      name: date
+      in: query
+      required: false
+      description: Optional business-local start date filter (YYYY-MM-DD).
+      schema: {type: string, format: date, example: '2026-10-30'}
+    JustificationFilter:
+      name: justification
+      in: query
+      required: false
+      description: Filter groups by current open-member justification state; default ALL.
+      schema: {type: string, enum: [ALL, UNJUSTIFIED, JUSTIFIED], default: ALL}
+    GroupCursor:
+      name: cursor
+      in: query
+      required: false
+      description: Opaque keyset cursor bound to business, caller, date, filter and business zone.
+      schema: {type: string, minLength: 1}
+    GroupLimit:
+      name: limit
+      in: query
+      required: false
+      description: Group page size; defaults to 20, from 1 to 50.
+      schema: {type: integer, format: int32, minimum: 1, maximum: 50, default: 20}
+    GroupId:
+      name: groupId
+      in: path
+      required: true
+      description: Opaque current group id, S-{scheduledShiftId} or M-{attendanceMatchId}.
+      schema: {type: string, pattern: '^[SM]-[1-9][0-9]{0,18}$', example: S-900}
+
+  schemas:
+    AttendanceAnchorDTO:
+      type: object
+      description: >-
+        Legacy inbox navigation anchor. Date is the business-local shift start date for
+        SHIFT scope or a MATCHED match, otherwise the business-local clock-in date. A
+        MATCH-scoped incident always carries its real current match id, whatever the match
+        kind; scheduledShiftId is populated only for SHIFT scope or MATCHED. Worklog id is
+        derived server-side from the match and null for SHIFT scope. Date is navigation only,
+        not a sort key or cursor component.
+      properties:
+        date: {type: string, format: date, example: '2026-10-30'}
+        scheduledShiftId: {type: [integer, 'null'], format: int64, minimum: 1, example: 900}
+        attendanceMatchId: {type: [integer, 'null'], format: int64, minimum: 1, example: 700}
+        worklogId: {type: [integer, 'null'], format: int64, minimum: 1, example: 3051}
+      required: [date, scheduledShiftId, attendanceMatchId, worklogId]
+    CurrentUserAttendanceIncidentDTO:
+      type: object
+      description: Legacy individual inbox item retained from Main API 0.0.96.
+      properties:
+        incident:
+          $ref: '../attendance/components.yml#/components/schemas/AttendanceIncidentDTO'
+        anchor:
+          $ref: '#/components/schemas/AttendanceAnchorDTO'
+      required: [incident, anchor]
+    CurrentUserAttendanceIncidentPageDTO:
+      type: object
+      additionalProperties: false
+      properties:
+        content:
+          type: array
+          items: {$ref: '#/components/schemas/CurrentUserAttendanceIncidentDTO'}
+        hasNext: {type: boolean}
+        nextCursor: {type: [string, 'null'], description: 'Opaque cursor; null on the final page.'}
+      required: [content, hasNext, nextCursor]
+    AttendanceInboxSummaryDTO:
+      type: object
+      additionalProperties: false
+      description: Global caller/business counts returned as group-page summary; confirmationCount has no matching route in this delivery.
+      properties:
+        incidentCount: {type: integer, format: int32, minimum: 0, example: 2}
+        confirmationCount: {type: integer, format: int32, minimum: 0, example: 1}
+      required: [incidentCount, confirmationCount]
+
+    AttendanceIncidentGroupKindDTO:
+      type: string
+      enum: [SHIFT, UNMATCHED]
+      example: SHIFT
+    AttendanceGroupFilterClassDTO:
+      type: string
+      enum: [JUSTIFIED, UNJUSTIFIED]
+      example: JUSTIFIED
+    AttendanceGroupJustificationStateDTO:
+      type: string
+      enum: [NONE, COMMON, LEGACY_SINGLE, PARTIAL, NOT_COMMON]
+      example: COMMON
+    AttendanceGroupJustificationOriginDTO:
+      type: string
+      enum: [COMMON, INDIVIDUAL]
+      example: COMMON
+    AttendanceGroupIncidentMemberDTO:
+      type: object
+      description: >-
+        Minimal safe view of one OPEN incident; no author, resolver, evidence, reason or
+        management identity. Members are returned in ascending incidentId order.
+      properties:
+        incidentId: {type: integer, format: int64, minimum: 1, example: 880}
+        type: {$ref: '../attendance/components.yml#/components/schemas/AttendanceIncidentTypeDTO'}
+        scope: {$ref: '../attendance/components.yml#/components/schemas/AttendanceIncidentScopeDTO'}
+        attendanceMatchId:
+          type: [integer, 'null']
+          format: int64
+          minimum: 1
+          description: Required for MATCH scope; null iff scope is SHIFT.
+          example: 700
+        worklogId:
+          type: [integer, 'null']
+          format: int64
+          minimum: 1
+          description: Required for MATCH scope; null iff scope is SHIFT.
+          example: 3051
+        createdAt: {type: string, format: date-time, example: '2026-10-30T09:20:00Z'}
+        justification:
+          oneOf:
+            - $ref: '#/components/schemas/AttendanceGroupMemberJustificationDTO'
+            - type: 'null'
+      required: [incidentId, type, scope, attendanceMatchId, worklogId, createdAt, justification]
+    AttendanceGroupMemberJustificationDTO:
+      type: object
+      properties:
+        text: {type: string, minLength: 1, maxLength: 500, pattern: '(?=.*\S)[\s\S]+'}
+        justifiedAt: {type: string, format: date-time}
+        origin: {$ref: '#/components/schemas/AttendanceGroupJustificationOriginDTO'}
+      required: [text, justifiedAt, origin]
+    AttendanceGroupCommonJustificationDTO:
+      type: object
+      properties:
+        text: {type: string, minLength: 1, maxLength: 500, pattern: '(?=.*\S)[\s\S]+'}
+        justifiedAt: {type: string, format: date-time}
+      required: [text, justifiedAt]
+    AttendanceGroupJustificationDTO:
+      type: object
+      description: >-
+        COMMON means all current OPEN members carry the same group-level text (including a
+        valid subset after resolving members). LEGACY_SINGLE means exactly one current OPEN
+        member has one legacy individual text. PARTIAL means only some OPEN members have
+        text. NOT_COMMON
+        means every OPEN member has text but the values differ or are independent individual
+        values; no common text is fabricated. NONE means no text. `legacy` is true when the
+        group state reflects legacy individual justification evidence. JUSTIFIED includes
+        COMMON and LEGACY_SINGLE; other states classify as UNJUSTIFIED. `common` is null
+        except in COMMON, where it is the exact shared text and timestamp.
+      properties:
+        state: {$ref: '#/components/schemas/AttendanceGroupJustificationStateDTO'}
+        filterClass: {$ref: '#/components/schemas/AttendanceGroupFilterClassDTO'}
+        legacy: {type: boolean}
+        common:
+          oneOf:
+            - $ref: '#/components/schemas/AttendanceGroupCommonJustificationDTO'
+            - type: 'null'
+        openCount: {type: integer, format: int32, minimum: 1}
+        justifiedOpenCount: {type: integer, format: int32, minimum: 0}
+      required: [state, filterClass, legacy, common, openCount, justifiedOpenCount]
+    AttendanceIncidentGroupDTO:
+      type: object
+      additionalProperties: false
+      description: Complete, caller-owned snapshot of one canonical group and its OPEN members.
+      properties:
+        groupId: {type: string, pattern: '^[SM]-[1-9][0-9]{0,18}$', example: S-900}
+        kind: {$ref: '#/components/schemas/AttendanceIncidentGroupKindDTO'}
+        scheduledShiftId:
+          type: [integer, 'null']
+          format: int64
+          minimum: 1
+          description: Required for SHIFT; null for UNMATCHED.
+          example: 900
+        attendanceMatchIds:
+          type: array
+          items: {type: integer, format: int64, minimum: 1}
+          description: Match ids represented in the group, in ascending order; empty when only SHIFT-scope incidents exist.
+          example: [700]
+        businessDate: {type: string, format: date, example: '2026-10-30'}
+        anchorAt: {type: string, format: date-time, description: UTC scheduled shift start for SHIFT or clock-in for UNMATCHED, example: '2026-10-30T09:00:00Z'}
+        revision:
+          type: string
+          pattern: '^rv1-[A-Za-z0-9_-]{43}$'
+          description: >-
+            rv1- plus unpadded base64url SHA-256 of canonical JSON containing business,
+            caller, canonical group id, zone, anchor, ordered match ids and each incident
+            id/version/lifecycle/assignment.
+          example: rv1-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+        justification: {$ref: '#/components/schemas/AttendanceGroupJustificationDTO'}
+        openMembers:
+          type: array
+          minItems: 1
+          items: {$ref: '#/components/schemas/AttendanceGroupIncidentMemberDTO'}
+      required: [groupId, kind, scheduledShiftId, attendanceMatchIds, businessDate, anchorAt, revision, justification, openMembers]
+    AttendanceIncidentGroupPageDTO:
+      type: object
+      additionalProperties: false
+      description: >-
+        One response snapshot of complete matching OPEN groups, their exact filtered total,
+        and caller-scoped global summary. The total is counted after date and
+        justification filters but before cursor/limit; summary is independent of every list
+        filter and pagination parameter. If any count cannot be computed, the request fails
+        rather than returning an invented zero. Later pages are live responses and may have
+        different totals and summaries; do not add or merge counters across pages.
+      properties:
+        content:
+          type: array
+          items: {$ref: '#/components/schemas/AttendanceIncidentGroupDTO'}
+        totalGroupsMatchingFilters:
+          type: integer
+          format: int64
+          minimum: 0
+          description: Complete OPEN groups matching date and justification filters, before cursor and limit.
+          example: 0
+        summary:
+          allOf:
+            - $ref: '#/components/schemas/AttendanceInboxSummaryDTO'
+          description: Global caller-scoped counts for this business, unaffected by list filters or pagination.
+        hasNext: {type: boolean}
+        nextCursor: {type: [string, 'null'], description: Null iff hasNext is false.}
+        asOf: {type: string, format: date-time, description: Informational response timestamp in UTC.}
+      required: [content, totalGroupsMatchingFilters, summary, hasNext, nextCursor, asOf]
+    AttendanceIncidentGroupJustificationRequestDTO:
+      type: object
+      additionalProperties: false
+      properties:
+        text:
+          type: string
+          minLength: 1
+          maxLength: 500
+          pattern: '(?=.*\S)[\s\S]+'
+          description: Exact stored input; server validates not blank without trimming or rewriting it.
+          example: The bus was delayed; I arrived as soon as possible.
+        expectedRevision: {type: string, pattern: '^rv1-[A-Za-z0-9_-]{43}$'}
+      required: [text, expectedRevision]
+    AttendanceIncidentGroupJustificationOutcomeDTO:
+      type: string
+      enum: [APPLIED, REPLAYED]
+    AttendanceIncidentGroupJustificationResponseDTO:
+      type: object
+      properties:
+        outcome: {$ref: '#/components/schemas/AttendanceIncidentGroupJustificationOutcomeDTO'}
+        group: {$ref: '#/components/schemas/AttendanceIncidentGroupDTO'}
+      required: [outcome, group]
+    AttendanceIncidentGroupConflictProblemDetailDTO:
+      allOf:
+        - $ref: '../common/error-components.yml#/components/schemas/ProblemDetail'
+        - type: object
+          properties:
+            currentGroupId:
+              type: [string, 'null']
+              pattern: '^[SM]-[1-9][0-9]{0,18}$'
+              description: Canonical S- id when a stale M- identifier has become MATCHED; otherwise null.
+          required: [currentGroupId]
+
+  responses:
+    Unauthorized:
+      description: No authenticated session.
+    NotMember:
+      description: Caller is not an active business member (1015).
+      content:
+        application/problem+json:
+          schema: {$ref: '../common/error-components.yml#/components/schemas/ProblemDetail'}
+          example: {status: 403, detail: '1015 - user is not member of business'}
+    BusinessNotFound:
+      description: Business does not exist (1006).
+      content:
+        application/problem+json:
+          schema: {$ref: '../common/error-components.yml#/components/schemas/ProblemDetail'}
+          example: {status: 404, detail: '1006 - business does not exist'}
+    InboxListBadRequest:
+      description: Legacy cursor is invalid, undecodable or bound to another business, caller or collection (1142).
+      content:
+        application/problem+json:
+          schema: {$ref: '../common/error-components.yml#/components/schemas/ProblemDetail'}
+          example: {status: 400, detail: '1142 - attendance inbox cursor is invalid or does not match this query'}
+    GroupListBadRequest:
+      description: Invalid date or limit (1144), or opaque group cursor invalid or bound to another scope/filter (1145).
+      content:
+        application/problem+json:
+          schema: {$ref: '../common/error-components.yml#/components/schemas/ProblemDetail'}
+          examples:
+            requestInvalid: {value: {status: 400, detail: '1144 - attendance incident group request is invalid'}}
+            cursorInvalid: {value: {status: 400, detail: '1145 - attendance incident group cursor is invalid or does not match this query'}}
+    GroupRequestBadRequest:
+      description: Text or expectedRevision is invalid (1144); the text is never trimmed.
+      content:
+        application/problem+json:
+          schema: {$ref: '../common/error-components.yml#/components/schemas/ProblemDetail'}
+          example: {status: 400, detail: '1144 - attendance incident group request is invalid'}
+    GroupNotFound:
+      description: Group does not exist, is not canonical, or is not visible to caller (1146).
+      content:
+        application/problem+json:
+          schema: {$ref: '../common/error-components.yml#/components/schemas/ProblemDetail'}
+          example: {status: 404, detail: '1146 - attendance incident group not found'}
+    GroupConflict:
+      description: Stale snapshot/canonicalization (1147) or group has no open members (1148). 1150 is a proposed future-writer protection gate and is not emitted by these routes.
+      content:
+        application/problem+json:
+          schema: {$ref: '#/components/schemas/AttendanceIncidentGroupConflictProblemDetailDTO'}
+          examples:
+            revisionConflict: {value: {status: 409, detail: '1147 - attendance incident group revision conflict', currentGroupId: null}}
+            canonicalized: {value: {status: 409, detail: '1147 - attendance incident group revision conflict', currentGroupId: S-900}}
+            notOpen: {value: {status: 409, detail: '1148 - attendance incident group is not open', currentGroupId: null}}
+    GroupLockTimeout:
+      description: Lock acquisition timed out (1149); retry after one second.
+      headers:
+        Retry-After: {description: Seconds before retrying., schema: {type: integer, enum: [1], example: 1}}
+      content:
+        application/problem+json:
+          schema: {$ref: '../common/error-components.yml#/components/schemas/ProblemDetail'}
+          example: {status: 503, detail: '1149 - attendance incident group lock timed out'}

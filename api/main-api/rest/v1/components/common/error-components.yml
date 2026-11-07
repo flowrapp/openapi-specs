@@ -180,6 +180,15 @@ components:
         | 1139 | 409 | SHIFT_CHANGE_IDEMPOTENCY_CONFLICT | idempotency key was reused with different command content |
         | 1140 | 400 | INVALID_SHIFT_CHANGE_COMMAND | shift change command is invalid |
         | 1141 | 429 | INVITATION_RESENT_TOO_SOON | invitation was resent too recently |
+        | 1142 | 400 | INVALID_ATTENDANCE_INBOX_CURSOR | attendance inbox cursor is invalid or does not match this query |
+        | 1143 | 404 | WORKLOG_CHANGE_CONFIRMATION_NOT_FOUND | worklog change confirmation not found |
+        | 1144 | 400 | REQUEST_INVALID | attendance incident group request is invalid |
+        | 1145 | 400 | CURSOR_INVALID | attendance incident group cursor is invalid or does not match this query |
+        | 1146 | 404 | NOT_FOUND | attendance incident group not found |
+        | 1147 | 409 | REVISION_CONFLICT | attendance incident group revision conflict |
+        | 1148 | 409 | NOT_OPEN | attendance incident group is not open |
+        | 1149 | 503 | LOCK_TIMEOUT | attendance incident group lock timed out |
+        | 1150 | 409 | HISTORY_PROTECTED | attendance history is protected |
 
         Codes 1086, 1087 and 1088 are the backend enum: SESSION_EXPIRED, PLANNING_ALREADY_EXISTS and PLANNING_VERSION_MISMATCH. Codes 1089–1092 belonged to weekly attendance periods, which were never implemented, and are removed with those routes. Code 1095 remains a separate PLANNING_ALREADY_EXISTS entry and is unchanged here. Code 1115 is raised by the BFF attendance screens (invalid `week` or `date`, or a `date` outside `week`); no Main API operation returns it.
 
@@ -190,6 +199,8 @@ components:
         Codes 1127–1140 belong to shift exchange requests and schedule change requests (Main API 0.0.94, passed through by BFF 0.0.82). Code 1088 (`PLANNING_VERSION_MISMATCH`) stays the draft scheduled-shift replacement code and is not reused for these requests. Code 1129 (`PLANNING_VERSION_CONFLICT`) is the snapshot check of this contract. A request the caller must not see uses 1134 or 1135, the same body as a missing id.
 
         Code 1141 belongs to resendBusinessInvitation (Main API 0.0.95, passed through by BFF 0.0.83 `managerResendInvitation`): an invitation can be resent at most once every 10 minutes, and the 429 carries a `Retry-After` header.
+
+        Codes 1142 and 1143 are retained from the approved Main API 0.0.96 inbox catalog: cursor validation for the legacy individual incident list and the legacy confirmation action. This delivery retains only the legacy incident list; it adds no confirmation route. Codes 1144–1149 are allocated for the proposed Main API 0.0.97 / BFF 0.0.86 grouped-incident contracts: invalid group request, invalid scoped cursor, group not found, stale revision/canonicalization, no longer open and lock timeout. Code 1150 is a proposed protection error for future history-mutating writers only; neither GET nor group justification emits it. Future correction, rejection, resolution/reconciliation and other writers must adopt history protection before activation; see `docs/attendance-incident-groups.md`.
 
         Code 1020 (`USER_NOT_OWNER_OF_BUSINESS`) stays in the catalog. Owner-only operations keep the message `user is not the owner of business`. An operation that allows an OWNER or a MANAGER uses the same code with the message `user is not an owner or manager of the business`.
       enum:
@@ -327,3 +338,12 @@ components:
         - 1139
         - 1140
         - 1141
+        - 1142
+        - 1143
+        - 1144
+        - 1145
+        - 1146
+        - 1147
+        - 1148
+        - 1149
+        - 1150

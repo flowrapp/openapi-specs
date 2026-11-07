@@ -1,0 +1,297 @@
+attendanceInbox:
+  incidents:
+    get:
+      tags: [Attendance]
+      operationId: getCurrentUserAttendanceIncidents
+      summary: List the caller's actionable attendance incidents
+      description: |
+        Legacy Main API 0.0.96 inbox query retained from approved source commit `92f0504`.
+        It returns only the caller's own incidents for this business with lifecycle OPEN and
+        current justification IS NULL. MATCH scope is owned through the worklog's worker;
+        SHIFT scope through the shift assignee. Any active business membership role may
+        call it, but OWNER and MANAGER never receive another worker's incidents.
+
+        Once justified, an item leaves this legacy list but remains OPEN and can still be
+        edited through the existing individual justification contract/history. Resolved
+        incidents are history only. There is no read/unread state or exact total.
+
+        Order is persisted `incident.updatedAt` descending then `incident.id` descending,
+        using a keyset cursor. Cursor is bound to business, caller and this collection;
+        invalid/undecodable/foreign cursor is 400 `1142`. `limit` defaults to 20 and is 1..50;
+        an out-of-range limit is a plain 400. Each item includes the legacy full
+        `AttendanceIncidentDTO` and anchor: business-local navigation date (shift start for
+        SHIFT or current MATCHED match, otherwise worklog clock-in), the actual current
+        match id for every MATCH-scoped incident regardless of kind, and server-derived
+        worklog id. `anchor.date` is navigation only, not a sort key, filter or cursor part.
+        `updatedAt` is the persisted incident timestamp, read literally and never derived
+        from justification, resolution, match or shift state. New/updated incidents sort
+        before an existing cursor and appear after refreshing from page one; unchanged
+        rows are not skipped or repeated solely because of insertion/update. Items that
+        cease to be actionable simply disappear. Reconciliation may bring back an OPEN
+        unjustified incident; a saved justification is never removed by this list contract.
+
+        This is the legacy individual-item contract. New grouped reads and group-wide
+        justification are separate operations.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '../../components/attendanceInbox/components.yml#/components/parameters/BusinessId'
+        - $ref: '../../components/attendanceInbox/components.yml#/components/parameters/Cursor'
+        - $ref: '../../components/attendanceInbox/components.yml#/components/parameters/Limit'
+      responses:
+        '200':
+          description: Page of the caller's actionable incidents.
+          content:
+            application/json:
+              schema:
+                $ref: '../../components/attendanceInbox/components.yml#/components/schemas/CurrentUserAttendanceIncidentPageDTO'
+              examples:
+                lateEntry:
+                  value:
+                    content:
+                      - incident:
+                          id: 880
+                          scope: MATCH
+                          attendanceMatchId: 700
+                          scheduledShiftId: null
+                          evidence: {type: LATE_ENTRY, measuredSeconds: 1080, toleranceSeconds: 300, candidateShiftIds: []}
+                          lifecycle: OPEN
+                          resolution: null
+                          resolvedBy: null
+                          resolvedAt: null
+                          reason: null
+                          justification: null
+                          version: 1
+                          createdAt: '2026-10-30T09:20:00+01:00'
+                          updatedAt: '2026-10-30T09:20:00+01:00'
+                        anchor: {date: '2026-10-30', scheduledShiftId: 900, attendanceMatchId: 700, worklogId: 3051}
+                    hasNext: true
+                    nextCursor: eyJ1IjoiMjAyNi0xMC0zMFQwODoyMDowMFoiLCJpIjo4ODB9
+                empty:
+                  value: {content: [], hasNext: false, nextCursor: null}
+        '400':
+          $ref: '../../components/attendanceInbox/components.yml#/components/responses/InboxListBadRequest'
+        '401':
+          $ref: '../../components/attendanceInbox/components.yml#/components/responses/Unauthorized'
+        '403':
+          $ref: '../../components/attendanceInbox/components.yml#/components/responses/NotMember'
+        '404':
+          $ref: '../../components/attendanceInbox/components.yml#/components/responses/BusinessNotFound'
+      x-functional-errors: [1006, 1015, 1142]
+
+  groups:
+    get:
+      tags: [Attendance]
+      operationId: getCurrentUserAttendanceIncidentGroups
+      summary: List my open attendance incident groups
+      description: |
+        Returns only the authenticated user's incidents in an active membership of this
+        business, for any membership role (OWNER, MANAGER or EMPLOYEE); role does not widen
+        the data scope. Historical RESOLVED incidents are excluded and cannot be changed by
+        these routes.
+
+        A SHIFT group has id `S-{scheduledShiftId}` and contains every OPEN SHIFT-scoped
+        incident for that shift plus OPEN MATCH-scoped incidents whose current match is
+        MATCHED to that shift and belongs to the caller. An UNMATCHED group has id
+        `M-{attendanceMatchId}` and contains the caller's OPEN MATCH incidents for a match
+        whose current kind is not MATCHED, including NOT_APPLICABLE. `MATCH` is not a group
+        kind. If reconciliation assigns a match, GET canonicalizes its `M-` identity to the
+        corresponding `S-` group. A reassignment changes group membership while preserving
+        incident evidence and increments the group revision.
+
+        Optional `date` selects the business-local start date of the scheduled shift for
+        SHIFT groups, or the business-local clock-in date for UNMATCHED groups. It uses the
+        business ZoneId and the half-open interval [startOfDay, startOfNextDay), including
+        DST days of 23 or 25 hours and overnight shifts. `justification` defaults to ALL;
+        JUSTIFIED and UNJUSTIFIED filter by current justification presence. Filtering and
+        caller scoping occur before keyset pagination. `limit` defaults to 20, range 1..50.
+
+        `totalGroupsMatchingFilters` is the exact number of complete OPEN groups matching
+        caller scope plus date and justification filters, counted before cursor and limit;
+        it is not the page length and is not accumulated across pages. `summary` reuses the
+        `AttendanceInboxSummaryDTO` semantics: `incidentCount` counts the caller's
+        individual OPEN incidents without justification (not groups), while
+        `confirmationCount` counts the caller's pending worklog-change confirmations. It is
+        global to this business and caller and ignores date, justification, cursor and limit.
+        The initial page includes both counts, so clients need no separate count request.
+
+        The list, filtered total, global summary and complete members are read under one
+        REPEATABLE READ READ ONLY transaction per response. Count queries are aggregated by
+        business and caller, not run per item. If any count cannot be computed, this request
+        fails with an HTTP error; it never returns null, unknown or a fabricated zero. An
+        empty `content` has total 0 only when no groups match, and its global summary may
+        still be nonzero. `asOf` is informational. Each page request is a new live snapshot;
+        writes between pages may change totals and counters, so clients show the latest
+        coherent response and refresh rather than summing or merging page counters. Clients
+        treat an HTTP error or a missing/null count as an error, never as zero.
+
+        Groups are ordered by `anchorAt` descending, `kindRank` ascending (SHIFT=0,
+        UNMATCHED=1), then `anchorId` descending. The opaque cursor is bound to business,
+        caller, date, justification filter and business zone; changed scope/filter is 400
+        `1145`. This is a live keyset, not a global snapshot: anchor changes, membership
+        changes, canonicalization and eligibility changes may require refreshing from page
+        one and are not guaranteed free of gaps or duplicates across requests. Group plus
+        all its open members is read repeatably within one response; `asOf` is informational.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '../../components/attendanceInbox/components.yml#/components/parameters/BusinessId'
+        - $ref: '../../components/attendanceInbox/components.yml#/components/parameters/GroupDate'
+        - $ref: '../../components/attendanceInbox/components.yml#/components/parameters/JustificationFilter'
+        - $ref: '../../components/attendanceInbox/components.yml#/components/parameters/GroupCursor'
+        - $ref: '../../components/attendanceInbox/components.yml#/components/parameters/GroupLimit'
+      responses:
+        '200':
+          description: Cursor page of complete groups with exact filtered total and global caller-scoped summary from one response snapshot.
+          content:
+            application/json:
+              schema:
+                $ref: '../../components/attendanceInbox/components.yml#/components/schemas/AttendanceIncidentGroupPageDTO'
+              examples:
+                empty:
+                  value:
+                    content: []
+                    totalGroupsMatchingFilters: 0
+                    summary: {incidentCount: 2, confirmationCount: 1}
+                    hasNext: false
+                    nextCursor: null
+                    asOf: '2026-11-07T10:00:00Z'
+                filteredNoResults:
+                  summary: No groups match the filters; global summary counts remain nonzero.
+                  value:
+                    content: []
+                    totalGroupsMatchingFilters: 0
+                    summary: {incidentCount: 2, confirmationCount: 1}
+                    hasNext: false
+                    nextCursor: null
+                    asOf: '2026-11-07T10:00:00Z'
+        '400':
+          $ref: '../../components/attendanceInbox/components.yml#/components/responses/GroupListBadRequest'
+        '401':
+          $ref: '../../components/attendanceInbox/components.yml#/components/responses/Unauthorized'
+        '403':
+          $ref: '../../components/attendanceInbox/components.yml#/components/responses/NotMember'
+        '404':
+          $ref: '../../components/attendanceInbox/components.yml#/components/responses/BusinessNotFound'
+      x-functional-errors: [1006, 1015, 1144, 1145]
+
+  group:
+    get:
+      tags: [Attendance]
+      operationId: getCurrentUserAttendanceIncidentGroup
+      summary: Get one current attendance incident group
+      description: >-
+        Returns the complete current group and all its OPEN members for the authenticated
+        user. Membership and privacy rules are identical to the group list. If the requested
+        M- id has become MATCHED, GET canonicalizes it and returns the S- group. POST using
+        the stale M- id returns 409 and its current S- id. RESOLVED incidents are never
+        returned.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '../../components/attendanceInbox/components.yml#/components/parameters/BusinessId'
+        - $ref: '../../components/attendanceInbox/components.yml#/components/parameters/GroupId'
+      responses:
+        '200':
+          description: The complete current group.
+          content:
+            application/json:
+              schema:
+                $ref: '../../components/attendanceInbox/components.yml#/components/schemas/AttendanceIncidentGroupDTO'
+        '401':
+          $ref: '../../components/attendanceInbox/components.yml#/components/responses/Unauthorized'
+        '403':
+          $ref: '../../components/attendanceInbox/components.yml#/components/responses/NotMember'
+        '404':
+          $ref: '../../components/attendanceInbox/components.yml#/components/responses/GroupNotFound'
+      x-functional-errors: [1006, 1015, 1146]
+
+  group-justification:
+    post:
+      tags: [Attendance]
+      operationId: justifyCurrentUserAttendanceIncidentGroup
+      summary: Apply one common justification to every open group member
+      description: |
+        Atomically writes one exact, common text to the full current group. The command
+        never accepts arbitrary incident ids. `expectedRevision` is the snapshot read from
+        the group; stale membership, incident state, anchor, assignment or revision yields
+        409 `1147`. The text is 1..500 characters and must not be blank, but is stored
+        exactly as sent without trimming. Resolved incidents cannot be justified and remain
+        historical; a closed group command does not resolve any incident.
+
+        `M-` is immutable only while its match is not MATCHED. If it has become MATCHED,
+        POST returns 409 `1147` with `currentGroupId` set to the canonical `S-` group; the
+        client refetches before retrying. Non-open groups return 409 `1148`. Lock acquisition
+        timeout returns 503 `1149` and `Retry-After: 1`.
+
+        Proposed persistence contract (not implemented): group-level common justification,
+        append-only baseline evidence for pre-existing individual justifications, append-only
+        justification records and incident markers; preserve original values as auditable
+        evidence. Replay is allowed only for the same baseline, exact text, caller and exact
+        current post-revision. Resolving a subset retains the common group text but invalidates
+        replay; a newly eligible incident changes revision and receives no implied consent.
+        Retention is undecided and is a gate before persistence activation. See
+        `docs/attendance-incident-groups.md` for locking, writer-adoption, history protection
+        and runtime gates. This is a new API design, not an assertion of existing backend
+        capability.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '../../components/attendanceInbox/components.yml#/components/parameters/BusinessId'
+        - $ref: '../../components/attendanceInbox/components.yml#/components/parameters/GroupId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '../../components/attendanceInbox/components.yml#/components/schemas/AttendanceIncidentGroupJustificationRequestDTO'
+            example:
+              text: The bus was delayed; I arrived as soon as possible.
+              expectedRevision: rv1-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+      responses:
+        '400':
+          $ref: '../../components/attendanceInbox/components.yml#/components/responses/GroupRequestBadRequest'
+        '200':
+          description: Atomic result; APPLIED or exact idempotent REPLAYED.
+          content:
+            application/json:
+              schema:
+                $ref: '../../components/attendanceInbox/components.yml#/components/schemas/AttendanceIncidentGroupJustificationResponseDTO'
+              examples:
+                applied:
+                  value:
+                    outcome: APPLIED
+                    group:
+                      groupId: S-900
+                      kind: SHIFT
+                      scheduledShiftId: 900
+                      attendanceMatchIds: [700]
+                      businessDate: '2026-10-30'
+                      anchorAt: '2026-10-30T09:00:00Z'
+                      revision: rv1-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+                      justification:
+                        state: COMMON
+                        filterClass: JUSTIFIED
+                        legacy: false
+                        common: {text: The bus was delayed; I arrived as soon as possible., justifiedAt: '2026-10-30T09:40:00Z'}
+                        openCount: 1
+                        justifiedOpenCount: 1
+                      openMembers:
+                        - incidentId: 880
+                          type: LATE_ENTRY
+                          scope: MATCH
+                          attendanceMatchId: 700
+                          worklogId: 3051
+                          createdAt: '2026-10-30T09:20:00Z'
+                          justification: {text: The bus was delayed; I arrived as soon as possible., justifiedAt: '2026-10-30T09:40:00Z', origin: COMMON}
+        '401':
+          $ref: '../../components/attendanceInbox/components.yml#/components/responses/Unauthorized'
+        '403':
+          $ref: '../../components/attendanceInbox/components.yml#/components/responses/NotMember'
+        '404':
+          $ref: '../../components/attendanceInbox/components.yml#/components/responses/GroupNotFound'
+        '409':
+          $ref: '../../components/attendanceInbox/components.yml#/components/responses/GroupConflict'
+        '503':
+          $ref: '../../components/attendanceInbox/components.yml#/components/responses/GroupLockTimeout'
+      x-functional-errors: [1006, 1015, 1144, 1147, 1148, 1149]
