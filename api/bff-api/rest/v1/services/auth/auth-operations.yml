@@ -63,6 +63,7 @@ auth:
 
   logout:
     post:
+      deprecated: true
       summary: Log out the current device session
       description: >
         Single pass-through call to the main API, which atomically revokes the

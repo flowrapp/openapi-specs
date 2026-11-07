@@ -75,6 +75,7 @@ auth:
 
   logout:
     post:
+      deprecated: true
       summary: Log out the current device session
       description: >
         Revokes the session identified by the bearer token and removes its push
