@@ -6,6 +6,18 @@ components:
       required: true
       description: Business of the caller-scoped attendance inbox.
       schema: {type: integer, format: int64, minimum: 1, example: 101}
+    WorklogChangeId:
+      name: worklogChangeId
+      in: path
+      required: true
+      description: Worklog change (`WorkerWorklogChangeDTO.id`) whose confirmation is answered.
+      schema: {type: integer, format: int64, minimum: 1, example: 1201}
+    AttendanceMatchId:
+      name: attendanceMatchId
+      in: path
+      required: true
+      description: Caller-owned attendance match of any kind.
+      schema: {type: integer, format: int64, minimum: 1, example: 731}
     Cursor:
       name: cursor
       in: query
@@ -103,6 +115,206 @@ components:
         updatedAt: {type: string, format: date-time}
         version: {type: integer, format: int64, minimum: 0}
       required: [id, scope, attendanceMatchId, scheduledShiftId, type, lifecycle, resolution, measuredSeconds, toleranceSeconds, justification, resolvedAt, reason, canJustify, createdAt, updatedAt, version]
+    WorkerAttendanceMatchKindDTO:
+      type: string
+      description: >-
+        Main API `AttendanceMatchKindDTO` of the worklog's current match, passed through. In the
+        day history a SHIFT row only holds MATCHED worklogs of that shift, and an UNMATCHED row
+        holds an UNSCHEDULED or AMBIGUOUS worklog. NOT_APPLICABLE (no published planning) is
+        never a day row; it is read with `getWorkerAttendanceMatch`. New values may be added;
+        clients must tolerate unknown values.
+      enum: [NOT_APPLICABLE, MATCHED, UNSCHEDULED, AMBIGUOUS]
+      example: MATCHED
+
+    WorkerWorklogChangeDTO:
+      type: object
+      additionalProperties: false
+      description: >-
+        Main API `WorklogChangeDTO` of the caller's own worklog, read with the existing
+        `getWorklogHistory`: the exact subset of its fields, with `confirmation`. The author
+        is not exposed to the worker: Main API `authorId` (and `userId`, `businessId`) are not
+        mapped, and no name is resolved. A change with a non-null `confirmation` was made by
+        management; `confirmation.respondedBy` can only be the caller.
+      properties:
+        id: {type: integer, format: int64, minimum: 1, example: 1201}
+        worklogId: {type: integer, format: int64, minimum: 1, example: 3051}
+        action: {$ref: '../../components/attendance/components.yml#/components/schemas/AttendanceWorklogChangeActionDTO'}
+        oldClockIn: {type: string, format: date-time}
+        newClockIn: {type: string, format: date-time}
+        oldClockOut: {type: [string, 'null'], format: date-time}
+        newClockOut: {type: [string, 'null'], format: date-time}
+        breakChange:
+          description: Present only for BREAK_CORRECTED and BREAK_VOIDED; null otherwise.
+          oneOf:
+            - type: object
+              properties:
+                breakId: {type: integer, format: int64, minimum: 1}
+                oldStartedAt: {type: string, format: date-time}
+                oldEndedAt: {type: [string, 'null'], format: date-time}
+                newStartedAt: {type: [string, 'null'], format: date-time}
+                newEndedAt: {type: [string, 'null'], format: date-time}
+              required: [breakId, oldStartedAt, oldEndedAt, newStartedAt, newEndedAt]
+            - type: 'null'
+        reason:
+          type: [string, 'null']
+          maxLength: 500
+          example: The register was closed at 16:30.
+        occurredAt:
+          type: string
+          format: date-time
+          example: "2026-10-30T19:02:11+01:00"
+        confirmation:
+          description: >-
+            Main API `WorklogChangeDTO.confirmation`, forwarded unchanged. Null when no
+            confirmation was requested (own, break and system changes, and every change
+            recorded before the Main API rollout): null never means reviewed or agreed.
+            PENDING means the worker can answer with
+            `PUT /api/v1/worker/worklog-changes/{id}/confirmation`.
+          oneOf:
+            - $ref: '../common/components.yml#/components/schemas/WorklogChangeConfirmationDTO'
+            - type: 'null'
+          example: null
+      required: [id, worklogId, action, oldClockIn, newClockIn, oldClockOut, newClockOut, breakChange, reason, occurredAt, confirmation]
+
+    WorkerAttendanceWorklogDTO:
+      type: object
+      description: >-
+        One of the worker's own worklogs with its current match, and its change history from
+        `getWorklogHistory`. In the day history it comes from the Main API `getDailyAttendance`
+        worklog and its match; in `getWorkerAttendanceMatch` from `getWorklogById` and
+        `getAttendanceMatch`. Same fields and rules in both. The legacy `sessions` of the day
+        keep the same worklogs as `SessionDTO`.
+      properties:
+        worklogId: {type: integer, format: int64, minimum: 1, example: 3051}
+        attendanceMatchId: {type: integer, format: int64, minimum: 1, example: 700}
+        matchKind: {$ref: '#/components/schemas/WorkerAttendanceMatchKindDTO'}
+        clockIn: {type: string, format: date-time}
+        clockOut: {type: [string, 'null'], format: date-time}
+        durationSeconds: {type: [integer, 'null'], format: int64, minimum: 0}
+        version: {type: integer, format: int64, minimum: 0}
+        reviewStatus: {$ref: '../attendance/components.yml#/components/schemas/AttendanceReviewStatusDTO'}
+        breaks:
+          type: array
+          items: {$ref: './components.yml#/components/schemas/WorkerBreakDTO'}
+        changes:
+          type: array
+          items: {$ref: '#/components/schemas/WorkerWorklogChangeDTO'}
+      required: [worklogId, attendanceMatchId, matchKind, clockIn, clockOut, durationSeconds, version, reviewStatus, breaks, changes]
+
+    WorkerAttendanceJobRoleDTO:
+      type: object
+      additionalProperties: false
+      description: Job-role id stored on the shift and its name resolved from the member-visible team schedule.
+      properties:
+        id: {type: integer, format: int64, minimum: 1, example: 10}
+        name: {type: string, minLength: 1, example: Barra}
+      required: [id, name]
+
+    WorkerAttendanceRowDTO:
+      type: object
+      description: |
+        One caller-owned attendance row of the worker's day, built from Main getDailyAttendance.
+        SHIFT rows contain only MATCHED worklogs for that shift and its incidents. UNMATCHED
+        rows represent one distinct UNSCHEDULED or AMBIGUOUS match (including candidates also
+        listed on shifts), deduplicated by match id. NOT_APPLICABLE matches are not rows and are
+        read with getWorkerAttendanceMatch. Never pair sessions and shifts by time or choose a
+        candidate shift. Worklogs and incidents appear only on their owning row.
+      properties:
+        kind: {$ref: '../attendance/components.yml#/components/schemas/AttendanceRowKindDTO'}
+        scheduledShiftId: {type: [integer, 'null'], format: int64, minimum: 1}
+        attendanceMatchId: {type: [integer, 'null'], format: int64, minimum: 1}
+        planned:
+          oneOf:
+            - $ref: '../attendance/components.yml#/components/schemas/AttendancePlannedDTO'
+            - type: 'null'
+        jobRoleId: {type: [integer, 'null'], format: int64, minimum: 1}
+        jobRole:
+          oneOf:
+            - $ref: '#/components/schemas/WorkerAttendanceJobRoleDTO'
+            - type: 'null'
+        worklogs:
+          type: array
+          description: >-
+            SHIFT row: MATCHED worklogs in Main API order, REJECTED included. UNMATCHED row:
+            its one worklog. Empty for a shift without a MATCHED worklog.
+          items: {$ref: '#/components/schemas/WorkerAttendanceWorklogDTO'}
+        incidents:
+          type: array
+          description: >-
+            Open and resolved incidents owned by this row, open first then by createdAt. A
+            justified incident stays here as history and can still be replaced while OPEN.
+          items: {$ref: '#/components/schemas/WorkerAttendanceIncidentDTO'}
+      required: [kind, scheduledShiftId, attendanceMatchId, planned, jobRoleId, jobRole, worklogs, incidents]
+
+    WorkerWorklogChangeConfirmationItemDTO:
+      type: object
+      description: One PENDING confirmation with its navigation anchor.
+      properties:
+        change: {$ref: '#/components/schemas/WorkerWorklogChangeDTO'}
+        anchor: {$ref: '#/components/schemas/WorkerAttendanceAnchorDTO'}
+        laterChangeExists:
+          type: boolean
+          description: >-
+            Main API `laterChangeExists`, forwarded unchanged: true when the same worklog has
+            any more recent change (any action and any author: management, the worker
+            themselves or the system, breaks and AUTO_CLOSED included). It does not cancel or
+            invalidate this confirmation; it stays PENDING and is answered on its own.
+          example: false
+      required: [change, anchor, laterChangeExists]
+    WorkerWorklogChangeConfirmationPageDTO:
+      type: object
+      additionalProperties: false
+      description: Cursor page of caller-owned PENDING confirmations, ordered by occurredAt descending then id.
+      properties:
+        content:
+          type: array
+          items: {$ref: '#/components/schemas/WorkerWorklogChangeConfirmationItemDTO'}
+        hasNext: {type: boolean}
+        nextCursor: {type: [string, 'null']}
+      required: [content, hasNext, nextCursor]
+    WorkerWorklogChangeConfirmationRequestDTO:
+      type: object
+      additionalProperties: false
+      description: >-
+        Forwarded unchanged to Main API. Optional comment is trimmed, non-empty when supplied,
+        and at most 500 characters; it is allowed with either answer.
+      properties:
+        status: {type: string, enum: [ACKNOWLEDGED, DISPUTED], example: ACKNOWLEDGED}
+        comment: {type: [string, 'null'], minLength: 1, maxLength: 500, example: null}
+        version: {type: integer, format: int64, minimum: 0, description: Confirmation version read (0 while PENDING).}
+      required: [status, version]
+
+    WorkerAttendanceMatchDetailDTO:
+      type: object
+      additionalProperties: false
+      description: >-
+        The caller's own attendance match of any kind (MATCHED, UNSCHEDULED, AMBIGUOUS or
+        NOT_APPLICABLE) with its worklog and its incidents, built only from Main API
+        `getAttendanceMatch`, `getWorklogById` and `getWorklogHistory` with the caller's
+        token. It always has the worklog: every match has one. It carries no planned shift
+        and no job role (for a MATCHED match the day history row has them), no candidate
+        shift, no geofence detail and no management identity.
+      properties:
+        attendanceMatchId: {type: integer, format: int64, minimum: 1, example: 731}
+        matchKind: {$ref: '#/components/schemas/WorkerAttendanceMatchKindDTO'}
+        date:
+          type: string
+          format: date
+          description: >-
+            Business-local date: shift start for MATCHED, otherwise worklog clock-in, converted
+            using the business time zone. Navigation only.
+          example: "2026-11-02"
+        scheduledShiftId:
+          type: [integer, 'null']
+          format: int64
+          minimum: 1
+          description: MATCHED shift id; null for UNSCHEDULED, AMBIGUOUS and NOT_APPLICABLE.
+        worklog: {$ref: '#/components/schemas/WorkerAttendanceWorklogDTO'}
+        incidents:
+          type: array
+          items: {$ref: '#/components/schemas/WorkerAttendanceIncidentDTO'}
+      required: [attendanceMatchId, matchKind, date, scheduledShiftId, worklog, incidents]
+
     WorkerAttendanceAnchorDTO:
       type: object
       description: >-
@@ -267,6 +479,14 @@ components:
         application/problem+json:
           schema: {$ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'}
           example: {status: 404, detail: '1006 - business does not exist'}
+    AttendanceMatchNotFound:
+      description: >-
+        Forwarded from Main API getAttendanceMatch: the match does not exist or is not the
+        caller's own (1074), with the same body in either case.
+      content:
+        application/problem+json:
+          schema: {$ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'}
+          example: {status: 404, detail: '1074 - attendance match not found'}
     InboxListBadRequest:
       description: Legacy inbox cursor invalid or bound to another business, caller or collection (1142).
       content:

@@ -229,6 +229,7 @@ components:
                 author: null
                 reason: null
                 occurredAt: "2026-10-30T06:00:05+01:00"
+                confirmation: null
         timeline:
           from: "2026-10-29T06:00:00+01:00"
           to: "2026-10-30T07:00:00+01:00"
@@ -1520,7 +1521,15 @@ components:
           type: string
           format: date-time
           example: "2026-10-30T18:02:11+01:00"
-      required: [id, action, oldClockIn, newClockIn, oldClockOut, newClockOut, breakChange, author, reason, occurredAt]
+        confirmation:
+          description: >-
+            Worker confirmation of this change, forwarded from Main API; null when no
+            confirmation was requested. This read-only field never gates or changes the change.
+          oneOf:
+            - $ref: '../common/components.yml#/components/schemas/WorklogChangeConfirmationDTO'
+            - type: 'null'
+          example: null
+      required: [id, action, oldClockIn, newClockIn, oldClockOut, newClockOut, breakChange, author, reason, occurredAt, confirmation]
 
     AttendanceIncidentDTO:
       type: object

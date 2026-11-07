@@ -339,7 +339,7 @@ components:
 
     WorkerDayHistoryResponseDTO:
       type: object
-      description: Detailed work history for a single day, including all individual sessions
+      description: Detailed work history for a single day, including all individual sessions and attendance rows
       properties:
         date:
           type: string
@@ -356,10 +356,18 @@ components:
           description: Individual work sessions for this date
           items:
             $ref: '../common/components.yml#/components/schemas/SessionDTO'
+        attendances:
+          type: array
+          description: >-
+            The caller's attendance rows for this business-local date. A worklog appears in
+            at most one row; NOT_APPLICABLE worklogs remain in sessions and use attendance-match detail.
+          items:
+            $ref: './inbox-components.yml#/components/schemas/WorkerAttendanceRowDTO'
       required:
         - date
         - totalSeconds
         - sessions
+        - attendances
 
     WorkerWeekHistoryResponseDTO:
       type: object

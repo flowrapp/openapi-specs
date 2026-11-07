@@ -333,6 +333,10 @@ paths:
     $ref: "v1/services/attendance/attendance-operations.yml#/attendance/daily"
   "/api/v1/businesses/{businessId}/attendance-incidents":
     $ref: "v1/services/attendanceInbox/attendance-inbox-operations.yml#/attendanceInbox/incidents"
+  "/api/v1/businesses/{businessId}/worklog-change-confirmations":
+    $ref: "v1/services/attendanceInbox/attendance-inbox-operations.yml#/attendanceInbox/confirmations"
+  "/api/v1/worklog-changes/{worklogChangeId}/confirmation":
+    $ref: "v1/services/attendanceInbox/attendance-inbox-operations.yml#/attendanceInbox/confirmation-response"
   "/api/v1/businesses/{businessId}/attendance-incident-groups":
     $ref: "v1/services/attendanceInbox/attendance-inbox-operations.yml#/attendanceInbox/groups"
   "/api/v1/businesses/{businessId}/attendance-incident-groups/{groupId}":

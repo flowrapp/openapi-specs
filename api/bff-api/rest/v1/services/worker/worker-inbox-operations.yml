@@ -36,6 +36,403 @@ workerInbox:
           $ref: '../../components/worker/inbox-components.yml#/components/responses/BusinessNotFound'
       x-functional-errors: [1006, 1015, 1142]
 
+  confirmations:
+    get:
+      tags: [Worker]
+      operationId: getWorkerWorklogChangeConfirmations
+      summary: List my worklog changes waiting for my confirmation
+      description: |
+        Bandeja section for management corrections and rejections of the caller's worklogs
+        that wait for the caller's answer (PENDING only). Answered ones stay in the day
+        history. Separate from incidents and from Peticiones; not a shift change request,
+        not `confirmWorklog`.
+
+        Main API call: one `getCurrentUserWorklogChangeConfirmations`
+        (`GET /api/v1/businesses/{businessId}/worklog-change-confirmations?cursor=&limit=`),
+        `cursor` and `limit` forwarded unchanged; same order (`occurredAt` descending, then
+        id), `hasNext` and `nextCursor`; no total. Each item is the change mapped to
+        `WorkerWorklogChangeDTO` (same structure as `changes[]` of the day history, without
+        the author) plus its `anchor` and `laterChangeExists`, both forwarded unchanged. No
+        extra Main API call per item. `laterChangeExists` true shows «Hay un cambio
+        posterior»; the item stays PENDING and is answered on its own. Functional errors
+        forwarded unchanged: 400 1142, 403 1015, 404 1006.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '../../components/worker/inbox-components.yml#/components/parameters/BusinessId'
+        - $ref: '../../components/worker/inbox-components.yml#/components/parameters/Cursor'
+        - $ref: '../../components/worker/inbox-components.yml#/components/parameters/Limit'
+      responses:
+        '200':
+          description: Page of the caller's PENDING confirmations. May be empty.
+          content:
+            application/json:
+              schema:
+                $ref: '../../components/worker/inbox-components.yml#/components/schemas/WorkerWorklogChangeConfirmationPageDTO'
+              examples:
+                rejection:
+                  summary: A worklog rejected by the owner, waiting for the worker
+                  value:
+                    content:
+                      - change:
+                          id: 1214
+                          worklogId: 3060
+                          action: REJECTED
+                          oldClockIn: "2026-10-29T22:05:00+01:00"
+                          newClockIn: "2026-10-29T22:05:00+01:00"
+                          oldClockOut: "2026-10-29T23:40:00+01:00"
+                          newClockOut: "2026-10-29T23:40:00+01:00"
+                          breakChange: null
+                          reason: Clocked in after the shift was cancelled.
+                          occurredAt: "2026-10-30T10:15:00+01:00"
+                          confirmation:
+                            status: PENDING
+                            comment: null
+                            respondedBy: null
+                            respondedAt: null
+                            version: 0
+                        anchor:
+                          date: "2026-10-29"
+                          scheduledShiftId: null
+                          attendanceMatchId: 712
+                          worklogId: 3060
+                        laterChangeExists: false
+                    hasNext: false
+                    nextCursor: null
+                laterChange:
+                  summary: A correction still PENDING after a later change of the same worklog
+                  value:
+                    content:
+                      - change:
+                          id: 1201
+                          worklogId: 3051
+                          action: CORRECTED
+                          oldClockIn: "2026-10-30T09:18:00+01:00"
+                          newClockIn: "2026-10-30T09:18:00+01:00"
+                          oldClockOut: "2026-10-30T17:00:00+01:00"
+                          newClockOut: "2026-10-30T16:30:00+01:00"
+                          breakChange: null
+                          reason: The register was closed at 16:30.
+                          occurredAt: "2026-10-30T19:02:11+01:00"
+                          confirmation:
+                            status: PENDING
+                            comment: null
+                            respondedBy: null
+                            respondedAt: null
+                            version: 0
+                        anchor:
+                          date: "2026-10-30"
+                          scheduledShiftId: 900
+                          attendanceMatchId: 700
+                          worklogId: 3051
+                        laterChangeExists: true
+                    hasNext: false
+                    nextCursor: null
+                empty:
+                  summary: Nothing to confirm
+                  value:
+                    content: []
+                    hasNext: false
+                    nextCursor: null
+        '400':
+          $ref: '../../components/worker/inbox-components.yml#/components/responses/InboxListBadRequest'
+        '401':
+          $ref: '../../components/worker/inbox-components.yml#/components/responses/Unauthorized'
+        '403':
+          $ref: '../../components/worker/inbox-components.yml#/components/responses/NotMember'
+        '404':
+          $ref: '../../components/worker/inbox-components.yml#/components/responses/BusinessNotFound'
+      x-functional-errors: [1006, 1015, 1142]
+
+  confirmation-response:
+    put:
+      tags: [Worker]
+      operationId: respondToWorkerWorklogChangeConfirmation
+      summary: Answer the confirmation of a change to my worklog
+      description: |
+        The caller answers a PENDING confirmation of a management correction or rejection of
+        their own worklog: ACKNOWLEDGED (seen and reviewed) or DISPUTED (records disagreement),
+        with an optional comment. It does not accept or reject anything: the worklog, its
+        review status, reports and incidents do not change, and nothing is resolved. Not a
+        legal consent or claim.
+
+        Main API call: one `respondToWorklogChangeConfirmation`
+        (`PUT /api/v1/worklog-changes/{worklogChangeId}/confirmation`), the literal Main API
+        route, body forwarded unchanged. No `businessId` in the route: ownership is the
+        immutable worker of the change, decided only by the Main API with the caller's token.
+        The returned change is mapped to `WorkerWorklogChangeDTO`.
+
+        Same body and version as an answer already stored: idempotent 200. A stale `version`
+        or a different answer after it was answered: 409 1049 (refetch). A change that does
+        not exist, is not the caller's or has no confirmation: 404 1143, same body. A body
+        that does not validate is a plain 400.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '../../components/worker/inbox-components.yml#/components/parameters/WorklogChangeId'
+      requestBody:
+        required: true
+        description: The worker's answer, optional comment and the confirmation version read.
+        content:
+          application/json:
+            schema:
+              $ref: '../../components/worker/inbox-components.yml#/components/schemas/WorkerWorklogChangeConfirmationRequestDTO'
+            examples:
+              acknowledged:
+                summary: Seen and reviewed
+                value: {status: ACKNOWLEDGED, version: 0}
+              disputed:
+                summary: Disagreement with a comment
+                value: {status: DISPUTED, comment: "I left at 17:00, not at 16:30.", version: 0}
+      responses:
+        '200':
+          description: The change with its answered confirmation (also on an idempotent retry).
+          content:
+            application/json:
+              schema:
+                $ref: '../../components/worker/inbox-components.yml#/components/schemas/WorkerWorklogChangeDTO'
+              example:
+                id: 1201
+                worklogId: 3051
+                action: CORRECTED
+                oldClockIn: "2026-10-30T09:18:00+01:00"
+                newClockIn: "2026-10-30T09:18:00+01:00"
+                oldClockOut: "2026-10-30T17:00:00+01:00"
+                newClockOut: "2026-10-30T16:30:00+01:00"
+                breakChange: null
+                reason: The register was closed at 16:30.
+                occurredAt: "2026-10-30T19:02:11+01:00"
+                confirmation:
+                  status: DISPUTED
+                  comment: "I left at 17:00, not at 16:30."
+                  respondedBy: 41
+                  respondedAt: "2026-10-31T09:12:40+01:00"
+                  version: 1
+        '400':
+          description: The body does not validate. Plain 400 without a functional code.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+        '401':
+          description: No authenticated session.
+        '404':
+          description: The change does not exist, is not the caller's, or has no confirmation (1143).
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              example: {status: 404, detail: "1143 - worklog change confirmation not found"}
+        '409':
+          description: Stale version or a different answer to an answered confirmation (1049).
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              example: {status: 409, detail: "1049 - resource was modified concurrently"}
+      x-functional-errors: [1049, 1143]
+
+  attendance-match:
+    get:
+      tags: [Worker]
+      operationId: getWorkerAttendanceMatch
+      summary: Get one of my attendance matches with its worklog and incidents
+      description: |
+        Safe detail of one of the caller's own attendance matches, of any kind: MATCHED,
+        UNSCHEDULED, AMBIGUOUS or NOT_APPLICABLE. It is where an inbox item or a push opens
+        when `anchor.scheduledShiftId` is null, and it is the only worker view of a
+        NOT_APPLICABLE match (no published planning that day), which is never a day history
+        row. A MATCHED match also answers, with `scheduledShiftId` to open its SHIFT row of
+        the day history `date`. For UNSCHEDULED and NOT_APPLICABLE there is no shift to open:
+        the worklog, its change history and its incidents are shown here.
+
+        Main API calls, all with the caller's token. No OWNER or MANAGER route (such as
+        `getBusinessAttendanceMatch` or `getShiftAttendance`) and no date-range listing (such as
+        `getUserWorklogs` or `getDailyAttendance`) is used, and no permission is conditional:
+        1. Stage 1, in parallel: `getAttendanceMatch` (`GET /api/v1/attendance-matches/{attendanceMatchId}`),
+           which returns the match only to the worker of its worklog, whatever its kind, and
+           404 1074 otherwise; and `getUserBusinesses` (`GET /api/v1/businesses`), the
+           caller's own memberships, read for the business time zone exactly as the existing
+           worker endpoints do.
+        2. Stage 2, in parallel: `getWorklogById` (`GET /api/v1/worklogs/{worklogId}`) and
+           `getWorklogHistory` (`GET /api/v1/worklogs/{worklogId}/history`) for the
+           `worklogId` of that match. Both accept the worker of the worklog.
+
+        Mapping: `matchKind`, `attendanceMatchId` and `incidents` come from the match;
+        `scheduledShiftId` is `scheduledShift.id` only for MATCHED; `candidateShifts` and
+        incident `evidence.candidateShiftIds` and `evidence.geofenceChecks` are dropped, as are
+        reconciliation, origin and management identities (`resolvedBy`, `authorId`). The
+        worklog is mapped as in the day history (`WorkerAttendanceWorklogDTO`, EFFECTIVE breaks,
+        `changes[]` without the author). `date` is the business-local date of the shift start
+        (MATCHED) or of the worklog `clockIn` (other kinds). If the match business is not
+        among the caller's businesses, the BFF answers the same 404 1074. Any other Main API
+        error is forwarded unchanged.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '../../components/worker/inbox-components.yml#/components/parameters/AttendanceMatchId'
+      responses:
+        '200':
+          description: The match with its worklog and incidents.
+          content:
+            application/json:
+              schema:
+                $ref: '../../components/worker/inbox-components.yml#/components/schemas/WorkerAttendanceMatchDetailDTO'
+              examples:
+                notApplicable:
+                  summary: A worklog on a day without a published planning, with a pending correction
+                  value:
+                    attendanceMatchId: 731
+                    matchKind: NOT_APPLICABLE
+                    date: "2026-11-02"
+                    scheduledShiftId: null
+                    worklog:
+                      worklogId: 3104
+                      attendanceMatchId: 731
+                      matchKind: NOT_APPLICABLE
+                      clockIn: "2026-11-02T10:02:00+01:00"
+                      clockOut: "2026-11-02T14:00:00+01:00"
+                      durationSeconds: 14280
+                      version: 1
+                      reviewStatus: APPROVED
+                      breaks: []
+                      changes:
+                        - id: 1230
+                          worklogId: 3104
+                          action: CORRECTED
+                          oldClockIn: "2026-11-02T10:02:00+01:00"
+                          newClockIn: "2026-11-02T10:02:00+01:00"
+                          oldClockOut: "2026-11-02T14:30:00+01:00"
+                          newClockOut: "2026-11-02T14:00:00+01:00"
+                          breakChange: null
+                          reason: Closed at 14:00.
+                          occurredAt: "2026-11-02T18:10:00+01:00"
+                          confirmation:
+                            status: PENDING
+                            comment: null
+                            respondedBy: null
+                            respondedAt: null
+                            version: 0
+                    incidents: []
+                unscheduled:
+                  summary: Work without a planned shift, with an open incident to justify
+                  value:
+                    attendanceMatchId: 712
+                    matchKind: UNSCHEDULED
+                    date: "2026-10-29"
+                    scheduledShiftId: null
+                    worklog:
+                      worklogId: 3060
+                      attendanceMatchId: 712
+                      matchKind: UNSCHEDULED
+                      clockIn: "2026-10-29T22:05:00+01:00"
+                      clockOut: "2026-10-29T23:40:00+01:00"
+                      durationSeconds: 5700
+                      version: 0
+                      reviewStatus: PENDING_REVIEW
+                      breaks: []
+                      changes: []
+                    incidents:
+                      - id: 890
+                        scope: MATCH
+                        attendanceMatchId: 712
+                        scheduledShiftId: null
+                        type: UNSCHEDULED_WORK
+                        lifecycle: OPEN
+                        resolution: null
+                        measuredSeconds: null
+                        toleranceSeconds: null
+                        justification: null
+                        resolvedAt: null
+                        reason: null
+                        canJustify: true
+                        createdAt: "2026-10-29T23:40:05+01:00"
+                        updatedAt: "2026-10-29T23:40:05+01:00"
+                        version: 0
+                ambiguous:
+                  summary: Clock-in that fits several shifts; no candidate is shown
+                  value:
+                    attendanceMatchId: 745
+                    matchKind: AMBIGUOUS
+                    date: "2026-11-03"
+                    scheduledShiftId: null
+                    worklog:
+                      worklogId: 3120
+                      attendanceMatchId: 745
+                      matchKind: AMBIGUOUS
+                      clockIn: "2026-11-03T15:58:00+01:00"
+                      clockOut: "2026-11-03T20:02:00+01:00"
+                      durationSeconds: 14640
+                      version: 0
+                      reviewStatus: PENDING_REVIEW
+                      breaks: []
+                      changes: []
+                    incidents:
+                      - id: 901
+                        scope: MATCH
+                        attendanceMatchId: 745
+                        scheduledShiftId: null
+                        type: AMBIGUOUS_MATCH
+                        lifecycle: OPEN
+                        resolution: null
+                        measuredSeconds: null
+                        toleranceSeconds: null
+                        justification:
+                          text: I covered the afternoon bar shift.
+                          justifiedAt: "2026-11-03T16:10:00+01:00"
+                        resolvedAt: null
+                        reason: null
+                        canJustify: true
+                        createdAt: "2026-11-03T15:58:02+01:00"
+                        updatedAt: "2026-11-03T16:10:00+01:00"
+                        version: 1
+                matched:
+                  summary: A matched clock-in; the shift row of the day history has the plan
+                  value:
+                    attendanceMatchId: 700
+                    matchKind: MATCHED
+                    date: "2026-10-30"
+                    scheduledShiftId: 900
+                    worklog:
+                      worklogId: 3051
+                      attendanceMatchId: 700
+                      matchKind: MATCHED
+                      clockIn: "2026-10-30T09:18:00+01:00"
+                      clockOut: "2026-10-30T16:30:00+01:00"
+                      durationSeconds: 24120
+                      version: 0
+                      reviewStatus: APPROVED
+                      breaks:
+                        - id: 456
+                          worklogId: 3051
+                          startedAt: "2026-10-30T12:00:00+01:00"
+                          endedAt: "2026-10-30T12:30:00+01:00"
+                          durationSeconds: 1800
+                      changes: []
+                    incidents:
+                      - id: 880
+                        scope: MATCH
+                        attendanceMatchId: 700
+                        scheduledShiftId: null
+                        type: LATE_ENTRY
+                        lifecycle: RESOLVED
+                        resolution: ACCEPTED
+                        measuredSeconds: 1080
+                        toleranceSeconds: 300
+                        justification:
+                          text: The bus was late.
+                          justifiedAt: "2026-10-30T09:40:00+01:00"
+                        resolvedAt: "2026-10-30T19:00:00+01:00"
+                        reason: null
+                        canJustify: false
+                        createdAt: "2026-10-30T09:20:00+01:00"
+                        updatedAt: "2026-10-30T19:00:00+01:00"
+                        version: 3
+        '401':
+          $ref: '../../components/worker/inbox-components.yml#/components/responses/Unauthorized'
+        '404':
+          $ref: '../../components/worker/inbox-components.yml#/components/responses/AttendanceMatchNotFound'
+      x-functional-errors: [1074]
   groups:
     get:
       tags: [Worker]

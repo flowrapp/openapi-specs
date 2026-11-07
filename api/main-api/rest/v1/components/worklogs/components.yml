@@ -546,4 +546,114 @@ components:
           format: date-time
           description: When the change was recorded
           example: "2026-10-30T18:02:11Z"
-      required: [id, worklogId, userId, businessId, action, oldClockIn, newClockIn, oldClockOut, newClockOut, breakChange, authorId, reason, occurredAt]
+        confirmation:
+          description: >
+            Worker confirmation of this change (Main API 0.0.96), or null when the change has
+            none. Only a CORRECTED or REJECTED change made through management
+            (`correctBusinessWorklog`, `rejectWorklog`) by an author other than the worker, and
+            recorded after the 0.0.96 rollout, has one; it is created PENDING in the same
+            transaction as the change. Null for every other change: a worker's own correction,
+            break corrections and voids, AUTO_CLOSED, MEMBER_REMOVED_CLOSE, and every change
+            recorded before the rollout (there is no backfill). Null never means that the worker
+            reviewed the change or that the worker agrees with it; it only means that no
+            confirmation was requested.
+          oneOf:
+            - $ref: '#/components/schemas/WorklogChangeConfirmationDTO'
+            - type: 'null'
+          example: null
+      required: [id, worklogId, userId, businessId, action, oldClockIn, newClockIn, oldClockOut, newClockOut, breakChange, authorId, reason, occurredAt, confirmation]
+
+    WorklogChangeConfirmationStatusDTO:
+      type: string
+      description: >
+        State of a worker confirmation of one management change. PENDING: the worker has not
+        answered yet. ACKNOWLEDGED: the worker states that they saw and reviewed the change.
+        DISPUTED: the worker records that they disagree with the change. ACKNOWLEDGED and
+        DISPUTED are terminal. Neither is a legal consent or a legal claim, and neither changes
+        the worklog, its `reviewStatus`, reports, or attendance incidents. New values may be
+        added; clients must tolerate unknown values.
+      enum: [PENDING, ACKNOWLEDGED, DISPUTED]
+      example: PENDING
+
+    WorklogChangeConfirmationDTO:
+      type: object
+      description: >
+        Persistent worker confirmation of exactly one worklog change (unique per
+        `worklogChangeId`; its identity is the parent change). The worker is the immutable
+        `userId` of the change. Created PENDING with version 0 by management CORRECTED or
+        REJECTED; answered once with `respondToWorklogChangeConfirmation`, which moves it to
+        ACKNOWLEDGED or DISPUTED and increments `version`. It never gates reports, never reverts
+        the change, never changes the worklog `reviewStatus` and never resolves an attendance
+        incident.
+      properties:
+        status:
+          $ref: '#/components/schemas/WorklogChangeConfirmationStatusDTO'
+        comment:
+          type: ['string', 'null']
+          minLength: 1
+          maxLength: 500
+          description: >
+            Optional worker comment, trimmed, at most 500 characters. Null while PENDING and
+            when the worker answered without a comment. Allowed with ACKNOWLEDGED and with
+            DISPUTED; a DISPUTED answer does not require it.
+          example: "I left at 17:00, not at 16:30."
+        respondedBy:
+          type: ['integer', 'null']
+          format: int64
+          minimum: 1
+          description: User who answered (always the worker of the change); null while PENDING.
+          example: 41
+        respondedAt:
+          type: ['string', 'null']
+          format: date-time
+          description: When the worker answered; null while PENDING.
+          example: "2026-10-31T08:12:40Z"
+        version:
+          type: integer
+          format: int64
+          minimum: 0
+          description: >
+            Optimistic-lock version of the confirmation: 0 while PENDING, incremented by the
+            answer. Send it back as `version` in `respondToWorklogChangeConfirmation`.
+          example: 0
+      required: [status, comment, respondedBy, respondedAt, version]
+      examples:
+        - status: PENDING
+          comment: null
+          respondedBy: null
+          respondedAt: null
+          version: 0
+        - status: DISPUTED
+          comment: "I left at 17:00, not at 16:30."
+          respondedBy: 41
+          respondedAt: "2026-10-31T08:12:40Z"
+          version: 1
+
+    WorklogChangeConfirmationRequestDTO:
+      type: object
+      description: >
+        Worker answer to one PENDING confirmation. `comment` is trimmed; when supplied it must
+        be non-empty after trimming and at most 500 characters, otherwise 400. Omitted or null
+        means no comment. A body that does not validate (unknown `status`, `PENDING`, blank
+        or too long `comment`, missing or negative `version`) is a plain 400 without a
+        functional code.
+      additionalProperties: false
+      properties:
+        status:
+          type: string
+          description: The answer. PENDING cannot be sent.
+          enum: [ACKNOWLEDGED, DISPUTED]
+          example: DISPUTED
+        comment:
+          type: ['string', 'null']
+          minLength: 1
+          maxLength: 500
+          description: Optional comment, also allowed with ACKNOWLEDGED. Not required for DISPUTED.
+          example: "I left at 17:00, not at 16:30."
+        version:
+          type: integer
+          format: int64
+          minimum: 0
+          description: The `confirmation.version` the worker read (0 for a PENDING confirmation).
+          example: 0
+      required: [status, version]
