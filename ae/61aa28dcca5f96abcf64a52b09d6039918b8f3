@@ -1,0 +1,19 @@
+openspec/changes/migrate-auth-to-clerk/tasks.md
+  s_aeac464dd555dc::t_7cf43ed7baf8c7 1-17
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.6",
+  "base_commit_sha": "ae61aa28dcca5f96abcf64a52b09d6039918b8f3",
+  "prompts": {},
+  "sessions": {
+    "s_aeac464dd555dc": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_e48327002ffeJidA8jok219juc",
+        "model": "gpt-6-luna"
+      },
+      "human_author": "sergiobpa <sergiobpa@ext.inditex.com>"
+    }
+  }
+}
