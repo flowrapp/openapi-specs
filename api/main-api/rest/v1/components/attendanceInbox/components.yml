@@ -20,6 +20,12 @@ components:
       required: false
       description: Legacy list page size; defaults to 20, from 1 to 50.
       schema: {type: integer, format: int32, minimum: 1, maximum: 50, default: 20}
+    WorklogChangeId:
+      name: worklogChangeId
+      in: path
+      required: true
+      description: Worklog change (`WorklogChangeDTO.id`) whose confirmation is answered.
+      schema: {type: integer, format: int64, minimum: 1, example: 1201}
     GroupDate:
       name: date
       in: query
@@ -86,10 +92,39 @@ components:
         hasNext: {type: boolean}
         nextCursor: {type: [string, 'null'], description: 'Opaque cursor; null on the final page.'}
       required: [content, hasNext, nextCursor]
+    CurrentUserWorklogChangeConfirmationDTO:
+      type: object
+      description: >-
+        One PENDING confirmation of the caller, with the worklog change, navigation anchor
+        and whether a later change exists for the same worklog.
+      properties:
+        change:
+          $ref: '../worklogs/components.yml#/components/schemas/WorklogChangeDTO'
+        anchor:
+          $ref: '#/components/schemas/AttendanceAnchorDTO'
+        laterChangeExists:
+          type: boolean
+          description: >-
+            True when any change of the same worklog sorts later by occurredAt and id. This
+            does not cancel or invalidate the pending confirmation.
+      required: [change, anchor, laterChangeExists]
+    CurrentUserWorklogChangeConfirmationPageDTO:
+      type: object
+      additionalProperties: false
+      description: >-
+        Cursor page of the caller's PENDING confirmations, ordered by change.occurredAt
+        descending then change.id descending. There is no total count.
+      properties:
+        content:
+          type: array
+          items: {$ref: '#/components/schemas/CurrentUserWorklogChangeConfirmationDTO'}
+        hasNext: {type: boolean}
+        nextCursor: {type: [string, 'null']}
+      required: [content, hasNext, nextCursor]
     AttendanceInboxSummaryDTO:
       type: object
       additionalProperties: false
-      description: Global caller/business counts returned as group-page summary; confirmationCount has no matching route in this delivery.
+      description: Global caller/business counts returned as group-page summary.
       properties:
         incidentCount: {type: integer, format: int32, minimum: 0, example: 2}
         confirmationCount: {type: integer, format: int32, minimum: 0, example: 1}

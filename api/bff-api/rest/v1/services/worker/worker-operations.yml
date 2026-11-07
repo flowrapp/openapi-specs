@@ -503,7 +503,10 @@ worker:
       summary: Get worker day history
       description: >
         Returns the detailed work history for a specific day, including all individual
-        clock-in/clock-out sessions and total seconds worked.
+        clock-in/clock-out sessions and total seconds worked. It also returns required
+        `attendances`: caller-owned rows for the day with planned shift and job-role details,
+        worklogs, change history including worker confirmation, and incidents. Week and month
+        history remain day-summary views and do not include attendance rows.
       tags:
         - Worker
       operationId: getWorkerDayHistory
@@ -532,6 +535,10 @@ worker:
             application/json:
               schema:
                 $ref: '../../components/worker/components.yml#/components/schemas/WorkerDayHistoryResponseDTO'
+              examples:
+                empty:
+                  summary: Day without attendance rows
+                  value: {date: "2026-11-02", totalSeconds: 0, sessions: [], attendances: []}
         '401':
           description: Unauthorized
         '403':
