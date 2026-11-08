@@ -145,10 +145,13 @@ worker:
 
   geofence-event:
     put:
+      deprecated: true
       summary: Register a worker geofence event
       description: >
         Idempotently registers a geofence event emitted by the authenticated worker's device.
         Repeating the request with the same event ID and payload does not create a duplicate event.
+        New device clients should use `PUT /api/v1/device/businesses/{businessId}/geofence-events/{eventId}`
+        with a geofence device credential. This authenticated endpoint remains available for compatibility.
       tags:
         - Worker
       operationId: upsertWorkerGeofenceEvent

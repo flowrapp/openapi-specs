@@ -3,7 +3,7 @@ openapi: 3.1.0
 info:
   title: Flowrapp API
   description: REST API for Flowrapp Backend
-  version: 0.0.99
+  version: 0.0.100
   contact:
     name: Flowrapp Team
     url: https://flowrapp.github.io
@@ -88,6 +88,8 @@ paths:
     $ref: "v1/services/users/user-operations.yml#/users/byName"
   "/api/v1/users/me":
     $ref: "v1/services/users/user-operations.yml#/users/me"
+  "/api/v1/users/me/geofence-device-credentials":
+    $ref: "v1/services/geofenceEvents/geofence-device-credential-operations.yml#/geofenceDeviceCredentials/collection"
   "/api/v1/users/password":
     $ref: "v1/services/users/user-operations.yml#/users/change-password"
   "/api/v1/auth/login":
@@ -140,6 +142,8 @@ paths:
   "/api/v1/businesses/{businessId}/geofence-events/{eventId}":
     $ref: "v1/services/geofenceEvents/geofence-events-operations.yml#/geofen\
       ceEvents/upsert-geofence-event"
+  "/api/v1/device/businesses/{businessId}/geofence-events/{eventId}":
+    $ref: "v1/services/geofenceEvents/geofence-device-credential-operations.yml#/geofenceDeviceCredentials/device-event"
   "/api/v1/businesses/{businessId}/worklogs/open":
     $ref: "v1/services/worklogs/worklogs-operations.yml#/worklogs/open-worklogs"
   "/api/v1/businesses/{businessId}/worklogs/clock-in":
@@ -498,3 +502,10 @@ components:
         accepted under their existing rules: tokens issued with deviceId must
         match an active server-side user/device session and are rejected
         immediately when that session is missing or revoked.
+    geofenceDeviceCredential:
+      type: apiKey
+      in: header
+      name: X-Geofence-Credential
+      description: >-
+        Device-scoped credential for the geofence event endpoint only. Never log
+        this header or its value.

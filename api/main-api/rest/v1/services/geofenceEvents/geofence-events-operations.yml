@@ -1,11 +1,14 @@
 geofenceEvents:
   upsert-geofence-event:
     put:
+      deprecated: true
       summary: Register a geofence event
       description: >
         Idempotently registers a geofence event emitted by a device for the authenticated user
         at the specified business. Repeating the request with the same event ID and payload does
-        not create a duplicate event.
+        not create a duplicate event. New device clients should use
+        `PUT /api/v1/device/businesses/{businessId}/geofence-events/{eventId}` with a geofence
+        device credential. This authenticated endpoint remains available for compatibility.
       tags:
         - Businesses
       operationId: upsertGeofenceEvent

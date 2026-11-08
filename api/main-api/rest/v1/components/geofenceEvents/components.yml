@@ -1,5 +1,38 @@
 components:
   schemas:
+    IssueGeofenceDeviceCredentialRequestDTO:
+      type: object
+      description: Device identifier for which to issue a geofence-only credential
+      additionalProperties: false
+      properties:
+        deviceId:
+          type: string
+          format: uuid
+          description: Unique identifier of the device
+          example: "7c9e6679-7425-40de-944b-e07fc1f90ae7"
+      required: [deviceId]
+
+    GeofenceDeviceCredentialDTO:
+      type: object
+      description: Newly issued geofence device credential and its validity period
+      additionalProperties: false
+      properties:
+        token:
+          type: string
+          description: Opaque random 256-bit base64url credential (not a JWT). Store securely; it is returned only when issued.
+          example: "6d2WwR3wVh0mAE8k0x5D6WzPjVgYZtld4bMHQfK2qCo"
+        issuedAt:
+          type: string
+          format: date-time
+          description: Time the credential was issued
+          example: "2026-11-08T12:00:00Z"
+        expiresAt:
+          type: string
+          format: date-time
+          description: Time the credential expires (90 days after issuance)
+          example: "2027-02-06T12:00:00Z"
+      required: [token, issuedAt, expiresAt]
+
     GeofenceEventRequestDTO:
       type: object
       description: Geofence event captured by a worker's device

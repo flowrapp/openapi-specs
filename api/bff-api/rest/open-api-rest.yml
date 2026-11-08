@@ -7,7 +7,7 @@ info:
     This BFF aggregates and shapes data from the Flowrapp main API to serve
     the specific needs of the mobile frontend, providing role-based endpoints
     for workers and managers.
-  version: 0.0.87
+  version: 0.0.88
   contact:
     name: Flowrapp Team
     url: https://flowrapp.github.io
@@ -103,6 +103,8 @@ paths:
     $ref: "v1/services/user/user-operations.yml#/user/change-password"
   "/api/v1/me/settings/geofencing":
     $ref: "v1/services/settings/settings-operations.yml#/settings/current-user-geofencing"
+  "/api/v1/worker/geofencing/device-credential":
+    $ref: "v1/services/worker/geofence-device-credential-operations.yml#/geofenceDeviceCredentials/collection"
   "/api/v1/me/invitations":
     $ref: "v1/services/user/user-operations.yml#/user/invitations"
   "/api/v1/me/invitations/{invitationId}/accept":
@@ -133,6 +135,8 @@ paths:
     $ref: "v1/services/worker/worker-operations.yml#/worker/clock-in"
   "/api/v1/worker/businesses/{businessId}/geofence-events/{eventId}":
     $ref: "v1/services/worker/worker-operations.yml#/worker/geofence-event"
+  "/api/v1/device/businesses/{businessId}/geofence-events/{eventId}":
+    $ref: "v1/services/worker/geofence-device-credential-operations.yml#/geofenceDeviceCredentials/device-event"
   "/api/v1/worker/businesses/{businessId}/worklogs/{worklogId}/clock-out":
     $ref: "v1/services/worker/worker-operations.yml#/worker/clock-out"
   "/api/v1/worker/businesses/{businessId}/worklogs/{worklogId}/breaks":
@@ -343,3 +347,10 @@ components:
         accepted under their existing rules: tokens issued with deviceId must
         match an active server-side user/device session and are rejected
         immediately when that session is missing or revoked.
+    geofenceDeviceCredential:
+      type: apiKey
+      in: header
+      name: X-Geofence-Credential
+      description: >-
+        Device-scoped credential for the geofence event endpoint only. Never log
+        this header or its value.
