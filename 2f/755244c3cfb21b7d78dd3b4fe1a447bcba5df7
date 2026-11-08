@@ -1,0 +1,20 @@
+openspec/changes/realtime-sync/design.md
+  h_a041df4244d543 1-114
+openspec/changes/realtime-sync/proposal.md
+  h_a041df4244d543 1-24
+openspec/changes/realtime-sync/specs/realtime/bff-event-stream-contract/spec.md
+  h_a041df4244d543 1-47
+openspec/changes/realtime-sync/tasks.md
+  h_a041df4244d543 1-17
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.6",
+  "base_commit_sha": "2f755244c3cfb21b7d78dd3b4fe1a447bcba5df7",
+  "prompts": {},
+  "humans": {
+    "h_a041df4244d543": {
+      "author": "sergiobpa <sergiobpa@ext.inditex.com>"
+    }
+  }
+}
