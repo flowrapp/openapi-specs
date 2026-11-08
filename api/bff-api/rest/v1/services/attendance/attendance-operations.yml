@@ -209,6 +209,7 @@ attendance:
                 $ref: '../../components/attendance/components.yml#/components/schemas/AttendanceDayDTO'
               example:
                 date: "2026-10-30"
+                closed: false
                 now: "2026-10-30T13:20:00+01:00"
                 timeline: {from: "2026-10-30T07:00:00+01:00", to: "2026-10-30T23:00:00+01:00"}
                 counts: {all: 3, incidents: 2, inProgress: 0, upcoming: 1, finished: 0, critical: 1, warning: 1, ok: 1}
@@ -351,13 +352,13 @@ attendance:
                 week: {week: "2026-W44", from: "2026-10-26", to: "2026-11-01"}
                 kpis: {shifts: 49, upcoming: 12, done: 37, onTime: 28, late: 4, otherIncidents: 3, missingClockIn: 2}
                 days:
-                  - {date: "2026-10-26", isToday: false}
-                  - {date: "2026-10-27", isToday: false}
-                  - {date: "2026-10-28", isToday: false}
-                  - {date: "2026-10-29", isToday: false}
-                  - {date: "2026-10-30", isToday: true}
-                  - {date: "2026-10-31", isToday: false}
-                  - {date: "2026-11-01", isToday: false}
+                  - {date: "2026-10-26", closed: false, isToday: false}
+                  - {date: "2026-10-27", closed: false, isToday: false}
+                  - {date: "2026-10-28", closed: false, isToday: false}
+                  - {date: "2026-10-29", closed: false, isToday: false}
+                  - {date: "2026-10-30", closed: false, isToday: true}
+                  - {date: "2026-10-31", closed: false, isToday: false}
+                  - {date: "2026-11-01", closed: true, isToday: false}
                 people:
                   - userId: 106
                     name: Pablo Ruiz

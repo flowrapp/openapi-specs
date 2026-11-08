@@ -1204,7 +1204,9 @@ components:
 
     TeamScheduleResponseDTO:
       type: object
-      description: Privacy-safe weekly team schedule visible to any member of the business
+      description: >-
+        Privacy-safe schedule for all seven dates of an ISO week, visible to any member of the
+        business. Days without shifts are included with an empty shifts array.
       properties:
         businessId:
           type: integer
@@ -1228,25 +1230,38 @@ components:
           example: "2025-08-03"
         days:
           type: array
-          description: Days containing assigned shifts, ordered by business-local date
+          description: >-
+            All seven dates of the ISO week, Monday to Sunday, ordered by business-local date.
+            Days without assigned shifts are included with an empty shifts array; userIds and
+            jobRoleId filters only filter shifts and never remove days.
+          minItems: 7
+          maxItems: 7
           items:
             $ref: "#/components/schemas/TeamScheduleDayDTO"
       required: [businessId, week, weekStart, weekEnd, days]
 
     TeamScheduleDayDTO:
       type: object
-      description: Assigned shifts grouped by their business-local start date
+      description: >-
+        One business-local date in the week. open is false when the effective daily configuration
+        has no opening intervals: the date's schedule exception, otherwise the recurring schedule
+        effective on that date, otherwise no configuration. A person's lack of shifts does not
+        make an open date closed.
       properties:
         date:
           type: string
           format: date
           example: "2025-07-28"
+        open:
+          type: boolean
+          description: Whether the date has at least one opening interval in its effective daily configuration.
+          example: true
         shifts:
           type: array
           description: Shifts ordered by start instant and then stable shift ID
           items:
             $ref: "#/components/schemas/TeamScheduleShiftDTO"
-      required: [date, shifts]
+      required: [date, open, shifts]
 
     TeamScheduleShiftDTO:
       type: object

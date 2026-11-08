@@ -1044,7 +1044,9 @@ planning:
         Returns the assigned shifts from a published planning, or from an archived planning that
         was previously published. Any authenticated OWNER, MANAGER, or EMPLOYEE membership may
         read this privacy-safe projection. Missing membership, missing planning, and unpublished
-        planning are deliberately indistinguishable and return 404.
+        planning are deliberately indistinguishable and return 404. The response always contains
+        all seven dates of the ISO week, Monday to Sunday; days without shifts have `shifts: []`.
+        `open` reflects the effective daily opening configuration, not whether anyone is assigned.
       security: [{ bearerAuth: [] }]
       parameters:
         - $ref: '../../components/scheduling/components.yml#/components/parameters/BusinessId'
@@ -1058,8 +1060,7 @@ planning:
             Restricts the schedule to the shifts assigned to these users, filtered
             server-side. Omit it to get every assigned shift. Repeat it for several
             users (userIds=3&userIds=7). Ids with no shift in the week, or that are
-            not members of the business, add nothing; days left without shifts are
-            omitted as in an empty schedule.
+            not members of the business, add no shifts; all seven dates remain in the response.
           schema:
             type: array
             uniqueItems: true
@@ -1078,7 +1079,7 @@ planning:
             day. The team schedule holds only scheduled shifts, so the contract fallback used
             for worklogs without a shift (getBusinessReports, getDailyAttendance) never
             applies here. Combined with userIds using AND. A job role with no shift in the week, or
-            not of this business, returns an empty schedule.
+            not of this business, returns seven dates with empty shifts.
           schema:
             type: integer
             format: int64
@@ -1101,6 +1102,7 @@ planning:
                     weekEnd: "2025-08-03"
                     days:
                       - date: "2025-07-28"
+                        open: true
                         shifts:
                           - id: 900
                             worker: {id: 3, name: Bob Wilson}
@@ -1120,6 +1122,12 @@ planning:
                             startAt: "2025-07-28T22:00:00+02:00"
                             endAt: "2025-07-29T02:00:00+02:00"
                             breakMinutes: 30
+                      - {date: "2025-07-29", open: true, shifts: []}
+                      - {date: "2025-07-30", open: true, shifts: []}
+                      - {date: "2025-07-31", open: true, shifts: []}
+                      - {date: "2025-08-01", open: true, shifts: []}
+                      - {date: "2025-08-02", open: true, shifts: []}
+                      - {date: "2025-08-03", open: false, shifts: []}
                 archived:
                   summary: Previously published archived team schedule
                   value:
@@ -1129,6 +1137,7 @@ planning:
                     weekEnd: "2025-07-27"
                     days:
                       - date: "2025-07-21"
+                        open: true
                         shifts:
                           - id: 850
                             worker: {id: 3, name: Bob Wilson}
@@ -1139,6 +1148,12 @@ planning:
                             startAt: "2025-07-21T09:00:00+02:00"
                             endAt: "2025-07-21T17:00:00+02:00"
                             breakMinutes: 30
+                      - {date: "2025-07-22", open: true, shifts: []}
+                      - {date: "2025-07-23", open: true, shifts: []}
+                      - {date: "2025-07-24", open: true, shifts: []}
+                      - {date: "2025-07-25", open: true, shifts: []}
+                      - {date: "2025-07-26", open: true, shifts: []}
+                      - {date: "2025-07-27", open: false, shifts: []}
                 empty:
                   summary: Published planning with no assigned shifts
                   value:
@@ -1146,7 +1161,14 @@ planning:
                     week: "2025-W32"
                     weekStart: "2025-08-04"
                     weekEnd: "2025-08-10"
-                    days: []
+                    days:
+                      - {date: "2025-08-04", open: true, shifts: []}
+                      - {date: "2025-08-05", open: true, shifts: []}
+                      - {date: "2025-08-06", open: true, shifts: []}
+                      - {date: "2025-08-07", open: true, shifts: []}
+                      - {date: "2025-08-08", open: true, shifts: []}
+                      - {date: "2025-08-09", open: true, shifts: []}
+                      - {date: "2025-08-10", open: false, shifts: []}
         '400':
           description: weekStart is not the Monday of its ISO week
           content:

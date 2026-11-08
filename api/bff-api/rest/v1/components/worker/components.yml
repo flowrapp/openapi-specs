@@ -379,6 +379,14 @@ components:
           format: date
           description: The date of this history entry
           example: "2025-03-10"
+        closed:
+          type: boolean
+          description: >-
+            Whether the business-local date is closed: its effective daily configuration has no
+            opening intervals (date exception, otherwise the recurring schedule effective on the
+            date, otherwise no configuration). False when this cannot be determined, for example
+            when the week has no published planning.
+          example: false
         totalSeconds:
           type: integer
           format: int64
@@ -398,6 +406,7 @@ components:
             $ref: './inbox-components.yml#/components/schemas/WorkerAttendanceRowDTO'
       required:
         - date
+        - closed
         - totalSeconds
         - sessions
         - attendances
@@ -441,6 +450,14 @@ components:
           format: date
           description: The date
           example: "2025-07-28"
+        closed:
+          type: boolean
+          description: >-
+            Whether the business-local date is closed: its effective daily configuration has no
+            opening intervals (date exception, otherwise the recurring schedule effective on the
+            date, otherwise no configuration). False when this cannot be determined, for example
+            when the week has no published planning.
+          example: false
         totalSeconds:
           type: integer
           format: int64
@@ -453,6 +470,7 @@ components:
             $ref: '../common/components.yml#/components/schemas/SessionDTO'
       required:
         - date
+        - closed
         - totalSeconds
         - sessions
 
@@ -508,7 +526,9 @@ components:
 
     WorkerTeamScheduleResponseDTO:
       type: object
-      description: Privacy-safe weekly team schedule visible to any member of the business
+      description: >-
+        Privacy-safe schedule for all seven dates of an ISO week, visible to any member of the
+        business. Days without shifts are included with an empty shifts array.
       properties:
         businessId:
           type: integer
@@ -532,7 +552,11 @@ components:
           example: "2025-08-03"
         days:
           type: array
-          description: Days containing assigned shifts, ordered by business-local date
+          description: >-
+            All seven dates of the ISO week, Monday to Sunday, ordered by business-local date.
+            Days without assigned shifts are included with an empty shifts array.
+          minItems: 7
+          maxItems: 7
           items:
             $ref: '#/components/schemas/WorkerTeamScheduleDayDTO'
       required:
@@ -544,12 +568,20 @@ components:
 
     WorkerTeamScheduleDayDTO:
       type: object
-      description: Assigned shifts grouped by their business-local start date
+      description: Assigned shifts grouped by their business-local start date. closed describes the business day, not the person's lack of shifts.
       properties:
         date:
           type: string
           format: date
           example: "2025-07-28"
+        closed:
+          type: boolean
+          description: >-
+            Whether the business-local date is closed: its effective daily configuration has no
+            opening intervals (date exception, otherwise the recurring schedule effective on the
+            date, otherwise no configuration). A person's lack of shifts does not make an open
+            date closed.
+          example: false
         shifts:
           type: array
           description: Shifts ordered by start instant and then stable shift ID
@@ -557,6 +589,7 @@ components:
             $ref: '#/components/schemas/WorkerTeamScheduleShiftDTO'
       required:
         - date
+        - closed
         - shifts
 
     WorkerTeamScheduleShiftDTO:

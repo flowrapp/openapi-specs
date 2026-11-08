@@ -828,6 +828,14 @@ components:
           type: string
           format: date
           example: "2026-10-30"
+        closed:
+          type: boolean
+          description: >-
+            Whether the business-local date is closed: its effective daily configuration has no
+            opening intervals (date exception, otherwise the recurring schedule effective on the
+            date, otherwise no configuration). A person's lack of attendance does not make an open
+            date closed.
+          example: false
         now:
           type: string
           format: date-time
@@ -860,7 +868,7 @@ components:
             $ref: "#/components/schemas/AttendanceDayRowDTO"
         filterOptions:
           $ref: "#/components/schemas/AttendanceFilterOptionsDTO"
-      required: [date, now, timeline, counts, rows, filterOptions]
+      required: [date, closed, now, timeline, counts, rows, filterOptions]
 
     AttendanceDayCountsDTO:
       type: object
@@ -1057,10 +1065,18 @@ components:
                 type: string
                 format: date
                 example: "2026-10-26"
+              closed:
+                type: boolean
+                description: >-
+                  Whether the business-local date is closed: its effective daily configuration has
+                  no opening intervals (date exception, otherwise the recurring schedule effective
+                  on the date, otherwise no configuration). A person's lack of attendance does not
+                  make an open date closed.
+                example: false
               isToday:
                 type: boolean
                 example: false
-            required: [date, isToday]
+            required: [date, closed, isToday]
         people:
           type: array
           description: >
