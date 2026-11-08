@@ -1,0 +1,24 @@
+api/bff-api/rest/CHANGELOG.md
+  h_a041df4244d543 3-11
+api/bff-api/rest/open-api-rest.yml
+  h_a041df4244d543 10,75-78,174-175,344-350
+api/bff-api/rest/v1/components/realtime/components.yml
+  h_a041df4244d543 1-38
+api/bff-api/rest/v1/services/realtime/realtime-operations.yml
+  h_a041df4244d543 1-82
+docs/realtime-sync.md
+  h_a041df4244d543 1-106
+openspec/changes/realtime-sync/tasks.md
+  h_a041df4244d543 3-8,12,16-17
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.6",
+  "base_commit_sha": "31e957deb9e74462029f384e34712c556dc47444",
+  "prompts": {},
+  "humans": {
+    "h_a041df4244d543": {
+      "author": "sergiobpa <sergiobpa@ext.inditex.com>"
+    }
+  }
+}
