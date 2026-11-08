@@ -1,0 +1,27 @@
+api/bff-api/rest/open-api-rest.yml
+  s_e689b7858902b0::t_d5948fbadcbd13 10
+api/bff-api/rest/v1/components/attendance/components.yml
+  s_e689b7858902b0::t_c798be962cb70d 683-689,730
+api/bff-api/rest/v1/services/attendance/attendance-operations.yml
+  s_e689b7858902b0::t_1991c9a83b4153 58-61,63,72-73
+openspec/changes/closed-day-marking/specs/closed-day-marking/spec.md
+  s_e689b7858902b0::t_6fb2c899833b57 30
+openspec/changes/closed-day-marking/tasks.md
+  s_e689b7858902b0::t_66f759200067f3 11
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.6",
+  "base_commit_sha": "84868e00b86834f165ff118bb4be6319aecf8242",
+  "prompts": {},
+  "sessions": {
+    "s_e689b7858902b0": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_e439a6047ffeeWu3ox7Fmdgp63",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "sergiobpa <sergiobpa@ext.inditex.com>"
+    }
+  }
+}
