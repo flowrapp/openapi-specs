@@ -1,0 +1,14 @@
+openspec/specs/closed-day-marking/spec.md
+  h_a041df4244d543 1-50
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.6",
+  "base_commit_sha": "6a8b3432155e3acde147ad819c605e72fd98d8eb",
+  "prompts": {},
+  "humans": {
+    "h_a041df4244d543": {
+      "author": "sergiobpa <sergiobpa@ext.inditex.com>"
+    }
+  }
+}
