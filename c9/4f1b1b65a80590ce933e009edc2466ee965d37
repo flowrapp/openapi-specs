@@ -1,0 +1,36 @@
+api/bff-api/rest/open-api-rest.yml
+  h_a041df4244d543 10,106-107,138-139,350-356
+api/bff-api/rest/v1/components/worker/components.yml
+  h_a041df4244d543 340-372
+api/bff-api/rest/v1/services/worker/geofence-device-credential-operations.yml
+  h_a041df4244d543 1-136
+api/bff-api/rest/v1/services/worker/worker-operations.yml
+  h_a041df4244d543 148,153-154
+api/main-api/rest/open-api-rest.yml
+  h_a041df4244d543 6,91-92,145-146,505-511
+api/main-api/rest/v1/components/geofenceEvents/components.yml
+  h_a041df4244d543 3-35
+api/main-api/rest/v1/services/geofenceEvents/geofence-device-credential-operations.yml
+  h_a041df4244d543 1-135
+api/main-api/rest/v1/services/geofenceEvents/geofence-events-operations.yml
+  h_a041df4244d543 4,9-11
+openspec/changes/geofence-device-credential/design.md
+  h_a041df4244d543 1-22
+openspec/changes/geofence-device-credential/proposal.md
+  h_a041df4244d543 1-23
+openspec/changes/geofence-device-credential/specs/geofence-device-credentials/spec.md
+  h_a041df4244d543 1-42
+openspec/changes/geofence-device-credential/tasks.md
+  h_a041df4244d543 1-7
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.6",
+  "base_commit_sha": "c94f1b1b65a80590ce933e009edc2466ee965d37",
+  "prompts": {},
+  "humans": {
+    "h_a041df4244d543": {
+      "author": "sergiobpa <sergiobpa@ext.inditex.com>"
+    }
+  }
+}
