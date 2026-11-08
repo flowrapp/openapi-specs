@@ -1,0 +1,38 @@
+api/bff-api/rest/open-api-rest.yml
+  h_a041df4244d543 10
+api/bff-api/rest/v1/components/attendance/components.yml
+  h_a041df4244d543 831-838,871,1068-1075,1079
+api/bff-api/rest/v1/components/worker/components.yml
+  h_a041df4244d543 382-389,409,453-460,473,529-531,555-559,571,577-584,592
+api/bff-api/rest/v1/services/attendance/attendance-operations.yml
+  h_a041df4244d543 212,355-361
+api/bff-api/rest/v1/services/worker/worker-operations.yml
+  h_a041df4244d543 544,640-642,677,697-702,712,723-728,736-743
+api/main-api/rest/open-api-rest.yml
+  h_a041df4244d543 6
+api/main-api/rest/v1/components/scheduling/components.yml
+  h_a041df4244d543 1207-1209,1233-1238,1245-1249,1255-1258,1264
+api/main-api/rest/v1/services/scheduling/scheduling-operations.yml
+  h_a041df4244d543 1047-1049,1063,1082,1105,1125-1130,1140,1151-1156,1164-1171
+openspec/changes/closed-day-marking/.openspec.yaml
+  h_a041df4244d543 1-2
+openspec/changes/closed-day-marking/design.md
+  h_a041df4244d543 1-17
+openspec/changes/closed-day-marking/proposal.md
+  h_a041df4244d543 1-23
+openspec/changes/closed-day-marking/specs/closed-day-marking/spec.md
+  h_a041df4244d543 1-45
+openspec/changes/closed-day-marking/tasks.md
+  h_a041df4244d543 1-17
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.6",
+  "base_commit_sha": "4cc158646fd6e565508e03d8970eaf945f84fd4e",
+  "prompts": {},
+  "humans": {
+    "h_a041df4244d543": {
+      "author": "sergiobpa <sergiobpa@ext.inditex.com>"
+    }
+  }
+}
