@@ -1,0 +1,82 @@
+realtime:
+  business-events:
+    get:
+      summary: Stream business sync events
+      description: |
+        Opens a business-scoped server-sent event stream for any authenticated business member.
+        Clients send `Accept: text/event-stream`.
+        The BFF filters signals by the caller's membership and role; events are invalidation hints only
+        and never contain business data. The first event is `ready` with a `SyncReadyEvent` payload
+        (`{"businessId": 101}`); subsequent `sync` events use `SyncEvent` and tell the app which REST
+        data to refresh. Clients MUST ignore unknown `SyncTopic` values.
+
+        The stream sends a heartbeat comment (`: ping`) every 25 seconds and closes after 30 minutes;
+        the app reconnects and receives a new `ready` event. A user may have at most 3 concurrent
+        streams per BFF instance; when exceeded, the oldest stream is closed. `Last-Event-ID` is ignored:
+        events are not replayed. The response includes `Cache-Control: no-cache` and
+        `X-Accel-Buffering: no` headers.
+
+        The BFF implements this endpoint with a hand-written `SseEmitter` controller; the generated
+        `RealtimeApi` is excluded.
+      tags:
+        - Realtime
+      operationId: streamBusinessEvents
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '../../components/attendance/components.yml#/components/parameters/BusinessId'
+      responses:
+        '200':
+          description: Server-sent `ready` and `sync` events, followed by heartbeat comments.
+          headers:
+            Cache-Control:
+              description: Prevents intermediary caches from storing the event stream.
+              schema:
+                type: string
+                example: no-cache
+            X-Accel-Buffering:
+              description: Disables buffering by nginx proxies.
+              schema:
+                type: string
+                example: 'no'
+          content:
+            text/event-stream:
+              schema:
+                type: string
+              example: |
+                event: ready
+                data: {"businessId":101}
+
+                id: 3f0c0a3e-6a37-4b6f-9f4f-4bb3d33cfe81
+                event: sync
+                data: {"businessId":101,"topics":["WORKLOGS","REPORTS"]}
+
+                : ping
+        '401':
+          description: Missing or invalid bearer token.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              example:
+                status: 401
+                detail: Unauthorized
+        '403':
+          description: The caller is not a member of the business (1015); returned before any event is sent.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              example:
+                status: 403
+                detail: "1015 - user is not member of business"
+        '429':
+          description: The caller exceeded the event-stream connection limit.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              example:
+                status: 429
+                detail: Too many requests
+      x-functional-errors: [1015]

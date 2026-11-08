@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.0.91 (local spec draft; not a release or repository tag)
+
+### Added
+
+- `GET /api/v1/businesses/{businessId}/events` (`streamBusinessEvents`, tag `Realtime`): authenticated
+  business members can receive `ready` and `sync` server-sent events to invalidate mobile data. Added
+  `SyncReadyEvent`, `SyncEvent` and the forward-compatible `SyncTopic` schemas, plus the shared AMQP,
+  delivery and FCM sync contract in `docs/realtime-sync.md`. The Main API spec is unchanged.
+
 ## 0.0.86 (local spec draft; not a release or repository tag)
 
 Spec only. No BFF implementation is included. Requires Main API contract 0.0.97. Java/codegen was omitted by Sergio's direct decision (t37u: «No hace falta que valides nada con Java») and is not a phase-1 delivery gate. Runtime/concurrency/database and application/UI behavior remains unverified; persistence activation and release remain gated on compatible writer-lock adoption and an approved retention policy, as described in `docs/attendance-incident-groups.md`.

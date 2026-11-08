@@ -7,7 +7,7 @@ info:
     This BFF aggregates and shapes data from the Flowrapp main API to serve
     the specific needs of the mobile frontend, providing role-based endpoints
     for workers and managers.
-  version: 0.0.90
+  version: 0.0.91
   contact:
     name: Flowrapp Team
     url: https://flowrapp.github.io
@@ -72,6 +72,10 @@ tags:
       OWNER correction of one concrete published assignment, under
       /api/v1/businesses/{businessId}/schedule-change-requests. Pass-through to
       the Main API. Solicitudes calls this list separately. Not a dashboard.
+  - name: Realtime
+    description: >-
+      Business-scoped server-sent events that tell the app which REST data to
+      refresh. Signals never contain business data.
 
 paths:
   # ── System ──────────────────────────────────────────────────────────────
@@ -167,6 +171,8 @@ paths:
   # ── Reports (owner-only) ─────────────────────────────────────────────────
   "/api/v1/businesses/{businessId}/reports/worked-hours":
     $ref: "v1/services/reports/reports-operations.yml#/reports/request-business-worked-hours-report"
+  "/api/v1/businesses/{businessId}/events":
+    $ref: "v1/services/realtime/realtime-operations.yml#/realtime/business-events"
   "/api/v1/businesses/{businessId}/members/search":
     $ref: "v1/services/members/members-operations.yml#/members/search-business-members"
   "/api/v1/businesses/{businessId}/members/{userId}":
@@ -335,6 +341,13 @@ paths:
       -hours-report"
 
 components:
+  schemas:
+    SyncReadyEvent:
+      $ref: "v1/components/realtime/components.yml#/components/schemas/SyncReadyEvent"
+    SyncEvent:
+      $ref: "v1/components/realtime/components.yml#/components/schemas/SyncEvent"
+    SyncTopic:
+      $ref: "v1/components/realtime/components.yml#/components/schemas/SyncTopic"
   securitySchemes:
     bearerAuth:
       type: http
