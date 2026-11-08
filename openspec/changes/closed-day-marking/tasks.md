@@ -8,6 +8,7 @@
 - [x] Add required `closed: boolean` to `WorkerTeamScheduleDayDTO`, `WorkerWeekDayDTO`, `WorkerDayHistoryResponseDTO` (`api/bff-api/rest/v1/components/worker/components.yml`).
 - [x] Document 7 days always on `WorkerTeamScheduleResponseDTO.days`.
 - [x] Add required `closed: boolean` to `AttendanceDayDTO` and to the items of `AttendanceWeekDTO.days` (`api/bff-api/rest/v1/components/attendance/components.yml`).
+- [x] Add required `closed: boolean` to `AttendanceHoursDayDTO` (owner «Horas» chart); BFF 0.0.89 → 0.0.90, tag `v1.0.5`.
 - [x] Update affected examples in operations/components so they include the new fields.
 
 ## Release

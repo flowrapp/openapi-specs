@@ -27,7 +27,7 @@ The contracts SHALL define a business-local date as closed when its effective da
 - **THEN** the response still contains the 7 days with their `open` value
 
 ### Requirement: BFF day responses expose closed days
-The BFF SHALL include required `closed: boolean` in `WorkerTeamScheduleDayDTO`, `WorkerWeekDayDTO`, `WorkerDayHistoryResponseDTO`, `AttendanceDayDTO` and each item of `AttendanceWeekDTO.days`. `WorkerTeamScheduleResponseDTO.days` SHALL contain the 7 dates of the week. In worker history responses `closed` SHALL be `false` when it cannot be determined.
+The BFF SHALL include required `closed: boolean` in `WorkerTeamScheduleDayDTO`, `WorkerWeekDayDTO`, `WorkerDayHistoryResponseDTO`, `AttendanceDayDTO`, each item of `AttendanceWeekDTO.days` and each `AttendanceHoursDayDTO`. `WorkerTeamScheduleResponseDTO.days` SHALL contain the 7 dates of the week. In worker history responses `closed` SHALL be `false` when it cannot be determined.
 
 #### Scenario: Worker week history over a closed day
 - **WHEN** a worker reads a week history whose published week has a closed Sunday

@@ -680,6 +680,13 @@ components:
           type: string
           format: date
           example: "2026-10-30"
+        closed:
+          type: boolean
+          description: >-
+            Whether the business-local date is closed: its effective daily configuration has no
+            opening intervals (date exception, otherwise the recurring schedule effective on the
+            date, otherwise no configuration). Clocked hours on a closed date are still reported.
+          example: false
         isToday:
           type: boolean
           description: Today in the business time zone
@@ -720,7 +727,7 @@ components:
                 minimum: 0
                 example: 14400
             required: [userId, name, clockedSeconds]
-      required: [date, isToday, clockedSeconds, pendingReviewSeconds, plannedSeconds, people]
+      required: [date, closed, isToday, clockedSeconds, pendingReviewSeconds, plannedSeconds, people]
 
     AttendanceHoursSelectedDayDTO:
       type: object
