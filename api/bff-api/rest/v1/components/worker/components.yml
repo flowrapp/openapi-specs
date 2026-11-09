@@ -82,7 +82,7 @@ components:
             gates management actions on `permissions` as well.
           items:
             $ref: '../members/components.yml#/components/schemas/BusinessFeature'
-          example: [SCHEDULING, ATTENDANCE]
+          example: [SCHEDULING, ATTENDANCE, ADVANCED_PLANNING]
         attendanceToleranceMinutes:
           type: integer
           format: int32

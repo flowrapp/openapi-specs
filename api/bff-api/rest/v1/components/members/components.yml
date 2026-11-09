@@ -683,12 +683,15 @@ components:
       type: string
       description: >
         Optional product module of a business, same catalog as the Main API `BusinessFeature`.
-        SCHEDULING owns SCHEDULE_VIEW, SCHEDULE_MANAGE and SHIFT_CHANGES_APPROVE. ATTENDANCE requires
-        SCHEDULING and owns ATTENDANCE_VIEW and ATTENDANCE_MANAGE. Every other permission is core.
+        SCHEDULING owns SCHEDULE_VIEW, SCHEDULE_MANAGE and SHIFT_CHANGES_APPROVE and includes manual
+        shifts. ATTENDANCE requires SCHEDULING and owns ATTENDANCE_VIEW and ATTENDANCE_MANAGE.
+        ADVANCED_PLANNING requires SCHEDULING and gates advanced operations independently of RBAC.
+        Every other permission is core.
         Open enum for clients: ignore unknown values.
       enum:
         - SCHEDULING
         - ATTENDANCE
+        - ADVANCED_PLANNING
       example: SCHEDULING
 
     AccessRoleSummaryDTO:

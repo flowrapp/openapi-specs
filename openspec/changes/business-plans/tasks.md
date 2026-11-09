@@ -20,3 +20,8 @@
 
 - [x] 4.1 Document core clock-in/clock-out without attendance and the precedence of feature and permission errors; bump Main `0.0.107` and BFF `0.0.97`.
 - [x] 4.2 Lint both APIs, validate errors and OpenSpec; publish the clarifications in a new tag.
+
+## 5. Manual shifts in Essential
+
+- [x] 5.1 Add `ADVANCED_PLANNING`; include `SCHEDULING` in Essential and all three features in Professional; document manual and advanced operations.
+- [x] 5.2 Update examples, validate both APIs and OpenSpec, then publish the new contract tag `v1.0.12`.

@@ -21,6 +21,7 @@ Main `0.0.105` / BFF `0.0.95` (tag `v1.0.9`) authorize business operations with 
 |---|---|---|---|
 | `SCHEDULING` | — | `SCHEDULE_VIEW`, `SCHEDULE_MANAGE`, `SHIFT_CHANGES_APPROVE` | getCurrentUserScheduledShifts, getBusinessTeamSchedule, every shift exchange and schedule change operation |
 | `ATTENDANCE` | `SCHEDULING` | `ATTENDANCE_VIEW`, `ATTENDANCE_MANAGE` | getAttendanceMatch, getDailyAttendance (any scope), justifyAttendanceIncident, getCurrentUserAttendanceIncidents, getCurrentUserAttendanceIncidentGroups, getCurrentUserAttendanceIncidentGroup, justifyCurrentUserAttendanceIncidentGroup, updateAttendanceTolerance |
+| `ADVANCED_PLANNING` | `SCHEDULING` | — | none; additionally gates advanced scheduling operations |
 
 Every other permission and operation is core: always available (clocking, breaks, worklog corrections and confirmations, geolocation and auto-clocking, team, invitations, contracts, job-role catalog read, reports and PDF export, business settings). Only optional modules are features; a core module becomes a feature only when a plan must exclude it. Future modules (advanced reporting, documents) are added as new enum values with their permissions.
 
@@ -28,8 +29,8 @@ Plans today:
 
 | Plan | Features |
 |---|---|
-| `ESSENTIAL` | — |
-| `PROFESSIONAL` | `SCHEDULING`, `ATTENDANCE` |
+| `ESSENTIAL` | `SCHEDULING` |
+| `PROFESSIONAL` | `SCHEDULING`, `ATTENDANCE`, `ADVANCED_PLANNING` |
 
 `plan` is an open string in the contract so a plan can be added by configuration. `BusinessFeature` is closed because a feature needs code.
 
@@ -39,6 +40,10 @@ features    = plan features − disabled for the business − those whose requir
 permissions = role permissions − permissions owned by features not in `features`
 ```
 Job-role writes require `SCHEDULE_MANAGE` and therefore `SCHEDULING`; the job-role catalog read stays `TEAM_VIEW` (core).
+
+An authorised manager can create shift templates, create an empty weekly draft, assign shifts manually and publish them in both plans. Workers can read the published team schedule in both plans. `ADVANCED_PLANNING` is checked separately, after membership/contract validation and before permission denial, for Main `requestPlanningGeneration`, `getPlanningGeneration`, and generation settings read/write/delete; BFF `requestPlanGeneration`, `getPlanGeneration`, `getWeekCoverage`, and generation settings read/write/delete. Automatic generation and solver-submission jobs must also check this feature. `SCHEDULING` remains the requirement for manual planning, catalogues, shift-change requests, published-shift notifications and geofence schedule matching. An in-flight solver poll may finish after a downgrade; the resulting stored schedule remains available for manual maintenance, without exposing advanced UI or starting new generation.
+
+Do not gate shared low-level reads such as Main `getPlanningGenerationInput`, which also supply attendance and dashboard data. They retain their existing RBAC checks; the dedicated coverage operation and automatic generation are feature-gated. Likewise, existing manual drafts and published shifts must remain usable after a downgrade; disabling advanced planning does not delete or lock authorised business data.
 
 Clock-in always creates a durable attendance-match identifier, including a passive `NOT_APPLICABLE` match when `ATTENDANCE` is unavailable. This preserves existing clients without enabling attendance incidents or schedule matching. An ordinary manual clock-out without `ATTENDANCE` remains confirmed if the open worklog was confirmed; existing review states and geofence evidence are preserved, and reports are recalculated asynchronously.
 

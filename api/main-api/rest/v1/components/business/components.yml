@@ -95,9 +95,9 @@ components:
           type: array
           description: >
             Effective permissions of the current user in this business. An OWNER holds every
-            permission of the business's effective features. An EMPLOYEE holds the permissions of
-            its access role that belong to effective features, or none without an active contract.
-            Core permissions do not require a feature.
+            permission of the business's effective features and all core permissions. An EMPLOYEE
+            holds the permissions of its access role filtered by effective features, or none without
+            an active contract. Some advanced operations also require ADVANCED_PLANNING.
           uniqueItems: true
           items:
             $ref: '#/components/schemas/BusinessPermission'
@@ -123,7 +123,7 @@ components:
           uniqueItems: true
           items:
             $ref: '#/components/schemas/BusinessFeature'
-          example: [SCHEDULING, ATTENDANCE]
+          example: [SCHEDULING, ATTENDANCE, ADVANCED_PLANNING]
         longOpenAfterMinutes:
           type: integer
           format: int32
@@ -426,12 +426,14 @@ components:
       description: >
         Optional product module of a business. Available when the business plan includes it, it is
         not disabled for the business and its requirements are available. SCHEDULING owns
-        SCHEDULE_VIEW, SCHEDULE_MANAGE and SHIFT_CHANGES_APPROVE. ATTENDANCE requires SCHEDULING and
-        owns ATTENDANCE_VIEW and ATTENDANCE_MANAGE. Every other permission is core and available in
-        every plan. The operations each feature gates are listed in the API description.
+        SCHEDULE_VIEW, SCHEDULE_MANAGE and SHIFT_CHANGES_APPROVE and includes manual shifts.
+        ATTENDANCE requires SCHEDULING and owns ATTENDANCE_VIEW and ATTENDANCE_MANAGE.
+        ADVANCED_PLANNING requires SCHEDULING and gates advanced operations independently of RBAC.
+        Every other permission is core. See the API description for the operations each feature gates.
       enum:
         - SCHEDULING
         - ATTENDANCE
+        - ADVANCED_PLANNING
       example: SCHEDULING
 
     BusinessAccessRoleSummaryDTO:
