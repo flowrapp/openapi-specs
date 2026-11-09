@@ -1,0 +1,21 @@
+api/bff-api/rest/v1/services/attendance/attendance-operations.yml
+  s_51fed6ce5d9568::t_11efe6881841b6 631-634,746-748,841-843,846-855,859,966-968,1074-1076,1079-1087,1199-1201,1204-1212,1319-1321,1430-1432,1546-1548,1551-1559,1671-1673,1780-1782,1785-1793,1906-1908,1911-1919
+api/main-api/rest/v1/services/worklogs/worklogs-operations.yml
+  s_51fed6ce5d9568::t_96ae6eba1c2cd6 733-742,880-881,1379-1390,1472-1483
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.6",
+  "base_commit_sha": "95f1bd3e43f60b8c7f86917be73aaef8f04cd269",
+  "prompts": {},
+  "sessions": {
+    "s_51fed6ce5d9568": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_e40511883ffeEBAGmDGCNq1eHK",
+        "model": "gpt-6-luna"
+      },
+      "human_author": "sergiobpa <sergiobpa@ext.inditex.com>"
+    }
+  }
+}
