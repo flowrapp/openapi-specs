@@ -1,0 +1,18 @@
+openspec/changes/correction-accepts-remaining/proposal.md
+  h_a041df4244d543 1-18
+openspec/changes/correction-accepts-remaining/specs/attendance-correction/spec.md
+  h_a041df4244d543 1-15
+openspec/changes/correction-accepts-remaining/tasks.md
+  h_a041df4244d543 1-15
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.6",
+  "base_commit_sha": "d2143114702a2bebda8179aac262d16bc0e8e18f",
+  "prompts": {},
+  "humans": {
+    "h_a041df4244d543": {
+      "author": "sergiobpa <sergiobpa@ext.inditex.com>"
+    }
+  }
+}
