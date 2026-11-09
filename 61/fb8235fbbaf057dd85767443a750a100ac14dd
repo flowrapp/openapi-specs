@@ -1,0 +1,16 @@
+openspec/changes/archive/2026-11-09-business-access-roles/tasks.md
+  h_a041df4244d543 3-7,11-15,19-20
+openspec/specs/business-access-roles/spec.md
+  h_a041df4244d543 1-109
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.6",
+  "base_commit_sha": "61fb8235fbbaf057dd85767443a750a100ac14dd",
+  "prompts": {},
+  "humans": {
+    "h_a041df4244d543": {
+      "author": "sergiobpa <sergiobpa@ext.inditex.com>"
+    }
+  }
+}
