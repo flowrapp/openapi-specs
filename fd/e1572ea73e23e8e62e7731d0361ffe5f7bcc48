@@ -1,0 +1,34 @@
+api/bff-api/rest/open-api-rest.yml
+  h_a041df4244d543 43-44,50,52-53
+api/bff-api/rest/v1/components/members/components.yml
+  h_a041df4244d543 686-689,694
+api/bff-api/rest/v1/components/worker/components.yml
+  h_a041df4244d543 85
+api/bff-api/rest/v1/services/worker/worker-operations.yml
+  h_a041df4244d543 50
+api/main-api/rest/open-api-rest.yml
+  h_a041df4244d543 44-46,50,52-59,62
+api/main-api/rest/v1/components/business/components.yml
+  h_a041df4244d543 98-100,126,429-432,436
+api/main-api/rest/v1/services/business/businesses-operations.yml
+  h_a041df4244d543 184,204
+openspec/changes/business-plans/design.md
+  h_a041df4244d543 24,32-33,44-47
+openspec/changes/business-plans/proposal.md
+  h_a041df4244d543 3,7,14,26
+openspec/changes/business-plans/specs/business-plans/spec.md
+  h_a041df4244d543 4,15,19,28-29,33,41,44-51
+openspec/changes/business-plans/tasks.md
+  h_a041df4244d543 23-27
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.6",
+  "base_commit_sha": "fde1572ea73e23e8e62e7731d0361ffe5f7bcc48",
+  "prompts": {},
+  "humans": {
+    "h_a041df4244d543": {
+      "author": "sergiobpa <sergiobpa@ext.inditex.com>"
+    }
+  }
+}
