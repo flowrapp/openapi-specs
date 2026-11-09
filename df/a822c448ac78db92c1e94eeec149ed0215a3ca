@@ -1,0 +1,41 @@
+api/bff-api/rest/open-api-rest.yml
+  s_4d5b797e86e58c::t_b1bb3b9c61d045 36-51
+api/bff-api/rest/v1/components/members/components.yml
+  s_4d5b797e86e58c::t_2c39d1a612a6f2 682-693
+api/bff-api/rest/v1/components/worker/components.yml
+  s_4d5b797e86e58c::t_ba70c3f331d4fb 67-83,108-109
+api/bff-api/rest/v1/services/realtime/realtime-operations.yml
+  s_4d5b797e86e58c::t_ce303a329ed974 12-13
+api/bff-api/rest/v1/services/worker/worker-operations.yml
+  s_4d5b797e86e58c::t_2a30cc245b99ae 49-50
+api/main-api/rest/open-api-rest.yml
+  s_4d5b797e86e58c::t_cee3f5274309a6 34-51,156-157
+api/main-api/rest/v1/components/admin/components.yml
+  s_4d5b797e86e58c::t_1542a3e66c23e5 88-92,103-114
+api/main-api/rest/v1/components/business/components.yml
+  s_4d5b797e86e58c::t_32a3a2bd672671 109-125,154-155,423-435
+api/main-api/rest/v1/components/common/error-components.yml
+  s_4d5b797e86e58c::t_32386f1a03a639 196-197,212-213,362-363
+api/main-api/rest/v1/services/admin/admin-operations.yml
+  s_4d5b797e86e58c::t_83cf9b91ff352a 22,33-37,66-126
+api/main-api/rest/v1/services/business/businesses-operations.yml
+  s_4d5b797e86e58c::t_e2fa1032b8dfec 183-184,201,203-204
+openspec/changes/business-plans/tasks.md
+  s_4d5b797e86e58c::t_1c7a9fb6918e22 1-17
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.6",
+  "base_commit_sha": "dfa822c448ac78db92c1e94eeec149ed0215a3ca",
+  "prompts": {},
+  "sessions": {
+    "s_4d5b797e86e58c": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_e3f4dfbbcffeFSi6KjApznAJzd",
+        "model": "claude-opus-5.5"
+      },
+      "human_author": "sergiobpa <sergiobpa@ext.inditex.com>"
+    }
+  }
+}
