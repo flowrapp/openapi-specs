@@ -1,0 +1,16 @@
+openspec/changes/business-plans/design.md
+  h_a041df4244d543 44,52
+openspec/changes/business-plans/specs/business-plans/spec.md
+  h_a041df4244d543 32-39
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.6",
+  "base_commit_sha": "0e2d0b9ef90e2dce5bf0048c451ed08481c18811",
+  "prompts": {},
+  "humans": {
+    "h_a041df4244d543": {
+      "author": "sergiobpa <sergiobpa@ext.inditex.com>"
+    }
+  }
+}
