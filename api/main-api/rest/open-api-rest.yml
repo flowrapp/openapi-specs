@@ -31,7 +31,24 @@ info:
     | business and per-member auto-clocking and geofencing settings (read and write), updateBusinessWorklogSettings, updateAttendanceTolerance | CLOCKING_SETTINGS_MANAGE |
     | updateBusinessProfile, updateBusinessGeofence | BUSINESS_EDIT |
     | removeBusinessUser, access-role operations, updateBusinessUserAccessRole | OWNER |
-  version: 0.0.105
+
+    ## Business plans and features
+
+    Every business has a `plan` (`ESSENTIAL` or `PROFESSIONAL` today). The plan includes a set of
+    `BusinessFeature`s (configured in the backend); a platform admin may disable an included
+    feature for one business. `getUserBusinesses` returns the business `plan` and its effective
+    `features`, and `permissions` never holds a permission owned by an unavailable feature, even
+    for the OWNER. An operation owned by an unavailable feature fails with `403 1155`; this applies
+    to the operations of the feature's permissions (table above) and to the self-service operations
+    below. Everything else is core and available in every plan.
+
+    | Feature | Plans | Requires | Owns permissions | Self-service operations |
+    |---|---|---|---|---|
+    | SCHEDULING | PROFESSIONAL | — | SCHEDULE_VIEW, SCHEDULE_MANAGE, SHIFT_CHANGES_APPROVE | getCurrentUserScheduledShifts, getBusinessTeamSchedule, every shift exchange and schedule change operation |
+    | ATTENDANCE | PROFESSIONAL | SCHEDULING | ATTENDANCE_VIEW, ATTENDANCE_MANAGE | getAttendanceMatch, getDailyAttendance (any scope), justifyAttendanceIncident, getCurrentUserAttendanceIncidents, getCurrentUserAttendanceIncidentGroups, getCurrentUserAttendanceIncidentGroup, justifyCurrentUserAttendanceIncidentGroup, updateAttendanceTolerance |
+
+    `updateBusinessPlan` (platform admin) changes the plan and emits a `PERMISSIONS` sync signal.
+  version: 0.0.106
   contact:
     name: Flowrapp Team
     url: https://flowrapp.github.io
@@ -136,6 +153,8 @@ paths:
     $ref: "v1/services/auth/auth-operations.yml#/auth/google"
   "/api/v1/admin/register":
     $ref: "v1/services/admin/admin-operations.yml#/admin/register"
+  "/api/v1/admin/businesses/{businessId}/plan":
+    $ref: "v1/services/admin/admin-operations.yml#/admin/business-plan"
   "/api/v1/businesses":
     $ref: "v1/services/business/businesses-operations.yml#/businesses/get-bu\
       sinesses"

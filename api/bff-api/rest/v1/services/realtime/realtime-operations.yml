@@ -9,7 +9,8 @@ realtime:
         and never contain business data. Owner-scoped signals reach subscribers holding the view permission
         of a signal topic (`WORKLOGS`→`WORKLOGS_VIEW`, `ATTENDANCE`→`ATTENDANCE_VIEW`, `SCHEDULE`→`SCHEDULE_VIEW`,
         `SHIFT_CHANGES`→`SHIFT_CHANGES_APPROVE`, `REPORTS`→`REPORTS_VIEW`). `PERMISSIONS` reaches every member
-        when an access role or assignment of the business changes: refetch the businesses (permissions). The
+        when an access role or assignment of the business, or the business plan, changes: refetch the
+        businesses (permissions and features). The
         first event is `ready` with a `SyncReadyEvent` payload
         (`{"businessId": 101}`); subsequent `sync` events use `SyncEvent` and tell the app which REST
         data to refresh. Clients MUST ignore unknown `SyncTopic` values.

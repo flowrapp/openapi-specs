@@ -19,7 +19,7 @@ admin:
         '201':
           description: User registered successfully
         '400':
-          description: Invalid timezone in request
+          description: Invalid timezone or unknown plan in request
           content:
             application/problem+json:
               schema:
@@ -30,6 +30,11 @@ admin:
                   value:
                     status: 400
                     detail: "1021 - zone id not found"
+                BUSINESS_PLAN_UNKNOWN:
+                  summary: "1156 - business plan is unknown"
+                  value:
+                    status: 400
+                    detail: "1156 - business plan is unknown"
         '409':
           description: Username already exists
           content:
@@ -58,3 +63,64 @@ admin:
         - 1001
         - 1002
         - 1021
+        - 1156
+  business-plan:
+    put:
+      summary: Change the plan of a business
+      description: >
+        Platform admin operation. Sets the commercial plan of a business. Features disabled for the
+        business stay disabled; data of features that become unavailable is kept. Emits a
+        `PERMISSIONS` sync signal to the business members.
+      tags:
+        - Admin
+      operationId: updateBusinessPlan
+      security:
+        - basicAuth: []
+      parameters:
+        - name: businessId
+          in: path
+          required: true
+          description: Business identifier
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '../../components/admin/components.yml#/components/schemas/BusinessPlanUpdateRequestDTO'
+      responses:
+        '204':
+          description: Plan updated
+        '400':
+          description: Unknown plan
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+              examples:
+                BUSINESS_PLAN_UNKNOWN:
+                  summary: "1156 - business plan is unknown"
+                  value:
+                    status: 400
+                    detail: "1156 - business plan is unknown"
+        '401':
+          description: Not authenticated
+        '403':
+          description: Caller is not a platform admin
+        '404':
+          description: Business not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+              examples:
+                BUSINESS_NOT_FOUND:
+                  summary: "1006 - business does not exist"
+                  value:
+                    status: 404
+                    detail: "1006 - business does not exist"
+      x-functional-errors:
+        - 1006
+        - 1156

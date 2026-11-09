@@ -33,7 +33,22 @@ info:
     | updateManagerBusinessProfile, updateManagerBusinessGeofence | BUSINESS_EDIT |
     | removeBusinessMember, getAccessRoles, createAccessRole, replaceAccessRole, deleteAccessRole, updateMemberAccessRole | OWNER |
     | worker, me and team-schedule operations | membership only |
-  version: 0.0.95
+
+    ## Business plans and features
+
+    `getWorkerBusinesses` returns the business `plan` and its effective `features` (Main API
+    `getUserBusinesses`, forwarded unchanged); `permissions` never holds a permission owned by an
+    unavailable feature. An operation owned by an unavailable feature fails with `403 1155`: the BFF
+    rejects early when the permission it requires belongs to an unavailable feature, and on the
+    self-service operations below. Aggregated responses (dashboard, clock view, history, member
+    profile) omit data of an unavailable feature exactly as they omit data the caller lacks the
+    permission for.
+
+    | Feature | Operations |
+    |---|---|
+    | SCHEDULING | operations requiring SCHEDULE_VIEW, SCHEDULE_MANAGE or SHIFT_CHANGES_APPROVE; getWorkerTeamSchedule; every shift exchange and schedule change operation |
+    | ATTENDANCE | every Attendance operation; getWorkerAttendanceIncidents, getWorkerAttendanceMatch, getWorkerAttendanceIncidentGroups, getWorkerAttendanceIncidentGroup, justifyWorkerAttendanceIncidentGroup |
+  version: 0.0.96
   contact:
     name: Flowrapp Team
     url: https://flowrapp.github.io

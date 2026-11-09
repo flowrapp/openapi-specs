@@ -180,6 +180,8 @@ businesses:
                     userRole: "OWNER"
                     permissions: [TEAM_VIEW, TEAM_INVITE, CONTRACTS_MANAGE, WORKLOGS_VIEW, WORKLOGS_MANAGE, ATTENDANCE_VIEW, ATTENDANCE_MANAGE, SCHEDULE_VIEW, SCHEDULE_MANAGE, SHIFT_CHANGES_APPROVE, REPORTS_VIEW, REPORTS_EXPORT, CLOCKING_SETTINGS_MANAGE, BUSINESS_EDIT]
                     accessRole: null
+                    plan: PROFESSIONAL
+                    features: [SCHEDULING, ATTENDANCE]
                     longOpenAfterMinutes: 720
                     attendanceToleranceMinutes: 5
                   - id: 102
@@ -196,8 +198,10 @@ businesses:
                       longitude: 51.2
                       area: 3.2
                     userRole: "EMPLOYEE"
-                    permissions: [TEAM_VIEW, WORKLOGS_VIEW, ATTENDANCE_VIEW, REPORTS_VIEW]
+                    permissions: [TEAM_VIEW, WORKLOGS_VIEW, REPORTS_VIEW]
                     accessRole: {id: 7, name: Encargado}
+                    plan: ESSENTIAL
+                    features: []
                     longOpenAfterMinutes: 720
                     attendanceToleranceMinutes: 5
         '401':

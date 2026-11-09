@@ -64,6 +64,23 @@ components:
             - $ref: '../members/components.yml#/components/schemas/AccessRoleSummaryDTO'
             - type: 'null'
           description: Access role of the current user, or null
+        plan:
+          type: string
+          minLength: 1
+          description: >
+            Commercial plan of the business (Main API `getUserBusinesses`, forwarded unchanged). Open
+            value set: `ESSENTIAL` and `PROFESSIONAL` today.
+          example: PROFESSIONAL
+        features:
+          type: array
+          uniqueItems: true
+          description: >
+            Effective features of the business (Main API `getUserBusinesses`, forwarded unchanged). The
+            app shows a feature's screens, including worker ones, only when it is listed here, and
+            gates management actions on `permissions` as well.
+          items:
+            $ref: '../members/components.yml#/components/schemas/BusinessFeature'
+          example: [SCHEDULING, ATTENDANCE]
         attendanceToleranceMinutes:
           type: integer
           format: int32
@@ -88,6 +105,8 @@ components:
         - location
         - userRole
         - permissions
+        - plan
+        - features
         - accessRole
         - attendanceToleranceMinutes
 

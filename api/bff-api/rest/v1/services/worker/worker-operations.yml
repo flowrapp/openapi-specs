@@ -46,6 +46,8 @@ worker:
                   userRole: "EMPLOYEE"
                   permissions: []
                   accessRole: null
+                  plan: PROFESSIONAL
+                  features: [SCHEDULING, ATTENDANCE]
                   attendanceToleranceMinutes: 5
         '401':
           description: Unauthorized

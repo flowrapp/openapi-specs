@@ -679,6 +679,18 @@ components:
         - BUSINESS_EDIT
       example: TEAM_VIEW
 
+    BusinessFeature:
+      type: string
+      description: >
+        Optional product module of a business, same catalog as the Main API `BusinessFeature`.
+        SCHEDULING owns SCHEDULE_VIEW, SCHEDULE_MANAGE and SHIFT_CHANGES_APPROVE. ATTENDANCE requires
+        SCHEDULING and owns ATTENDANCE_VIEW and ATTENDANCE_MANAGE. Every other permission is core.
+        Open enum for clients: ignore unknown values.
+      enum:
+        - SCHEDULING
+        - ATTENDANCE
+      example: SCHEDULING
+
     AccessRoleSummaryDTO:
       type: object
       description: Identity of an access role

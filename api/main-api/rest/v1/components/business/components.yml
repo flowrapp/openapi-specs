@@ -106,6 +106,23 @@ components:
             - $ref: '#/components/schemas/BusinessAccessRoleSummaryDTO'
             - type: 'null'
           description: Access role of the current user, or null for an OWNER or an EMPLOYEE without one
+        plan:
+          type: string
+          minLength: 1
+          description: >
+            Commercial plan of the business. Open value set for clients (`ESSENTIAL` and
+            `PROFESSIONAL` today); new plans are added by backend configuration.
+          example: PROFESSIONAL
+        features:
+          type: array
+          description: >
+            Effective features of the business: the features of its plan that are not disabled
+            for it and whose requirements are available. `permissions` never holds a permission
+            owned by a feature missing here.
+          uniqueItems: true
+          items:
+            $ref: '#/components/schemas/BusinessFeature'
+          example: [SCHEDULING, ATTENDANCE]
         longOpenAfterMinutes:
           type: integer
           format: int32
@@ -134,6 +151,8 @@ components:
         - userRole
         - permissions
         - accessRole
+        - plan
+        - features
         - longOpenAfterMinutes
         - attendanceToleranceMinutes
 
@@ -400,6 +419,19 @@ components:
         - CLOCKING_SETTINGS_MANAGE
         - BUSINESS_EDIT
       example: TEAM_VIEW
+
+    BusinessFeature:
+      type: string
+      description: >
+        Optional product module of a business. Available when the business plan includes it, it is
+        not disabled for the business and its requirements are available. SCHEDULING owns
+        SCHEDULE_VIEW, SCHEDULE_MANAGE and SHIFT_CHANGES_APPROVE. ATTENDANCE requires SCHEDULING and
+        owns ATTENDANCE_VIEW and ATTENDANCE_MANAGE. Every other permission is core and available in
+        every plan. The operations each feature gates are listed in the API description.
+      enum:
+        - SCHEDULING
+        - ATTENDANCE
+      example: SCHEDULING
 
     BusinessAccessRoleSummaryDTO:
       type: object

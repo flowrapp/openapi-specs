@@ -85,6 +85,11 @@ components:
           type: string
           description: IANA time zone identifier for the business (e.g., America/Caracas)
           example: America/Caracas
+        plan:
+          type: string
+          minLength: 1
+          description: Commercial plan of the business. Defaults to `ESSENTIAL`; an unknown plan fails with 1156.
+          example: ESSENTIAL
       required:
         - name
         - nif
@@ -95,6 +100,18 @@ components:
         - country
         - postalCode
         - zone
+    BusinessPlanUpdateRequestDTO:
+      type: object
+      description: New commercial plan of a business
+      additionalProperties: false
+      properties:
+        plan:
+          type: string
+          minLength: 1
+          description: Configured plan (`ESSENTIAL` or `PROFESSIONAL` today)
+          example: PROFESSIONAL
+      required:
+        - plan
     LocationDTO:
       type: object
       description: Business geofence center and radius in meters
