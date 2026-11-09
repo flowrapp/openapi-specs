@@ -30,7 +30,7 @@ Main `0.0.102` / BFF `0.0.92`. Business authorization today: `BusinessRoleServic
 | `CONTRACTS_MANAGE` | `TEAM_VIEW` | Create, update, delete contracts |
 | `WORKLOGS_VIEW` | `TEAM_VIEW` | Business worklogs, any worker's worklog history, manager history day/week/month |
 | `WORKLOGS_MANAGE` | `WORKLOGS_VIEW` | Approve, reject, correct business worklogs and breaks, void breaks, manager worklog update |
-| `ATTENDANCE_VIEW` | `WORKLOGS_VIEW` | Daily attendance of everyone, shift attendance, business attendance match, BFF Asistencia reads and badge |
+| `ATTENDANCE_VIEW` | `WORKLOGS_VIEW`, `SCHEDULE_VIEW`, `REPORTS_VIEW` | Daily attendance of everyone, shift attendance, business attendance match, BFF Asistencia reads and badge |
 | `ATTENDANCE_MANAGE` | `ATTENDANCE_VIEW`, `WORKLOGS_MANAGE` | Resolve match, accept unplanned, approve shift attendance, acknowledge no-show, notify clock-in, BFF Asistencia actions |
 | `SCHEDULE_VIEW` | `TEAM_VIEW` | Recurring schedules, schedule exceptions (closed days), shifts catalog, plannings incl. drafts, generation settings/runs/input, coverage |
 | `SCHEDULE_MANAGE` | `SCHEDULE_VIEW` | Every write on the above plus job-role catalog writes and publish |
@@ -77,7 +77,7 @@ BFF operations require the permission of the Main operations they call; the BFF 
 - BFF: pass-through `getAccessRoles`, `createAccessRole`, `replaceAccessRole`, `deleteAccessRole` at `/api/v1/businesses/{businessId}/access-roles[/{accessRoleId}]` and `updateMemberAccessRole` at `/api/v1/businesses/{businessId}/members/{userId}/access-role` (tag Members).
 - DTOs: `BusinessPermission` enum, `BusinessAccessRoleDTO {id, name, permissions, memberCount}`, `BusinessAccessRoleRequestDTO {name, permissions}`, `BusinessAccessRoleSummaryDTO {id, name}`, `BusinessUserAccessRoleRequestDTO {accessRoleId}`.
 - `BusinessResponseDTO` / `WorkerBusinessResponseDTO`: `permissions` (required, effective) and `accessRole` (nullable summary). `BusinessUserResponseDTO`: `accessRole`.
-- `MemberProfileDTO`: requires `TEAM_VIEW`; adds `accessRole`; `liveStatus` and `week` are `null` without `WORKLOGS_VIEW`, `today` is `null` without `ATTENDANCE_VIEW`, `clockInRules` is `null` without `CLOCKING_SETTINGS_MANAGE`. The BFF decides from the caller's permissions and does not call Main for those blocks. `actions.canChangeAccessRole` (caller OWNER and target EMPLOYEE). `removeBlockedReason` gains `CALLER_NOT_OWNER`.
+- `MemberProfileDTO`: requires `TEAM_VIEW`; adds `accessRole`; `liveStatus` is `null` without `WORKLOGS_VIEW`, `week` without `WORKLOGS_VIEW` or `REPORTS_VIEW`, `today` is `null` without `ATTENDANCE_VIEW`, `clockInRules` is `null` without `CLOCKING_SETTINGS_MANAGE`. The BFF decides from the caller's permissions and does not call Main for those blocks. `actions.canChangeAccessRole` (caller OWNER and target EMPLOYEE). `removeBlockedReason` gains `CALLER_NOT_OWNER`.
 
 ### Realtime
 - `SyncTopic.PERMISSIONS`: emitted with audience MEMBERS of the business when an access role is created, replaced, deleted or assigned. Clients refetch their businesses.
@@ -88,3 +88,7 @@ BFF operations require the permission of the Main operations they call; the BFF 
 - Operation descriptions still say "owner" or "owner or manager" in many places; the root table is authoritative. Rewriting every description was rejected as churn.
 - App caches permissions; between an edit and the `PERMISSIONS` signal the app may show an action that Main rejects with 403. The app must handle 403 gracefully.
 - Removing `MANAGER` from enums is breaking for generated clients; all consumers adopt `v1.0.7` together.
+
+## Revisions
+
+- `v1.0.8` (Main `0.0.104`, BFF `0.0.94`): `ATTENDANCE_VIEW` also implies `SCHEDULE_VIEW` and `REPORTS_VIEW`, because the BFF attendance screens (Day, Week, Hours) read the planning input, schedule and reports. The member profile `week` block is null without `REPORTS_VIEW` as well. Description-only change; no schema shape changes.

@@ -5,7 +5,7 @@ Main and BFF specs SHALL define a closed `BusinessPermission` enum with exactly 
 
 #### Scenario: Implied permissions are stored
 - **WHEN** an access role is saved with `ATTENDANCE_MANAGE` only
-- **THEN** the returned role contains `ATTENDANCE_MANAGE`, `ATTENDANCE_VIEW`, `WORKLOGS_MANAGE`, `WORKLOGS_VIEW` and `TEAM_VIEW`
+- **THEN** the returned role contains `ATTENDANCE_MANAGE`, `ATTENDANCE_VIEW`, `WORKLOGS_MANAGE`, `WORKLOGS_VIEW`, `SCHEDULE_VIEW`, `REPORTS_VIEW` and `TEAM_VIEW`
 
 ### Requirement: Membership roles without MANAGER
 Every business membership role enum in Main and BFF SHALL be `[OWNER, EMPLOYEE]`.

@@ -33,7 +33,7 @@ info:
     | updateManagerBusinessProfile, updateManagerBusinessGeofence | BUSINESS_EDIT |
     | removeBusinessMember, getAccessRoles, createAccessRole, replaceAccessRole, deleteAccessRole, updateMemberAccessRole | OWNER |
     | worker, me and team-schedule operations | membership only |
-  version: 0.0.93
+  version: 0.0.94
   contact:
     name: Flowrapp Team
     url: https://flowrapp.github.io

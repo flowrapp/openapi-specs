@@ -380,7 +380,7 @@ components:
         Business permission. Implications are closed when an access role is saved:
         TEAM_INVITE, CONTRACTS_MANAGE, WORKLOGS_VIEW, SCHEDULE_VIEW, REPORTS_VIEW and
         CLOCKING_SETTINGS_MANAGE imply TEAM_VIEW; WORKLOGS_MANAGE implies WORKLOGS_VIEW;
-        ATTENDANCE_VIEW implies WORKLOGS_VIEW; ATTENDANCE_MANAGE implies ATTENDANCE_VIEW and
+        ATTENDANCE_VIEW implies WORKLOGS_VIEW, SCHEDULE_VIEW and REPORTS_VIEW; ATTENDANCE_MANAGE implies ATTENDANCE_VIEW and
         WORKLOGS_MANAGE; SCHEDULE_MANAGE and SHIFT_CHANGES_APPROVE imply SCHEDULE_VIEW;
         REPORTS_EXPORT implies REPORTS_VIEW. The operation each permission unlocks is listed in
         the API description.

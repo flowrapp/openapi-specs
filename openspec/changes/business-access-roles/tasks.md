@@ -18,3 +18,7 @@
 
 - [ ] 3.1 `node scripts/validate-error-codes.js`, `redocly lint` both specs (no new errors)
 - [ ] 3.2 Bump Main `0.0.103`, BFF `0.0.93`; commit to `main`; tag `v1.0.7`; push
+
+## 4. Revision v1.0.8
+
+- [x] 4.1 `ATTENDANCE_VIEW` implies `SCHEDULE_VIEW` and `REPORTS_VIEW`; profile `week` needs `REPORTS_VIEW`; bump Main `0.0.104`, BFF `0.0.94`; tag `v1.0.8`

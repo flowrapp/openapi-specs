@@ -177,7 +177,7 @@ components:
           oneOf:
             - $ref: "#/components/schemas/MemberWeekHoursDTO"
             - type: "null"
-          description: Null when the caller lacks `WORKLOGS_VIEW`; the BFF then skips its Main API calls.
+          description: Null when the caller lacks `WORKLOGS_VIEW` or `REPORTS_VIEW`; the BFF then skips its Main API calls.
         today:
           type: [array, "null"]
           example: []
@@ -660,7 +660,8 @@ components:
       type: string
       description: >
         Business permission, same catalog as the Main API `BusinessPermission`. Implications are
-        closed by the Main API when an access role is saved. Open enum for clients: ignore unknown values.
+        closed by the Main API when an access role is saved (ATTENDANCE_VIEW also implies SCHEDULE_VIEW
+        and REPORTS_VIEW: the attendance screens compare the schedule with the worked hours). Open enum for clients: ignore unknown values.
       enum:
         - TEAM_VIEW
         - TEAM_INVITE
