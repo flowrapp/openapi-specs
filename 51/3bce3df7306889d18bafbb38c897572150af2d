@@ -1,0 +1,68 @@
+api/bff-api/rest/open-api-rest.yml
+  h_a041df4244d543 5,10-36,76-78,208-213
+api/bff-api/rest/v1/components/manager/components.yml
+  h_a041df4244d543 627,883,911
+api/bff-api/rest/v1/components/members/components.yml
+  h_a041df4244d543 51,112-113,146,166-170,172-175,177-180,182,185,194-197,204,629-631,653-753
+api/bff-api/rest/v1/components/realtime/components.yml
+  h_a041df4244d543 37
+api/bff-api/rest/v1/components/settings/components.yml
+  h_a041df4244d543 55,82,127,152
+api/bff-api/rest/v1/components/user/components.yml
+  h_a041df4244d543 74
+api/bff-api/rest/v1/components/worker/components.yml
+  h_a041df4244d543 50,52-66,90-91
+api/bff-api/rest/v1/services/manager/manager-operations.yml
+  h_a041df4244d543 354,384
+api/bff-api/rest/v1/services/members/access-roles-operations.yml
+  h_a041df4244d543 1-412
+api/bff-api/rest/v1/services/members/members-operations.yml
+  h_a041df4244d543 222,394,458,467,534
+api/bff-api/rest/v1/services/realtime/realtime-operations.yml
+  h_a041df4244d543 8-13
+api/bff-api/rest/v1/services/settings/settings-operations.yml
+  h_a041df4244d543 11,82,140,229,449
+api/bff-api/rest/v1/services/worker/worker-operations.yml
+  h_a041df4244d543 47-48
+api/main-api/rest/open-api-rest.yml
+  h_a041df4244d543 5-34,170-175
+api/main-api/rest/v1/components/business/components.yml
+  h_a041df4244d543 92,94-108,135-136,254,266-271,328,376-483
+api/main-api/rest/v1/components/common/error-components.yml
+  h_a041df4244d543 192-195,209,354-357
+api/main-api/rest/v1/components/invitations/components.yml
+  h_a041df4244d543 37,71-72
+api/main-api/rest/v1/components/settings/components.yml
+  h_a041df4244d543 55,82,129,154
+api/main-api/rest/v1/services/business/access-roles-operations.yml
+  h_a041df4244d543 1-407
+api/main-api/rest/v1/services/business/businesses-operations.yml
+  h_a041df4244d543 181-182,198-200,235,272,291-292,299,520
+api/main-api/rest/v1/services/invitations/invitations-operations.yml
+  h_a041df4244d543 221,235,325,502,603
+api/main-api/rest/v1/services/scheduling/scheduling-operations.yml
+  h_a041df4244d543 1045
+api/main-api/rest/v1/services/settings/settings-operations.yml
+  h_a041df4244d543 10,68,156,378
+openspec/changes/business-access-roles/design.md
+  h_a041df4244d543 1-90
+openspec/changes/business-access-roles/proposal.md
+  h_a041df4244d543 1-28
+openspec/changes/business-access-roles/specs/business-access-roles/spec.md
+  h_a041df4244d543 1-93
+openspec/changes/business-access-roles/tasks.md
+  h_a041df4244d543 1-20
+scripts/validate-auto-clocking-contract.js
+  h_a041df4244d543 190,232
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.6",
+  "base_commit_sha": "513bce3df7306889d18bafbb38c897572150af2d",
+  "prompts": {},
+  "humans": {
+    "h_a041df4244d543": {
+      "author": "sergiobpa <sergiobpa@ext.inditex.com>"
+    }
+  }
+}
