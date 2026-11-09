@@ -41,7 +41,7 @@ permissions = role permissions − permissions owned by features not in `feature
 Job-role writes require `SCHEDULE_MANAGE` and therefore `SCHEDULING`; the job-role catalog read stays `TEAM_VIEW` (core).
 
 ### Errors
-- `1155 BUSINESS_FEATURE_UNAVAILABLE` (403), message `business feature <FEATURE> is not available`. Returned when the caller's access role grants the permission but its feature is unavailable, and by self-service operations of an unavailable feature. A caller lacking the permission for another reason still gets `1020`. Membership and contract checks keep running first (`1015`/`1020`/`1104` unchanged).
+- `1155 BUSINESS_FEATURE_UNAVAILABLE` (403), message `business feature <FEATURE> is not available`. After membership and contract checks, an unavailable feature takes precedence over its permission: `1155` is returned even if the caller's role also lacks that permission. When the feature is available, a caller lacking the permission gets `1020`. Self-service operations of an unavailable feature also return `1155`.
 - `1156 BUSINESS_PLAN_UNKNOWN` (400), message `business plan is unknown`.
 
 ### Endpoints and schemas
@@ -49,7 +49,7 @@ Job-role writes require `SCHEDULE_MANAGE` and therefore `SCHEDULING`; the job-ro
 - `BusinessResponseDTO` (Main) and `WorkerBusinessResponseDTO` (BFF): required `plan` (string) and `features` (effective, `BusinessFeature[]`).
 - Main `PUT /api/v1/admin/businesses/{businessId}/plan` (`updateBusinessPlan`, tag Admin, basic auth, `ADMIN` authority), body `BusinessPlanUpdateRequestDTO {plan}`, 204; `400 1156`, `404 1006`.
 - Main admin `BusinessDTO` (registerUser): optional `plan`, default `ESSENTIAL`; unknown → `400 1156`.
-- BFF: no new operation. It rejects early with `1155` when the required permission belongs to an unavailable feature (mapping in the `BusinessFeature` description), and its aggregated responses omit data of an unavailable feature exactly as they do for a missing permission.
+- BFF: no new operation. It rejects early with `1155` when the required permission belongs to an unavailable feature (mapping in the `BusinessFeature` description), and its aggregated responses omit data of an unavailable feature exactly as they do for a missing permission. An opaque, unscoped match ID must be resolved by Main first to preserve the same 404 for nonexistent, foreign and no-longer-accessible matches.
 
 ### Realtime
 `updateBusinessPlan` emits `SyncTopic.PERMISSIONS` with audience MEMBERS; clients refetch their businesses. Database edits of business features emit nothing: Main and the BFF enforce on the next request; the app learns on its next businesses fetch (stream reconnect at most every 30 min, or a `1155` response).

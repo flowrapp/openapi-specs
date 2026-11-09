@@ -29,6 +29,14 @@ An operation owned by a feature that is unavailable for the business SHALL fail 
 - **WHEN** the OWNER of an `ESSENTIAL` business calls `publishPlanning`
 - **THEN** 403 `1155`
 
+#### Scenario: Permission and feature are both unavailable
+- **WHEN** an active EMPLOYEE without `SCHEDULE_MANAGE` calls `publishPlanning` in an `ESSENTIAL` business
+- **THEN** 403 `1155` in both Main and BFF
+
+#### Scenario: Feature available but permission missing
+- **WHEN** an active EMPLOYEE without `SCHEDULE_MANAGE` calls `publishPlanning` in a `PROFESSIONAL` business
+- **THEN** 403 `1020`
+
 #### Scenario: Self-service operation
 - **WHEN** an EMPLOYEE of an `ESSENTIAL` business calls `getBusinessTeamSchedule` or `getWorkerTeamSchedule`
 - **THEN** 403 `1155`
