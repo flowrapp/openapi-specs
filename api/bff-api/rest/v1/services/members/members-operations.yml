@@ -104,7 +104,8 @@ members:
         combinable with `q`, `limit`, and `cursor` (AND). Preview of who holds a role uses
         the same call with a small `limit` (for example 3); "Ver en Equipo" uses the same
         filter, optionally with `q`, and cursor pagination. The job role must belong to the
-        business (active or archived); otherwise Main 404 1034 is propagated. No `total`
+        business (active or archived); otherwise Main 404 1034 is propagated. Optional
+        `accessRoleId` works the same way for access roles (Main 404 1151). No `total`
         field is added.
       tags:
         - Members
@@ -149,6 +150,20 @@ members:
             format: int64
             minimum: 1
             example: 11
+        - name: accessRoleId
+          in: query
+          required: false
+          description: >
+            Optional access role filter, forwarded to Main `getBusinessUsersV2` as
+            `accessRoleId`: only active members holding that access role. Combined with `q`
+            and `jobRoleId` (AND). The access role must belong to this business; otherwise
+            404 ACCESS_ROLE_NOT_FOUND (1151). «Quién lo tiene» of the role editor uses a small
+            `limit`; Equipo uses the same filter with cursor pages.
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+            example: 7
         - name: limit
           in: query
           required: false
@@ -169,8 +184,9 @@ members:
             Opaque keyset cursor from a previous page of
             `GET /api/v2/businesses/{businessId}/users`. Omit it to read the first page.
             Forward it unchanged. It is bound to this business, to the normalized query,
-            and to `jobRoleId` when the filter is used. A malformed cursor, or one reused
-            with a different q, `jobRoleId`, or businessId, returns 400 INVALID_SEARCH_CURSOR.
+            and to `jobRoleId` / `accessRoleId` when used. A malformed cursor, or one reused
+            with a different q, `jobRoleId`, `accessRoleId`, or businessId, returns 400
+            INVALID_SEARCH_CURSOR.
           schema:
             type: string
             minLength: 1
@@ -275,8 +291,9 @@ members:
                 detail: "1020 - user is not an owner or manager of the business"
         '404':
           description: >
-            Business not found (1006), or `jobRoleId` does not belong to this business
-            (1034 JOB_ROLE_NOT_FOUND, propagated from Main).
+            Business not found (1006), `jobRoleId` does not belong to this business
+            (1034 JOB_ROLE_NOT_FOUND), or `accessRoleId` does not belong to this business
+            (1151 ACCESS_ROLE_NOT_FOUND), propagated from Main.
           content:
             application/problem+json:
               schema:
@@ -292,7 +309,12 @@ members:
                   value:
                     status: 404
                     detail: "1034 - job role not found"
-      x-functional-errors: [1006, 1020, 1034, 1107, 1108, 1109, 1110]
+                accessRoleNotFound:
+                  summary: "1151 - access role not found"
+                  value:
+                    status: 404
+                    detail: "1151 - access role not found"
+      x-functional-errors: [1006, 1020, 1034, 1107, 1108, 1109, 1110, 1151]
 
   member-profile:
     get:

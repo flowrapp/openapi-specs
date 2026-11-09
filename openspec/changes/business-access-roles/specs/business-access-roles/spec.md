@@ -91,3 +91,14 @@ The BFF event stream SHALL emit topic `PERMISSIONS` to all members of a business
 #### Scenario: Manager receives worklog signal
 - **WHEN** a `WORKLOGS` signal for the business is published with audience `OWNERS`
 - **THEN** a subscriber holding `WORKLOGS_VIEW` receives it and one without it does not
+
+### Requirement: Members filtered by access role
+Main `getBusinessUsersV2` and BFF `searchBusinessMembers` SHALL accept an optional `accessRoleId` that keeps only active members holding that access role, combined with the other filters.
+
+#### Scenario: Holders of a role
+- **WHEN** the OWNER lists members with `accessRoleId=7`
+- **THEN** only members whose access role is 7 are returned, paginated like the unfiltered list
+
+#### Scenario: Role of another business
+- **WHEN** `accessRoleId` does not belong to the business
+- **THEN** 404 `1151`

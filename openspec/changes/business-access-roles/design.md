@@ -92,3 +92,4 @@ BFF operations require the permission of the Main operations they call; the BFF 
 ## Revisions
 
 - `v1.0.8` (Main `0.0.104`, BFF `0.0.94`): `ATTENDANCE_VIEW` also implies `SCHEDULE_VIEW` and `REPORTS_VIEW`, because the BFF attendance screens (Day, Week, Hours) read the planning input, schedule and reports. The member profile `week` block is null without `REPORTS_VIEW` as well. Description-only change; no schema shape changes.
+- `v1.0.9` (Main `0.0.105`, BFF `0.0.95`): optional `accessRoleId` filter on Main `getBusinessUsersV2` and BFF `searchBusinessMembers`, same rules as `jobRoleId` (AND with search, applied before the page limit, bound to the cursor, 404 `1151` for a role of another business). Powers «Quién lo tiene» in the role editor and Equipo filtered by role, as for job roles.
