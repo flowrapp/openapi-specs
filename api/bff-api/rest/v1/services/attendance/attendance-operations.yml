@@ -628,8 +628,10 @@ attendance:
 
         OWNER only. The BFF checks the role with `getUserBusinesses` before anything else; the Main API
         enforces it again (M7). Main API functional errors are propagated unchanged. The response is the
-        detail re-read after the action. Reconciliation is asynchronous: right after a correction or a
-        rejection the detail may show `reconciliationPending: true` and `accept.disabledReason:
+        detail re-read after the action. Management correction reconciliation completes synchronously
+        within the Main API correction request, and the refreshed BFF detail reflects it. After a
+        rejection, reconciliation is asynchronous: the detail may show `reconciliationPending: true`
+        and `accept.disabledReason:
         RECONCILIATION_PENDING`; refetch it shortly.
 
         Approves the whole shift: every non-rejected worklog and the non-structural incidents. Allowed only when `actions.accept.enabled`.
@@ -741,8 +743,9 @@ attendance:
 
         OWNER only. The BFF checks the role with `getUserBusinesses` before anything else; the Main API
         enforces it again (M7). Main API functional errors are propagated unchanged. The response is the
-        detail re-read after the action. Reconciliation is asynchronous: right after a correction or a
-        rejection the detail may show `reconciliationPending: true` and `accept.disabledReason:
+        detail re-read after the action. Management correction reconciliation completes synchronously within the Main API
+        correction request, and the refreshed BFF detail reflects it. After a rejection, reconciliation is
+        asynchronous: the detail may show `reconciliationPending: true` and `accept.disabledReason:
         RECONCILIATION_PENDING`; refetch it shortly.
 
         Main API calls, in sequence:
@@ -835,14 +838,25 @@ attendance:
 
         OWNER only. The BFF checks the role with `getUserBusinesses` before anything else; the Main API
         enforces it again (M7). Main API functional errors are propagated unchanged. The response is the
-        detail re-read after the action. Reconciliation is asynchronous: right after a correction or a
-        rejection the detail may show `reconciliationPending: true` and `accept.disabledReason:
+        detail re-read after the action. Management correction reconciliation completes synchronously within the Main API
+        correction request, and the refreshed BFF detail reflects it. After a rejection, reconciliation is
+        asynchronous: the detail may show `reconciliationPending: true` and `accept.disabledReason:
         RECONCILIATION_PENDING`; refetch it shortly.
+
+        Incidents no longer produced by the corrected data resolve as `CORRECTED`, or
+        `NO_LONGER_APPLICABLE` when that incident type does not admit `CORRECTED`;
+        `OUTSIDE_GEOFENCE` resolves as `CORRECTED`.
+        Remaining or newly produced temporal incidents (`EARLY_ENTRY`, `LATE_ENTRY`, `EARLY_EXIT`,
+        `LATE_EXIT`, `UNEXPLAINED_GAP`) resolve as `ACCEPTED` by the correcting owner with the
+        correction reason. No separate «accept» is needed when only temporal incidents remain;
+        «accept» is needed only if a structural incident or another unreviewed worklog of the shift
+        remains. `UNSCHEDULED_WORK`, `AMBIGUOUS_MATCH` and `NO_SHOW` remain open and block approval;
+        `AUTOMATIC_CLOSE` remains open and blocks approval if its clock-out was not corrected.
 
         Main API calls, in sequence:
         1. `getUserBusinesses` (role).
         2. Pre-read `getShiftAttendance` to check that `worklogId` is one of the shift's `worklogs` (otherwise 404 1017, without calling the action).
-        3. `correctBusinessWorklog` (`PUT /api/v1/businesses/{businessId}/worklogs/{worklogId}/correction`) with `clockIn`, `clockOut` and `reason`. The worklog is approved at once; reconciliation later records CORRECTED on its incidents. This is how an AUTOMATIC_CLOSE is resolved, together with the rejection; for that worklog (`provisionalClockOut: true`) `clockOut` is required (400 1025).
+        3. `correctBusinessWorklog` (`PUT /api/v1/businesses/{businessId}/worklogs/{worklogId}/correction`) with `clockIn`, `clockOut` and `reason`. The worklog is approved at once. For a worklog with `provisionalClockOut: true`, `clockOut` is required (400 1025).
         4. Re-read as in `getAttendanceShiftDetail`: `getShiftAttendance` (`GET /api/v1/businesses/{businessId}/scheduled-shifts/{scheduledShiftId}/attendance`),
              `getBusinessUsers` (`includeRemoved=true`, names of justification and change authors and of
              resolvers) and `getBusinessJobRoles`, in one `parZip`; then `getWorklogHistory`
@@ -949,8 +963,9 @@ attendance:
 
         OWNER only. The BFF checks the role with `getUserBusinesses` before anything else; the Main API
         enforces it again (M7). Main API functional errors are propagated unchanged. The response is the
-        detail re-read after the action. Reconciliation is asynchronous: right after a correction or a
-        rejection the detail may show `reconciliationPending: true` and `accept.disabledReason:
+        detail re-read after the action. Management correction reconciliation completes synchronously within the Main API
+        correction request, and the refreshed BFF detail reflects it. After a rejection, reconciliation is
+        asynchronous: the detail may show `reconciliationPending: true` and `accept.disabledReason:
         RECONCILIATION_PENDING`; refetch it shortly.
 
         Main API calls, in sequence:
@@ -1056,9 +1071,19 @@ attendance:
 
         OWNER only. The BFF checks the role with `getUserBusinesses` before anything else; the Main API
         enforces it again (M7). Main API functional errors are propagated unchanged. The response is the
-        detail re-read after the action. Reconciliation is asynchronous: right after a correction or a
-        rejection the detail may show `reconciliationPending: true` and `accept.disabledReason:
+        detail re-read after the action. Management correction reconciliation completes synchronously within the Main API
+        correction request, and the refreshed BFF detail reflects it. After a rejection, reconciliation is
+        asynchronous: the detail may show `reconciliationPending: true` and `accept.disabledReason:
         RECONCILIATION_PENDING`; refetch it shortly.
+
+        Incidents no longer produced by the corrected data resolve as `CORRECTED`, or `NO_LONGER_APPLICABLE` when
+        that incident type does not admit `CORRECTED`; `OUTSIDE_GEOFENCE` resolves as `CORRECTED`.
+        Remaining or newly produced temporal incidents (`EARLY_ENTRY`, `LATE_ENTRY`, `EARLY_EXIT`,
+        `LATE_EXIT`, `UNEXPLAINED_GAP`) resolve as `ACCEPTED` by the correcting owner with the
+        correction reason. No separate «accept» is needed when only temporal incidents remain;
+        «accept» is needed only if a structural incident or another unreviewed worklog of the shift
+        remains. `UNSCHEDULED_WORK`, `AMBIGUOUS_MATCH` and `NO_SHOW` remain open and block approval;
+        `AUTOMATIC_CLOSE` remains open and blocks approval if its clock-out was not corrected.
 
         Main API calls, in sequence:
         1. `getUserBusinesses` (role).
@@ -1171,9 +1196,19 @@ attendance:
 
         OWNER only. The BFF checks the role with `getUserBusinesses` before anything else; the Main API
         enforces it again (M7). Main API functional errors are propagated unchanged. The response is the
-        detail re-read after the action. Reconciliation is asynchronous: right after a correction or a
-        rejection the detail may show `reconciliationPending: true` and `accept.disabledReason:
+        detail re-read after the action. Management correction reconciliation completes synchronously within the Main API
+        correction request, and the refreshed BFF detail reflects it. After a rejection, reconciliation is
+        asynchronous: the detail may show `reconciliationPending: true` and `accept.disabledReason:
         RECONCILIATION_PENDING`; refetch it shortly.
+
+        Incidents no longer produced by the corrected data resolve as `CORRECTED`, or `NO_LONGER_APPLICABLE` when
+        that incident type does not admit `CORRECTED`; `OUTSIDE_GEOFENCE` resolves as `CORRECTED`.
+        Remaining or newly produced temporal incidents (`EARLY_ENTRY`, `LATE_ENTRY`, `EARLY_EXIT`,
+        `LATE_EXIT`, `UNEXPLAINED_GAP`) resolve as `ACCEPTED` by the correcting owner with the
+        correction reason. No separate «accept» is needed when only temporal incidents remain;
+        «accept» is needed only if a structural incident or another unreviewed worklog of the shift
+        remains. `UNSCHEDULED_WORK`, `AMBIGUOUS_MATCH` and `NO_SHOW` remain open and block approval;
+        `AUTOMATIC_CLOSE` remains open and blocks approval if its clock-out was not corrected.
 
         Main API calls, in sequence:
         1. `getUserBusinesses` (role).
@@ -1281,8 +1316,9 @@ attendance:
 
         OWNER only. The BFF checks the role with `getUserBusinesses` before anything else; the Main API
         enforces it again (M7). Main API functional errors are propagated unchanged. The response is the
-        detail re-read after the action. Reconciliation is asynchronous: right after a correction or a
-        rejection the detail may show `reconciliationPending: true` and `accept.disabledReason:
+        detail re-read after the action. Management correction reconciliation completes synchronously within the Main API
+        correction request, and the refreshed BFF detail reflects it. After a rejection, reconciliation is
+        asynchronous: the detail may show `reconciliationPending: true` and `accept.disabledReason:
         RECONCILIATION_PENDING`; refetch it shortly.
 
         Main API calls, in sequence:
@@ -1391,8 +1427,9 @@ attendance:
 
         OWNER only. The BFF checks the role with `getUserBusinesses` before anything else; the Main API
         enforces it again (M7). Main API functional errors are propagated unchanged. The response is the
-        detail re-read after the action. Reconciliation is asynchronous: right after a correction or a
-        rejection the detail may show `reconciliationPending: true` and `accept.disabledReason:
+        detail re-read after the action. Management correction reconciliation completes synchronously within the Main API
+        correction request, and the refreshed BFF detail reflects it. After a rejection, reconciliation is
+        asynchronous: the detail may show `reconciliationPending: true` and `accept.disabledReason:
         RECONCILIATION_PENDING`; refetch it shortly.
 
         Main API calls, in sequence:
@@ -1506,9 +1543,19 @@ attendance:
 
         OWNER only. The BFF checks the role with `getUserBusinesses` before anything else; the Main API
         enforces it again (M7). Main API functional errors are propagated unchanged. The response is the
-        detail re-read after the action. Reconciliation is asynchronous: right after a correction or a
-        rejection the detail may show `reconciliationPending: true` and `accept.disabledReason:
+        detail re-read after the action. Management correction reconciliation completes synchronously within the Main API
+        correction request, and the refreshed BFF detail reflects it. After a rejection, reconciliation is
+        asynchronous: the detail may show `reconciliationPending: true` and `accept.disabledReason:
         RECONCILIATION_PENDING`; refetch it shortly.
+
+        Incidents no longer produced by the corrected data resolve as `CORRECTED`, or `NO_LONGER_APPLICABLE` when
+        that incident type does not admit `CORRECTED`; `OUTSIDE_GEOFENCE` resolves as `CORRECTED`.
+        Remaining or newly produced temporal incidents (`EARLY_ENTRY`, `LATE_ENTRY`, `EARLY_EXIT`,
+        `LATE_EXIT`, `UNEXPLAINED_GAP`) resolve as `ACCEPTED` by the correcting owner with the
+        correction reason. No separate «accept» is needed when only temporal incidents remain;
+        «accept» is needed only if a structural incident or another unreviewed worklog of the shift
+        remains. `UNSCHEDULED_WORK`, `AMBIGUOUS_MATCH` and `NO_SHOW` remain open and block approval;
+        `AUTOMATIC_CLOSE` remains open and blocks approval if its clock-out was not corrected.
 
         Main API calls, in sequence:
         1. `getUserBusinesses` (role and business time zone).
@@ -1621,8 +1668,9 @@ attendance:
 
         OWNER only. The BFF checks the role with `getUserBusinesses` before anything else; the Main API
         enforces it again (M7). Main API functional errors are propagated unchanged. The response is the
-        detail re-read after the action. Reconciliation is asynchronous: right after a correction or a
-        rejection the detail may show `reconciliationPending: true` and `accept.disabledReason:
+        detail re-read after the action. Management correction reconciliation completes synchronously within the Main API
+        correction request, and the refreshed BFF detail reflects it. After a rejection, reconciliation is
+        asynchronous: the detail may show `reconciliationPending: true` and `accept.disabledReason:
         RECONCILIATION_PENDING`; refetch it shortly.
 
         Main API calls, in sequence:
@@ -1729,9 +1777,19 @@ attendance:
 
         OWNER only. The BFF checks the role with `getUserBusinesses` before anything else; the Main API
         enforces it again (M7). Main API functional errors are propagated unchanged. The response is the
-        detail re-read after the action. Reconciliation is asynchronous: right after a correction or a
-        rejection the detail may show `reconciliationPending: true` and `accept.disabledReason:
+        detail re-read after the action. Management correction reconciliation completes synchronously within the Main API
+        correction request, and the refreshed BFF detail reflects it. After a rejection, reconciliation is
+        asynchronous: the detail may show `reconciliationPending: true` and `accept.disabledReason:
         RECONCILIATION_PENDING`; refetch it shortly.
+
+        Incidents no longer produced by the corrected data resolve as `CORRECTED`, or `NO_LONGER_APPLICABLE` when
+        that incident type does not admit `CORRECTED`; `OUTSIDE_GEOFENCE` resolves as `CORRECTED`.
+        Remaining or newly produced temporal incidents (`EARLY_ENTRY`, `LATE_ENTRY`, `EARLY_EXIT`,
+        `LATE_EXIT`, `UNEXPLAINED_GAP`) resolve as `ACCEPTED` by the correcting owner with the
+        correction reason. No separate «accept» is needed when only temporal incidents remain;
+        «accept» is needed only if a structural incident or another unreviewed worklog of the shift
+        remains. `UNSCHEDULED_WORK`, `AMBIGUOUS_MATCH` and `NO_SHOW` remain open and block approval;
+        `AUTOMATIC_CLOSE` remains open and blocks approval if its clock-out was not corrected.
 
         Main API calls, in sequence:
         1. `getUserBusinesses` (role and business time zone).
@@ -1845,9 +1903,19 @@ attendance:
 
         OWNER only. The BFF checks the role with `getUserBusinesses` before anything else; the Main API
         enforces it again (M7). Main API functional errors are propagated unchanged. The response is the
-        detail re-read after the action. Reconciliation is asynchronous: right after a correction or a
-        rejection the detail may show `reconciliationPending: true` and `accept.disabledReason:
+        detail re-read after the action. Management correction reconciliation completes synchronously within the Main API
+        correction request, and the refreshed BFF detail reflects it. After a rejection, reconciliation is
+        asynchronous: the detail may show `reconciliationPending: true` and `accept.disabledReason:
         RECONCILIATION_PENDING`; refetch it shortly.
+
+        Incidents no longer produced by the corrected data resolve as `CORRECTED`, or `NO_LONGER_APPLICABLE` when
+        that incident type does not admit `CORRECTED`; `OUTSIDE_GEOFENCE` resolves as `CORRECTED`.
+        Remaining or newly produced temporal incidents (`EARLY_ENTRY`, `LATE_ENTRY`, `EARLY_EXIT`,
+        `LATE_EXIT`, `UNEXPLAINED_GAP`) resolve as `ACCEPTED` by the correcting owner with the
+        correction reason. No separate «accept» is needed when only temporal incidents remain;
+        «accept» is needed only if a structural incident or another unreviewed worklog of the shift
+        remains. `UNSCHEDULED_WORK`, `AMBIGUOUS_MATCH` and `NO_SHOW` remain open and block approval;
+        `AUTOMATIC_CLOSE` remains open and blocks approval if its clock-out was not corrected.
 
         Main API calls, in sequence:
         1. `getUserBusinesses` (role and business time zone).

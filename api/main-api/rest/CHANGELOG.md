@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.0.102 (local spec draft; not a release or repository tag)
+
+Description-only update for backend change `correction-accepts-remaining`: management worklog and break corrections reconcile attendance incidents synchronously, accepting remaining temporal deviations and leaving structural incidents open. No paths, schemas, enums or operationIds changed.
+
 ## 0.0.97 (local spec draft; not a release or repository tag)
 
 Spec only. No Main API implementation is included. Requires coordinated BFF 0.0.86. Java/codegen was omitted by Sergio's direct decision (t37u: «No hace falta que valides nada con Java») and is not a phase-1 delivery gate. Runtime/concurrency/database behavior remains unverified; persistence activation and release remain gated on compatible writer-lock adoption and an approved retention policy, as described in `docs/attendance-incident-groups.md`.

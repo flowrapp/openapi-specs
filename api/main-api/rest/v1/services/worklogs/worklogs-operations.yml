@@ -730,8 +730,16 @@ worklogs:
         Allows the owner of the route business to correct a worker worklog. A non-blank
         reason is required. Successful management corrections are approved immediately; changed
         punch origins become ADMIN while unchanged origins are preserved. This is the correction
-        route for attendance. The contract does not add a correction action on the incident.
-        Reconciliation may later record the incident resolution CORRECTED.
+        route for attendance. Incident reconciliation runs synchronously in this request. Incidents
+        no longer produced by the corrected data resolve as CORRECTED, or NO_LONGER_APPLICABLE when
+        that incident type does not admit CORRECTED; OUTSIDE_GEOFENCE resolves as CORRECTED.
+        Remaining or newly produced temporal incidents (EARLY_ENTRY, LATE_ENTRY, EARLY_EXIT,
+        LATE_EXIT, UNEXPLAINED_GAP) resolve as ACCEPTED by the correcting owner with this reason,
+        so the worklog remains APPROVED and needs no separate accept or approve call. Structural
+        incidents (UNSCHEDULED_WORK, AMBIGUOUS_MATCH, NO_SHOW) remain open and block approval;
+        AUTOMATIC_CLOSE remains open and blocks approval if its clock-out was not corrected.
+        The contract does not add a correction action on the incident. A worker's own correction
+        does not accept incidents.
         Only the OWNER of the business may call this operation; a MANAGER receives 403 (1020).
       tags:
         - Worklogs
@@ -869,8 +877,8 @@ worklogs:
         Allows the owner of the business to reject a worklog. A non-blank
         reason is required and the worklog remains retained for audit. This is the
         rejection route for attendance. The contract does not add a rejection action
-        on the incident. Reconciliation may later record the incident resolution
-        WORKLOG_REJECTED.
+        on the incident. After a rejection, reconciliation may later record the
+        incident resolution WORKLOG_REJECTED.
         Only the OWNER of the business may call this operation; a MANAGER receives 403 (1020).
       tags:
         - Worklogs
@@ -1368,7 +1376,18 @@ worklogs:
   management-break-correction:
     put:
       summary: Correct a business worklog break
-      description: Corrects a completed break in a closed worklog for the owner of the route business. A non-blank reason is required and the worklog remains APPROVED. Only the OWNER of the business may call this operation; a MANAGER receives 403 (1020).
+      description: >
+        Corrects a completed break in a closed worklog for the owner of the route business. A
+        non-blank reason is required and the worklog remains APPROVED. Incident reconciliation
+        runs synchronously in this request: incidents no longer produced by the corrected data
+        resolve as CORRECTED, or NO_LONGER_APPLICABLE when that incident type does not admit
+        CORRECTED; OUTSIDE_GEOFENCE resolves as CORRECTED. Remaining or newly produced temporal
+        incidents (EARLY_ENTRY, LATE_ENTRY, EARLY_EXIT, LATE_EXIT, UNEXPLAINED_GAP) resolve as
+        ACCEPTED by the correcting owner with this reason, so no separate accept or approve call is
+        needed. Structural incidents (UNSCHEDULED_WORK, AMBIGUOUS_MATCH, NO_SHOW) remain open and
+        block approval; AUTOMATIC_CLOSE remains open and blocks approval if its clock-out was not
+        corrected. Only the OWNER of the business may call this operation; a MANAGER receives 403
+        (1020).
       tags:
         - Worklogs
       operationId: correctBusinessWorklogBreak
@@ -1450,7 +1469,18 @@ worklogs:
   management-break-void:
     post:
       summary: Void a business worklog break
-      description: Voids a completed break in a closed worklog for the owner of the route business. A non-blank reason is required and the worklog remains APPROVED. Only the OWNER of the business may call this operation; a MANAGER receives 403 (1020).
+      description: >
+        Voids a completed break in a closed worklog for the owner of the route business. A
+        non-blank reason is required and the worklog remains APPROVED. Incident reconciliation
+        runs synchronously in this request: incidents no longer produced by the corrected data
+        resolve as CORRECTED, or NO_LONGER_APPLICABLE when that incident type does not admit
+        CORRECTED; OUTSIDE_GEOFENCE resolves as CORRECTED. Remaining or newly produced temporal
+        incidents (EARLY_ENTRY, LATE_ENTRY, EARLY_EXIT, LATE_EXIT, UNEXPLAINED_GAP) resolve as
+        ACCEPTED by the correcting owner with this reason, so no separate accept or approve call is
+        needed. Structural incidents (UNSCHEDULED_WORK, AMBIGUOUS_MATCH, NO_SHOW) remain open and
+        block approval; AUTOMATIC_CLOSE remains open and blocks approval if its clock-out was not
+        corrected. Only the OWNER of the business may call this operation; a MANAGER receives 403
+        (1020).
       tags:
         - Worklogs
       operationId: voidBusinessWorklogBreak

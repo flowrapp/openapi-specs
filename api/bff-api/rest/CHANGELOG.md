@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.0.92 (local spec draft; not a release or repository tag)
+
+Description-only update for backend change `correction-accepts-remaining`: management corrections synchronously reconcile incidents, and refreshed attendance detail reflects the result. No paths, schemas, enums or operationIds changed.
+
 ## 0.0.91 (local spec draft; not a release or repository tag)
 
 ### Added

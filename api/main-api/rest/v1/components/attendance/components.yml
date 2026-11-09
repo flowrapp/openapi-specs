@@ -217,7 +217,7 @@ components:
       description: |
         Type of attendance deviation or structural incident.
         AUTOMATIC_CLOSE: the worklog was closed automatically by the system after 24 hours without a clock-out. Its clock-out time is a placeholder and not valid: the worklog does not count in totals or reports until the owner corrects the clock-out or rejects the worklog. While this incident is open the worklog cannot be approved.
-        OUTSIDE_GEOFENCE: under the WARN geofencing policy, the clock-in or the clock-out of the worklog was recorded more than 25 m (GPS margin) outside the business area (`distanceMeters > areaMeters + 25`) or without a device location. Scope MATCH, at most one open per worklog, covering both its clock-in and its clock-out; the checks are in `evidence.geofenceChecks`. Only for a worklog whose match is MATCHED, UNSCHEDULED or AMBIGUOUS (the ones attendance shows): with a NOT_APPLICABLE match (no published planning that day) the check is recorded but no incident is opened, so the worklog is not left pending without a place to review it; if the worklog is later rematched to a planning, reconciliation opens it then. It is a normal review: it does not block approval, so accepting the shift attendance or approving the worklog accepts it, and a correction or a rejection of the worklog resolves it. Once a person resolves it, it is not reopened. ALLOW never opens it, and BLOCK rejects the clock action instead (403 1100), so neither leaves this incident.
+        OUTSIDE_GEOFENCE: under the WARN geofencing policy, the clock-in or the clock-out of the worklog was recorded more than 25 m (GPS margin) outside the business area (`distanceMeters > areaMeters + 25`) or without a device location. Scope MATCH, at most one open per worklog, covering both its clock-in and its clock-out; the checks are in `evidence.geofenceChecks`. Only for a worklog whose match is MATCHED, UNSCHEDULED or AMBIGUOUS (the ones attendance shows): with a NOT_APPLICABLE match (no published planning that day) the check is recorded but no incident is opened, so the worklog is not left pending without a place to review it; if the worklog is later rematched to a planning, reconciliation opens it then. It is a normal review: it does not block approval, so accepting the shift attendance or approving the worklog accepts it; a management correction resolves it as CORRECTED, and a rejection resolves it as WORKLOG_REJECTED. Once a person resolves it, it is not reopened. ALLOW never opens it, and BLOCK rejects the clock action instead (403 1100), so neither leaves this incident.
         New values may be added to this enum; clients must tolerate unknown values.
       enum: [EARLY_ENTRY, LATE_ENTRY, EARLY_EXIT, LATE_EXIT, UNEXPLAINED_GAP, UNSCHEDULED_WORK, AMBIGUOUS_MATCH, NO_SHOW, AUTOMATIC_CLOSE, OUTSIDE_GEOFENCE]
       example: LATE_ENTRY
@@ -232,11 +232,16 @@ components:
       type: string
       description: >
         Terminal resolution of an attendance incident. CORRECTED and
-        WORKLOG_REJECTED are not requested on the incident. They are produced
-        from the existing worklog routes
-        `PUT /api/v1/businesses/{businessId}/worklogs/{worklogId}/correction`
-        and `POST /api/v1/businesses/{businessId}/worklogs/{worklogId}/reject`.
-        This contract adds no correction or rejection action on the incident.
+        WORKLOG_REJECTED are not requested on the incident; they are produced
+        by the existing worklog correction and rejection routes. Management
+        correction reconciliation runs in the same request: incidents no longer
+        produced by the corrected data resolve as CORRECTED, or
+        NO_LONGER_APPLICABLE when that incident type does not admit CORRECTED.
+        Remaining temporal incidents (EARLY_ENTRY, LATE_ENTRY, EARLY_EXIT,
+        LATE_EXIT, UNEXPLAINED_GAP) resolve as ACCEPTED by the correcting owner
+        with the correction reason. OUTSIDE_GEOFENCE resolves as CORRECTED.
+        A worker's own correction does not accept incidents. This contract adds
+        no correction or rejection action on the incident.
       enum: [ACCEPTED, CORRECTED, REASSIGNED, WORKLOG_REJECTED, ACKNOWLEDGED, NO_LONGER_APPLICABLE]
       example: ACCEPTED
 

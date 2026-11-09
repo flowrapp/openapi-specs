@@ -1377,8 +1377,9 @@ components:
         reconciliationPending:
           type: boolean
           description: >
-            True while the Main API is still reconciling this attendance (after a clock-out or
-            a correction). Incidents may change shortly; refetch the detail.
+            True while the Main API is still reconciling this attendance (for example after a
+            clock-out). Management correction reconciliation is synchronous, so the refreshed
+            detail returned by a correction already reflects its incident changes.
           example: false
         clockInNotice:
           description: >
