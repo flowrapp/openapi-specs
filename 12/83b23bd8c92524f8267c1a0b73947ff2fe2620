@@ -1,0 +1,26 @@
+api/bff-api/rest/open-api-rest.yml
+  h_a041df4244d543 36
+api/bff-api/rest/v1/components/members/components.yml
+  h_a041df4244d543 180,663-664
+api/main-api/rest/open-api-rest.yml
+  h_a041df4244d543 34
+api/main-api/rest/v1/components/business/components.yml
+  h_a041df4244d543 383
+openspec/changes/business-access-roles/design.md
+  h_a041df4244d543 33,80,91-94
+openspec/changes/business-access-roles/specs/business-access-roles/spec.md
+  h_a041df4244d543 8
+openspec/changes/business-access-roles/tasks.md
+  h_a041df4244d543 21-24
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.6",
+  "base_commit_sha": "1283b23bd8c92524f8267c1a0b73947ff2fe2620",
+  "prompts": {},
+  "humans": {
+    "h_a041df4244d543": {
+      "author": "sergiobpa <sergiobpa@ext.inditex.com>"
+    }
+  }
+}
