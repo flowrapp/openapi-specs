@@ -1,0 +1,14 @@
+openspec/specs/attendance-correction/spec.md
+  h_a041df4244d543 1-20
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.6",
+  "base_commit_sha": "010e35be6ef199e6caa718a8a703055e8bddb5b7",
+  "prompts": {},
+  "humans": {
+    "h_a041df4244d543": {
+      "author": "sergiobpa <sergiobpa@ext.inditex.com>"
+    }
+  }
+}
