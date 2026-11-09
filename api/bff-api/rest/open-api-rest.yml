@@ -10,8 +10,8 @@ info:
 
     ## Business authorization
 
-    A membership is `OWNER` or `EMPLOYEE`. The OWNER holds every permission; an EMPLOYEE holds the
-    permissions of its access role (see `getWorkerBusinesses.permissions`). The BFF requires the
+    A membership is `OWNER` or `EMPLOYEE`. The OWNER holds every permission of the effective business
+    features; an EMPLOYEE holds those of its access role (see `getWorkerBusinesses.permissions`). The BFF requires the
     permission of the Main API operations it calls and rejects early with `403 1020`. This table is
     authoritative over older "owner only" / "owner or manager" wording in operation descriptions.
 
@@ -48,7 +48,7 @@ info:
     |---|---|
     | SCHEDULING | operations requiring SCHEDULE_VIEW, SCHEDULE_MANAGE or SHIFT_CHANGES_APPROVE; getWorkerTeamSchedule; every shift exchange and schedule change operation |
     | ATTENDANCE | every Attendance operation; getWorkerAttendanceIncidents, getWorkerAttendanceMatch, getWorkerAttendanceIncidentGroups, getWorkerAttendanceIncidentGroup, justifyWorkerAttendanceIncidentGroup |
-  version: 0.0.96
+  version: 0.0.97
   contact:
     name: Flowrapp Team
     url: https://flowrapp.github.io

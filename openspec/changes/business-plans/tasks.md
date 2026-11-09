@@ -15,3 +15,8 @@
 
 - [x] 3.1 `node scripts/validate-error-codes.js`, `redocly lint` both specs (no new errors)
 - [x] 3.2 Bump Main `0.0.106`, BFF `0.0.96`; commit to `main`; tag `v1.0.10`; push
+
+## 4. Contract clarification
+
+- [x] 4.1 Document core clock-in/clock-out without attendance and the precedence of feature and permission errors; bump Main `0.0.107` and BFF `0.0.97`.
+- [x] 4.2 Lint both APIs, validate errors and OpenSpec; publish the clarifications in a new tag.

@@ -54,8 +54,10 @@ components:
           uniqueItems: true
           description: >
             Effective permissions of the current user in this business (Main API `getUserBusinesses`,
-            forwarded unchanged). An OWNER holds all of them; an EMPLOYEE those of its access role, or none
-            without an active contract. The app gates management screens on these, never on `userRole`.
+            forwarded unchanged). An OWNER holds all permissions of the effective business features;
+            an EMPLOYEE those of its access role in the effective features, or none without an active
+            contract. Core permissions do not require a feature. The app gates management screens on
+            these, never on `userRole`.
           items:
             $ref: '../members/components.yml#/components/schemas/BusinessPermission'
           example: [TEAM_VIEW, WORKLOGS_VIEW]

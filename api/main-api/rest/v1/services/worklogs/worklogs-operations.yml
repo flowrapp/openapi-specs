@@ -78,16 +78,18 @@ worklogs:
       summary: Close open worklog
       description: >
         Finalizes an active work session by recording the end time for the
-        authenticated user at a specific business location. Closing sets
-        `reviewStatus` to PENDING_RECONCILIATION, including when the session is
-        closed automatically. The worklog stays in worklog listings and does not
-        count in worked-hours reports until attendance reconciliation moves it
-        to CONFIRMED, when there is nothing to review, or to PENDING_REVIEW,
-        when an open attendance incident remains.
+        authenticated user at a specific business location. When ATTENDANCE is available,
+        closing sets `reviewStatus` to PENDING_RECONCILIATION. The worklog stays in worklog
+        listings and does not count in worked-hours reports until attendance reconciliation
+        moves it to CONFIRMED, when there is nothing to review, or to PENDING_REVIEW, when an
+        open attendance incident remains. Without ATTENDANCE, an ordinary manual close stays
+        CONFIRMED when the open worklog was already confirmed; an existing review state is
+        preserved. Report totals are recalculated asynchronously after the close.
         Geofencing policy: as in clock-in, BLOCK rejects a clock-out outside the business area or without
-        a location with 403 1100, and WARN lets it through and records the check; reconciliation then
-        opens (or keeps) the OUTSIDE_GEOFENCE incident of the worklog when the clock-out location is more
-        than 25 m outside the area or missing.
+        a location with 403 1100, and WARN lets it through and records the check. When ATTENDANCE is
+        available, reconciliation can open (or keep) an OUTSIDE_GEOFENCE incident when the clock-out
+        location is more than 25 m outside the area or missing; without ATTENDANCE, the check is
+        retained without opening an attendance incident.
       tags:
         - Worklogs
       operationId: clockOut

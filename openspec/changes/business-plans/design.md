@@ -40,6 +40,8 @@ permissions = role permissions − permissions owned by features not in `feature
 ```
 Job-role writes require `SCHEDULE_MANAGE` and therefore `SCHEDULING`; the job-role catalog read stays `TEAM_VIEW` (core).
 
+Clock-in always creates a durable attendance-match identifier, including a passive `NOT_APPLICABLE` match when `ATTENDANCE` is unavailable. This preserves existing clients without enabling attendance incidents or schedule matching. An ordinary manual clock-out without `ATTENDANCE` remains confirmed if the open worklog was confirmed; existing review states and geofence evidence are preserved, and reports are recalculated asynchronously.
+
 ### Errors
 - `1155 BUSINESS_FEATURE_UNAVAILABLE` (403), message `business feature <FEATURE> is not available`. After membership and contract checks, an unavailable feature takes precedence over its permission: `1155` is returned even if the caller's role also lacks that permission. When the feature is available, a caller lacking the permission gets `1020`. Self-service operations of an unavailable feature also return `1155`.
 - `1156 BUSINESS_PLAN_UNKNOWN` (400), message `business plan is unknown`.

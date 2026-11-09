@@ -95,8 +95,9 @@ components:
           type: array
           description: >
             Effective permissions of the current user in this business. An OWNER holds every
-            permission. An EMPLOYEE holds the permissions of its access role, or none without an
-            active contract.
+            permission of the business's effective features. An EMPLOYEE holds the permissions of
+            its access role that belong to effective features, or none without an active contract.
+            Core permissions do not require a feature.
           uniqueItems: true
           items:
             $ref: '#/components/schemas/BusinessPermission'

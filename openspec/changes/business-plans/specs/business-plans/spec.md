@@ -43,7 +43,11 @@ An operation owned by a feature that is unavailable for the business SHALL fail 
 
 #### Scenario: Core operation
 - **WHEN** an EMPLOYEE of an `ESSENTIAL` business clocks in
-- **THEN** the feature check does not apply
+- **THEN** the feature check does not apply and the response includes the durable `attendanceMatchId` of a passive `NOT_APPLICABLE` match
+
+#### Scenario: Core clock-out
+- **WHEN** an EMPLOYEE of an `ESSENTIAL` business closes an ordinary confirmed worklog
+- **THEN** the worklog remains confirmed, and its worked hours are included after the asynchronous report recalculation
 
 ### Requirement: Plan administration
 A platform `ADMIN` SHALL set a business plan with `PUT /api/v1/admin/businesses/{businessId}/plan`, and MAY set it when registering a business (default `ESSENTIAL`).

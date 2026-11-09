@@ -7,10 +7,12 @@ info:
 
     ## Business authorization
 
-    A membership is `OWNER` or `EMPLOYEE`. The OWNER holds every business permission. An EMPLOYEE
-    holds the permissions of its access role (`/businesses/{businessId}/access-roles`), and none
-    without an active contract. Operations scoped to the caller's own data need membership only.
-    A caller lacking the permission gets `403 1020`. This table is authoritative; older wording
+    A membership is `OWNER` or `EMPLOYEE`. The OWNER holds every business permission included in
+    the effective features. An EMPLOYEE holds the permissions of its access role
+    (`/businesses/{businessId}/access-roles`) included in the effective features, and none without
+    an active contract. Operations scoped to the caller's own data need membership only.
+    After membership and contract checks, an unavailable feature returns `403 1155`; if the feature
+    is available, a caller lacking the permission gets `403 1020`. This table is authoritative; older wording
     such as "owner only" or "owner or manager" in operation descriptions means "requires the
     permission below".
 
@@ -48,7 +50,7 @@ info:
     | ATTENDANCE | PROFESSIONAL | SCHEDULING | ATTENDANCE_VIEW, ATTENDANCE_MANAGE | getAttendanceMatch, getDailyAttendance (any scope), justifyAttendanceIncident, getCurrentUserAttendanceIncidents, getCurrentUserAttendanceIncidentGroups, getCurrentUserAttendanceIncidentGroup, justifyCurrentUserAttendanceIncidentGroup, updateAttendanceTolerance |
 
     `updateBusinessPlan` (platform admin) changes the plan and emits a `PERMISSIONS` sync signal.
-  version: 0.0.106
+  version: 0.0.107
   contact:
     name: Flowrapp Team
     url: https://flowrapp.github.io
