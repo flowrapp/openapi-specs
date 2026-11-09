@@ -1,0 +1,25 @@
+api/bff-api/rest/open-api-rest.yml
+  s_4d87fe536d4877::t_f5987f2535cebe 36
+api/bff-api/rest/v1/services/members/members-operations.yml
+  s_4d87fe536d4877::t_6843ae12b8fd5e 107-108,153-166,187-189,294-296,312-317
+api/main-api/rest/open-api-rest.yml
+  s_4d87fe536d4877::t_a75b6ecbb07d8f 34
+api/main-api/rest/v1/services/business/businesses-operations.yml
+  s_4d87fe536d4877::t_1ff4a47a21c38e 469-482,502-504,585-587,603-608
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.6",
+  "base_commit_sha": "c871841e32cfd6a0eeec5402a01607f03f87c0c8",
+  "prompts": {},
+  "sessions": {
+    "s_4d87fe536d4877": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_e40356549ffe9tNMWj63UP06T1",
+        "model": "gpt-6-luna"
+      },
+      "human_author": "sergiobpa <sergiobpa@ext.inditex.com>"
+    }
+  }
+}
