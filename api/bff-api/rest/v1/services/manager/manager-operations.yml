@@ -351,7 +351,7 @@ manager:
           description: Filter users by business membership role
           schema:
             type: string
-            enum: [OWNER, MANAGER, EMPLOYEE]
+            enum: [OWNER, EMPLOYEE]
         - name: search
           in: query
           required: false
@@ -381,7 +381,7 @@ manager:
                   - userId: 2
                     name: "Jane Smith"
                     email: "jane.smith@example.com"
-                    role: "MANAGER"
+                    role: "EMPLOYEE"
                     currentContract: null
                   - userId: 3
                     name: "Bob Wilson"

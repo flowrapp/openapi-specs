@@ -34,5 +34,5 @@ components:
       description: >-
         Data area that changed. This enum is open for forward compatibility; clients MUST ignore
         unknown values rather than fail to parse the event.
-      enum: [WORKLOGS, ATTENDANCE, SCHEDULE, SHIFT_CHANGES, REPORTS]
+      enum: [WORKLOGS, ATTENDANCE, SCHEDULE, SHIFT_CHANGES, REPORTS, PERMISSIONS]
       example: WORKLOGS

@@ -1,0 +1,412 @@
+accessRoles:
+  collection:
+    get:
+      summary: List access roles of a business
+      description: >
+        Pass-through to the Main API `getBusinessAccessRoles`; functional errors are propagated.
+        Returns every access role of the business ordered by name ignoring case, with its
+        permissions (implications included) and the number of active members holding it. Only the
+        business OWNER may call it.
+      tags:
+        - Members
+      operationId: getAccessRoles
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: businessId
+          in: path
+          required: true
+          description: Unique identifier of the business
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+      responses:
+        '200':
+          description: Access roles of the business, possibly empty
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: ../../components/members/components.yml#/components/schemas/AccessRoleDTO
+              example:
+                - id: 7
+                  name: Encargado
+                  permissions:
+                    - TEAM_VIEW
+                    - WORKLOGS_VIEW
+                    - ATTENDANCE_VIEW
+                    - REPORTS_VIEW
+                  memberCount: 2
+        '401':
+          description: Unauthorized
+        '403':
+          description: Current user is not the owner of the business
+          content:
+            application/problem+json:
+              schema:
+                $ref: ../../components/common/components.yml#/components/schemas/ProblemDetail
+              example:
+                status: 403
+                detail: 1020 - user is not the owner of business
+        '404':
+          description: Business not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: ../../components/common/components.yml#/components/schemas/ProblemDetail
+              example:
+                status: 404
+                detail: 1006 - business does not exist
+      x-functional-errors:
+        - 1006
+        - 1020
+    post:
+      summary: Create an access role
+      description: >
+        Pass-through to the Main API `createBusinessAccessRole`; functional errors are propagated.
+        Creates an access role in the business. The server trims the name and adds implied
+        permissions. Only the business OWNER may call it.
+      tags:
+        - Members
+      operationId: createAccessRole
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: businessId
+          in: path
+          required: true
+          description: Unique identifier of the business
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ../../components/members/components.yml#/components/schemas/AccessRoleRequestDTO
+            example:
+              name: Encargado
+              permissions:
+                - ATTENDANCE_VIEW
+                - REPORTS_VIEW
+      responses:
+        '201':
+          description: Access role created
+          content:
+            application/json:
+              schema:
+                $ref: ../../components/members/components.yml#/components/schemas/AccessRoleDTO
+              example:
+                id: 7
+                name: Encargado
+                permissions:
+                  - TEAM_VIEW
+                  - WORKLOGS_VIEW
+                  - ATTENDANCE_VIEW
+                  - REPORTS_VIEW
+                memberCount: 0
+        '400':
+          description: Name blank or longer than 50 characters, empty or unknown permissions
+          content:
+            application/problem+json:
+              schema:
+                $ref: ../../components/common/components.yml#/components/schemas/ProblemDetail
+              example:
+                status: 400
+                detail: 1153 - access role is invalid
+        '401':
+          description: Unauthorized
+        '403':
+          description: Current user is not the owner of the business
+          content:
+            application/problem+json:
+              schema:
+                $ref: ../../components/common/components.yml#/components/schemas/ProblemDetail
+              example:
+                status: 403
+                detail: 1020 - user is not the owner of business
+        '404':
+          description: Business not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: ../../components/common/components.yml#/components/schemas/ProblemDetail
+              example:
+                status: 404
+                detail: 1006 - business does not exist
+        '409':
+          description: Another access role of the business has the same name ignoring case
+          content:
+            application/problem+json:
+              schema:
+                $ref: ../../components/common/components.yml#/components/schemas/ProblemDetail
+              example:
+                status: 409
+                detail: 1152 - access role name already exists
+      x-functional-errors:
+        - 1006
+        - 1020
+        - 1152
+        - 1153
+  item:
+    put:
+      summary: Replace an access role
+      description: >
+        Pass-through to the Main API `replaceBusinessAccessRole`; functional errors are propagated.
+        Replaces the name and permissions of an access role. Members holding it get the new
+        permissions on their next request. Only the business OWNER may call it.
+      tags:
+        - Members
+      operationId: replaceAccessRole
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: businessId
+          in: path
+          required: true
+          description: Unique identifier of the business
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+        - name: accessRoleId
+          in: path
+          required: true
+          description: Unique identifier of the access role
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ../../components/members/components.yml#/components/schemas/AccessRoleRequestDTO
+            example:
+              name: Encargado
+              permissions:
+                - ATTENDANCE_MANAGE
+                - REPORTS_EXPORT
+      responses:
+        '200':
+          description: Access role replaced
+          content:
+            application/json:
+              schema:
+                $ref: ../../components/members/components.yml#/components/schemas/AccessRoleDTO
+              example:
+                id: 7
+                name: Encargado
+                permissions:
+                  - TEAM_VIEW
+                  - WORKLOGS_VIEW
+                  - WORKLOGS_MANAGE
+                  - ATTENDANCE_VIEW
+                  - ATTENDANCE_MANAGE
+                  - REPORTS_VIEW
+                  - REPORTS_EXPORT
+                memberCount: 2
+        '400':
+          description: Name blank or longer than 50 characters, empty or unknown permissions
+          content:
+            application/problem+json:
+              schema:
+                $ref: ../../components/common/components.yml#/components/schemas/ProblemDetail
+              example:
+                status: 400
+                detail: 1153 - access role is invalid
+        '401':
+          description: Unauthorized
+        '403':
+          description: Current user is not the owner of the business
+          content:
+            application/problem+json:
+              schema:
+                $ref: ../../components/common/components.yml#/components/schemas/ProblemDetail
+              example:
+                status: 403
+                detail: 1020 - user is not the owner of business
+        '404':
+          description: Business not found, or the access role does not belong to the business
+          content:
+            application/problem+json:
+              schema:
+                $ref: ../../components/common/components.yml#/components/schemas/ProblemDetail
+              examples:
+                businessNotFound:
+                  value:
+                    status: 404
+                    detail: 1006 - business does not exist
+                accessRoleNotFound:
+                  value:
+                    status: 404
+                    detail: 1151 - access role not found
+        '409':
+          description: Another access role of the business has the same name ignoring case
+          content:
+            application/problem+json:
+              schema:
+                $ref: ../../components/common/components.yml#/components/schemas/ProblemDetail
+              example:
+                status: 409
+                detail: 1152 - access role name already exists
+      x-functional-errors:
+        - 1006
+        - 1020
+        - 1151
+        - 1152
+        - 1153
+    delete:
+      summary: Delete an access role
+      description: >
+        Pass-through to the Main API `deleteBusinessAccessRole`; functional errors are propagated.
+        Deletes an access role. Members holding it are left without an access role. Only the
+        business OWNER may call it.
+      tags:
+        - Members
+      operationId: deleteAccessRole
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: businessId
+          in: path
+          required: true
+          description: Unique identifier of the business
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+        - name: accessRoleId
+          in: path
+          required: true
+          description: Unique identifier of the access role
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+      responses:
+        '204':
+          description: Access role deleted
+        '401':
+          description: Unauthorized
+        '403':
+          description: Current user is not the owner of the business
+          content:
+            application/problem+json:
+              schema:
+                $ref: ../../components/common/components.yml#/components/schemas/ProblemDetail
+              example:
+                status: 403
+                detail: 1020 - user is not the owner of business
+        '404':
+          description: Business not found, or the access role does not belong to the business
+          content:
+            application/problem+json:
+              schema:
+                $ref: ../../components/common/components.yml#/components/schemas/ProblemDetail
+              examples:
+                businessNotFound:
+                  value:
+                    status: 404
+                    detail: 1006 - business does not exist
+                accessRoleNotFound:
+                  value:
+                    status: 404
+                    detail: 1151 - access role not found
+      x-functional-errors:
+        - 1006
+        - 1020
+        - 1151
+  member-access-role:
+    put:
+      summary: Set the access role of an employee
+      description: >
+        Pass-through to the Main API `updateBusinessUserAccessRole`; functional errors are
+        propagated. Assigns an access role of the business to an EMPLOYEE member, or clears it with
+        `accessRoleId: null`. An OWNER cannot hold an access role. Only the business OWNER may call
+        it.
+      tags:
+        - Members
+      operationId: updateMemberAccessRole
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: businessId
+          in: path
+          required: true
+          description: Unique identifier of the business
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+        - name: userId
+          in: path
+          required: true
+          description: User ID of the member, not the business membership ID
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: ../../components/members/components.yml#/components/schemas/MemberAccessRoleRequestDTO
+            example:
+              accessRoleId: 7
+      responses:
+        '204':
+          description: Access role of the member updated
+        '401':
+          description: Unauthorized
+        '403':
+          description: Current user is not the owner, or the target user is not an active member
+          content:
+            application/problem+json:
+              schema:
+                $ref: ../../components/common/components.yml#/components/schemas/ProblemDetail
+              examples:
+                notOwner:
+                  value:
+                    status: 403
+                    detail: 1020 - user is not the owner of business
+                notMember:
+                  value:
+                    status: 403
+                    detail: 1015 - user is not member of business
+        '404':
+          description: Business not found, or the access role does not belong to the business
+          content:
+            application/problem+json:
+              schema:
+                $ref: ../../components/common/components.yml#/components/schemas/ProblemDetail
+              examples:
+                businessNotFound:
+                  value:
+                    status: 404
+                    detail: 1006 - business does not exist
+                accessRoleNotFound:
+                  value:
+                    status: 404
+                    detail: 1151 - access role not found
+        '409':
+          description: The target member is an OWNER
+          content:
+            application/problem+json:
+              schema:
+                $ref: ../../components/common/components.yml#/components/schemas/ProblemDetail
+              example:
+                status: 409
+                detail: 1154 - access role can only be assigned to an employee
+      x-functional-errors:
+        - 1006
+        - 1015
+        - 1020
+        - 1151
+        - 1154

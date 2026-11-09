@@ -7,7 +7,7 @@ settings:
         this business: the business-wide switch AND the individual preference.
         Missing business and individual settings default to true. The user is
         identified by the bearer token, not by a supplied user identifier.
-        Requires a membership in this business (OWNER, MANAGER, or EMPLOYEE).
+        Requires a membership in this business (OWNER or EMPLOYEE).
       tags: [Settings]
       operationId: getCurrentUserAutoClockingSettings
       security:
@@ -65,7 +65,7 @@ settings:
         policies, ordered ALLOW < WARN < BLOCK. Missing settings default to ALLOW.
         Applies to both clock-in and clock-out. The user is identified by the
         bearer token, not by a supplied user identifier. Requires a membership
-        in this business (OWNER, MANAGER, or EMPLOYEE).
+        in this business (OWNER or EMPLOYEE).
       tags: [Settings]
       operationId: getCurrentUserGeofencingSettings
       security:
@@ -153,7 +153,7 @@ settings:
                     effectivePolicy: BLOCK
                   - businessUserId: 102
                     name: Luis Pérez
-                    role: MANAGER
+                    role: EMPLOYEE
                     policy: ALLOW
                     effectivePolicy: WARN
                   - businessUserId: 103
@@ -375,7 +375,7 @@ settings:
                     effectiveEnabled: true
                   - businessUserId: 102
                     name: Luis Pérez
-                    role: MANAGER
+                    role: EMPLOYEE
                     enabled: false
                     effectiveEnabled: false
                   - businessUserId: 103

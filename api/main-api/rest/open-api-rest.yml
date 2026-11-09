@@ -2,8 +2,36 @@
 openapi: 3.1.0
 info:
   title: Flowrapp API
-  description: REST API for Flowrapp Backend
-  version: 0.0.102
+  description: |
+    REST API for Flowrapp Backend
+
+    ## Business authorization
+
+    A membership is `OWNER` or `EMPLOYEE`. The OWNER holds every business permission. An EMPLOYEE
+    holds the permissions of its access role (`/businesses/{businessId}/access-roles`), and none
+    without an active contract. Operations scoped to the caller's own data need membership only.
+    A caller lacking the permission gets `403 1020`. This table is authoritative; older wording
+    such as "owner only" or "owner or manager" in operation descriptions means "requires the
+    permission below".
+
+    | Operations | Requires |
+    |---|---|
+    | getBusinessUsers, getBusinessUsersV2, getCurrentContractsForUsers, getOpenWorklogsForUsers, getBusinessContracts, getUserContracts, getCurrentUserContract, getBusinessJobRoles | TEAM_VIEW |
+    | getBusinessInvitations, createBusinessInvitation (EMPLOYEE only), resendBusinessInvitation, deleteBusinessInvitation | TEAM_INVITE |
+    | createUserContract, updateUserContract, deleteUserContract | CONTRACTS_MANAGE |
+    | getWorklogs, getWorklogHistory of another worker | WORKLOGS_VIEW |
+    | updateWorklog (business), correctBusinessWorklog, approveWorklog, rejectWorklog, correctBusinessWorklogBreak, voidBusinessWorklogBreak | WORKLOGS_MANAGE |
+    | getDailyAttendance for everyone (otherwise narrowed to the caller), getShiftAttendance, getBusinessAttendanceMatch | ATTENDANCE_VIEW |
+    | resolveAttendanceMatch, acceptUnplannedAttendance, approveShiftAttendance, acknowledgeNoShow, notifyShiftClockIn | ATTENDANCE_MANAGE |
+    | getRecurringSchedules, getRecurringSchedule, getEffectiveRecurringSchedule, getScheduleExceptions, getBusinessShifts, getBusinessShift, getPlannings, getPlanning, getPlanningSettings, getPlanningGeneration, getPlanningGenerationInput | SCHEDULE_VIEW |
+    | recurring schedule, schedule exception, shift, job role and planning settings writes; createDraftPlanning, replacePlanningScheduledShifts, publishPlanning, requestPlanningGeneration | SCHEDULE_MANAGE |
+    | approveShiftExchangeRequest, approveScheduleChangeRequest, createScheduleChangeRequest, cancelScheduleChangeRequest, reviewer view and reviewer rejection of shift-change requests | SHIFT_CHANGES_APPROVE |
+    | getBusinessReports, getWeeklyHoursReport | REPORTS_VIEW |
+    | exportBusinessWorkedHoursReportPdf, requestBusinessWorkedHoursReport | REPORTS_EXPORT |
+    | business and per-member auto-clocking and geofencing settings (read and write), updateBusinessWorklogSettings, updateAttendanceTolerance | CLOCKING_SETTINGS_MANAGE |
+    | updateBusinessProfile, updateBusinessGeofence | BUSINESS_EDIT |
+    | removeBusinessUser, access-role operations, updateBusinessUserAccessRole | OWNER |
+  version: 0.0.103
   contact:
     name: Flowrapp Team
     url: https://flowrapp.github.io
@@ -139,6 +167,12 @@ paths:
       siness-users-v2"
   "/api/v1/businesses/{businessId}/users/{userId}":
     $ref: "v1/services/business/businesses-operations.yml#/businesses/remove-business-user"
+  "/api/v1/businesses/{businessId}/users/{userId}/access-role":
+    $ref: "v1/services/business/access-roles-operations.yml#/accessRoles/member-access-role"
+  "/api/v1/businesses/{businessId}/access-roles":
+    $ref: "v1/services/business/access-roles-operations.yml#/accessRoles/collection"
+  "/api/v1/businesses/{businessId}/access-roles/{accessRoleId}":
+    $ref: "v1/services/business/access-roles-operations.yml#/accessRoles/item"
   "/api/v1/businesses/{businessId}/geofence-events/{eventId}":
     $ref: "v1/services/geofenceEvents/geofence-events-operations.yml#/geofen\
       ceEvents/upsert-geofence-event"

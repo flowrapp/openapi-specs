@@ -8,7 +8,7 @@ settings:
         business-wide and individual policies, ordered ALLOW < WARN < BLOCK.
         Missing settings default to ALLOW. Applies to both clock-in and clock-out.
         The user is identified by the bearer token, not by a supplied user
-        identifier. Requires a membership in this business (OWNER, MANAGER, or EMPLOYEE).
+        identifier. Requires a membership in this business (OWNER or EMPLOYEE).
         Pass-through to GET /api/v1/businesses/{businessId}/settings/geofencing/users/me
         on the Main API. The business geofence center and radius are available
         in the worker businesses response. Clients may refresh this policy
@@ -79,7 +79,7 @@ settings:
         this business: the business-wide switch AND the individual preference.
         Missing business and individual settings default to true. The user is
         identified by the bearer token, not by a supplied user identifier.
-        Requires a membership in this business (OWNER, MANAGER, or EMPLOYEE).
+        Requires a membership in this business (OWNER or EMPLOYEE).
         Pass-through to the Main API current-user auto-clocking endpoint.
       tags: [Worker]
       operationId: getWorkerAutoClockingSettings
@@ -137,7 +137,7 @@ settings:
         policies, ordered ALLOW < WARN < BLOCK. Missing settings default to ALLOW.
         Applies to both clock-in and clock-out. The user is identified by the
         bearer token, not by a supplied user identifier. Requires a membership
-        in this business (OWNER, MANAGER, or EMPLOYEE).
+        in this business (OWNER or EMPLOYEE).
         Pass-through to the Main API current-user geofencing endpoint.
       tags: [Worker]
       operationId: getWorkerGeofencingSettings
@@ -226,7 +226,7 @@ settings:
                     effectivePolicy: BLOCK
                   - businessUserId: 102
                     name: Luis Pérez
-                    role: MANAGER
+                    role: EMPLOYEE
                     policy: ALLOW
                     effectivePolicy: WARN
                   - businessUserId: 103
@@ -446,7 +446,7 @@ settings:
                     effectiveEnabled: true
                   - businessUserId: 102
                     name: Luis Pérez
-                    role: MANAGER
+                    role: EMPLOYEE
                     enabled: false
                     effectiveEnabled: false
                   - businessUserId: 103

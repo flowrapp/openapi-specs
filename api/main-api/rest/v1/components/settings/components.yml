@@ -52,7 +52,7 @@ components:
         users:
           type: array
           description: >-
-            All current business users, including OWNER, MANAGER, and EMPLOYEE
+            All current business users, including OWNER and EMPLOYEE
             memberships, ordered by name without regard to case and then by
             businessUserId ascending.
           items:
@@ -79,7 +79,7 @@ components:
         role:
           type: string
           description: Role of this user in the business.
-          enum: [OWNER, MANAGER, EMPLOYEE]
+          enum: [OWNER, EMPLOYEE]
           example: EMPLOYEE
         enabled:
           type: boolean
@@ -126,7 +126,7 @@ components:
         users:
           type: array
           description: >-
-            All current business users, including OWNER, MANAGER, and EMPLOYEE
+            All current business users, including OWNER and EMPLOYEE
             memberships, ordered by name without regard to case and then by
             businessUserId ascending.
           items:
@@ -151,7 +151,7 @@ components:
         role:
           type: string
           description: Role of this user in the business.
-          enum: [OWNER, MANAGER, EMPLOYEE]
+          enum: [OWNER, EMPLOYEE]
           example: EMPLOYEE
         policy:
           $ref: "#/components/schemas/GeofencingPolicy"

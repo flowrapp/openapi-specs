@@ -218,7 +218,7 @@ invitations:
               $ref: '../../components/invitations/components.yml#/components/schemas/InvitationRequestDTO'
             example:
               email: "invitee@example.com"
-              role: "MANAGER"
+              role: "EMPLOYEE"
               contract: null
       responses:
         '201':
@@ -232,7 +232,7 @@ invitations:
                 businessId: 101
                 businessName: "Coffee Time"
                 email: "invitee@example.com"
-                role: "MANAGER"
+                role: "EMPLOYEE"
                 contract: null
                 status: "PENDING"
                 createdAt: "2023-06-15T14:30:00+00:00"
@@ -322,7 +322,7 @@ invitations:
                   businessId: 101
                   businessName: "Coffee Time"
                   email: "invitee@example.com"
-                  role: "MANAGER"
+                  role: "EMPLOYEE"
                   contract: null
                   status: "PENDING"
                   createdAt: "2023-06-15T14:30:00+00:00"
@@ -499,7 +499,7 @@ invitations:
                 businessId: 101
                 businessName: "Coffee Time"
                 email: "invitee@example.com"
-                role: "MANAGER"
+                role: "EMPLOYEE"
                 contract: null
                 status: "PENDING"
                 createdAt: "2023-06-15T14:30:00+00:00"
@@ -600,7 +600,7 @@ invitations:
                   businessId: 101
                   businessName: "Coffee Time"
                   email: "invitee@example.com"
-                  role: "MANAGER"
+                  role: "EMPLOYEE"
                   contract: null
                   status: "PENDING"
                   createdAt: "2023-06-15T14:30:00+00:00"

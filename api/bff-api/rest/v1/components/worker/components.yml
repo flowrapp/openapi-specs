@@ -47,8 +47,23 @@ components:
         userRole:
           type: string
           description: Role of the current user in this business
-          enum: [OWNER, MANAGER, EMPLOYEE]
+          enum: [OWNER, EMPLOYEE]
           example: "EMPLOYEE"
+        permissions:
+          type: array
+          uniqueItems: true
+          description: >
+            Effective permissions of the current user in this business (Main API `getUserBusinesses`,
+            forwarded unchanged). An OWNER holds all of them; an EMPLOYEE those of its access role, or none
+            without an active contract. The app gates management screens on these, never on `userRole`.
+          items:
+            $ref: '../members/components.yml#/components/schemas/BusinessPermission'
+          example: [TEAM_VIEW, WORKLOGS_VIEW]
+        accessRole:
+          oneOf:
+            - $ref: '../members/components.yml#/components/schemas/AccessRoleSummaryDTO'
+            - type: 'null'
+          description: Access role of the current user, or null
         attendanceToleranceMinutes:
           type: integer
           format: int32
@@ -72,6 +87,8 @@ components:
         - postalCode
         - location
         - userRole
+        - permissions
+        - accessRole
         - attendanceToleranceMinutes
 
     ClockViewResponseDTO:

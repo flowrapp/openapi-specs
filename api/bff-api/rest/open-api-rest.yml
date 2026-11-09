@@ -2,12 +2,38 @@
 openapi: 3.1.0
 info:
   title: Flowrapp BFF API
-  description: >
+  description: |
     Backend for Frontend API for the Flowrapp mobile application.
     This BFF aggregates and shapes data from the Flowrapp main API to serve
     the specific needs of the mobile frontend, providing role-based endpoints
     for workers and managers.
-  version: 0.0.92
+
+    ## Business authorization
+
+    A membership is `OWNER` or `EMPLOYEE`. The OWNER holds every permission; an EMPLOYEE holds the
+    permissions of its access role (see `getWorkerBusinesses.permissions`). The BFF requires the
+    permission of the Main API operations it calls and rejects early with `403 1020`. This table is
+    authoritative over older "owner only" / "owner or manager" wording in operation descriptions.
+
+    | Operations | Requires |
+    |---|---|
+    | getManagerBusinessDashboard | any permission; each block needs the permission of its data and is omitted otherwise |
+    | getManagerBusinessWorkers, searchBusinessMembers, getBusinessMemberProfile, getManagerWorkerContracts, getManagerJobRoles | TEAM_VIEW |
+    | managerCreateInvitation, managerGetBusinessInvitations, managerDeleteInvitation, managerResendInvitation | TEAM_INVITE |
+    | createManagerWorkerContract, updateManagerWorkerContract, deleteManagerWorkerContract | CONTRACTS_MANAGE |
+    | getManagerDayHistory, getManagerWeekHistory, getManagerMonthHistory | WORKLOGS_VIEW |
+    | managerUpdateWorklog | WORKLOGS_MANAGE |
+    | getAttendanceHours, getAttendanceDay, getAttendanceWeek, getAttendanceShiftDetail, getAttendanceMatchDetail, getAttendanceBadge | ATTENDANCE_VIEW |
+    | every other Attendance operation (accept, acknowledge, correct, reject, void, resolve, notify) | ATTENDANCE_MANAGE |
+    | getManagerPlanning, getManagerShifts, getManagerShift, getManagerEffectiveRecurringSchedule, getManagerScheduleExceptions, getManagerPlanningGenerationSettings, getPlanGeneration, getWeekCoverage | SCHEDULE_VIEW |
+    | every other schedule, shift, job-role, planning and generation write, requestPlanGeneration | SCHEDULE_MANAGE |
+    | approve*, createScheduleChangeRequest, cancelScheduleChangeRequest, reviewer view and reviewer rejection of shift-change requests | SHIFT_CHANGES_APPROVE |
+    | exportManagerWorkedHoursReportPdf, requestBusinessWorkedHoursReport | REPORTS_EXPORT |
+    | getManagerBusiness*Settings, updateManagerBusiness*Setting(s)/Policy/Preference | CLOCKING_SETTINGS_MANAGE |
+    | updateManagerBusinessProfile, updateManagerBusinessGeofence | BUSINESS_EDIT |
+    | removeBusinessMember, getAccessRoles, createAccessRole, replaceAccessRole, deleteAccessRole, updateMemberAccessRole | OWNER |
+    | worker, me and team-schedule operations | membership only |
+  version: 0.0.93
   contact:
     name: Flowrapp Team
     url: https://flowrapp.github.io
@@ -47,9 +73,9 @@ tags:
     description: Owner-only contract management operations.
   - name: Members
     description: >
-      Business membership operations. Removal and the member profile («ficha de
-      persona») are owner-only. Name search is limited to an OWNER or MANAGER of
-      the business.
+      Business membership operations. Removal, access roles and access-role
+      assignment are owner-only. Name search and the member profile («ficha de
+      persona») require `TEAM_VIEW`.
   - name: Attendance
     description: >
       Owner-only «Asistencia» tab: one endpoint per screen (Hours, Today, Week,
@@ -179,6 +205,12 @@ paths:
     $ref: "v1/services/members/members-operations.yml#/members/remove-business-member"
   "/api/v1/businesses/{businessId}/members/{userId}/profile":
     $ref: "v1/services/members/members-operations.yml#/members/member-profile"
+  "/api/v1/businesses/{businessId}/members/{userId}/access-role":
+    $ref: "v1/services/members/access-roles-operations.yml#/accessRoles/member-access-role"
+  "/api/v1/businesses/{businessId}/access-roles":
+    $ref: "v1/services/members/access-roles-operations.yml#/accessRoles/collection"
+  "/api/v1/businesses/{businessId}/access-roles/{accessRoleId}":
+    $ref: "v1/services/members/access-roles-operations.yml#/accessRoles/item"
 
   # ── Attendance (owner-only) ─────────────────────────────────────────────
   "/api/v1/businesses/{businessId}/attendance/hours":

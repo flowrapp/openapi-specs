@@ -624,7 +624,7 @@ components:
         role:
           type: string
           description: Role of the user in the business
-          enum: [OWNER, MANAGER, EMPLOYEE]
+          enum: [OWNER, EMPLOYEE]
           example: "EMPLOYEE"
         currentContract:
           oneOf:
@@ -880,7 +880,7 @@ components:
         role:
           type: string
           description: Role to assign to the invitee
-          enum: [OWNER, MANAGER, EMPLOYEE]
+          enum: [OWNER, EMPLOYEE]
           example: "OWNER"
         contract:
           oneOf:
@@ -908,7 +908,7 @@ components:
         role:
           type: string
           description: Role assigned to the invitee
-          enum: [OWNER, MANAGER, EMPLOYEE]
+          enum: [OWNER, EMPLOYEE]
           example: "EMPLOYEE"
         contract:
           oneOf:

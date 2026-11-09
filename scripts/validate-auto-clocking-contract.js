@@ -82,7 +82,6 @@ for (const [api, prefix] of [
   ]);
   assert.deepEqual(user.value.properties.role.enum, [
     "OWNER",
-    "MANAGER",
     "EMPLOYEE",
   ]);
   const example =
@@ -188,7 +187,7 @@ for (const [api, prefix] of [
     const operation = own.value.get;
     assert.deepEqual(operation.security, [{ bearerAuth: [] }]);
     assert.match(operation.description, /bearer token/);
-    assert.match(operation.description, /OWNER, MANAGER, or EMPLOYEE/);
+    assert.match(operation.description, /OWNER or EMPLOYEE/);
     assert.deepEqual(operation.parameters.map(parameter => parameter.name), ["businessId"]);
     assert.equal(operation.parameters[0].in, "path");
     assert.equal(operation.parameters[0].required, true);
@@ -230,7 +229,7 @@ for (const [api, prefix] of [
     assert.deepEqual(operation.tags, ["User"]);
     assert.deepEqual(operation.security, [{ bearerAuth: [] }]);
     assert.match(operation.description, /bearer token/);
-    assert.match(operation.description, /OWNER, MANAGER, or EMPLOYEE/);
+    assert.match(operation.description, /OWNER or EMPLOYEE/);
     assert.match(operation.description, /ALLOW < WARN < BLOCK/);
     assert.match(operation.description, /default to ALLOW/);
     assert.match(operation.description, /clock-in and clock-out/);

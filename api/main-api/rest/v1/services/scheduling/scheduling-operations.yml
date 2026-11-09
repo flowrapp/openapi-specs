@@ -1042,7 +1042,7 @@ planning:
       summary: Get the member-visible team schedule for a week
       description: >
         Returns the assigned shifts from a published planning, or from an archived planning that
-        was previously published. Any authenticated OWNER, MANAGER, or EMPLOYEE membership may
+        was previously published. Any authenticated OWNER or EMPLOYEE membership may
         read this privacy-safe projection. Missing membership, missing planning, and unpublished
         planning are deliberately indistinguishable and return 404. The response always contains
         all seven dates of the ISO week, Monday to Sunday; days without shifts have `shifts: []`.

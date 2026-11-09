@@ -48,7 +48,7 @@ components:
         role:
           type: string
           description: Role of the user in the business
-          enum: [OWNER, MANAGER, EMPLOYEE]
+          enum: [OWNER, EMPLOYEE]
           example: EMPLOYEE
         jobRole:
           description: >
@@ -109,7 +109,8 @@ components:
     MemberProfileDTO:
       type: object
       description: >
-        «Ficha de persona» of one active member, OWNER view, ready to paint. Identity comes from
+        «Ficha de persona» of one active member, ready to paint. Requires `TEAM_VIEW`; blocks the caller
+        cannot read are null. Identity comes from
         `getBusinessUsers`; every other block lists its Main API source. Instants carry the business
         offset; local dates are business-local (`zone`). Enums are open: clients must tolerate unknown values.
         The current contract (job role, weekly hours, end date) has a single source: `contracts.current`.
@@ -142,7 +143,7 @@ components:
         role:
           type: string
           description: Role in the business (`getBusinessUsers.role`). Read only on this screen. Open enum.
-          enum: [OWNER, MANAGER, EMPLOYEE]
+          enum: [OWNER, EMPLOYEE]
           example: EMPLOYEE
         isSelf:
           type: boolean
@@ -162,14 +163,26 @@ components:
           format: date
           description: Business-local date of `asOf` («today»)
           example: "2026-11-19"
+        accessRole:
+          oneOf:
+            - $ref: "#/components/schemas/AccessRoleSummaryDTO"
+            - type: "null"
+          description: Access role of the member (`getBusinessUsers.accessRole`), or null for an OWNER or an EMPLOYEE without one
         liveStatus:
-          $ref: "#/components/schemas/MemberLiveStatusDTO"
+          oneOf:
+            - $ref: "#/components/schemas/MemberLiveStatusDTO"
+            - type: "null"
+          description: Null when the caller lacks `WORKLOGS_VIEW`; the BFF then skips its Main API calls.
         week:
-          $ref: "#/components/schemas/MemberWeekHoursDTO"
+          oneOf:
+            - $ref: "#/components/schemas/MemberWeekHoursDTO"
+            - type: "null"
+          description: Null when the caller lacks `WORKLOGS_VIEW`; the BFF then skips its Main API calls.
         today:
-          type: array
+          type: [array, "null"]
           example: []
           description: >
+            Null when the caller lacks `ATTENDANCE_VIEW`; the BFF then skips its Main API calls.
             «Hoy» rows, the same split as the Attendance Day rows: one `SHIFT` row per shift of today in the
             published planning (`getDailyAttendance.shiftAttendances`) and one `UNMATCHED` row per clock-in of
             today without a shift or with an ambiguous match (`getDailyAttendance.unmatchedAttendances`, chip
@@ -178,14 +191,17 @@ components:
           items:
             $ref: "#/components/schemas/MemberTodayRowDTO"
         clockInRules:
-          $ref: "#/components/schemas/MemberClockInRulesDTO"
+          oneOf:
+            - $ref: "#/components/schemas/MemberClockInRulesDTO"
+            - type: "null"
+          description: Null when the caller lacks `CLOCKING_SETTINGS_MANAGE`; the BFF then skips its Main API calls.
         employment:
           $ref: "#/components/schemas/MemberEmploymentDTO"
         contracts:
           $ref: "#/components/schemas/MemberContractsDTO"
         actions:
           $ref: "#/components/schemas/MemberProfileActionsDTO"
-      required: [userId, businessUserId, name, email, role, isSelf, asOf, zone, date, liveStatus, week, today, clockInRules, employment, contracts, actions]
+      required: [userId, businessUserId, name, email, role, accessRole, isSelf, asOf, zone, date, liveStatus, week, today, clockInRules, employment, contracts, actions]
 
     MemberLiveStatusStateDTO:
       type: string
@@ -610,9 +626,9 @@ components:
     MemberRemoveBlockedReasonDTO:
       type: string
       description: >
-        Why «Eliminar» is not available: SELF (the caller is the member) or TARGET_IS_OWNER (an OWNER cannot
-        be removed, Main API 403 1106). Open enum.
-      enum: [SELF, TARGET_IS_OWNER]
+        Why «Eliminar» is not available: SELF (the caller is the member), TARGET_IS_OWNER (an OWNER cannot
+        be removed, Main API 403 1106) or CALLER_NOT_OWNER (only the OWNER removes members). Open enum.
+      enum: [SELF, TARGET_IS_OWNER, CALLER_NOT_OWNER]
       example: TARGET_IS_OWNER
 
     MemberProfileActionsDTO:
@@ -634,4 +650,104 @@ components:
           oneOf:
             - $ref: "#/components/schemas/MemberRemoveBlockedReasonDTO"
             - type: "null"
-      required: [canEndContract, canRemove, removeBlockedReason]
+        canChangeAccessRole:
+          type: boolean
+          description: True when the caller is the OWNER and the member is an EMPLOYEE (`updateMemberAccessRole`)
+          example: true
+      required: [canEndContract, canRemove, removeBlockedReason, canChangeAccessRole]
+
+    BusinessPermission:
+      type: string
+      description: >
+        Business permission, same catalog as the Main API `BusinessPermission`. Implications are
+        closed by the Main API when an access role is saved. Open enum for clients: ignore unknown values.
+      enum:
+        - TEAM_VIEW
+        - TEAM_INVITE
+        - CONTRACTS_MANAGE
+        - WORKLOGS_VIEW
+        - WORKLOGS_MANAGE
+        - ATTENDANCE_VIEW
+        - ATTENDANCE_MANAGE
+        - SCHEDULE_VIEW
+        - SCHEDULE_MANAGE
+        - SHIFT_CHANGES_APPROVE
+        - REPORTS_VIEW
+        - REPORTS_EXPORT
+        - CLOCKING_SETTINGS_MANAGE
+        - BUSINESS_EDIT
+      example: TEAM_VIEW
+
+    AccessRoleSummaryDTO:
+      type: object
+      description: Identity of an access role
+      properties:
+        id:
+          type: integer
+          format: int64
+          minimum: 1
+          example: 7
+        name:
+          type: string
+          example: Encargado
+      required: [id, name]
+
+    AccessRoleDTO:
+      type: object
+      description: Access role of a business (Main API `BusinessAccessRoleDTO`, forwarded unchanged)
+      properties:
+        id:
+          type: integer
+          format: int64
+          minimum: 1
+          example: 7
+        name:
+          type: string
+          example: Encargado
+        permissions:
+          type: array
+          uniqueItems: true
+          description: Permissions of the role, implications included, in catalog order
+          items:
+            $ref: "#/components/schemas/BusinessPermission"
+          example: [TEAM_VIEW, WORKLOGS_VIEW, ATTENDANCE_VIEW, REPORTS_VIEW]
+        memberCount:
+          type: integer
+          format: int32
+          minimum: 0
+          description: Number of active members holding this role
+          example: 2
+      required: [id, name, permissions, memberCount]
+
+    AccessRoleRequestDTO:
+      type: object
+      description: >
+        Complete definition of an access role. The name is trimmed, 1 to 50 characters and unique in
+        the business ignoring case. Implied permissions are added by the Main API.
+      additionalProperties: false
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 50
+          example: Encargado
+        permissions:
+          type: array
+          minItems: 1
+          uniqueItems: true
+          items:
+            $ref: "#/components/schemas/BusinessPermission"
+          example: [ATTENDANCE_VIEW, REPORTS_VIEW]
+      required: [name, permissions]
+
+    MemberAccessRoleRequestDTO:
+      type: object
+      description: Access role to assign to an employee, or null to clear it
+      additionalProperties: false
+      properties:
+        accessRoleId:
+          type: [integer, "null"]
+          format: int64
+          minimum: 1
+          example: 7
+      required: [accessRoleId]

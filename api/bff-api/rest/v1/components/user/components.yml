@@ -71,7 +71,7 @@ components:
         role:
           type: string
           description: Role offered to the invitee
-          enum: [OWNER, MANAGER, EMPLOYEE]
+          enum: [OWNER, EMPLOYEE]
           example: "EMPLOYEE"
         status:
           type: string

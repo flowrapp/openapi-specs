@@ -5,8 +5,12 @@ realtime:
       description: |
         Opens a business-scoped server-sent event stream for any authenticated business member.
         Clients send `Accept: text/event-stream`.
-        The BFF filters signals by the caller's membership and role; events are invalidation hints only
-        and never contain business data. The first event is `ready` with a `SyncReadyEvent` payload
+        The BFF filters signals by the caller's membership and permissions; events are invalidation hints only
+        and never contain business data. Owner-scoped signals reach subscribers holding the view permission
+        of a signal topic (`WORKLOGS`→`WORKLOGS_VIEW`, `ATTENDANCE`→`ATTENDANCE_VIEW`, `SCHEDULE`→`SCHEDULE_VIEW`,
+        `SHIFT_CHANGES`→`SHIFT_CHANGES_APPROVE`, `REPORTS`→`REPORTS_VIEW`). `PERMISSIONS` reaches every member
+        when an access role or assignment of the business changes: refetch the businesses (permissions). The
+        first event is `ready` with a `SyncReadyEvent` payload
         (`{"businessId": 101}`); subsequent `sync` events use `SyncEvent` and tell the app which REST
         data to refresh. Clients MUST ignore unknown `SyncTopic` values.
 

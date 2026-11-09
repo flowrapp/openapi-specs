@@ -178,6 +178,8 @@ businesses:
                       longitude: 50.5
                       area: 5.3
                     userRole: "OWNER"
+                    permissions: [TEAM_VIEW, TEAM_INVITE, CONTRACTS_MANAGE, WORKLOGS_VIEW, WORKLOGS_MANAGE, ATTENDANCE_VIEW, ATTENDANCE_MANAGE, SCHEDULE_VIEW, SCHEDULE_MANAGE, SHIFT_CHANGES_APPROVE, REPORTS_VIEW, REPORTS_EXPORT, CLOCKING_SETTINGS_MANAGE, BUSINESS_EDIT]
+                    accessRole: null
                     longOpenAfterMinutes: 720
                     attendanceToleranceMinutes: 5
                   - id: 102
@@ -193,7 +195,9 @@ businesses:
                       latitude: 32.0
                       longitude: 51.2
                       area: 3.2
-                    userRole: "MANAGER"
+                    userRole: "EMPLOYEE"
+                    permissions: [TEAM_VIEW, WORKLOGS_VIEW, ATTENDANCE_VIEW, REPORTS_VIEW]
+                    accessRole: {id: 7, name: Encargado}
                     longOpenAfterMinutes: 720
                     attendanceToleranceMinutes: 5
         '401':
@@ -228,7 +232,7 @@ businesses:
           description: Filter users by role
           schema:
             type: string
-            enum: [OWNER, MANAGER, EMPLOYEE]
+            enum: [OWNER, EMPLOYEE]
         - name: search
           in: query
           required: false
@@ -265,6 +269,7 @@ businesses:
                   name: "John Doe"
                   email: "john.doe@example.com"
                   role: "OWNER"
+                  accessRole: null
                   currentContract:
                     id: 123
                     businessId: 101
@@ -283,13 +288,15 @@ businesses:
                   username: "jane.doe"
                   name: "Jane Doe"
                   email: "jane.doe@example.com"
-                  role: "MANAGER"
+                  role: "EMPLOYEE"
+                  accessRole: {id: 7, name: Encargado}
                   currentContract: null
                 - userId: 3
                   username: "sam.lee"
                   name: "Sam Lee"
                   email: "sam.lee@example.com"
                   role: "EMPLOYEE"
+                  accessRole: {id: 7, name: Encargado}
                   currentContract:
                     id: 124
                     businessId: 101
@@ -510,7 +517,7 @@ businesses:
                   - userId: 27
                     username: "Saturnino Ruiz"
                     name: "Saturnino Ruiz"
-                    role: MANAGER
+                    role: EMPLOYEE
                 hasNext: true
                 nextCursor: "eyJ2IjoxLCJyIjoxfQ"
         '400':
