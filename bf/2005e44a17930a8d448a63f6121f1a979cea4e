@@ -1,0 +1,19 @@
+openspec/specs/business-plans/spec.md
+  s_4d5b797e86e58c::t_fb296dd85c9f88 1-78
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.6",
+  "base_commit_sha": "bf2005e44a17930a8d448a63f6121f1a979cea4e",
+  "prompts": {},
+  "sessions": {
+    "s_4d5b797e86e58c": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_e3f4dfbbcffeFSi6KjApznAJzd",
+        "model": "gpt-6.1-terra"
+      },
+      "human_author": "sergiobpa <sergiobpa@ext.inditex.com>"
+    }
+  }
+}
