@@ -1,0 +1,28 @@
+api/bff-api/rest/open-api-rest.yml
+  h_a041df4244d543 13-14,51
+api/bff-api/rest/v1/components/worker/components.yml
+  h_a041df4244d543 57-60
+api/main-api/rest/open-api-rest.yml
+  h_a041df4244d543 10-15,53
+api/main-api/rest/v1/components/business/components.yml
+  h_a041df4244d543 98-100
+api/main-api/rest/v1/services/worklogs/worklogs-operations.yml
+  h_a041df4244d543 81-87,89-92
+openspec/changes/business-plans/design.md
+  h_a041df4244d543 43-44
+openspec/changes/business-plans/specs/business-plans/spec.md
+  h_a041df4244d543 46-50
+openspec/changes/business-plans/tasks.md
+  h_a041df4244d543 18-22
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.6",
+  "base_commit_sha": "5cdc186983912713c246275333c86aec19c058ba",
+  "prompts": {},
+  "humans": {
+    "h_a041df4244d543": {
+      "author": "sergiobpa <sergiobpa@ext.inditex.com>"
+    }
+  }
+}
