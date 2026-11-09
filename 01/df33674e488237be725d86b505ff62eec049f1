@@ -1,0 +1,14 @@
+openspec/specs/realtime/bff-event-stream-contract/spec.md
+  h_a041df4244d543 1-52
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.6",
+  "base_commit_sha": "01df33674e488237be725d86b505ff62eec049f1",
+  "prompts": {},
+  "humans": {
+    "h_a041df4244d543": {
+      "author": "sergiobpa <sergiobpa@ext.inditex.com>"
+    }
+  }
+}
