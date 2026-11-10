@@ -2018,21 +2018,26 @@ attendance:
 
   shift-clock-in-notices:
     post:
-      summary: Notify the worker of a shift to clock in
+      summary: Notify the worker of a shift segment to clock in
       description: |
         «Avisar para fichar» on `…/attendance/shifts/{scheduledShiftId}/clock-in-notices`.
 
         OWNER only. The BFF checks the role with `getUserBusinesses` before anything else; the Main API
-        enforces it again. All the rules live in the Main API (published plan, notice window from 15
-        minutes before the start until the end, not clocked in yet, active member with a contract in
-        force, one notice per shift every 10 minutes) and its functional errors are propagated
-        unchanged, including the `Retry-After` header of the 429. The push is sent asynchronously, so
-        the response is 202 with the recorded notice and does not confirm delivery; the next read of
-        Day or of the detail shows it in `clockInNotice`.
+        enforces it again. Optional body `segmentIndex` (0-based, default 0) selects the planned
+        segment and is forwarded as-is. The response echoes `segmentIndex` and `segmentStartAt`.
+        All the rules live in the Main API and are per segment: published plan, notice window from
+        15 minutes before that segment's start until that segment's end (the unpaid gap is outside
+        the window), not already clocked for that segment (an earlier segment already closed does
+        not block the later one; an open worklog still does), active member with a contract in
+        force, one notice per shift and segment every 10 minutes. Functional errors are propagated
+        unchanged, including `400` `1047` for an index past the shift's segments and the
+        `Retry-After` header of the 429. The push is sent asynchronously, so the response is 202
+        with the recorded notice and does not confirm delivery; the next read of Day or of the
+        detail shows the notifiable segment in `clockInNotice` (one state per shift).
 
         Main API calls, in sequence:
         1. `getUserBusinesses` (role).
-        2. `notifyShiftClockIn` (`POST /api/v1/businesses/{businessId}/scheduled-shifts/{scheduledShiftId}/clock-in-notices`).
+        2. `notifyShiftClockIn` (`POST /api/v1/businesses/{businessId}/scheduled-shifts/{scheduledShiftId}/clock-in-notices`), forwarding the optional body.
       tags:
         - Attendance
       operationId: notifyAttendanceShiftClockIn
@@ -2041,6 +2046,15 @@ attendance:
       parameters:
         - $ref: '../../components/attendance/components.yml#/components/parameters/BusinessId'
         - $ref: '../../components/attendance/components.yml#/components/parameters/ScheduledShiftId'
+      requestBody:
+        required: false
+        description: Segment to remind. Omit the body to remind segment 0.
+        content:
+          application/json:
+            schema:
+              $ref: '../../components/attendance/components.yml#/components/schemas/AttendanceNotifyShiftClockInRequestDTO'
+            example:
+              segmentIndex: 1
       responses:
         '202':
           description: Notice recorded; the push is sent asynchronously
@@ -2048,12 +2062,34 @@ attendance:
             application/json:
               schema:
                 $ref: '../../components/attendance/components.yml#/components/schemas/AttendanceClockInNoticeDTO'
-              example:
-                id: 7001
-                scheduledShiftId: 900
-                notifiedAt: "2026-11-02T09:07:00+01:00"
-                notifiedBy: 1
-                nextAllowedAt: "2026-11-02T09:17:00+01:00"
+              examples:
+                firstSegment:
+                  summary: Reminder for the first segment
+                  value:
+                    id: 7001
+                    scheduledShiftId: 900
+                    segmentIndex: 0
+                    segmentStartAt: "2026-11-02T09:00:00+01:00"
+                    notifiedAt: "2026-11-02T09:07:00+01:00"
+                    notifiedBy: 1
+                    nextAllowedAt: "2026-11-02T09:17:00+01:00"
+                secondSegment:
+                  summary: Reminder for the return segment of a split shift
+                  value:
+                    id: 7002
+                    scheduledShiftId: 900
+                    segmentIndex: 1
+                    segmentStartAt: "2026-11-02T18:00:00+01:00"
+                    notifiedAt: "2026-11-02T17:50:00+01:00"
+                    notifiedBy: 1
+                    nextAllowedAt: "2026-11-02T18:00:00+01:00"
+        '400':
+          description: segmentIndex is outside the shift's planned segments (1047).
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              example: {status: 400, detail: "1047 - scheduled shift is invalid"}
         '401':
           description: No authenticated session
         '403':
@@ -2100,7 +2136,7 @@ attendance:
                   summary: "1118 - worker is not an active member with a contract in force for this shift"
                   value: {status: 409, detail: "1118 - worker is not an active member with a contract in force for this shift"}
         '429':
-          description: A notice was already sent for this shift within the last 10 minutes (1119).
+          description: A notice was already sent for this shift and segment within the last 10 minutes (1119).
           headers:
             Retry-After:
               description: Seconds until the next notice is allowed, forwarded from the Main API
@@ -2113,4 +2149,4 @@ attendance:
                 tooSoon:
                   summary: "1119 - a clock-in notice was sent for this shift too recently"
                   value: {status: 429, detail: "1119 - a clock-in notice was sent for this shift too recently"}
-      x-functional-errors: [1006, 1015, 1020, 1076, 1116, 1117, 1118, 1119]
+      x-functional-errors: [1006, 1015, 1020, 1047, 1076, 1116, 1117, 1118, 1119]

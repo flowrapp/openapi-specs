@@ -12,7 +12,7 @@ manager:
         Home admin v3.2 (BFF 0.0.81, additive, optional fields on `ManagerBusinessHomeDTO`):
         - `workingNow.byJobRole`: fichados vs planificados ahora por puesto from
           `home.workingNow` + Main `getDailyAttendance(today)` grouped by `row.jobRole`
-          (`working` = `clocked.open`, `scheduledNow` = planned in progress at `asOf`;
+          (`working` = `clocked.open`, `scheduledNow` = `asOf` inside a planned segment, not the unpaid gap;
           `jobRole: null` group for UNMATCHED / no puesto). Not plantilla, contracts or
           P4a `memberCount`.
         - `attendanceToday.missing`: CRITICAL rows with chips `NO_SHOW` or `MISSING_CLOCK_IN`;
@@ -1973,10 +1973,11 @@ manager:
         for CREATED, SOLVING, DRAFT, PUBLISHED, ARCHIVED, and FAILED; DRAFT is editable whether
         created manually or by the solver, and ARCHIVED is historical and read-only. Manually
         created drafts have no requirements. This operation never generates a missing planning.
-        Required seconds use local wall-clock shift duration: an end
-        time not later than its start rolls into the next calendar day, breaks are subtracted, and
-        the net duration is multiplied by target employee demand. Scheduled seconds use elapsed
-        offset-date-time duration minus breaks. Contracted seconds sum
+        Required seconds use the net of each shift: the sum of its planned segment
+        durations (the envelope when `segments` is omitted; an end not later than its
+        start rolls into the next calendar day) minus `breakMinutes`, multiplied by
+        target employee demand. The unpaid gap is not included. Scheduled seconds use
+        that same net. Contracted seconds sum
         `totalWeekHours * 3600 * coveredCalendarDays / 7` per intersecting contract at full
         precision, then round once per worker; planning totals are sums of the daily and worker
         totals. Workers are the union of users with intersecting contracts and users with
@@ -2367,8 +2368,13 @@ manager:
         Atomically replaces every assignment in the existing DRAFT planning addressed by
         `planningId`. Send `version` from the latest manager planning response; a stale
         version returns 409 without replacing any shifts. An empty array clears the planning.
-        Shift name and color come from the referenced business Shift, not the request. Returns the
-        updated manager planning projection with a new version and recalculated aggregates.
+        Shift name and color come from the referenced business Shift, not the request.
+        Optional `segments` (one or two) make an assignment a split shift. `startAt` and
+        `endAt` are the envelope and must match the first start and the last end. The
+        unpaid gap is reserved: envelopes of the same person that intersect are `400`
+        `1047`, including a shift placed inside that gap. Returns the updated manager
+        planning projection with a new version and recalculated aggregates. Net seconds
+        are the sum of the segment durations minus `breakMinutes`.
         Requires an OWNER membership.
       tags: [Manager]
       operationId: replaceManagerPlanningScheduledShifts
@@ -2390,15 +2396,34 @@ manager:
           application/json:
             schema:
               $ref: '../../components/manager/components.yml#/components/schemas/ManagerReplacePlanningScheduledShiftsRequestDTO'
-            example:
-              version: 3
-              scheduledShifts:
-                - userId: 42
-                  jobRoleId: 7
-                  shiftId: 20
-                  startAt: "2026-10-05T09:00:00+02:00"
-                  endAt: "2026-10-05T17:00:00+02:00"
-                  breakMinutes: 30
+            examples:
+              continuous:
+                summary: One continuous assignment
+                value:
+                  version: 3
+                  scheduledShifts:
+                    - userId: 42
+                      jobRoleId: 7
+                      shiftId: 20
+                      startAt: "2026-10-05T09:00:00+02:00"
+                      endAt: "2026-10-05T17:00:00+02:00"
+                      breakMinutes: 30
+              split:
+                summary: Split shift, gap reserved
+                value:
+                  version: 4
+                  scheduledShifts:
+                    - userId: 42
+                      jobRoleId: 7
+                      shiftId: 22
+                      startAt: "2026-10-05T10:00:00+02:00"
+                      endAt: "2026-10-05T23:00:00+02:00"
+                      breakMinutes: 30
+                      segments:
+                        - startAt: "2026-10-05T10:00:00+02:00"
+                          endAt: "2026-10-05T14:00:00+02:00"
+                        - startAt: "2026-10-05T18:00:00+02:00"
+                          endAt: "2026-10-05T23:00:00+02:00"
       responses:
         '200':
           description: Draft planning assignments replaced

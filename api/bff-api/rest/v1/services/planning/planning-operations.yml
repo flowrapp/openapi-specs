@@ -238,9 +238,10 @@ planning:
 
         Week, per job role `r` (seconds):
         - `requiredSeconds` N(r): for every shift of every date of the week, the net shift
-          duration (`endTime - startTime`, rolling into the next day when `endTime` is not later
-          than `startTime`, minus `breakMinutes`) times `targetEmployees` of `r`. A date without
-          shifts adds nothing, so closing a day lowers N.
+          duration (sum of segment durations, or `endTime - startTime` rolled into the next day
+          when `segments` is omitted and `endTime` is not later than `startTime`, minus
+          `breakMinutes`) times `targetEmployees` of `r`. The unpaid gap is not included.
+          A date without shifts adds nothing, so closing a day lowers N.
         - `minimumSeconds`: the same with `minimumEmployees`.
         - `contractedSeconds` E(r): for every contract of `r` in the solver contract set,
           `floor(totalWeekHours * 3600 * coveredDays / 7)`, where `coveredDays` is the number of

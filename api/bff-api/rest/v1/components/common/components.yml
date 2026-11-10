@@ -123,3 +123,79 @@ components:
         - latitude
         - longitude
         - area
+
+    ShiftSegmentDTO:
+      type: object
+      additionalProperties: false
+      description: >
+        One planned interval of a recurring template, a schedule exception, a
+        planning requirement or a coverage shift, in business-local `HH:mm`.
+        A shift is one aggregate with one or two of these intervals (a split
+        shift, for example 10:00–14:00 and 18:00–23:00). This is not a clocked
+        worklog. Clocked intervals are `AttendanceClockedDTO.segments` and
+        attendance `timeline.segments` (`AttendanceSegmentDTO`).
+
+        When the parent `segments` array is present it has one or two items,
+        ordered by start, with no overlap and a gap of at least one minute.
+        All segments share the shift's logical day. The first segment of a
+        split shift does not cross midnight; only the last segment may. Each
+        segment must lie entirely inside that day's opening intervals. The gap
+        is not `breakMinutes`, and opening hours are checked per segment.
+        The parent `startTime` and `endTime` stay required and are the envelope
+        (first start, last end). Omit `segments`, or send one segment equal to
+        the envelope, for a normal shift. A mismatch is `400` `1050` on a
+        recurring template or `400` `1053` on a day's exception.
+        `breakMinutes` does not include the unpaid gap and must be strictly
+        less than the sum of the segment durations. Net time is that sum minus
+        `breakMinutes`. The catalog shift has no default segments.
+      properties:
+        startTime:
+          type: string
+          pattern: "^([01][0-9]|2[0-3]):[0-5][0-9]$"
+          description: Business-local start, minute precision.
+          example: "10:00"
+        endTime:
+          type: string
+          pattern: "^([01][0-9]|2[0-3]):[0-5][0-9]$"
+          description: >
+            Business-local end. On the last segment only, a time not later than
+            the start ends the next day.
+          example: "14:00"
+      required: [startTime, endTime]
+
+    ScheduledShiftSegmentDTO:
+      type: object
+      additionalProperties: false
+      description: >
+        One planned interval of an assigned shift, as offset-aware instants
+        with minute precision. Not a clocked worklog: clocked intervals are
+        `AttendanceClockedDTO.segments` and attendance `timeline.segments`.
+        Several worklogs may reference the same `scheduledShiftId`.
+
+        The parent `segments` array, when present, has one or two items,
+        ordered by `startAt`, non-overlapping, with a gap of at least one
+        minute, on the same logical day. Only the last segment may cross
+        midnight. Each segment must lie inside the day's opening intervals.
+        The parent `startAt` and `endAt` are the envelope and stay required.
+        Omit `segments`, or send one segment equal to the envelope, for a
+        normal shift. An envelope that does not match is `400` `1047`.
+        `breakMinutes` does not include the unpaid gap. Net seconds
+        (`durationSeconds`, `netSeconds`, `plannedSeconds`) are the sum of the
+        segment durations minus `breakMinutes`, never negative. The gap is
+        reserved: the same person cannot hold another shift inside the
+        envelope (`400` `1047` on a draft replace, `SHIFT_OVERLAP` on a
+        shift-change proposal). A split shift is exchanged or corrected whole.
+      properties:
+        startAt:
+          type: string
+          format: date-time
+          description: Offset-aware start of this segment.
+          example: "2026-10-30T10:00:00+02:00"
+        endAt:
+          type: string
+          format: date-time
+          description: >
+            Offset-aware end of this segment. Only the last segment of the
+            shift may fall on the next local date.
+          example: "2026-10-30T14:00:00+02:00"
+      required: [startAt, endAt]

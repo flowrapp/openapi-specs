@@ -929,7 +929,13 @@ planning:
         `planningId`. This operation accepts only `DRAFT` plannings. The request `version` must
         match the version returned by the latest planning read; a stale version returns a
         concurrent-modification conflict. Shift display name and color are captured by the server
-        from the referenced business Shift and are not client input.
+        from the referenced business Shift and are not client input. Each assignment may carry
+        optional `segments` (one or two). `startAt` and `endAt` are the envelope and must match
+        the first start and the last end. The unpaid gap between segments is reserved: two
+        assignments of the same person whose envelopes intersect (`left.endAt > right.startAt`)
+        are `400` `1047`, including a shift placed inside that gap. Back-to-back envelopes are
+        allowed. A segment that does not fit the day's opening intervals, an overlap between
+        segments, or a gap shorter than one minute is also `400` `1047`.
       security: [{ bearerAuth: [] }]
       parameters:
         - $ref: '../../components/scheduling/components.yml#/components/parameters/BusinessId'
@@ -940,15 +946,34 @@ planning:
           application/json:
             schema:
               $ref: '../../components/scheduling/components.yml#/components/schemas/ReplacePlanningScheduledShiftsRequestDTO'
-            example:
-              version: 3
-              scheduledShifts:
-                - userId: 42
-                  jobRoleId: 7
-                  shiftId: 20
-                  startAt: "2026-10-05T09:00:00+02:00"
-                  endAt: "2026-10-05T17:00:00+02:00"
-                  breakMinutes: 30
+            examples:
+              continuous:
+                summary: One continuous assignment
+                value:
+                  version: 3
+                  scheduledShifts:
+                    - userId: 42
+                      jobRoleId: 7
+                      shiftId: 20
+                      startAt: "2026-10-05T09:00:00+02:00"
+                      endAt: "2026-10-05T17:00:00+02:00"
+                      breakMinutes: 30
+              split:
+                summary: Split shift, gap reserved
+                value:
+                  version: 4
+                  scheduledShifts:
+                    - userId: 42
+                      jobRoleId: 7
+                      shiftId: 22
+                      startAt: "2026-10-05T10:00:00+02:00"
+                      endAt: "2026-10-05T23:00:00+02:00"
+                      breakMinutes: 30
+                      segments:
+                        - startAt: "2026-10-05T10:00:00+02:00"
+                          endAt: "2026-10-05T14:00:00+02:00"
+                        - startAt: "2026-10-05T18:00:00+02:00"
+                          endAt: "2026-10-05T23:00:00+02:00"
       responses:
         '200':
           description: Draft planning scheduled shifts replaced
@@ -1113,6 +1138,26 @@ planning:
                             startAt: "2025-07-28T09:00:00+02:00"
                             endAt: "2025-07-28T17:00:00+02:00"
                             breakMinutes: 30
+                            plannedSeconds: 27000
+                            durationSeconds: 27000
+                            netSeconds: 27000
+                          - id: 902
+                            worker: {id: 5, name: Luis García}
+                            jobRole: {id: 10, code: WAITER, name: Waiter, color: "#1A2B3C", icon: front-of-house}
+                            shiftId: 22
+                            shiftName: Split service
+                            shiftColor: "#8B5CF6"
+                            startAt: "2025-07-28T10:00:00+02:00"
+                            endAt: "2025-07-28T23:00:00+02:00"
+                            breakMinutes: 30
+                            plannedSeconds: 30600
+                            durationSeconds: 30600
+                            netSeconds: 30600
+                            segments:
+                              - startAt: "2025-07-28T10:00:00+02:00"
+                                endAt: "2025-07-28T14:00:00+02:00"
+                              - startAt: "2025-07-28T18:00:00+02:00"
+                                endAt: "2025-07-28T23:00:00+02:00"
                           - id: 901
                             worker: {id: 4, name: Alice Brown}
                             jobRole: {id: 11, code: KITCHEN, name: Kitchen, color: "#4C9F70", icon: kitchen}

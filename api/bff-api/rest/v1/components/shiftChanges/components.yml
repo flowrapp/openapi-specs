@@ -236,7 +236,11 @@ components:
         `after` is the proposal. Neither side is recomputed from the live catalog
         or from the other side. `shiftId` here is the catalog Shift (`shifts.id`)
         captured for presentation. It is not `scheduled_shifts.id`; that identifier
-        is `scheduledShiftId` on the parent assignment.
+        is `scheduledShiftId` on the parent assignment. `startAt` and `endAt` are
+        the envelope. Optional `segments` are the planned intervals of a split
+        shift (not clocked worklogs). A split shift travels whole: both segments
+        are on the same snapshot. The assignment fingerprint includes `segments`,
+        not only the envelope.
       properties:
         user:
           $ref: "#/components/schemas/ShiftChangePersonDTO"
@@ -272,8 +276,19 @@ components:
           type: integer
           format: int32
           minimum: 0
-          description: Unpaid planned break captured on this side. Not a clocked break.
+          description: >
+            Planned break captured on this side. Not a clocked break and not the
+            unpaid gap between segments.
           example: 30
+        segments:
+          type: array
+          minItems: 1
+          maxItems: 2
+          description: >
+            Planned segments captured on this side. Omitted for a normal shift.
+            Not clocked worklogs. See `ScheduledShiftSegmentDTO`.
+          items:
+            $ref: "../common/components.yml#/components/schemas/ScheduledShiftSegmentDTO"
       required:
         [user, jobRole, shiftId, shiftName, shiftColor, startAt, endAt, breakMinutes]
 
@@ -376,7 +391,8 @@ components:
         incoming member may hold a different puesto. That difference is not a
         hard failure and same-position is not an invariant. `JOB_ROLE_MISMATCH`:
         the proposed holder does not hold the assignment's puesto. `SHIFT_OVERLAP`:
-        the proposal overlaps another scheduled shift of the same person.
+        the proposal overlaps another scheduled shift of the same person. Overlap
+        uses the envelope, so the unpaid gap of a split shift counts as occupied.
         `COVERAGE_SHORTFALL`: the proposal leaves a staffing demand below its
         minimum. Any of these is a relevant difference the OWNER reviews. The
         message stays qualitative and carries no contract hours, rates or other
@@ -547,8 +563,12 @@ components:
       description: >
         Assignment window sent by the OWNER. Identifiers only: the server
         resolves display names into the snapshots. Instants compare as instants,
-        so equivalent offsets match. `breakMinutes` must be strictly less than
-        the duration of `startAt`–`endAt`.
+        so equivalent offsets match. `startAt` and `endAt` are the envelope.
+        Optional `segments` correct a split shift; omit them for a single
+        interval. `breakMinutes` must be strictly less than the sum of the
+        segment durations (the envelope duration when `segments` is omitted)
+        and does not include the unpaid gap. The gap stays reserved. The whole
+        shift, both segments, is what the correction moves.
       properties:
         userId:
           type: integer
@@ -578,7 +598,20 @@ components:
           type: integer
           format: int32
           minimum: 0
+          description: >
+            Planned break of the proposed window. It does not include the unpaid
+            gap between segments.
           example: 30
+        segments:
+          type: array
+          minItems: 1
+          maxItems: 2
+          description: >
+            Proposed planned segments. Omit for a single interval. The envelope
+            must match the first start and the last end. See
+            `ScheduledShiftSegmentDTO`.
+          items:
+            $ref: "../common/components.yml#/components/schemas/ScheduledShiftSegmentDTO"
       required: [userId, jobRoleId, shiftId, startAt, endAt, breakMinutes]
 
     ShiftExchangeStatusDTO:
@@ -604,7 +637,8 @@ components:
         Reciprocal exchange of two concrete published assignments that have not
         started. Cross-week is allowed: the assignments may belong to different
         plannings and different ISO weeks. Both ids are required; omitting one
-        would be a cession and is rejected.         The caller must be the current holder
+        would be a cession and is rejected. A split shift is exchanged whole:
+        both planned segments travel with the assignment. The caller must be the current holder
         of `sourceScheduledShiftId`. The two ids and the two holders must differ.
         The assignments may have different puestos, and each person may hold a
         puesto other than the assignment they would take. Same-position is not

@@ -184,8 +184,10 @@ components:
             (`PUT /api/v1/worker/businesses/{businessId}/geofence-events/{eventId}`); it does not know the device
             state, so the app shows the label only when `effectiveEnabled` is true AND its own geofence is
             registered with location permission «Always». The backend only clocks in automatically when the
-            worker has exactly one published shift within 30 minutes of the dwell event, and clocks out on the
-            exit event. Not tied to `date`: it is the current setting.
+            worker has exactly one published segment within 30 minutes of the dwell event
+            (the gap of a split shift does not match), and clocks out on the exit event.
+            This version does not auto-close a worklog when a segment ends. Not tied to
+            `date`: it is the current setting.
           $ref: '../settings/components.yml#/components/schemas/CurrentUserAutoClockingSettingsDTO'
       required:
         - date
@@ -632,7 +634,12 @@ components:
 
     WorkerTeamScheduleShiftDTO:
       type: object
-      description: Privacy-safe presentation of one assigned shift
+      description: >
+        Privacy-safe presentation of one assigned shift. `startAt` and `endAt`
+        are the envelope (first segment start, last segment end). Optional
+        `segments` are the planned intervals of a split shift, not clocked
+        worklogs. `durationSeconds` and `netSeconds` are the server-computed
+        net (sum of segment durations minus `breakMinutes`).
       properties:
         id:
           type: integer
@@ -671,7 +678,37 @@ components:
           type: integer
           format: int32
           minimum: 0
+          description: >
+            Planned break of the shift, in minutes. It does not include the unpaid
+            gap between segments.
           example: 30
+        segments:
+          type: array
+          minItems: 1
+          maxItems: 2
+          description: >
+            Planned segments. Omitted for a normal shift. Not clocked worklogs.
+            See `ScheduledShiftSegmentDTO`.
+          items:
+            $ref: '../common/components.yml#/components/schemas/ScheduledShiftSegmentDTO'
+        durationSeconds:
+          type: integer
+          format: int64
+          minimum: 0
+          readOnly: true
+          description: >
+            Net planned seconds: sum of the planned segment durations minus
+            `breakMinutes`, never negative. When `segments` is omitted the
+            envelope is the only segment (overnight counts 24 hours). The unpaid
+            gap is not included and is not a break. Same value as `netSeconds`.
+          example: 30600
+        netSeconds:
+          type: integer
+          format: int64
+          minimum: 0
+          readOnly: true
+          description: Same value as `durationSeconds`. Server-computed.
+          example: 30600
       required:
         - id
         - worker

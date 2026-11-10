@@ -689,6 +689,24 @@ worker:
                             startAt: "2025-07-28T09:00:00+02:00"
                             endAt: "2025-07-28T17:00:00+02:00"
                             breakMinutes: 30
+                            durationSeconds: 27000
+                            netSeconds: 27000
+                          - id: 902
+                            worker: {id: 5, name: Luis García}
+                            jobRole: {id: 10, code: WAITER, name: Waiter, color: "#1A2B3C", icon: front-of-house}
+                            shiftId: 22
+                            shiftName: Split service
+                            shiftColor: "#8B5CF6"
+                            startAt: "2025-07-28T10:00:00+02:00"
+                            endAt: "2025-07-28T23:00:00+02:00"
+                            breakMinutes: 30
+                            durationSeconds: 30600
+                            netSeconds: 30600
+                            segments:
+                              - startAt: "2025-07-28T10:00:00+02:00"
+                                endAt: "2025-07-28T14:00:00+02:00"
+                              - startAt: "2025-07-28T18:00:00+02:00"
+                                endAt: "2025-07-28T23:00:00+02:00"
                           - id: 901
                             worker: {id: 4, name: Alice Brown}
                             jobRole: {id: 11, code: KITCHEN, name: Kitchen, color: "#4C9F70", icon: kitchen}
