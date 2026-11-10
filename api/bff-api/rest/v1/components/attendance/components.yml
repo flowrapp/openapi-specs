@@ -506,8 +506,10 @@ components:
     AttendanceSegmentDTO:
       type: object
       description: >
-        Worked interval drawn on a timeline: a worklog cut by its EFFECTIVE breaks. Voided
-        breaks do not cut it. REJECTED worklogs are not drawn.
+        Clocked interval drawn on a timeline: a worklog cut by its EFFECTIVE breaks.
+        Voided breaks do not cut it. REJECTED worklogs are not drawn. This is not a
+        planned split-shift segment. Planned intervals are `planned.segments`
+        (`ScheduledShiftSegmentDTO`).
       properties:
         start:
           type: string
@@ -900,6 +902,10 @@ components:
           type: integer
           format: int32
           minimum: 0
+          description: >
+            Shifts with a segment still to start. A split shift counts once, including
+            during the unpaid gap before the later segment, and is not `inProgress`
+            during that gap.
           example: 2
         finished:
           type: integer
@@ -995,7 +1001,12 @@ components:
 
     AttendancePlannedDTO:
       type: object
-      description: Planned scheduled shift (Main API `ScheduledShiftResponseDTO` and `metrics.plannedSeconds`)
+      description: >
+        Planned scheduled shift (Main API `ScheduledShiftResponseDTO` and
+        `metrics.plannedSeconds`). One object per shift, not per segment.
+        `startAt` and `endAt` are the envelope. `segments` are the planned
+        intervals and are not `clocked.segments`. `plannedSeconds`,
+        `durationSeconds` and `netSeconds` are the same net.
       properties:
         shiftId:
           type: integer
@@ -1021,18 +1032,52 @@ components:
           type: integer
           format: int32
           minimum: 0
+          description: >
+            Planned break of the shift, in minutes. It does not include the unpaid
+            gap between segments.
           example: 30
+        segments:
+          type: array
+          minItems: 1
+          maxItems: 2
+          description: >
+            Planned segments. Omitted for a normal shift. Not the clocked
+            worklogs in `AttendanceClockedDTO.segments`.
+          items:
+            $ref: "../common/components.yml#/components/schemas/ScheduledShiftSegmentDTO"
         plannedSeconds:
           type: integer
           format: int64
           minimum: 0
-          description: Net planned seconds, from the Main API (end − start − break)
+          readOnly: true
+          description: >
+            Net planned seconds from the Main API: sum of the planned segment
+            durations minus `breakMinutes`, never negative. The unpaid gap is
+            not included. Same value as `durationSeconds` and `netSeconds`.
+          example: 27000
+        durationSeconds:
+          type: integer
+          format: int64
+          minimum: 0
+          readOnly: true
+          description: Same value as `plannedSeconds`. Server-computed.
+          example: 27000
+        netSeconds:
+          type: integer
+          format: int64
+          minimum: 0
+          readOnly: true
+          description: Same value as `plannedSeconds`. Server-computed.
           example: 27000
       required: [shiftId, shiftName, shiftColor, startAt, endAt, breakMinutes, plannedSeconds]
 
     AttendanceClockedDTO:
       type: object
-      description: What was clocked, from the non-rejected worklogs of the attendance
+      description: >
+        What was clocked, from the non-rejected worklogs of the attendance.
+        `segments` here are clocked worklogs cut by breaks, not the planned
+        split-shift intervals (`AttendancePlannedDTO.segments`). Several
+        worklogs may belong to the same scheduled shift, one per planned segment.
       properties:
         firstClockIn:
           type: [string, "null"]
@@ -1048,6 +1093,8 @@ components:
           example: true
         segments:
           type: array
+          description: >
+            Clocked work intervals. Not planned shift segments.
           items:
             $ref: "#/components/schemas/AttendanceSegmentDTO"
       required: [firstClockIn, lastClockOut, open, segments]
@@ -1241,29 +1288,56 @@ components:
               $ref: "#/components/schemas/AttendanceStatusDTO"
           required: [worker, jobRole, shiftName, date, status]
         planned:
-          description: Null for UNMATCHED
+          description: >
+            Null for UNMATCHED. One object per shift. `startAt` and `endAt` are
+            the envelope. `segments` are the planned intervals, not
+            `timeline.segments`.
           oneOf:
             - type: object
               properties:
                 startAt:
                   type: string
                   format: date-time
+                  description: Envelope start (first segment).
                   example: "2026-10-30T09:00:00+01:00"
                 endAt:
                   type: string
                   format: date-time
+                  description: Envelope end (last segment).
                   example: "2026-10-30T17:00:00+01:00"
-                netSeconds:
-                  type: integer
-                  format: int64
-                  minimum: 0
-                  description: Main API `metrics.plannedSeconds`
-                  example: 27000
                 breakMinutes:
                   type: integer
                   format: int32
                   minimum: 0
+                  description: >
+                    Planned break of the shift. It does not include the unpaid gap.
                   example: 30
+                segments:
+                  type: array
+                  minItems: 1
+                  maxItems: 2
+                  description: >
+                    Planned segments. Omitted for a normal shift. Not clocked
+                    worklogs.
+                  items:
+                    $ref: "../common/components.yml#/components/schemas/ScheduledShiftSegmentDTO"
+                netSeconds:
+                  type: integer
+                  format: int64
+                  minimum: 0
+                  readOnly: true
+                  description: >
+                    Main API `metrics.plannedSeconds`: sum of the planned segment
+                    durations minus `breakMinutes`, never negative. Same value as
+                    `durationSeconds`. The unpaid gap is not included.
+                  example: 27000
+                durationSeconds:
+                  type: integer
+                  format: int64
+                  minimum: 0
+                  readOnly: true
+                  description: Same value as `netSeconds`. Server-computed.
+                  example: 27000
               required: [startAt, endAt, netSeconds, breakMinutes]
             - type: "null"
         clocked:
@@ -1319,6 +1393,9 @@ components:
               format: date-time
               example: "2026-10-30T18:00:00+01:00"
             plannedRange:
+              description: >
+                Envelope of the planned shift (first segment start, last segment
+                end). The planned intervals themselves are `planned.segments`.
               oneOf:
                 - type: object
                   properties:
@@ -1332,6 +1409,9 @@ components:
                 - type: "null"
             segments:
               type: array
+              description: >
+                Clocked work intervals (`AttendanceSegmentDTO`). Not the planned
+                split-shift segments, which are `planned.segments`.
               items:
                 $ref: "#/components/schemas/AttendanceSegmentDTO"
             deviationRanges:
@@ -1636,7 +1716,17 @@ components:
         endAt:
           type: string
           format: date-time
+          description: Envelope end.
           example: "2026-10-30T12:00:00+01:00"
+        segments:
+          type: array
+          minItems: 1
+          maxItems: 2
+          description: >
+            Planned segments of the candidate shift. Omitted for a normal shift.
+            Not clocked worklogs.
+          items:
+            $ref: "../common/components.yml#/components/schemas/ScheduledShiftSegmentDTO"
       required: [scheduledShiftId, shiftName, startAt, endAt]
 
     AttendanceDetailActionsDTO:
@@ -1898,9 +1988,29 @@ components:
         recompute it. Open set: clients must tolerate unknown values.
       example: TOO_SOON
 
+    AttendanceNotifyShiftClockInRequestDTO:
+      type: object
+      additionalProperties: false
+      description: >
+        Forwarded as the Main API `NotifyShiftClockInRequestDTO`. Omit the body,
+        or omit `segmentIndex`, to remind the first segment (index 0).
+      properties:
+        segmentIndex:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 1
+          description: >
+            Zero-based index of the planned segment. Maximum 1 in this version.
+            An index past the shift's segments is `400` `1047`.
+          example: 1
+
     AttendanceClockInNoticeDTO:
       type: object
-      description: One clock-in notice sent by the OWNER (Main API `ClockInNoticeDTO`).
+      description: >
+        One clock-in notice sent by the OWNER (Main API `ClockInNoticeDTO`).
+        `segmentIndex` and `segmentStartAt` identify the planned segment. This
+        is not a clocked worklog.
       properties:
         id:
           type: integer
@@ -1912,6 +2022,19 @@ components:
           format: int64
           minimum: 1
           example: 900
+        segmentIndex:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 1
+          description: >
+            Zero-based index of the planned segment this notice is for.
+          example: 0
+        segmentStartAt:
+          type: string
+          format: date-time
+          description: Start instant of that segment.
+          example: "2026-11-02T09:00:00+01:00"
         notifiedAt:
           type: string
           format: date-time
@@ -1925,18 +2048,36 @@ components:
         nextAllowedAt:
           type: string
           format: date-time
-          description: No other notice for this shift is accepted before this instant (cooldown of 10 minutes)
+          description: >
+            No other notice for this shift and this `segmentIndex` is accepted
+            before this instant (cooldown of 10 minutes). Another segment has its
+            own cooldown.
           example: "2026-11-02T09:17:00+01:00"
       required: [id, scheduledShiftId, notifiedAt, notifiedBy, nextAllowedAt]
 
     AttendanceClockInNoticeStateDTO:
       type: object
       description: >
-        Clock-in notice state of a shift. The action «Avisar para fichar» is enabled when
-        `blocker` is null; the Main API stays the authority and may still answer 409 or 429.
+        Clock-in notice state of the segment that can be reminded now (window
+        contains now, otherwise the next segment still to start). One state per
+        shift. «Avisar para fichar» is enabled when `blocker` is null; the Main
+        API stays the authority and may still answer 409 or 429. Send
+        `segmentIndex` back on `notifyAttendanceShiftClockIn`.
       properties:
+        segmentIndex:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 1
+          description: Segment `lastNotice` and `blocker` refer to.
+          example: 0
+        segmentStartAt:
+          type: string
+          format: date-time
+          description: Start instant of that segment.
+          example: "2026-11-02T09:00:00+01:00"
         lastNotice:
-          description: Latest notice of the shift; null when none was sent
+          description: Latest notice of this segment; null when none was sent for it.
           oneOf:
             - $ref: "#/components/schemas/AttendanceClockInNoticeDTO"
             - type: "null"

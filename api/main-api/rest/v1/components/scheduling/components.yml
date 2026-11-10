@@ -151,6 +151,93 @@ components:
       description: Local business time with minute precision. An end time before the start time ends on the following day.
       example: "09:00"
 
+    ShiftSegmentDTO:
+      type: object
+      additionalProperties: false
+      description: >
+        One planned interval of a recurring template, a schedule exception or a
+        planning requirement, in business-local time. A shift is one aggregate
+        with one or two of these intervals (a split shift, for example
+        10:00–14:00 and 18:00–23:00). This is not a clocked worklog. Clocked
+        intervals are the BFF `AttendanceClockedDTO.segments` and attendance
+        `timeline.segments` (`AttendanceSegmentDTO`); several worklogs may
+        reference the same scheduled shift.
+
+        When the parent `segments` array is present it has one or two items
+        (`maxItems: 2`), ordered by start, with no overlap and a gap of at least
+        one minute (a zero gap is one continuous segment, not two). All segments
+        share the shift's logical day. The first segment of a split shift does
+        not cross midnight; only the last segment may, under the same overnight
+        rule as the envelope (a planning week may run until Monday 07:00 local).
+        Each segment must lie entirely inside that day's opening intervals. The
+        gap is not covered by treating it as `breakMinutes`, and opening hours
+        are checked per segment, not against the envelope.
+
+        The parent `startTime` and `endTime` stay required and are the envelope:
+        start of the first segment and end of the last. Omit `segments`, or send
+        one segment equal to that envelope, for a normal shift (overnight
+        included). If the client sends both and they disagree, the server
+        rejects the write with `400` `1050` `INVALID_RECURRING_SCHEDULE` on a
+        recurring template or `400` `1053` `INVALID_SCHEDULE_EXCEPTION` on a
+        day's exception. `breakMinutes` is the shift's planned break, not the
+        unpaid gap, and must satisfy `0 ≤ breakMinutes` strictly less than the
+        sum of the segment durations. Net planned time is that sum minus
+        `breakMinutes`. Demands stay on the shift: one quota per job role covers
+        every segment. The catalog `BusinessShift` has no default segments.
+      properties:
+        startTime:
+          $ref: "#/components/schemas/LocalMinuteTimeDTO"
+        endTime:
+          $ref: "#/components/schemas/LocalMinuteTimeDTO"
+      required: [startTime, endTime]
+      example:
+        startTime: "10:00"
+        endTime: "14:00"
+
+    ScheduledShiftSegmentDTO:
+      type: object
+      additionalProperties: false
+      description: >
+        One planned interval of an assigned shift, as offset-aware instants with
+        minute precision. Not a clocked worklog: clocked intervals are the BFF
+        `AttendanceClockedDTO.segments` and attendance `timeline.segments`.
+        Several worklogs may reference the same `scheduledShiftId`, each one
+        matched to a segment.
+
+        The parent `segments` array, when present, has one or two items, ordered
+        by `startAt`, non-overlapping, with a gap of at least one minute, on the
+        same logical day (the local date of the first segment's start). Only the
+        last segment may cross midnight, with the same bound as the envelope
+        `endAt`. Each segment must lie inside the day's opening intervals; the
+        check is per segment. The parent `startAt` and `endAt` are the envelope
+        (first start, last end) and stay required. Omit `segments`, or send one
+        segment equal to the envelope, for a normal shift. An envelope that does
+        not match the segments is `400` `1047` `INVALID_SCHEDULED_SHIFT`.
+
+        `breakMinutes` does not include the unpaid gap. Net seconds are the sum
+        of the segment durations minus `breakMinutes`, never negative. The gap
+        is reserved: overlap for the same person uses the envelope
+        (`left.endAt > right.startAt`, end exclusive, so back-to-back shifts are
+        allowed). Another shift of that person placed inside the gap is `400`
+        `1047` on a draft replace and a `SHIFT_OVERLAP` warning on a shift-change
+        proposal. A split shift is exchanged or corrected as a whole; both
+        segments travel together. The shift-change fingerprint includes
+        `segments`, not only the envelope.
+      properties:
+        startAt:
+          type: string
+          format: date-time
+          description: Offset-aware start of this segment.
+          example: "2026-10-30T10:00:00+02:00"
+        endAt:
+          type: string
+          format: date-time
+          description: >
+            Offset-aware end of this segment. Only the last segment of the shift
+            may fall on the next local date.
+          example: "2026-10-30T14:00:00+02:00"
+      required: [startAt, endAt]
+
     OpeningIntervalRequestDTO:
       type: object
       properties:
@@ -250,7 +337,9 @@ components:
 
     CreateBusinessShiftRequestDTO:
       type: object
-      description: Creates an active business Shift. The name is trimmed before normalized uniqueness is checked. Optional `defaultBreakMinutes` defaults to 0 when omitted.
+      description: >
+        Creates an active business Shift. The name is trimmed before normalized uniqueness is checked. Optional `defaultBreakMinutes` defaults to 0 when omitted.
+        This catalog has no default segments. Segments are set on the recurring template, on a day's exception and on planning occurrences.
       properties:
         name:
           type: string
@@ -283,7 +372,9 @@ components:
 
     UpdateBusinessShiftRequestDTO:
       type: object
-      description: Updates a business Shift. Setting active to true reactivates it; DELETE performs logical deactivation. Optional `defaultBreakMinutes` keeps the stored value when omitted; never rewrites existing daily occurrences.
+      description: >
+        Updates a business Shift. Setting active to true reactivates it; DELETE performs logical deactivation. Optional `defaultBreakMinutes` keeps the stored value when omitted; never rewrites existing daily occurrences.
+        This catalog has no default segments.
       properties:
         name:
           type: string
@@ -319,7 +410,11 @@ components:
 
     BusinessShiftResponseDTO:
       type: object
-      description: Business-owned Shift identity and current presentation.
+      description: >
+        Business-owned Shift identity and current presentation. The catalog has
+        no default segments in this version: a split shift's segments live on
+        the recurring template, on a day's exception and on planning occurrences,
+        not on this resource.
       properties:
         id:
           type: integer
@@ -430,6 +525,9 @@ components:
         planning snapshot and into each `scheduled_shift`; those snapshots never read the catalog
         `defaultBreakMinutes` back, so editing the catalog default cannot alter existing
         plannings, their net planned seconds or their assigned shifts.
+        `breakMinutes` does not include the unpaid gap of a split shift. Optional
+        `segments` (see `ShiftSegmentDTO`) are the planned intervals; the
+        required `startTime` and `endTime` stay the envelope.
       properties:
         shiftId:
           type: integer
@@ -445,6 +543,19 @@ components:
           type: integer
           format: int32
           minimum: 0
+          description: >
+            Planned break of the shift, in minutes. It does not include the
+            unpaid gap between segments. Must be strictly less than the sum of
+            the segment durations (the envelope duration when `segments` is omitted).
+        segments:
+          type: array
+          minItems: 1
+          maxItems: 2
+          description: >
+            Planned segments. Omit for a normal shift, whose only interval is
+            the envelope. See `ShiftSegmentDTO`.
+          items:
+            $ref: "#/components/schemas/ShiftSegmentDTO"
         demands:
           type: array
           items:
@@ -453,7 +564,10 @@ components:
 
     DailyShiftResponseDTO:
       type: object
-      description: Day-specific occurrence values with its business Shift reference. Shift presentation is resolved by the BFF.
+      description: >
+        Day-specific occurrence values with its business Shift reference. Shift
+        presentation is resolved by the BFF. `startTime` and `endTime` are the
+        envelope. Optional `segments` carries a split shift; see `ShiftSegmentDTO`.
       properties:
         shiftId:
           type: integer
@@ -468,6 +582,18 @@ components:
           type: integer
           format: int32
           minimum: 0
+          description: >
+            Planned break of the shift, in minutes. It does not include the
+            unpaid gap between segments.
+        segments:
+          type: array
+          minItems: 1
+          maxItems: 2
+          description: >
+            Planned segments. Omitted for a normal shift, whose only interval is
+            the envelope. See `ShiftSegmentDTO`.
+          items:
+            $ref: "#/components/schemas/ShiftSegmentDTO"
         demands:
           type: array
           items:
@@ -845,8 +971,19 @@ components:
           description: >
             Effective break of this occurrence, captured in the planning snapshot. Never read
             back from the catalog Shift's `defaultBreakMinutes`: editing that default later
-            cannot change this snapshot nor the planned net seconds.
+            cannot change this snapshot nor the planned net seconds. It does not include the
+            unpaid gap between segments. Net planned time is the sum of the segment durations
+            minus this value.
           example: 30
+        segments:
+          type: array
+          minItems: 1
+          maxItems: 2
+          description: >
+            Planned segments captured in the snapshot. Omitted for a normal shift.
+            `startTime` and `endTime` remain the envelope. See `ShiftSegmentDTO`.
+          items:
+            $ref: "#/components/schemas/ShiftSegmentDTO"
         demands:
           type: array
           description: Staffing demand by stable business job-role ID with derived planning coverage.
@@ -946,13 +1083,51 @@ components:
         startAt:
           type: string
           format: date-time
+          description: >
+            Envelope start: the start of the first planned segment. Offset-aware.
         endAt:
           type: string
           format: date-time
+          description: >
+            Envelope end: the end of the last planned segment. Offset-aware. May
+            fall on the next local date.
         breakMinutes:
           type: integer
           format: int32
           minimum: 0
+          description: >
+            Planned break of the shift, in minutes. It does not include the unpaid
+            gap between segments.
+        segments:
+          type: array
+          minItems: 1
+          maxItems: 2
+          description: >
+            Planned segments of this assignment. Omitted for a normal shift.
+            `startAt` and `endAt` remain the envelope. Not clocked worklogs.
+            See `ScheduledShiftSegmentDTO`.
+          items:
+            $ref: "#/components/schemas/ScheduledShiftSegmentDTO"
+        durationSeconds:
+          type: integer
+          format: int64
+          minimum: 0
+          readOnly: true
+          description: >
+            Net planned seconds: sum of the planned segment durations minus
+            `breakMinutes`, never negative. When `segments` is omitted the
+            envelope is the only segment (overnight counts 24 hours). The unpaid
+            gap is not included and is not a break. Server-computed. Same value
+            as `netSeconds`.
+          example: 30600
+        netSeconds:
+          type: integer
+          format: int64
+          minimum: 0
+          readOnly: true
+          description: >
+            Same value as `durationSeconds`. Server-computed net planned seconds.
+          example: 30600
         createdAt:
           type: string
           format: date-time
@@ -989,7 +1164,12 @@ components:
 
     ScheduledShiftRequestDTO:
       type: object
-      description: One manual assignment. Presentation metadata is resolved and captured by the server from shiftId.
+      description: >
+        One manual assignment. Presentation metadata is resolved and captured by
+        the server from shiftId. `startAt` and `endAt` are the envelope. Optional
+        `segments` (see `ScheduledShiftSegmentDTO`) makes this a split shift.
+        The gap between segments is reserved: the same person cannot hold another
+        shift inside the envelope (`400` `1047`).
       properties:
         id:
           type: integer
@@ -1017,16 +1197,32 @@ components:
         startAt:
           type: string
           format: date-time
+          description: Envelope start. Must equal the first segment's `startAt` when `segments` is sent.
           example: "2026-10-05T09:00:00+02:00"
         endAt:
           type: string
           format: date-time
+          description: Envelope end. Must equal the last segment's `endAt` when `segments` is sent.
           example: "2026-10-05T17:00:00+02:00"
         breakMinutes:
           type: integer
           format: int32
           minimum: 0
+          description: >
+            Planned break of the shift, in minutes. It does not include the unpaid
+            gap between segments, and must be strictly less than the sum of the
+            segment durations.
           example: 30
+        segments:
+          type: array
+          minItems: 1
+          maxItems: 2
+          description: >
+            Planned segments. Omit for a normal shift. The envelope must be the
+            first segment's start and the last segment's end. See
+            `ScheduledShiftSegmentDTO`.
+          items:
+            $ref: "#/components/schemas/ScheduledShiftSegmentDTO"
       required: [userId, jobRoleId, shiftId, startAt, endAt, breakMinutes]
 
     ReplacePlanningScheduledShiftsRequestDTO:
@@ -1307,7 +1503,10 @@ components:
 
     TeamScheduleShiftDTO:
       type: object
-      description: Privacy-safe presentation of one assigned shift
+      description: >
+        Privacy-safe presentation of one assigned shift. `startAt` and `endAt`
+        are the envelope. Optional `segments` are the planned intervals of a
+        split shift, not clocked worklogs.
       properties:
         id:
           type: integer
@@ -1346,12 +1545,44 @@ components:
           type: integer
           format: int32
           minimum: 0
+          description: >
+            Planned break of the shift, in minutes. It does not include the unpaid
+            gap between segments.
           example: 30
+        segments:
+          type: array
+          minItems: 1
+          maxItems: 2
+          description: >
+            Planned segments. Omitted for a normal shift. Not clocked worklogs.
+            See `ScheduledShiftSegmentDTO`.
+          items:
+            $ref: "#/components/schemas/ScheduledShiftSegmentDTO"
         plannedSeconds:
           type: integer
           format: int64
           minimum: 0
-          description: "Planned net seconds of the shift: endAt minus startAt minus breakMinutes, never negative. Same rule as AttendanceMetrics.plannedSeconds. Optional: older servers may omit it."
+          readOnly: true
+          description: >
+            Net planned seconds: sum of the planned segment durations minus
+            `breakMinutes`, never negative. When `segments` is omitted the
+            envelope is the only segment (overnight counts 24 hours). The unpaid
+            gap is not included and is not a break. Same value as
+            `durationSeconds`, `netSeconds` and `AttendanceMetrics.plannedSeconds`.
+          example: 27000
+        durationSeconds:
+          type: integer
+          format: int64
+          minimum: 0
+          readOnly: true
+          description: Same value as `plannedSeconds`. Server-computed.
+          example: 27000
+        netSeconds:
+          type: integer
+          format: int64
+          minimum: 0
+          readOnly: true
+          description: Same value as `plannedSeconds`. Server-computed.
           example: 27000
       required:
         [
@@ -1564,7 +1795,9 @@ components:
       description: >
         One shift of an effective day, as the planning snapshot captures it: the business shift
         identity and presentation, the occurrence times and break, and its staffing demand per
-        job role. `endTime` not later than `startTime` rolls into the next day.
+        job role. `startTime` and `endTime` are the envelope. `endTime` not later than
+        `startTime` rolls into the next day. Optional `segments` are the planned intervals
+        of a split shift; net duration is the sum of those segments minus `breakMinutes`.
       properties:
         shiftId:
           type: integer
@@ -1587,7 +1820,19 @@ components:
           type: integer
           format: int32
           minimum: 0
+          description: >
+            Planned break of the shift, in minutes. It does not include the unpaid
+            gap between segments.
           example: 0
+        segments:
+          type: array
+          minItems: 1
+          maxItems: 2
+          description: >
+            Planned segments of the effective day. Omitted for a normal shift.
+            See `ShiftSegmentDTO`.
+          items:
+            $ref: "#/components/schemas/ShiftSegmentDTO"
         demands:
           type: array
           description: Minimum, target and maximum employees per job role

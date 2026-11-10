@@ -425,7 +425,11 @@ components:
 
     WeekCoverageShiftDTO:
       type: object
-      description: One shift of the effective day, ordered by startTime
+      description: >
+        One shift of the effective day, ordered by envelope start. `startTime`
+        and `endTime` are the envelope. Optional `segments` are the planned
+        intervals. `netSeconds` and `durationSeconds` are the sum of those
+        durations minus `breakMinutes`.
       properties:
         shiftId:
           type: integer
@@ -452,12 +456,36 @@ components:
           type: integer
           format: int32
           minimum: 0
+          description: >
+            Planned break of the shift, in minutes. It does not include the unpaid
+            gap between segments.
           example: 0
+        segments:
+          type: array
+          minItems: 1
+          maxItems: 2
+          description: >
+            Planned segments. Omitted for a normal shift. See `ShiftSegmentDTO`.
+          items:
+            $ref: "../common/components.yml#/components/schemas/ShiftSegmentDTO"
         netSeconds:
           type: integer
           format: int64
           minimum: 0
-          description: endTime - startTime (rolled into the next day when needed) minus breakMinutes
+          readOnly: true
+          description: >
+            Sum of the planned segment durations minus `breakMinutes`, never
+            negative. When `segments` is omitted this is the envelope duration
+            (rolled into the next day when `endTime` is not later than
+            `startTime`) minus `breakMinutes`. The unpaid gap is not included.
+            Same value as `durationSeconds`.
+          example: 28800
+        durationSeconds:
+          type: integer
+          format: int64
+          minimum: 0
+          readOnly: true
+          description: Same value as `netSeconds`. Server-computed.
           example: 28800
         targetEmployees:
           type: integer

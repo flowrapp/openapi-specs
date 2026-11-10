@@ -364,18 +364,44 @@ components:
         startAt:
           type: [string, "null"]
           format: date-time
-          description: SHIFT only
+          description: SHIFT only. Envelope start (first segment).
           example: "2026-11-19T10:00:00+01:00"
         endAt:
           type: [string, "null"]
           format: date-time
-          description: SHIFT only
+          description: SHIFT only. Envelope end (last segment).
           example: "2026-11-19T16:00:00+01:00"
+        segments:
+          type: array
+          minItems: 1
+          maxItems: 2
+          description: >
+            SHIFT only. Planned segments. Omitted for a normal shift and for
+            UNMATCHED. Not clocked worklogs.
+          items:
+            $ref: "../common/components.yml#/components/schemas/ScheduledShiftSegmentDTO"
         plannedSeconds:
           type: [integer, "null"]
           format: int64
           minimum: 0
-          description: SHIFT only (`metrics.plannedSeconds`)
+          description: >
+            SHIFT only (`metrics.plannedSeconds`): sum of the planned segment
+            durations minus `breakMinutes`. The unpaid gap is not included.
+            Same value as `durationSeconds` and `netSeconds`. Null for UNMATCHED.
+          example: 21600
+        durationSeconds:
+          type: [integer, "null"]
+          format: int64
+          minimum: 0
+          readOnly: true
+          description: SHIFT only. Same value as `plannedSeconds`. Null for UNMATCHED.
+          example: 21600
+        netSeconds:
+          type: [integer, "null"]
+          format: int64
+          minimum: 0
+          readOnly: true
+          description: SHIFT only. Same value as `plannedSeconds`. Null for UNMATCHED.
           example: 21600
         lifecycle:
           description: SHIFT only, Main API `ShiftAttendanceLifecycleDTO` unchanged (open enum); null for UNMATCHED

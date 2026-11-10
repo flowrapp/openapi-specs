@@ -216,6 +216,13 @@ components:
       type: string
       description: |
         Type of attendance deviation or structural incident.
+        On a split shift, early and late entry or exit and a missed segment are
+        evaluated per segment (each worklog is matched to the nearest segment).
+        `NO_SHOW` is the shift-level incident and is opened only when every
+        segment was missed. Missing one segment and working another is an
+        absence of that segment, not a shift no-show. This version does not
+        auto-close a worklog at the end of a segment; `AUTOMATIC_CLOSE` stays
+        the existing 24-hour close.
         AUTOMATIC_CLOSE: the worklog was closed automatically by the system after 24 hours without a clock-out. Its clock-out time is a placeholder and not valid: the worklog does not count in totals or reports until the owner corrects the clock-out or rejects the worklog. While this incident is open the worklog cannot be approved.
         OUTSIDE_GEOFENCE: under the WARN geofencing policy, the clock-in or the clock-out of the worklog was recorded more than 25 m (GPS margin) outside the business area (`distanceMeters > areaMeters + 25`) or without a device location. Scope MATCH, at most one open per worklog, covering both its clock-in and its clock-out; the checks are in `evidence.geofenceChecks`. Only for a worklog whose match is MATCHED, UNSCHEDULED or AMBIGUOUS (the ones attendance shows): with a NOT_APPLICABLE match (no published planning that day) the check is recorded but no incident is opened, so the worklog is not left pending without a place to review it; if the worklog is later rematched to a planning, reconciliation opens it then. It is a normal review: it does not block approval, so accepting the shift attendance or approving the worklog accepts it; a management correction resolves it as CORRECTED, and a rejection resolves it as WORKLOG_REJECTED. Once a person resolves it, it is not reopened. ALLOW never opens it, and BLOCK rejects the clock action instead (403 1100), so neither leaves this incident.
         New values may be added to this enum; clients must tolerate unknown values.
@@ -436,12 +443,21 @@ components:
 
     AttendanceMetricsDTO:
       type: object
-      description: Calculated seconds for one scheduled shift. Values are derived from current source truth.
+      description: >
+        Calculated seconds for one scheduled shift. Values are derived from current
+        source truth. A split shift is still one shift: several worklogs may
+        reference its `scheduledShiftId`, each matched to a segment. The unpaid
+        gap between segments is not planned time and is not a break.
       properties:
         plannedSeconds:
           type: integer
           format: int64
           minimum: 0
+          description: >
+            Net planned seconds: sum of the planned segment durations minus
+            `breakMinutes`, never negative. When the shift has no `segments`, the
+            envelope is the only segment (overnight counts 24 hours). The unpaid
+            gap is not included.
           example: 27000
         recordedWorkedSeconds:
           type: integer
@@ -461,22 +477,34 @@ components:
         entryDeviationSeconds:
           type: integer
           format: int64
-          description: Signed deviation of earliest clock-in from shift start; positive means late.
+          description: >
+            Signed deviation of the earliest clock-in from the first segment's
+            start (the envelope start); positive means late. Late and early
+            entry of each segment are incidents of that segment, not this total.
           example: 600
         exitDeviationSeconds:
           type: integer
           format: int64
-          description: Signed deviation of latest clock-out from shift end; positive means late.
+          description: >
+            Signed deviation of the latest clock-out from the last segment's end
+            (the envelope end); positive means late. Late and early exit of each
+            segment are incidents of that segment, not this total.
           example: -300
         unexplainedGapSeconds:
           type: integer
           format: int64
           minimum: 0
+          description: >
+            Unexplained gaps between clocked worklogs. The planned unpaid gap
+            between segments is subtracted and is not an unexplained gap.
           example: 0
         outsideScheduleSeconds:
           type: integer
           format: int64
           minimum: 0
+          description: >
+            Time worked outside every planned segment. Work during the unpaid
+            gap counts as outside the schedule.
           example: 900
         excessWorkedSeconds:
           type: integer
@@ -487,7 +515,12 @@ components:
 
     ShiftAttendanceLifecycleDTO:
       type: string
-      description: Derived lifecycle based on current time, shift interval, and worklogs.
+      description: >
+        Derived lifecycle based on current time, the planned segments, and
+        worklogs. `IN_PROGRESS` only while now falls inside a segment. During
+        the unpaid gap the shift is not in progress: a later segment still to
+        start keeps it `UPCOMING` (one shift, not a second row). There is no
+        automatic close at the end of a segment in this version.
       enum: [UPCOMING, EXPECTED, IN_PROGRESS, INTERRUPTED, FINISHED]
       example: FINISHED
 
@@ -576,6 +609,10 @@ components:
             including ambiguous candidates), ordered by clock-in, REJECTED
             included for audit; each worklog carries its `breaks`; consumers
             draw entry, exit and break segments from them without another call.
+            Clock-in and clock-out are per planned segment: several worklogs may
+            reference this same `scheduledShiftId`. One open worklog per person
+            and business still applies, so the first segment must be clocked out
+            before the next segment is clocked in.
           items:
             $ref: '../worklogs/components.yml#/components/schemas/WorkLogResponseDTO'
         approvalBlocker:
@@ -808,16 +845,40 @@ components:
       type: string
       enum: [OUTSIDE_WINDOW, ALREADY_CLOCKED_IN, MEMBER_NOT_ELIGIBLE, TOO_SOON]
       description: >
-        Why notifyShiftClockIn would refuse the shift right now, evaluated in the same order as
-        the operation: OUTSIDE_WINDOW (409 1116), ALREADY_CLOCKED_IN (409 1117),
-        MEMBER_NOT_ELIGIBLE (409 1118), TOO_SOON (429 1119). Derived by the backend from the
-        same rule as the operation; clients must not recompute it. New values may be added;
-        clients must tolerate unknown values.
+        Why notifyShiftClockIn would refuse the targeted segment right now, evaluated in the
+        same order as the operation: OUTSIDE_WINDOW (409 1116), ALREADY_CLOCKED_IN (409 1117),
+        MEMBER_NOT_ELIGIBLE (409 1118), TOO_SOON (429 1119). The window, the already-clocked
+        check and the cooldown are per segment. Clocking out of an earlier segment does not
+        set ALREADY_CLOCKED_IN for a later one. An open worklog still does. Derived by the
+        backend from the same rule as the operation; clients must not recompute it. New values
+        may be added; clients must tolerate unknown values.
       example: TOO_SOON
+
+    NotifyShiftClockInRequestDTO:
+      type: object
+      additionalProperties: false
+      description: >
+        Identifies the planned segment the reminder is for. Omit the body, or omit
+        `segmentIndex`, to address the first segment (index 0). A normal shift has
+        only that segment.
+      properties:
+        segmentIndex:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 1
+          description: >
+            Zero-based index into the shift's planned segments. 0 is the first
+            segment. The maximum is 1 in this version (at most two segments).
+            An index past the shift's segments is `400` `1047`.
+          example: 1
 
     ClockInNoticeDTO:
       type: object
-      description: One clock-in notice sent by the OWNER to the worker of a scheduled shift.
+      description: >
+        One clock-in notice sent by the OWNER to the worker of one planned segment
+        of a scheduled shift. `segmentIndex` and `segmentStartAt` identify that
+        segment. This is not a clocked worklog.
       properties:
         id:
           type: integer
@@ -829,6 +890,22 @@ components:
           format: int64
           minimum: 1
           example: 900
+        segmentIndex:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 1
+          description: >
+            Zero-based index of the planned segment this notice is for. 0 when the
+            shift has a single segment.
+          example: 0
+        segmentStartAt:
+          type: string
+          format: date-time
+          description: >
+            Start instant of that segment. Equal to the shift envelope `startAt`
+            when `segmentIndex` is 0.
+          example: "2026-11-02T09:00:00+01:00"
         userId:
           type: integer
           format: int64
@@ -848,19 +925,37 @@ components:
         nextAllowedAt:
           type: string
           format: date-time
-          description: notifiedAt plus the cooldown (10 minutes); no other notice for this shift is accepted before it.
+          description: >
+            notifiedAt plus the cooldown (10 minutes). No other notice for this
+            shift and this `segmentIndex` is accepted before it. A notice of
+            another segment does not consume this cooldown.
           example: "2026-11-02T09:17:00+01:00"
       required: [id, scheduledShiftId, userId, notifiedBy, notifiedAt, nextAllowedAt]
 
     ShiftClockInNoticeDTO:
       type: object
       description: >
-        Clock-in notice state of one shift: the latest notice, if any, and whether a new one
-        would be accepted now. Lets the client show «avisado hace X min» and enable the button
-        without another call.
+        Clock-in notice state for the segment that can be reminded now: the segment
+        whose window contains now, otherwise the next segment that has not started,
+        otherwise the last segment. A notice of another segment does not hide this
+        one. Home and attendance keep one row per shift; this object says which
+        segment «Avisar para fichar» targets.
       properties:
+        segmentIndex:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 1
+          description: >
+            Zero-based index of the segment `lastNotice` and `blocker` refer to.
+          example: 0
+        segmentStartAt:
+          type: string
+          format: date-time
+          description: Start instant of that segment.
+          example: "2026-11-02T09:00:00+01:00"
         lastNotice:
-          description: Latest notice of the shift; null when none was sent.
+          description: Latest notice of this segment; null when none was sent for it.
           oneOf:
             - $ref: '#/components/schemas/ClockInNoticeDTO'
             - type: 'null'

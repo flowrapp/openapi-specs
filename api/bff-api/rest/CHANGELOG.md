@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.0.100
+
+Spec only. No BFF implementation in this change. Requires Main API contract 0.0.110. Next repository tag: `v1.0.15` (after `v1.0.14`). This change does not create the tag.
+
+### Added
+
+- Split shift, forwarded from the Main API. Optional `segments` (1–2) on recurring template shifts, planning requirements, coverage shifts, planning assignments, draft replace requests, the worker team schedule, attendance planned and detail, the member «Hoy» row, candidate shifts, and shift-change snapshots and proposal windows. `ShiftSegmentDTO` is local `HH:mm`; `ScheduledShiftSegmentDTO` is offset-aware instants. Envelope `startTime`/`endTime` or `startAt`/`endAt` stays required. The shift catalog has no default segments. Omit `segments` for a normal shift.
+- Read-only `durationSeconds` and `netSeconds` on `WorkerTeamScheduleShiftDTO`, `AttendancePlannedDTO`, the attendance detail `planned` object, `ManagerPlanningAssignmentDTO` (`netSeconds` next to the existing `durationSeconds`), `WeekCoverageShiftDTO` (`durationSeconds` next to the existing `netSeconds`) and `MemberTodayRowDTO`. They equal the Main API net: sum of segment durations minus `breakMinutes`. The unpaid gap is not included.
+- `notifyAttendanceShiftClockIn` accepts optional `{ segmentIndex }` and returns `segmentIndex` and `segmentStartAt` on the notice and on `clockInNotice`. The reminder is per segment. Home keeps one attention row per shift; the segment to remind is `clockInNotice.segmentIndex`.
+
+### Changed
+
+- `scheduledNow` is true only while `asOf` falls inside a planned segment. During the gap the shift is not scheduled now. `upcoming` counts the shift once, including while the later segment has not started. Attendance day and home keep one row and one count per shift.
+- `durationSeconds`, `netSeconds` and `plannedSeconds` use the segment sum. Coverage `requiredSeconds` uses the same net. Draft replace rejects another shift of the same person inside the reserved gap (`400` `1047`). Shift-change `SHIFT_OVERLAP` uses the envelope.
+- `AttendanceClockedDTO.segments`, attendance detail `timeline.segments` and `AttendanceSegmentDTO` stay clocked worklogs. Planned intervals are `planned.segments`.
+- Automatic clock-in matches a dwell to a segment (a dwell in the gap does not clock in). This version does not auto-close a worklog when a segment ends.
+
 ## 0.0.99
 
 Spec only. No BFF implementation in this change. Requires Main API contract 0.0.109. This is a draft increment of `info.version`, not a repository tag.
