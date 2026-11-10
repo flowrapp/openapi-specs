@@ -528,12 +528,17 @@ scheduleExceptions:
             example:
               openingIntervals:
                 - startTime: "10:00"
-                  endTime: "18:00"
+                  endTime: "23:00"
               shifts:
                 - shiftId: 20
                   startTime: "10:00"
-                  endTime: "18:00"
+                  endTime: "23:00"
                   breakMinutes: 30
+                  segments:
+                    - startTime: "10:00"
+                      endTime: "14:00"
+                    - startTime: "18:00"
+                      endTime: "23:00"
                   demands:
                     - jobRoleId: 10
                       minimumEmployees: 1
@@ -553,12 +558,17 @@ scheduleExceptions:
                 configuration:
                   openingIntervals:
                     - startTime: "10:00"
-                      endTime: "18:00"
+                      endTime: "23:00"
                   shifts:
                     - shiftId: 20
                       startTime: "10:00"
-                      endTime: "18:00"
+                      endTime: "23:00"
                       breakMinutes: 30
+                      segments:
+                        - startTime: "10:00"
+                          endTime: "14:00"
+                        - startTime: "18:00"
+                          endTime: "23:00"
                       demands:
                         - jobRoleId: 10
                           minimumEmployees: 1
@@ -1167,6 +1177,9 @@ planning:
                             startAt: "2025-07-28T22:00:00+02:00"
                             endAt: "2025-07-29T02:00:00+02:00"
                             breakMinutes: 30
+                            plannedSeconds: 12600
+                            durationSeconds: 12600
+                            netSeconds: 12600
                       - {date: "2025-07-29", open: true, shifts: []}
                       - {date: "2025-07-30", open: true, shifts: []}
                       - {date: "2025-07-31", open: true, shifts: []}

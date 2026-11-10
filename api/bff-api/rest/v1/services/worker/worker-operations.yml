@@ -716,6 +716,8 @@ worker:
                             startAt: "2025-07-28T22:00:00+02:00"
                             endAt: "2025-07-29T02:00:00+02:00"
                             breakMinutes: 30
+                            durationSeconds: 12600
+                            netSeconds: 12600
                       - {date: "2025-07-29", closed: false, shifts: []}
                       - {date: "2025-07-30", closed: false, shifts: []}
                       - {date: "2025-07-31", closed: false, shifts: []}
