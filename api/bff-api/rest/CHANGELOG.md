@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.0.101
+
+Spec only. No BFF implementation in this change. Requires Main API contract 0.0.111. This is a draft increment of `info.version`, not a repository tag or release. The published solver contract is unchanged.
+
+### Added
+
+- Catalog Shift `defaultSegments`, forwarded from Main API 0.0.111, on `ManagerShiftCreateRequestDTO` (optional; 1–2 `ShiftSegmentDTO`; omit for a normal shift), `ManagerShiftUpdateRequestDTO` (optional; `minItems: 0`; omit keeps the stored value; `[]` clears the split default; `null` is not allowed) and `ManagerShiftResponseDTO` (omitted for a normal shift, same presence rule as planning `segments`; present for a split default). `defaultStartAt` and `defaultEndAt` stay the envelope. Segments reuse the BFF `ShiftSegmentDTO` (`HH:mm`). The envelope keeps its existing pattern (optional seconds); the match is at minute precision. Same validation as Main: ordered, non-overlapping, gap of at least one minute, planning midnight rule, `defaultBreakMinutes` strictly less than the net duration, otherwise Main `400` `1060` `INVALID_SHIFT`. Client preload only: the server does not copy `defaultSegments` when an occurrence, recurring template or requirement is created from a `shiftId` without `segments`, and catalog edits do not propagate to existing occurrences, templates, requirements or assignments.
+
+### Changed
+
+- Descriptions that said the shift catalog has no default segments (`ShiftSegmentDTO`, `ManagerShiftCreateRequestDTO`, `ManagerShiftUpdateRequestDTO`, `ManagerShiftResponseDTO`).
+
 ## Unreleased
 
 ### Fixed

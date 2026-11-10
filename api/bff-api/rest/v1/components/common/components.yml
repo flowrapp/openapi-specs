@@ -147,7 +147,9 @@ components:
         recurring template or `400` `1053` on a day's exception.
         `breakMinutes` does not include the unpaid gap and must be strictly
         less than the sum of the segment durations. Net time is that sum minus
-        `breakMinutes`. The catalog shift has no default segments.
+        `breakMinutes`. The catalog shift may store this same `HH:mm` shape as
+        optional `defaultSegments`. That value is a client preload only: the
+        server does not copy it when `segments` is omitted.
       properties:
         startTime:
           type: string

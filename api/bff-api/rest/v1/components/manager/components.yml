@@ -1058,7 +1058,8 @@ components:
       type: object
       description: >
         Creates an active business Shift. The name is trimmed before normalized uniqueness is checked. Optional `defaultBreakMinutes` defaults to 0 when omitted.
-        This catalog has no default segments. Segments are set on the recurring template, on a day's exception and on planning occurrences.
+        Optional `defaultSegments` is a client preload, the same kind of default as `defaultBreakMinutes`. The client uses it to prefill the editor when creating a NEW daily occurrence, recurring template or planning requirement. The server does not infer or copy these segments when something is created from this shiftId without `segments`. Changing the catalog never rewrites existing occurrences, recurring templates, planning requirements or assignments.
+        `defaultStartAt` and `defaultEndAt` stay the envelope (start of the first default segment, end of the last) and stay required on update and on the response. On creation they remain optional when `defaultSegments` is omitted; the response always returns them. When `defaultSegments` is sent they must be present and match that envelope, or the server returns 400 1060 INVALID_SHIFT.
       properties:
         name:
           type: string
@@ -1073,27 +1074,56 @@ components:
         defaultStartAt:
           type: string
           pattern: '^([01][0-9]|2[0-3]):[0-5][0-9](:[0-5][0-9](\.[0-9]{1,9})?)?$'
-          description: Default start time in local business time, without a date or time-zone offset. Optional on creation.
+          description: Envelope start in local business time, without a date or time-zone offset. Optional on creation. When `defaultSegments` is sent, this is the start of the first segment, compared at minute precision, and must be present.
           example: "09:00:00"
         defaultEndAt:
           type: string
           pattern: '^([01][0-9]|2[0-3]):[0-5][0-9](:[0-5][0-9](\.[0-9]{1,9})?)?$'
-          description: Default end time in local business time, without a date or time-zone offset. May precede the start time for overnight Shifts. Optional on creation.
+          description: Envelope end in local business time, without a date or time-zone offset. May precede the start time for overnight Shifts. Optional on creation. When `defaultSegments` is sent, this is the end of the last segment, compared at minute precision, and must be present.
           example: "17:00:00"
         defaultBreakMinutes:
           type: integer
           format: int32
           minimum: 0
           description: >
-            Planned unpaid break, in minutes, suggested when a NEW daily occurrence of this shift is created. It never changes existing occurrences, schedule exceptions or plannings. Not a clocked break. Must be >= 0 and strictly less than the duration of defaultStartAt→defaultEndAt (start equal to end counts as 24h for this validation). 0 means no default break. On create, omitted defaults to 0. On update, omitted keeps the stored value. If the stored default no longer fits after changing the default times, the server returns 400 1060 INVALID_SHIFT. The server never propagates this value into daily occurrences.
+            Planned unpaid break, in minutes, suggested when a NEW daily occurrence of this shift is created. It never changes existing occurrences, schedule exceptions, recurring templates, planning requirements, plannings or assignments. Not a clocked break. Must be >= 0 and strictly less than the net default duration: the defaultStartAt→defaultEndAt envelope when there is no split default (start equal to end counts as 24h), or the sum of the `defaultSegments` durations when a split default is stored (the unpaid gap is not included). 0 means no default break. On create, omitted defaults to 0. On update, omitted keeps the stored value. If the stored default no longer fits after changing the default times or the default segments, the server returns 400 1060 INVALID_SHIFT. The server never propagates this value into daily occurrences.
           example: 30
+        defaultSegments:
+          type: array
+          minItems: 1
+          maxItems: 2
+          description: >
+            Optional default segments. Omit for a normal shift. `[]` is
+            rejected (`minItems: 1`). `null` is not allowed (the array is not
+            nullable). Items reuse `ShiftSegmentDTO` (`HH:mm`), the same local
+            minute time as planning `segments`. One or two intervals, ordered
+            by start, with no overlap and a gap of at least one minute. They
+            share one logical day. The first segment of a split shift does not
+            cross midnight; only the last segment may, under the same overnight
+            rule as the envelope (an end not later than the start finishes the
+            next day). The first segment starts at `defaultStartAt` and the
+            last ends at `defaultEndAt`, compared at minute precision
+            (`10:00:00` matches `10:00`; a non-zero second or fraction does
+            not match). A single segment must equal that envelope and is stored
+            as a normal shift. These values only preload the client editor for
+            a new occurrence, recurring template or requirement. The server
+            does not copy them when a write sends this shiftId and omits
+            `segments`, and later catalog edits do not propagate to existing
+            occurrences, templates, requirements or assignments.
+            `defaultBreakMinutes` must be strictly less than the sum of these
+            segment durations (the unpaid gap is not included). A violation is
+            400 1060 INVALID_SHIFT. Catalog defaults are not checked against a
+            day's opening hours; that check applies when segments are written
+            on an occurrence.
+          items:
+            $ref: "../common/components.yml#/components/schemas/ShiftSegmentDTO"
       required: [name, color]
 
     ManagerShiftUpdateRequestDTO:
       type: object
       description: >
-        Updates a business Shift. Setting active to true reactivates it. Optional `defaultBreakMinutes` keeps the stored value when omitted; never rewrites existing daily occurrences.
-        This catalog has no default segments.
+        Updates a business Shift. Setting active to true reactivates it. Optional `defaultBreakMinutes` keeps the stored value when omitted; never rewrites existing daily occurrences, recurring templates, planning requirements or assignments.
+        Optional `defaultSegments` has the same client-preload meaning as on create. Omit it to keep the stored value. `[]` removes the split default. `null` is not allowed. `defaultStartAt` and `defaultEndAt` stay required and are the envelope.
       properties:
         name:
           type: string
@@ -1110,28 +1140,59 @@ components:
         defaultStartAt:
           type: string
           pattern: '^([01][0-9]|2[0-3]):[0-5][0-9](:[0-5][0-9](\.[0-9]{1,9})?)?$'
-          description: Default start time in local business time, without a date or time-zone offset.
+          description: Envelope start in local business time, without a date or time-zone offset. Required. Start of the first default segment when a split default is stored.
           example: "09:00:00"
         defaultEndAt:
           type: string
           pattern: '^([01][0-9]|2[0-3]):[0-5][0-9](:[0-5][0-9](\.[0-9]{1,9})?)?$'
-          description: Default end time in local business time, without a date or time-zone offset. May precede the start time for overnight Shifts.
+          description: Envelope end in local business time, without a date or time-zone offset. May precede the start time for overnight Shifts. Required. End of the last default segment when a split default is stored.
           example: "17:00:00"
         defaultBreakMinutes:
           type: integer
           format: int32
           minimum: 0
           description: >
-            Planned unpaid break, in minutes, suggested when a NEW daily occurrence of this shift is created. It never changes existing occurrences, schedule exceptions or plannings. Not a clocked break. Must be >= 0 and strictly less than the duration of defaultStartAt→defaultEndAt (start equal to end counts as 24h for this validation). 0 means no default break. On create, omitted defaults to 0. On update, omitted keeps the stored value. If the stored default no longer fits after changing the default times, the server returns 400 1060 INVALID_SHIFT. The server never propagates this value into daily occurrences.
+            Planned unpaid break, in minutes, suggested when a NEW daily occurrence of this shift is created. It never changes existing occurrences, schedule exceptions, recurring templates, planning requirements, plannings or assignments. Not a clocked break. Must be >= 0 and strictly less than the net default duration: the defaultStartAt→defaultEndAt envelope when there is no split default (start equal to end counts as 24h), or the sum of the `defaultSegments` durations when a split default is stored (the unpaid gap is not included). 0 means no default break. On create, omitted defaults to 0. On update, omitted keeps the stored value. If the stored default no longer fits after changing the default times or the default segments, the server returns 400 1060 INVALID_SHIFT. The server never propagates this value into daily occurrences.
           example: 30
+        defaultSegments:
+          type: array
+          minItems: 0
+          maxItems: 2
+          description: >
+            Replaces the stored default segments. Omit the property to keep
+            the stored value. `[]` removes the split default and leaves a
+            normal shift. `null` is not allowed (not nullable). A non-empty
+            array has one or two `ShiftSegmentDTO` intervals (`HH:mm`),
+            ordered by start, with no overlap and a gap of at least one
+            minute, and the same midnight rule as planning `segments`: the
+            first segment of a split shift does not cross midnight; only the
+            last may. The first starts at `defaultStartAt` and the last ends
+            at `defaultEndAt` (minute precision; a non-zero second or fraction
+            on the envelope does not match). One segment must equal the
+            envelope and is stored as a normal shift. If this property is
+            omitted and the stored segments no longer match the envelope after
+            `defaultStartAt` or `defaultEndAt` changes, the server returns
+            400 1060 INVALID_SHIFT. Same client-preload semantics as on create:
+            the server never copies these segments onto occurrences, recurring
+            templates, requirements or assignments, including ones created from
+            this shiftId without `segments`. `defaultBreakMinutes` must stay
+            strictly below the net duration (the sum of the segment durations
+            when a split default is stored, otherwise the envelope).
+          items:
+            $ref: "../common/components.yml#/components/schemas/ShiftSegmentDTO"
       required: [name, color, active, defaultStartAt, defaultEndAt]
 
     ManagerShiftResponseDTO:
       type: object
       description: >
-        Current business-owned Shift identity and presentation. The catalog has
-        no default segments in this version. Segments live on the recurring
-        template, on a day's exception and on planning occurrences.
+        Current business-owned Shift identity and presentation. `defaultStartAt`
+        and `defaultEndAt` are always present and are the envelope.
+        `defaultSegments` is omitted for a normal shift, the same presence rule
+        as planning `segments` (not returned as `[]`). It is present for a
+        split default. It is a client preload only: the server does not copy it
+        when an occurrence, recurring template or requirement is created from
+        this shift without `segments`, and editing it never changes existing
+        occurrences, templates, requirements or assignments.
       properties:
         id:
           type: integer
@@ -1165,25 +1226,47 @@ components:
         defaultStartAt:
           type: string
           pattern: '^([01][0-9]|2[0-3]):[0-5][0-9](:[0-5][0-9](\.[0-9]{1,9})?)?$'
-          description: Default start time in local business time, without a date or time-zone offset. Always populated.
+          description: Envelope start in local business time, without a date or time-zone offset. Always populated. Start of the first default segment when `defaultSegments` is present.
           example: "09:00:00"
         defaultEndAt:
           type: string
           pattern: '^([01][0-9]|2[0-3]):[0-5][0-9](:[0-5][0-9](\.[0-9]{1,9})?)?$'
-          description: Default end time in local business time, without a date or time-zone offset. Always populated; may precede the start time for overnight Shifts.
+          description: Envelope end in local business time, without a date or time-zone offset. Always populated; may precede the start time for overnight Shifts. End of the last default segment when `defaultSegments` is present.
           example: "17:00:00"
         defaultBreakMinutes:
           type: integer
           format: int32
           minimum: 0
           description: >
-            Always populated; 0 = no default break. Planned unpaid break, in minutes, suggested when a NEW daily occurrence of this shift is created. It never changes existing occurrences, schedule exceptions or plannings. Not a clocked break. Must be >= 0 and strictly less than the duration of defaultStartAt→defaultEndAt (start equal to end counts as 24h for this validation). 0 means no default break. On create, omitted defaults to 0. On update, omitted keeps the stored value. If the stored default no longer fits after changing the default times, the server returns 400 1060 INVALID_SHIFT. The server never propagates this value into daily occurrences.
+            Always populated; 0 = no default break. Planned unpaid break, in minutes, suggested when a NEW daily occurrence of this shift is created. It never changes existing occurrences, schedule exceptions, recurring templates, planning requirements, plannings or assignments. Not a clocked break. Must be >= 0 and strictly less than the net default duration: the defaultStartAt→defaultEndAt envelope when there is no split default (start equal to end counts as 24h), or the sum of the `defaultSegments` durations when a split default is stored (the unpaid gap is not included). 0 means no default break. On create, omitted defaults to 0. On update, omitted keeps the stored value. If the stored default no longer fits after changing the default times or the default segments, the server returns 400 1060 INVALID_SHIFT. The server never propagates this value into daily occurrences.
           example: 0
+        defaultSegments:
+          type: array
+          minItems: 1
+          maxItems: 2
+          description: >
+            Default segments of a split shift. Same shape as planning
+            `segments` (`ShiftSegmentDTO`, `HH:mm`). Omitted for a normal
+            shift, including when nothing is stored and when the stored value
+            was normalized from a single segment equal to the envelope.
+            Planning responses omit `segments` for a normal shift; this field
+            follows that rule and is not returned as `[]`. When present, both
+            segments are returned: the first starts at `defaultStartAt` and
+            the last ends at `defaultEndAt`. A client preload only. Editing it
+            does not change existing occurrences, recurring templates,
+            planning requirements or assignments, and the server does not copy
+            it when those are created from this shift without `segments`.
+          items:
+            $ref: "../common/components.yml#/components/schemas/ShiftSegmentDTO"
       required: [id, businessId, name, color, active, createdAt, updatedAt, defaultStartAt, defaultEndAt, defaultBreakMinutes]
 
     ManagerShiftSliceResponseDTO:
       type: object
-      description: Deterministic slice of current and archived business Shifts.
+      description: >
+        Deterministic slice of current and archived business Shifts.
+        A normal shift omits `defaultSegments`. `Split service` is a split
+        default (10:00–14:00 and 19:00–23:00, envelope 10:00–23:00,
+        `defaultBreakMinutes` 30, which is below the 480-minute net).
       properties:
         content:
           type: array
@@ -1217,6 +1300,21 @@ components:
             active: true
             createdAt: "2025-06-01T10:00:00+00:00"
             updatedAt: "2025-06-01T10:00:00+00:00"
+          - id: 22
+            businessId: 101
+            name: Split service
+            color: "#C47B2B"
+            defaultStartAt: "10:00:00"
+            defaultEndAt: "23:00:00"
+            defaultBreakMinutes: 30
+            defaultSegments:
+              - startTime: "10:00"
+                endTime: "14:00"
+              - startTime: "19:00"
+                endTime: "23:00"
+            active: true
+            createdAt: "2025-06-03T10:00:00+00:00"
+            updatedAt: "2025-06-03T10:00:00+00:00"
           - id: 21
             businessId: 101
             name: Legacy service
@@ -1241,6 +1339,11 @@ components:
         `breakMinutes` does not include the unpaid gap of a split shift.
         Optional `segments` are the planned intervals; `startTime` and `endTime`
         stay the envelope.
+        Omitting `segments` does not make the server copy the catalog Shift's
+        `defaultSegments`. The client may preload the editor from that default
+        when creating a new occurrence, recurring template or requirement; only
+        the segments sent here are stored. A later edit of the catalog default
+        does not change this occurrence, its planning snapshot or its assignments.
       properties:
         shiftId:
           type: integer
@@ -1831,7 +1934,8 @@ components:
           maxItems: 2
           description: >
             Planned segments captured in the requirement. Omitted for a normal
-            shift. `startTime` and `endTime` remain the envelope.
+            shift. `startTime` and `endTime` remain the envelope. Not read back
+            from the catalog Shift's `defaultSegments`.
           items:
             $ref: "../common/components.yml#/components/schemas/ShiftSegmentDTO"
         demands:
@@ -1954,7 +2058,8 @@ components:
           maxItems: 2
           description: >
             Planned segments of this assignment. Omitted for a normal shift.
-            Not clocked worklogs. See `ScheduledShiftSegmentDTO`.
+            Not clocked worklogs. See `ScheduledShiftSegmentDTO`. Not updated
+            when the catalog `defaultSegments` changes.
           items:
             $ref: "../common/components.yml#/components/schemas/ScheduledShiftSegmentDTO"
         durationSeconds:
