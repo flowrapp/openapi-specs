@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Fixed
+
+- Examples only; no schema change and no version bump. `getAttendanceDay` shows `Partido` as a split shift (`09:00–14:00` and `17:00–21:00`, envelope `09:00–21:00`, `plannedSeconds`/`durationSeconds`/`netSeconds` 30600). The worker team-schedule `Night service` example includes `durationSeconds` and `netSeconds` (12600).
+
 ## 0.0.100
 
 Spec only. No BFF implementation in this change. Requires Main API contract 0.0.110. Next repository tag: `v1.0.15` (after `v1.0.14`). This change does not create the tag.

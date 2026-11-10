@@ -236,7 +236,21 @@ attendance:
                     status: IN_PROGRESS
                     worker: {userId: 103, name: Carlos Vega}
                     jobRole: {id: 3, name: Barra}
-                    planned: {shiftId: 12, shiftName: Partido, shiftColor: "#8B5CF6", startAt: "2026-10-30T09:00:00+01:00", endAt: "2026-10-30T17:00:00+01:00", breakMinutes: 30, plannedSeconds: 27000}
+                    planned:
+                      shiftId: 12
+                      shiftName: Partido
+                      shiftColor: "#8B5CF6"
+                      startAt: "2026-10-30T09:00:00+01:00"
+                      endAt: "2026-10-30T21:00:00+01:00"
+                      breakMinutes: 30
+                      plannedSeconds: 30600
+                      durationSeconds: 30600
+                      netSeconds: 30600
+                      segments:
+                        - startAt: "2026-10-30T09:00:00+01:00"
+                          endAt: "2026-10-30T14:00:00+01:00"
+                        - startAt: "2026-10-30T17:00:00+01:00"
+                          endAt: "2026-10-30T21:00:00+01:00"
                     clocked:
                       firstClockIn: "2026-10-30T09:18:00+01:00"
                       lastClockOut: null
