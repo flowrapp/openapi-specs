@@ -2221,6 +2221,20 @@
             "items" : {
               "$ref" : "#/components/schemas/PriorAssignmentInput"
             }
+          },
+          "randomSeed" : {
+            "format" : "int64",
+            "description" : "Optional per-run salt. Absent or zero keeps worker and slot order. Any other value shuffles both reproducibly without changing assignment ids.",
+            "type" : "integer",
+            "nullable" : true
+          },
+          "workerHistories" : {
+            "description" : "Weekend and close-open counts from published history. Empty treats every worker as new. Unknown worker ids are ignored.",
+            "default" : [ ],
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/WorkerHistoryInput"
+            }
           }
         }
       },
@@ -2374,6 +2388,34 @@
             "items" : {
               "$ref" : "#/components/schemas/ContractPeriod"
             }
+          }
+        }
+      },
+      "WorkerHistoryInput" : {
+        "required" : [ "workerId", "weekendDays", "closeOpenPairs", "eligibleWeeks" ],
+        "type" : "object",
+        "properties" : {
+          "workerId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "weekendDays" : {
+            "format" : "int32",
+            "description" : "Distinct Saturday and Sunday dates occupied in the history window.",
+            "minimum" : 0,
+            "type" : "integer"
+          },
+          "closeOpenPairs" : {
+            "format" : "int32",
+            "description" : "Late-finish to next-morning pairs in the history window.",
+            "minimum" : 0,
+            "type" : "integer"
+          },
+          "eligibleWeeks" : {
+            "format" : "int32",
+            "description" : "History-window weeks in which the worker had positive capacity.",
+            "minimum" : 0,
+            "type" : "integer"
           }
         }
       }
