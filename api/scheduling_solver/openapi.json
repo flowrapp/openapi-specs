@@ -1535,6 +1535,15 @@
           "maximumEmployees" : {
             "format" : "int32",
             "type" : "integer"
+          },
+          "segments" : {
+            "description" : "Optional planned intervals, at most two. Omit or send an empty list when the shift is the single envelope startTime-endTime. Segments are ordered by start, do not overlap, and leave a gap of at least one minute on the demand date. Only the last segment may cross midnight. startTime and endTime are the envelope (first start, last end) and must match. Net seconds are the sum of the segment lengths minus breakMinutes. Overlap reserves the envelope, including the gap.",
+            "default" : [ ],
+            "maxItems" : 2,
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/ShiftSegment"
+            }
           }
         }
       },
@@ -2145,6 +2154,27 @@
             "allOf" : [ {
               "$ref" : "#/components/schemas/OffsetDateTime"
             } ]
+          },
+          "segments" : {
+            "description" : "Optional segments when this fixed shift is split, at most two. Omit or send an empty list when start and end are the only interval. Segments are ordered by start, do not overlap, and leave a gap of at least one minute on the same logical day. Only the last segment may cross midnight. start and end are the envelope (first start, last end) and must match. Rest uses the last segment end; overlap uses the envelope.",
+            "default" : [ ],
+            "maxItems" : 2,
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/PriorSegment"
+            }
+          }
+        }
+      },
+      "PriorSegment" : {
+        "required" : [ "start", "end" ],
+        "type" : "object",
+        "properties" : {
+          "start" : {
+            "$ref" : "#/components/schemas/OffsetDateTime"
+          },
+          "end" : {
+            "$ref" : "#/components/schemas/OffsetDateTime"
           }
         }
       },
@@ -2271,6 +2301,18 @@
           }
         },
         "additionalProperties" : false
+      },
+      "ShiftSegment" : {
+        "required" : [ "startTime", "endTime" ],
+        "type" : "object",
+        "properties" : {
+          "startTime" : {
+            "$ref" : "#/components/schemas/LocalTime"
+          },
+          "endTime" : {
+            "$ref" : "#/components/schemas/LocalTime"
+          }
+        }
       },
       "SolverTerminationConfig" : {
         "type" : "object",
