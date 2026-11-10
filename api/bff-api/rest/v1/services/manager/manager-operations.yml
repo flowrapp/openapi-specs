@@ -2225,6 +2225,8 @@ manager:
                     weekEnd: "2025-08-10"
                     status: FAILED
                     failureReason: "No feasible assignment was found."
+                    failureCode: SOLVER_FAILED
+                    failedAt: "2025-08-03T08:05:12+02:00"
                     totals: {requiredSeconds: 54000, scheduledSeconds: 0, contractedSeconds: 144000}
                     requirements: []
                     days: []

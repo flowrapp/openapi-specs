@@ -63,6 +63,26 @@ components:
       enum: [CREATED, SOLVING, DRAFT, PUBLISHED, ARCHIVED, FAILED]
       example: SOLVING
 
+    PlanningFailureCodeDTO:
+      type: string
+      description: >
+        Why a planning is FAILED. Forwarded from Main API `PlanningFailureCodeDTO`.
+        Open string (not a closed enum): clients and generated Java/Kotlin clients must
+        tolerate unknown values. Known values today are SOLVER_REJECTED (the solver HTTP
+        submit was rejected, 4xx), SOLVER_UNAVAILABLE (the solver could not be reached,
+        answered 5xx, a transport timeout, or the generation timed out waiting for a result),
+        SOLVER_FAILED (the Timefold job existed and ended in a failed solver status), and
+        INTERNAL (unexpected error in Main, or a week failed because a previous week of the
+        same generation job failed). Only meaningful when status is FAILED; null otherwise,
+        including FAILED rows written before this field existed. Clients must ignore this
+        field unless status is FAILED.
+      x-extensible-enum:
+        - SOLVER_REJECTED
+        - SOLVER_UNAVAILABLE
+        - SOLVER_FAILED
+        - INTERNAL
+      example: SOLVER_FAILED
+
     PlanningGenerationWeekDTO:
       type: object
       properties:
@@ -84,7 +104,26 @@ components:
           $ref: "#/components/schemas/PlanningGenerationWeekStatusDTO"
         failureReason:
           type: [string, "null"]
-          maxLength: 500
+          maxLength: 1000
+          description: >
+            Sanitized diagnostic reason of a FAILED week, forwarded from Main.
+            For operators and support, not for display in the owner UI.
+          example: null
+        failureCode:
+          description: >
+            Why this week is FAILED. Null when planningStatus is not FAILED, or for FAILED
+            rows written before this field existed. Clients must ignore this field unless
+            planningStatus is FAILED. Open string: see PlanningFailureCodeDTO.
+          oneOf:
+            - $ref: "#/components/schemas/PlanningFailureCodeDTO"
+            - type: "null"
+          example: null
+        failedAt:
+          type: [string, "null"]
+          format: date-time
+          description: >
+            Instant when this week's planning entered FAILED, in the same format as createdAt.
+            Null if planningStatus is not FAILED, or if it failed before this field existed.
           example: null
       required: [weekStart, weekEnd, planningId, planningStatus, failureReason]
 
@@ -127,7 +166,28 @@ components:
           example: null
         failureReason:
           type: [string, "null"]
-          maxLength: 500
+          maxLength: 1000
+          description: >
+            Sanitized diagnostic reason when the generation job is FAILED, forwarded from Main.
+            For operators and support, not for display in the owner UI (the app shows copy
+            from failureCode).
+          example: null
+        failureCode:
+          description: >
+            Why the generation job is FAILED (typically the first failed week, or
+            SOLVER_UNAVAILABLE if the job expired). Null when status is not FAILED, or for
+            jobs written before this field existed. Clients must ignore this field unless
+            status is FAILED. Open string: see PlanningFailureCodeDTO.
+          oneOf:
+            - $ref: "#/components/schemas/PlanningFailureCodeDTO"
+            - type: "null"
+          example: null
+        failedAt:
+          type: [string, "null"]
+          format: date-time
+          description: >
+            Instant when the generation job entered FAILED, in the same format as requestedAt.
+            Null if status is not FAILED, or if it failed before this field existed.
           example: null
         weeks:
           type: array
@@ -488,7 +548,11 @@ components:
 
     WeekCoveragePlanningDTO:
       type: object
-      description: Existing planning of the week (Main API `getPlanning`)
+      description: >
+        Existing planning of the week (Main API `getPlanning`). `failureCode` is only
+        meaningful when status is FAILED; clients must ignore it otherwise (coverage may
+        be cached). Diagnostic `failureReason` and `failedAt` are not included here; they
+        are on the planning detail and the generation job.
       properties:
         id:
           type: integer
@@ -497,6 +561,15 @@ components:
           example: 502
         status:
           $ref: "#/components/schemas/PlanningGenerationWeekStatusDTO"
+        failureCode:
+          description: >
+            Why the planning is FAILED. Null or omitted when status is not FAILED, or for
+            FAILED rows written before this field existed. Clients must ignore this field
+            unless status is FAILED. Open string: see PlanningFailureCodeDTO.
+          oneOf:
+            - $ref: "#/components/schemas/PlanningFailureCodeDTO"
+            - type: "null"
+          example: null
       required: [id, status]
 
     WeekCoverageDTO:
@@ -565,7 +638,8 @@ components:
             $ref: "#/components/schemas/WeekCoverageDayDTO"
         planning:
           description: >
-            The planning of the week, or null when there is none. DRAFT: ask before generating
+            The planning of the week, or null when there is none (`id`, `status`, and
+            optional `failureCode` when status is FAILED). DRAFT: ask before generating
             with replaceDrafts true. CREATED or SOLVING: a generation is running (409 1122).
             PUBLISHED or ARCHIVED: generating returns 409 1121. FAILED or null: generate freely.
           oneOf:

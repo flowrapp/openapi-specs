@@ -163,19 +163,41 @@ planning:
             application/json:
               schema:
                 $ref: '../../components/planning/components.yml#/components/schemas/PlanningGenerationDTO'
-              example:
-                id: 42
-                businessId: 101
-                from: "2026-11-09"
-                to: "2026-11-22"
-                status: RUNNING
-                requestedBy: 1
-                requestedAt: "2026-11-02T18:45:00+01:00"
-                finishedAt: null
-                failureReason: null
-                weeks:
-                  - {weekStart: "2026-11-09", weekEnd: "2026-11-15", planningId: 501, planningStatus: DRAFT, failureReason: null}
-                  - {weekStart: "2026-11-16", weekEnd: "2026-11-22", planningId: 502, planningStatus: SOLVING, failureReason: null}
+              examples:
+                running:
+                  summary: Generation still running
+                  value:
+                    id: 42
+                    businessId: 101
+                    from: "2026-11-09"
+                    to: "2026-11-22"
+                    status: RUNNING
+                    requestedBy: 1
+                    requestedAt: "2026-11-02T18:45:00+01:00"
+                    finishedAt: null
+                    failureReason: null
+                    failureCode: null
+                    failedAt: null
+                    weeks:
+                      - {weekStart: "2026-11-09", weekEnd: "2026-11-15", planningId: 501, planningStatus: DRAFT, failureReason: null, failureCode: null, failedAt: null}
+                      - {weekStart: "2026-11-16", weekEnd: "2026-11-22", planningId: 502, planningStatus: SOLVING, failureReason: null, failureCode: null, failedAt: null}
+                failed:
+                  summary: Generation failed
+                  value:
+                    id: 42
+                    businessId: 101
+                    from: "2026-11-09"
+                    to: "2026-11-22"
+                    status: FAILED
+                    requestedBy: 1
+                    requestedAt: "2026-11-02T18:45:00+01:00"
+                    finishedAt: "2026-11-02T18:47:10+01:00"
+                    failureReason: One or more weeks could not be generated.
+                    failureCode: SOLVER_FAILED
+                    failedAt: "2026-11-02T18:47:10+01:00"
+                    weeks:
+                      - {weekStart: "2026-11-09", weekEnd: "2026-11-15", planningId: 501, planningStatus: DRAFT, failureReason: null, failureCode: null, failedAt: null}
+                      - {weekStart: "2026-11-16", weekEnd: "2026-11-22", planningId: 502, planningStatus: FAILED, failureReason: "The solver could not find a valid schedule.", failureCode: SOLVER_FAILED, failedAt: "2026-11-02T18:47:10+01:00"}
         '401':
           description: No authenticated session
         '403':
@@ -271,7 +293,7 @@ planning:
         targetEmployees of each role over its shifts, with the worst status). Each
         shift has `targetEmployees` (Σ of its roles) and its worst `status`.
 
-        `planning` is the existing planning of the week (`id`, `status`) or null. `generation`
+        `planning` is the existing planning of the week (`id`, `status`, and optional `failureCode` when status is FAILED) or null. `generation`
         is a hint for «Generar», with the Main API checks of `requestPlanningGeneration` in its
         order: PAST_WEEK (`weekStart` before the Monday of the business-local current week,
         1098), IN_PROGRESS (planning CREATED or SOLVING, 1122), PLANNING_EXISTS (PUBLISHED or
