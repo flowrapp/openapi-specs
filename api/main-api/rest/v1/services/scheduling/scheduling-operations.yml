@@ -8,7 +8,8 @@ shifts:
         Returns a deterministic slice of the business-owned Shift catalog. The optional `name`
         filter is trimmed and matched case-insensitively as a partial value; blank values are
         ignored. The optional `active` filter selects active or archived resources. Results are
-        ordered by active state descending, name ascending, and ID ascending. Only the business
+        ordered by active state descending, name ascending, and ID ascending. A normal shift
+        omits `defaultSegments`; a split default includes it. Only the business
         owner may access this operation.
       security: [{ bearerAuth: [] }]
       parameters:
@@ -47,9 +48,16 @@ shifts:
       summary: Create a business Shift
       description: >
         Creates an active business Shift with a unique normalized name. Only the business owner
-        may access this operation. Optional `defaultBreakMinutes` defaults to 0 when omitted and
-        must fit under the defaultStartAt→defaultEndAt duration (start equal to end = 24h);
-        otherwise 400 1060. The default is never propagated into existing daily occurrences.
+        may access this operation. Optional `defaultBreakMinutes` defaults to 0 when omitted.
+        It must be strictly less than the net default duration: the defaultStartAt→defaultEndAt
+        envelope when `defaultSegments` is omitted (start equal to end = 24h), or the sum of the
+        segment durations when default segments are sent (the unpaid gap is not included).
+        Optional `defaultSegments` is one or two `ShiftSegmentDTO` values (`HH:mm`) and is only
+        a client preload for a new occurrence, recurring template or requirement. The server
+        does not copy it when a write sends this shiftId and omits `segments`. Invalid segments,
+        an envelope that does not match, or a break that does not fit returns 400 1060
+        INVALID_SHIFT. Catalog defaults are never propagated into existing occurrences,
+        recurring templates, planning requirements or assignments.
       security: [{ bearerAuth: [] }]
       parameters:
         - $ref: '../../components/scheduling/components.yml#/components/parameters/BusinessId'
@@ -59,9 +67,42 @@ shifts:
           application/json:
             schema:
               $ref: '../../components/scheduling/components.yml#/components/schemas/CreateBusinessShiftRequestDTO'
-            example:
-              name: Morning service
-              color: "#1A2B3C"
+            examples:
+              nameAndColor:
+                summary: Name and color only
+                description: Times and default segments omitted. `defaultBreakMinutes` defaults to 0.
+                value:
+                  name: Morning service
+                  color: "#1A2B3C"
+              normal:
+                summary: Normal shift
+                description: >
+                  No `defaultSegments`. The envelope is the only interval.
+                  `defaultBreakMinutes` 30 fits under 09:00–17:00.
+                value:
+                  name: Morning service
+                  color: "#1A2B3C"
+                  defaultStartAt: "09:00:00"
+                  defaultEndAt: "17:00:00"
+                  defaultBreakMinutes: 30
+              split:
+                summary: Split shift
+                description: >
+                  Two default segments, 10:00–14:00 and 19:00–23:00. The envelope
+                  is 10:00–23:00. Net duration is 480 minutes, so `defaultBreakMinutes`
+                  30 is valid. The server does not copy these segments onto later
+                  writes that omit `segments`.
+                value:
+                  name: Split service
+                  color: "#C47B2B"
+                  defaultStartAt: "10:00:00"
+                  defaultEndAt: "23:00:00"
+                  defaultBreakMinutes: 30
+                  defaultSegments:
+                    - startTime: "10:00"
+                      endTime: "14:00"
+                    - startTime: "19:00"
+                      endTime: "23:00"
       responses:
         '201':
           description: Business Shift created
@@ -79,7 +120,10 @@ shifts:
       tags: [Shifts]
       operationId: getBusinessShift
       summary: Get a business Shift
-      description: Returns an active or archived Shift belonging to the requested business, including its default local start and end times. Only the business owner may access this operation.
+      description: >
+        Returns an active or archived Shift belonging to the requested business, including its
+        default local start and end times. `defaultSegments` is included only for a split
+        default and omitted for a normal shift. Only the business owner may access this operation.
       security: [{ bearerAuth: [] }]
       parameters:
         - $ref: '../../components/scheduling/components.yml#/components/parameters/BusinessId'
@@ -102,10 +146,16 @@ shifts:
       description: >
         Updates a Shift without changing its identity. Setting `active` to true reactivates an
         archived Shift. Optional `defaultBreakMinutes` keeps the stored value when omitted; if
-        present (or if default times change so the stored break no longer fits) it must stay
-        strictly below the default duration (start equal to end = 24h) or the server returns
-        400 1060. Changing the default never rewrites existing daily occurrences, schedule
-        exceptions or plannings.
+        present (or if the default times or default segments change so the stored break no
+        longer fits) it must stay strictly below the net default duration or the server returns
+        400 1060 INVALID_SHIFT. With no split default that duration is the envelope (start equal
+        to end = 24h). With `defaultSegments` it is the sum of the segment durations.
+        Omit `defaultSegments` to keep the stored segments. `[]` removes the split default.
+        `null` is not allowed. Segments must be ordered, non-overlapping, and match the
+        envelope, with the same midnight rule as planning. Changing a catalog default never
+        rewrites existing daily occurrences, recurring templates, planning requirements,
+        schedule exceptions, plannings or assignments, and the server does not copy
+        `defaultSegments` when those are created from this shiftId without `segments`.
       security: [{ bearerAuth: [] }]
       parameters:
         - $ref: '../../components/scheduling/components.yml#/components/parameters/BusinessId'
@@ -116,12 +166,43 @@ shifts:
           application/json:
             schema:
               $ref: '../../components/scheduling/components.yml#/components/schemas/UpdateBusinessShiftRequestDTO'
-            example:
-              name: Morning service
-              color: "#4C9F70"
-              active: true
-              defaultStartAt: "09:00:00"
-              defaultEndAt: "17:00:00"
+            examples:
+              normal:
+                summary: Normal shift, keep stored default segments
+                description: Omitting `defaultSegments` keeps the stored value.
+                value:
+                  name: Morning service
+                  color: "#4C9F70"
+                  active: true
+                  defaultStartAt: "09:00:00"
+                  defaultEndAt: "17:00:00"
+              split:
+                summary: Set a split default
+                description: >
+                  Envelope 10:00–23:00 with segments 10:00–14:00 and 19:00–23:00.
+                  `defaultBreakMinutes` 30 is below the 480-minute net.
+                value:
+                  name: Split service
+                  color: "#C47B2B"
+                  active: true
+                  defaultStartAt: "10:00:00"
+                  defaultEndAt: "23:00:00"
+                  defaultBreakMinutes: 30
+                  defaultSegments:
+                    - startTime: "10:00"
+                      endTime: "14:00"
+                    - startTime: "19:00"
+                      endTime: "23:00"
+              clearSplit:
+                summary: Remove the split default
+                description: "`[]` clears stored default segments. `null` is not allowed."
+                value:
+                  name: Morning service
+                  color: "#4C9F70"
+                  active: true
+                  defaultStartAt: "09:00:00"
+                  defaultEndAt: "17:00:00"
+                  defaultSegments: []
       responses:
         '200':
           description: Business Shift updated or reactivated

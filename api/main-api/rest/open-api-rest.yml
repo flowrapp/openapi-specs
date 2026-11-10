@@ -59,7 +59,7 @@ info:
     existing permission requirements; authorised users can access their underlying business data.
 
     `updateBusinessPlan` (platform admin) changes the plan and emits a `PERMISSIONS` sync signal.
-  version: 0.0.110
+  version: 0.0.111
   contact:
     name: Flowrapp Team
     url: https://flowrapp.github.io
@@ -112,7 +112,9 @@ tags:
   - name: Job Roles
     description: Business job-role catalogs and member assignments.
   - name: Shifts
-    description: Business-owned shift identity and presentation catalogs.
+    description: >
+      Business-owned shift identity and presentation catalogs, including optional
+      default segments used only as a client preload.
   - name: Planning
     description: Weekly business plannings and scheduled shifts.
   - name: Shift Exchanges

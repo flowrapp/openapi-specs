@@ -1384,7 +1384,8 @@ manager:
       description: >
         Returns the deterministic current and archived Shift catalog for the requested business.
         `name` is a trimmed, case-insensitive partial filter; blank values are ignored. Results
-        are ordered by active state descending, name ascending, and ID ascending. Requires an
+        are ordered by active state descending, name ascending, and ID ascending. A normal shift
+        omits `defaultSegments`; a split default includes it. Requires an
         OWNER membership.
       tags: [Manager]
       operationId: getManagerShifts
@@ -1447,7 +1448,16 @@ manager:
 
     post:
       summary: Create a business Shift
-      description: Creates an active business Shift with a unique normalized name. Requires an OWNER membership. Optional `defaultBreakMinutes` defaults to 0 when omitted; invalid duration fit returns Main 400 1060.
+      description: >
+        Creates an active business Shift with a unique normalized name. Requires an OWNER membership.
+        Optional `defaultBreakMinutes` defaults to 0 when omitted. It must be strictly less than the
+        net default duration: the envelope when `defaultSegments` is omitted (start equal to end = 24h),
+        or the sum of the segment durations when default segments are sent. Optional `defaultSegments`
+        is one or two `ShiftSegmentDTO` values (`HH:mm`) and is only a client preload. The server does
+        not copy it when a write sends this shiftId and omits `segments`. Invalid segments, an envelope
+        that does not match, or a break that does not fit returns Main 400 1060 INVALID_SHIFT. Catalog
+        defaults never propagate to existing occurrences, recurring templates, planning requirements
+        or assignments.
       tags: [Manager]
       operationId: createManagerShift
       security: [{ bearerAuth: [] }]
@@ -1462,9 +1472,41 @@ manager:
           application/json:
             schema:
               $ref: '../../components/manager/components.yml#/components/schemas/ManagerShiftCreateRequestDTO'
-            example:
-              name: Morning service
-              color: "#1A2B3C"
+            examples:
+              nameAndColor:
+                summary: Name and color only
+                description: Times and default segments omitted. `defaultBreakMinutes` defaults to 0.
+                value:
+                  name: Morning service
+                  color: "#1A2B3C"
+              normal:
+                summary: Normal shift
+                description: >
+                  No `defaultSegments`. The envelope is the only interval.
+                  `defaultBreakMinutes` 30 fits under 09:00–17:00.
+                value:
+                  name: Morning service
+                  color: "#1A2B3C"
+                  defaultStartAt: "09:00:00"
+                  defaultEndAt: "17:00:00"
+                  defaultBreakMinutes: 30
+              split:
+                summary: Split shift
+                description: >
+                  Two default segments, 10:00–14:00 and 19:00–23:00. The envelope
+                  is 10:00–23:00. Net duration is 480 minutes, so `defaultBreakMinutes`
+                  30 is valid.
+                value:
+                  name: Split service
+                  color: "#C47B2B"
+                  defaultStartAt: "10:00:00"
+                  defaultEndAt: "23:00:00"
+                  defaultBreakMinutes: 30
+                  defaultSegments:
+                    - startTime: "10:00"
+                      endTime: "14:00"
+                    - startTime: "19:00"
+                      endTime: "23:00"
       responses:
         '201':
           description: Business Shift created
@@ -1473,7 +1515,7 @@ manager:
               schema:
                 $ref: '../../components/manager/components.yml#/components/schemas/ManagerShiftResponseDTO'
         '400':
-          description: Invalid Shift values
+          description: Invalid Shift values, including default segments or a default break that does not fit (1060 INVALID_SHIFT)
           content:
             application/problem+json:
               schema:
@@ -1510,7 +1552,10 @@ manager:
   shift-item:
     get:
       summary: Get a business Shift
-      description: Returns an active or archived Shift belonging to the requested business, including its default local start and end times. Requires an OWNER membership.
+      description: >
+        Returns an active or archived Shift belonging to the requested business, including its
+        default local start and end times. `defaultSegments` is included only for a split
+        default and omitted for a normal shift. Requires an OWNER membership.
       tags: [Manager]
       operationId: getManagerShift
       security: [{ bearerAuth: [] }]
@@ -1561,8 +1606,12 @@ manager:
       description: >
         Updates Shift presentation without changing its identity. Setting active to true
         reactivates an archived Shift. Optional `defaultBreakMinutes` keeps the stored value
-        when omitted; invalid duration fit returns Main 400 1060. Changing the default never
-        rewrites existing daily occurrences.
+        when omitted. Omit `defaultSegments` to keep the stored segments; `[]` removes the
+        split default; `null` is not allowed. Invalid segments, an envelope that does not
+        match, or a break that does not fit the net duration returns Main 400 1060
+        INVALID_SHIFT. Changing the default never rewrites existing daily occurrences,
+        recurring templates, planning requirements or assignments, and the server does not
+        copy `defaultSegments` when those are created from this shiftId without `segments`.
       tags: [Manager]
       operationId: updateManagerShift
       security: [{ bearerAuth: [] }]
@@ -1581,12 +1630,43 @@ manager:
           application/json:
             schema:
               $ref: '../../components/manager/components.yml#/components/schemas/ManagerShiftUpdateRequestDTO'
-            example:
-              name: Morning service
-              color: "#4C9F70"
-              active: true
-              defaultStartAt: "09:00:00"
-              defaultEndAt: "17:00:00"
+            examples:
+              normal:
+                summary: Normal shift, keep stored default segments
+                description: Omitting `defaultSegments` keeps the stored value.
+                value:
+                  name: Morning service
+                  color: "#4C9F70"
+                  active: true
+                  defaultStartAt: "09:00:00"
+                  defaultEndAt: "17:00:00"
+              split:
+                summary: Set a split default
+                description: >
+                  Envelope 10:00–23:00 with segments 10:00–14:00 and 19:00–23:00.
+                  `defaultBreakMinutes` 30 is below the 480-minute net.
+                value:
+                  name: Split service
+                  color: "#C47B2B"
+                  active: true
+                  defaultStartAt: "10:00:00"
+                  defaultEndAt: "23:00:00"
+                  defaultBreakMinutes: 30
+                  defaultSegments:
+                    - startTime: "10:00"
+                      endTime: "14:00"
+                    - startTime: "19:00"
+                      endTime: "23:00"
+              clearSplit:
+                summary: Remove the split default
+                description: "`[]` clears stored default segments. `null` is not allowed."
+                value:
+                  name: Morning service
+                  color: "#4C9F70"
+                  active: true
+                  defaultStartAt: "09:00:00"
+                  defaultEndAt: "17:00:00"
+                  defaultSegments: []
       responses:
         '200':
           description: Business Shift updated or reactivated
@@ -1595,7 +1675,7 @@ manager:
               schema:
                 $ref: '../../components/manager/components.yml#/components/schemas/ManagerShiftResponseDTO'
         '400':
-          description: Invalid Shift values
+          description: Invalid Shift values, including default segments or a default break that does not fit (1060 INVALID_SHIFT)
           content:
             application/problem+json:
               schema:
