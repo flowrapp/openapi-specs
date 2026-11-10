@@ -564,9 +564,11 @@ components:
         Assignment window sent by the OWNER. Identifiers only: the server
         resolves display names into the snapshots. Instants compare as instants,
         so equivalent offsets match. `startAt` and `endAt` are the envelope.
-        Optional `segments` correct a split shift; omit them for a single
-        interval. `breakMinutes` must be strictly less than the sum of the
-        segment durations (the envelope duration when `segments` is omitted)
+        Optional `segments` correct a split shift. Omit `segments`, or send an
+        empty array, for a normal shift. One or two elements is a split shift.
+        The domain validates 1–2 segments only when the list is not empty.
+        `breakMinutes` must be strictly less than the sum of the
+        segment durations (the envelope duration when `segments` is omitted or empty)
         and does not include the unpaid gap. The gap stays reserved. The whole
         shift, both segments, is what the correction moves.
       properties:
@@ -604,12 +606,13 @@ components:
           example: 30
         segments:
           type: array
-          minItems: 1
           maxItems: 2
           description: >
-            Proposed planned segments. Omit for a single interval. The envelope
-            must match the first start and the last end. See
-            `ScheduledShiftSegmentDTO`.
+            Proposed planned segments. Omit, or send an empty array, for a
+            normal shift. One or two elements is a split shift. The domain
+            validates 1–2 segments only when the list is not empty. When the
+            list is not empty, the envelope must match the first start and the
+            last end. See `ScheduledShiftSegmentDTO`.
           items:
             $ref: "../common/components.yml#/components/schemas/ScheduledShiftSegmentDTO"
       required: [userId, jobRoleId, shiftId, startAt, endAt, breakMinutes]

@@ -59,7 +59,7 @@ info:
     existing permission requirements; authorised users can access their underlying business data.
 
     `updateBusinessPlan` (platform admin) changes the plan and emits a `PERMISSIONS` sync signal.
-  version: 0.0.111
+  version: 0.0.112
   contact:
     name: Flowrapp Team
     url: https://flowrapp.github.io

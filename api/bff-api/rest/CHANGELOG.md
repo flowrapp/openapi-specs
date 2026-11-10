@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.0.102
+
+Spec only. No BFF implementation in this change. Requires Main API contract 0.0.112. This is a draft increment of `info.version`, not a repository tag or release. The published solver contract is unchanged.
+
+### Fixed
+
+- Removed `minItems` from the manager request `segments` arrays that match the Main API fix in 0.0.112. `maxItems` stays 2. Omit the property, or send an empty array, for a normal shift; one or two elements is a split shift. The domain validates 1–2 segments only when the list is not empty.
+  - `ManagerDailyShiftRequestDTO.segments`, used by `replaceManagerRecurringSchedule` (`PUT /api/v1/manager/businesses/{businessId}/schedule/recurring/{scheduleId}`) and by schedule exceptions (`ManagerScheduleExceptionRequestDTO`).
+  - `ManagerScheduledShiftRequestDTO.segments`, used by `replaceManagerPlanningScheduledShifts`.
+  - `ShiftChangeProposalWindowDTO.segments`, used by `CreateScheduleChangeRequestDTO.before` and `after`.
+- Catalog `ManagerShiftCreateRequestDTO.defaultSegments` and `ManagerShiftUpdateRequestDTO.defaultSegments` are unchanged. On create, `[]` stays rejected. On update, omit keeps the stored value and `[]` clears the split default.
+
 ## 0.0.101
 
 Spec only. No BFF implementation in this change. Requires Main API contract 0.0.111. This is a draft increment of `info.version`, not a repository tag or release. The published solver contract is unchanged.

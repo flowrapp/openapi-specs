@@ -135,15 +135,16 @@ components:
         worklog. Clocked intervals are `AttendanceClockedDTO.segments` and
         attendance `timeline.segments` (`AttendanceSegmentDTO`).
 
-        When the parent `segments` array is present it has one or two items,
+        When the parent `segments` array is non-empty it has one or two items,
         ordered by start, with no overlap and a gap of at least one minute.
         All segments share the shift's logical day. The first segment of a
         split shift does not cross midnight; only the last segment may. Each
         segment must lie entirely inside that day's opening intervals. The gap
         is not `breakMinutes`, and opening hours are checked per segment.
         The parent `startTime` and `endTime` stay required and are the envelope
-        (first start, last end). Omit `segments`, or send one segment equal to
-        the envelope, for a normal shift. A mismatch is `400` `1050` on a
+        (first start, last end). On `ManagerDailyShiftRequestDTO`, omit
+        `segments`, or send an empty array, for a normal shift. One segment
+        equal to the envelope is also a normal shift. A mismatch is `400` `1050` on a
         recurring template or `400` `1053` on a day's exception.
         `breakMinutes` does not include the unpaid gap and must be strictly
         less than the sum of the segment durations. Net time is that sum minus
@@ -174,13 +175,15 @@ components:
         `AttendanceClockedDTO.segments` and attendance `timeline.segments`.
         Several worklogs may reference the same `scheduledShiftId`.
 
-        The parent `segments` array, when present, has one or two items,
+        The parent `segments` array, when non-empty, has one or two items,
         ordered by `startAt`, non-overlapping, with a gap of at least one
         minute, on the same logical day. Only the last segment may cross
         midnight. Each segment must lie inside the day's opening intervals.
         The parent `startAt` and `endAt` are the envelope and stay required.
-        Omit `segments`, or send one segment equal to the envelope, for a
-        normal shift. An envelope that does not match is `400` `1047`.
+        On `ManagerScheduledShiftRequestDTO` and `ShiftChangeProposalWindowDTO`,
+        omit `segments`, or send an empty array, for a normal shift. One
+        segment equal to the envelope is also a normal shift. An envelope that
+        does not match is `400` `1047`.
         `breakMinutes` does not include the unpaid gap. Net seconds
         (`durationSeconds`, `netSeconds`, `plannedSeconds`) are the sum of the
         segment durations minus `breakMinutes`, never negative. The gap is
