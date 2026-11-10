@@ -2101,8 +2101,28 @@ components:
           example: SOLVING
         failureReason:
           type: [string, "null"]
-          maxLength: 500
-          description: Optional sanitized owner-facing failure reason; never a stack trace or raw solver payload
+          maxLength: 1000
+          description: >
+            Sanitized diagnostic reason for FAILED plannings, forwarded from Main; never a
+            stack trace or raw solver payload. For operators and support, not for display
+            in the owner UI (the app shows copy from failureCode).
+          example: null
+        failureCode:
+          description: >
+            Why the planning is FAILED. Null when status is not FAILED, or for FAILED rows
+            written before this field existed. Clients must ignore this field unless status
+            is FAILED. Open string: see PlanningFailureCodeDTO.
+          oneOf:
+            - $ref: "../planning/components.yml#/components/schemas/PlanningFailureCodeDTO"
+            - type: "null"
+          example: null
+        failedAt:
+          type: [string, "null"]
+          format: date-time
+          description: >
+            Instant when the planning entered FAILED, in the same format as createdAt
+            (UTC Instant serialized with offset). Null if the planning is not FAILED, or if
+            it failed before this field existed.
           example: null
         totals:
           $ref: "#/components/schemas/ManagerPlanningTotalsDTO"

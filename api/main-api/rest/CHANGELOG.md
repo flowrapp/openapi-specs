@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.0.109
+
+Spec only. No Main API implementation in this change. Coordinate with BFF API 0.0.99. This is a draft increment of `info.version`, not a repository tag.
+
+### Added
+
+- `failureCode` and `failedAt` (both nullable, not required) on `PlanningResponseDTO`, `PlanningGenerationDTO` and `PlanningGenerationWeekDTO`. `failureCode` is an open string (`PlanningFailureCodeDTO`, `x-extensible-enum`, not a closed `enum`) with known values `SOLVER_REJECTED`, `SOLVER_UNAVAILABLE`, `SOLVER_FAILED` and `INTERNAL`; clients must tolerate unknown values. It is only meaningful when `status` (or `planningStatus`) is `FAILED`. `failedAt` uses the same `date-time` format as `createdAt`.
+
+### Changed
+
+- `failureReason` `maxLength` increased from 500 to 1000 on the same three schemas. The field remains a sanitized diagnostic for operators and support, not for display in the owner UI (the app shows copy from `failureCode`).
+
 ## 0.0.102 (local spec draft; not a release or repository tag)
 
 Description-only update for backend change `correction-accepts-remaining`: management worklog and break corrections reconcile attendance incidents synchronously, accepting remaining temporal deviations and leaving structural incidents open. No paths, schemas, enums or operationIds changed.

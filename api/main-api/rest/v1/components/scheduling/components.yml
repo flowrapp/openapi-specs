@@ -889,6 +889,26 @@ components:
         FAILED exposes only a sanitized failure reason.
       enum: [CREATED, SOLVING, DRAFT, PUBLISHED, ARCHIVED, FAILED]
 
+    PlanningFailureCodeDTO:
+      type: string
+      description: >
+        Why a planning is FAILED. Open string (not a closed enum): clients and generated
+        Java/Kotlin clients must tolerate unknown values. Known values today are
+        SOLVER_REJECTED (the solver HTTP submit was rejected, 4xx),
+        SOLVER_UNAVAILABLE (the solver could not be reached, answered 5xx, a transport
+        timeout, or the generation timed out waiting for a result),
+        SOLVER_FAILED (the Timefold job existed and ended in a failed solver status),
+        and INTERNAL (unexpected error in Main, or a week failed because a previous week
+        of the same generation job failed). Only meaningful when status is FAILED; null
+        otherwise, including FAILED rows written before this field existed. Clients must
+        ignore this field unless status is FAILED.
+      x-extensible-enum:
+        - SOLVER_REJECTED
+        - SOLVER_UNAVAILABLE
+        - SOLVER_FAILED
+        - INTERNAL
+      example: SOLVER_FAILED
+
     ScheduledShiftResponseDTO:
       type: object
       properties:
@@ -1057,8 +1077,28 @@ components:
           $ref: "#/components/schemas/PlanningStatusDTO"
         failureReason:
           type: [string, "null"]
-          maxLength: 500
-          description: Sanitized owner-facing reason for FAILED plannings; never a stack trace or raw provider payload.
+          maxLength: 1000
+          description: >
+            Sanitized diagnostic reason for FAILED plannings; never a stack trace or raw
+            provider payload. For operators and support, not for display in the owner UI
+            (the app shows copy from failureCode).
+          example: null
+        failureCode:
+          description: >
+            Why the planning is FAILED. Null when status is not FAILED, or for FAILED rows
+            written before this field existed. Clients must ignore this field unless status
+            is FAILED. Open string: see PlanningFailureCodeDTO.
+          oneOf:
+            - $ref: "#/components/schemas/PlanningFailureCodeDTO"
+            - type: "null"
+          example: null
+        failedAt:
+          type: [string, "null"]
+          format: date-time
+          description: >
+            Instant when the planning entered FAILED, in the same format as createdAt
+            (UTC Instant serialized with offset). Null if the planning is not FAILED, or if
+            it failed before this field existed.
           example: null
         requirements:
           type: array
@@ -1195,7 +1235,9 @@ components:
             weekStart: "2025-08-04"
             weekEnd: "2025-08-10"
             status: FAILED
+            failureCode: SOLVER_FAILED
             failureReason: "No feasible assignment was found."
+            failedAt: "2025-08-03T08:05:12+02:00"
             requirements: []
             createdAt: "2025-08-03T08:00:00+02:00"
             publishedAt: null
@@ -1422,8 +1464,26 @@ components:
           $ref: "#/components/schemas/PlanningStatusDTO"
         failureReason:
           type: [string, "null"]
-          maxLength: 500
-          description: Sanitized reason of a FAILED week, as in PlanningResponseDTO.
+          maxLength: 1000
+          description: >
+            Sanitized diagnostic reason of a FAILED week, as in PlanningResponseDTO.
+            For operators and support, not for display in the owner UI.
+          example: null
+        failureCode:
+          description: >
+            Why this week is FAILED. Null when planningStatus is not FAILED, or for FAILED
+            rows written before this field existed. Clients must ignore this field unless
+            planningStatus is FAILED. Open string: see PlanningFailureCodeDTO.
+          oneOf:
+            - $ref: "#/components/schemas/PlanningFailureCodeDTO"
+            - type: "null"
+          example: null
+        failedAt:
+          type: [string, "null"]
+          format: date-time
+          description: >
+            Instant when this week's planning entered FAILED, in the same format as createdAt.
+            Null if planningStatus is not FAILED, or if it failed before this field existed.
           example: null
       required: [weekStart, weekEnd, planningId, planningStatus, failureReason]
 
@@ -1468,8 +1528,28 @@ components:
           example: null
         failureReason:
           type: [string, "null"]
-          maxLength: 500
-          description: Sanitized owner-facing reason when FAILED; never a stack trace or raw provider payload.
+          maxLength: 1000
+          description: >
+            Sanitized diagnostic reason when the generation job is FAILED; never a stack
+            trace or raw provider payload. For operators and support, not for display in
+            the owner UI (the app shows copy from failureCode).
+          example: null
+        failureCode:
+          description: >
+            Why the generation job is FAILED (typically the first failed week, or
+            SOLVER_UNAVAILABLE if the job expired). Null when status is not FAILED, or for
+            jobs written before this field existed. Clients must ignore this field unless
+            status is FAILED. Open string: see PlanningFailureCodeDTO.
+          oneOf:
+            - $ref: "#/components/schemas/PlanningFailureCodeDTO"
+            - type: "null"
+          example: null
+        failedAt:
+          type: [string, "null"]
+          format: date-time
+          description: >
+            Instant when the generation job entered FAILED, in the same format as requestedAt.
+            Null if status is not FAILED, or if it failed before this field existed.
           example: null
         weeks:
           type: array

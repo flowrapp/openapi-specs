@@ -1355,17 +1355,23 @@ planning:
                 requestedAt: "2026-11-02T18:45:00+01:00"
                 finishedAt: "2026-11-02T18:47:10+01:00"
                 failureReason: One or more weeks could not be generated.
+                failureCode: SOLVER_FAILED
+                failedAt: "2026-11-02T18:47:10+01:00"
                 weeks:
                   - weekStart: "2026-11-09"
                     weekEnd: "2026-11-15"
                     planningId: 501
                     planningStatus: DRAFT
                     failureReason: null
+                    failureCode: null
+                    failedAt: null
                   - weekStart: "2026-11-16"
                     weekEnd: "2026-11-22"
                     planningId: 502
                     planningStatus: FAILED
                     failureReason: The solver could not find a valid schedule.
+                    failureCode: SOLVER_FAILED
+                    failedAt: "2026-11-02T18:47:10+01:00"
         '401':
           description: Unauthorized.
         '403': {$ref: '../../components/scheduling/components.yml#/components/responses/Forbidden'}
