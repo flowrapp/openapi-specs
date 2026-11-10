@@ -216,7 +216,7 @@ components:
         check is per segment. The parent `startAt` and `endAt` are the envelope
         (first start, last end) and stay required. On `ScheduledShiftRequestDTO`
         and `ShiftChangeProposalWindowDTO`, omit `segments`, or send an empty
-        array, for a         normal shift. One segment equal to the envelope is also a
+        array, for a normal shift. One segment equal to the envelope is also a
         normal shift. An envelope that does not match the segments is
         `400` `1047` `INVALID_SCHEDULED_SHIFT`.
 
