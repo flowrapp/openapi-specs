@@ -2449,8 +2449,10 @@ manager:
         `planningId`. Send `version` from the latest manager planning response; a stale
         version returns 409 without replacing any shifts. An empty array clears the planning.
         Shift name and color come from the referenced business Shift, not the request.
-        Optional `segments` (one or two) make an assignment a split shift. `startAt` and
-        `endAt` are the envelope and must match the first start and the last end. The
+        Optional `segments` make an assignment a split shift. Omit `segments`, or send an
+        empty array, for a normal shift. A non-empty list has one or two segments, and
+        `startAt` and `endAt` are the envelope and must match the first start and the last
+        end. The
         unpaid gap is reserved: envelopes of the same person that intersect are `400`
         `1047`, including a shift placed inside that gap. Returns the updated manager
         planning projection with a new version and recalculated aggregates. Net seconds

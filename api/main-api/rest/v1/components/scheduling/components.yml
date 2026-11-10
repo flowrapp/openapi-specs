@@ -163,7 +163,7 @@ components:
         `timeline.segments` (`AttendanceSegmentDTO`); several worklogs may
         reference the same scheduled shift.
 
-        When the parent `segments` array is present it has one or two items
+        When the parent `segments` array is non-empty it has one or two items
         (`maxItems: 2`), ordered by start, with no overlap and a gap of at least
         one minute (a zero gap is one continuous segment, not two). All segments
         share the shift's logical day. The first segment of a split shift does
@@ -174,9 +174,10 @@ components:
         are checked per segment, not against the envelope.
 
         The parent `startTime` and `endTime` stay required and are the envelope:
-        start of the first segment and end of the last. Omit `segments`, or send
-        one segment equal to that envelope, for a normal shift (overnight
-        included). If the client sends both and they disagree, the server
+        start of the first segment and end of the last. On `DailyShiftRequestDTO`,
+        omit `segments`, or send an empty array, for a normal shift (overnight
+        included). One segment equal to that envelope is also a normal shift.
+        If the client sends both and they disagree, the server
         rejects the write with `400` `1050` `INVALID_RECURRING_SCHEDULE` on a
         recurring template or `400` `1053` `INVALID_SCHEDULE_EXCEPTION` on a
         day's exception. `breakMinutes` is the shift's planned break, not the
@@ -207,15 +208,17 @@ components:
         Several worklogs may reference the same `scheduledShiftId`, each one
         matched to a segment.
 
-        The parent `segments` array, when present, has one or two items, ordered
+        The parent `segments` array, when non-empty, has one or two items, ordered
         by `startAt`, non-overlapping, with a gap of at least one minute, on the
         same logical day (the local date of the first segment's start). Only the
         last segment may cross midnight, with the same bound as the envelope
         `endAt`. Each segment must lie inside the day's opening intervals; the
         check is per segment. The parent `startAt` and `endAt` are the envelope
-        (first start, last end) and stay required. Omit `segments`, or send one
-        segment equal to the envelope, for a normal shift. An envelope that does
-        not match the segments is `400` `1047` `INVALID_SCHEDULED_SHIFT`.
+        (first start, last end) and stay required. On `ScheduledShiftRequestDTO`
+        and `ShiftChangeProposalWindowDTO`, omit `segments`, or send an empty
+        array, for a normal shift. One segment equal to the envelope is also a
+        normal shift. An envelope that does not match the segments is
+        `400` `1047` `INVALID_SCHEDULED_SHIFT`.
 
         `breakMinutes` does not include the unpaid gap. Net seconds are the sum
         of the segment durations minus `breakMinutes`, never negative. The gap
@@ -628,7 +631,10 @@ components:
         `breakMinutes` does not include the unpaid gap of a split shift. Optional
         `segments` (see `ShiftSegmentDTO`) are the planned intervals; the
         required `startTime` and `endTime` stay the envelope.
-        Omitting `segments` does not make the server copy the catalog Shift's
+        Omit `segments`, or send an empty array, for a normal shift. One or two
+        elements is a split shift. The domain validates 1–2 segments only when
+        the list is not empty.
+        Omitting `segments`, or sending an empty array, does not make the server copy the catalog Shift's
         `defaultSegments`. The client may preload the editor from that default
         when creating a new occurrence, recurring template or requirement; only
         the segments sent here are stored. A later edit of the catalog default
@@ -651,14 +657,15 @@ components:
           description: >
             Planned break of the shift, in minutes. It does not include the
             unpaid gap between segments. Must be strictly less than the sum of
-            the segment durations (the envelope duration when `segments` is omitted).
+            the segment durations (the envelope duration when `segments` is omitted or empty).
         segments:
           type: array
-          minItems: 1
           maxItems: 2
           description: >
-            Planned segments. Omit for a normal shift, whose only interval is
-            the envelope. See `ShiftSegmentDTO`.
+            Planned segments. Omit, or send an empty array, for a normal shift,
+            whose only interval is the envelope. One or two elements is a split
+            shift. The domain validates 1–2 segments only when the list is not
+            empty. See `ShiftSegmentDTO`.
           items:
             $ref: "#/components/schemas/ShiftSegmentDTO"
         demands:
@@ -1275,6 +1282,9 @@ components:
         One manual assignment. Presentation metadata is resolved and captured by
         the server from shiftId. `startAt` and `endAt` are the envelope. Optional
         `segments` (see `ScheduledShiftSegmentDTO`) makes this a split shift.
+        Omit `segments`, or send an empty array, for a normal shift. One or two
+        elements is a split shift. The domain validates 1–2 segments only when
+        the list is not empty.
         The gap between segments is reserved: the same person cannot hold another
         shift inside the envelope (`400` `1047`).
       properties:
@@ -1304,12 +1314,12 @@ components:
         startAt:
           type: string
           format: date-time
-          description: Envelope start. Must equal the first segment's `startAt` when `segments` is sent.
+          description: Envelope start. Must equal the first segment's `startAt` when `segments` is non-empty.
           example: "2026-10-05T09:00:00+02:00"
         endAt:
           type: string
           format: date-time
-          description: Envelope end. Must equal the last segment's `endAt` when `segments` is sent.
+          description: Envelope end. Must equal the last segment's `endAt` when `segments` is non-empty.
           example: "2026-10-05T17:00:00+02:00"
         breakMinutes:
           type: integer
@@ -1322,12 +1332,13 @@ components:
           example: 30
         segments:
           type: array
-          minItems: 1
           maxItems: 2
           description: >
-            Planned segments. Omit for a normal shift. The envelope must be the
-            first segment's start and the last segment's end. See
-            `ScheduledShiftSegmentDTO`.
+            Planned segments. Omit, or send an empty array, for a normal shift.
+            One or two elements is a split shift. The domain validates 1–2
+            segments only when the list is not empty. When the list is not
+            empty, the envelope must be the first segment's start and the last
+            segment's end. See `ScheduledShiftSegmentDTO`.
           items:
             $ref: "#/components/schemas/ScheduledShiftSegmentDTO"
       required: [userId, jobRoleId, shiftId, startAt, endAt, breakMinutes]

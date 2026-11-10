@@ -1021,8 +1021,9 @@ planning:
         match the version returned by the latest planning read; a stale version returns a
         concurrent-modification conflict. Shift display name and color are captured by the server
         from the referenced business Shift and are not client input. Each assignment may carry
-        optional `segments` (one or two). `startAt` and `endAt` are the envelope and must match
-        the first start and the last end. The unpaid gap between segments is reserved: two
+        optional `segments`. Omit `segments`, or send an empty array, for a normal shift. A
+        non-empty list has one or two segments, and `startAt` and `endAt` are the envelope and
+        must match the first start and the last end. The unpaid gap between segments is reserved: two
         assignments of the same person whose envelopes intersect (`left.endAt > right.startAt`)
         are `400` `1047`, including a shift placed inside that gap. Back-to-back envelopes are
         allowed. A segment that does not fit the day's opening intervals, an overlap between

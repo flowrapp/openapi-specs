@@ -1339,7 +1339,10 @@ components:
         `breakMinutes` does not include the unpaid gap of a split shift.
         Optional `segments` are the planned intervals; `startTime` and `endTime`
         stay the envelope.
-        Omitting `segments` does not make the server copy the catalog Shift's
+        Omit `segments`, or send an empty array, for a normal shift. One or two
+        elements is a split shift. The domain validates 1–2 segments only when
+        the list is not empty.
+        Omitting `segments`, or sending an empty array, does not make the server copy the catalog Shift's
         `defaultSegments`. The client may preload the editor from that default
         when creating a new occurrence, recurring template or requirement; only
         the segments sent here are stored. A later edit of the catalog default
@@ -1364,10 +1367,12 @@ components:
           example: 30
         segments:
           type: array
-          minItems: 1
           maxItems: 2
           description: >
-            Planned segments. Omit for a normal shift. See `ShiftSegmentDTO`.
+            Planned segments. Omit, or send an empty array, for a normal shift,
+            whose only interval is the envelope. One or two elements is a split
+            shift. The domain validates 1–2 segments only when the list is not
+            empty. See `ShiftSegmentDTO`.
           items:
             $ref: "../common/components.yml#/components/schemas/ShiftSegmentDTO"
         demands:
@@ -2185,7 +2190,10 @@ components:
       description: >
         Manual assignment; shift name and color are captured from the business
         Shift. `startAt` and `endAt` are the envelope. Optional `segments` makes
-        this a split shift. The gap is reserved: the same person cannot hold
+        this a split shift. Omit `segments`, or send an empty array, for a
+        normal shift. One or two elements is a split shift. The domain
+        validates 1–2 segments only when the list is not empty.
+        The gap is reserved: the same person cannot hold
         another shift inside the envelope (`400` `1047`).
       properties:
         id:
@@ -2229,11 +2237,13 @@ components:
           example: 30
         segments:
           type: array
-          minItems: 1
           maxItems: 2
           description: >
-            Planned segments. Omit for a normal shift. The envelope must match
-            the first start and the last end. See `ScheduledShiftSegmentDTO`.
+            Planned segments. Omit, or send an empty array, for a normal shift.
+            One or two elements is a split shift. The domain validates 1–2
+            segments only when the list is not empty. When the list is not
+            empty, the envelope must match the first start and the last end.
+            See `ScheduledShiftSegmentDTO`.
           items:
             $ref: "../common/components.yml#/components/schemas/ScheduledShiftSegmentDTO"
       required: [userId, jobRoleId, shiftId, startAt, endAt, breakMinutes]
