@@ -27,8 +27,10 @@ components:
             breaks. By default only worklogs in CONFIRMED or APPROVED are
             included. PENDING_RECONCILIATION is excluded until attendance
             reconciliation moves the worklog to CONFIRMED or PENDING_REVIEW.
-            When getBusinessReports receives reviewStatus, only worklogs in the
-            requested states are included.
+            When getBusinessReports or getUserReports receives reviewStatus,
+            only worklogs in the requested states are included. REJECTED may
+            be requested on getUserReports; the worker history totals do not
+            request it.
           example: 32040
       required:
         - userId
