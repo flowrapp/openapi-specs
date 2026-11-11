@@ -59,7 +59,7 @@ info:
     existing permission requirements; authorised users can access their underlying business data.
 
     `updateBusinessPlan` (platform admin) changes the plan and emits a `PERMISSIONS` sync signal.
-  version: 0.0.113
+  version: 0.0.114
   contact:
     name: Flowrapp Team
     url: https://flowrapp.github.io
@@ -270,6 +270,8 @@ paths:
   "/api/v1/businesses/{businessId}/reports/worked-hours.pdf":
     $ref: "v1/services/reports/reports-operations.yml#/reports/business-work\
       ed-hours-report-pdf"
+  "/api/v1/businesses/{businessId}/reports/worked-hours/users/me":
+    $ref: "v1/services/reports/reports-operations.yml#/reports/current-user-worked-hours-report-pdf"
   "/api/v1/reports":
     $ref: "v1/services/reports/reports-operations.yml#/reports/user-reports"
   "/api/v1/businesses/{businessId}/invitations":

@@ -168,17 +168,18 @@ components:
           type: integer
           format: int64
           description: >
-            Total seconds worked in the current ISO week. Includes closed worklogs in CONFIRMED,
-            APPROVED, PENDING_RECONCILIATION or PENDING_REVIEW. Excludes REJECTED worklogs and
-            open sessions.
+            Total seconds worked in the current ISO week. Counts only closed worklogs in CONFIRMED or APPROVED, the same rule as the
+            worked-hours PDF (BFF 0.0.104; in 0.0.103 it also counted pending worklogs). Excludes
+            PENDING_RECONCILIATION and PENDING_REVIEW REJECTED worklogs and open sessions.
           example: 129600
         totalSecondsMonth:
           type: integer
           format: int64
           description: >
-            Total seconds worked in the current calendar month. Includes closed worklogs in
-            CONFIRMED, APPROVED, PENDING_RECONCILIATION or PENDING_REVIEW. Excludes REJECTED
-            worklogs and open sessions.
+            Total seconds worked in the current calendar month. Counts only closed worklogs in CONFIRMED or APPROVED, the same rule as the
+            worked-hours PDF (BFF 0.0.104; in 0.0.103 it also counted pending worklogs). Excludes
+            PENDING_RECONCILIATION and PENDING_REVIEW REJECTED worklogs and open sessions. The clock view has no pending seconds
+            field; use the month history for «+X h pendientes de revisar».
           example: 504000
         autoClocking:
           description: >
@@ -437,16 +438,20 @@ components:
           type: integer
           format: int64
           description: >
-            Total seconds worked on this date. Includes closed worklogs in CONFIRMED, APPROVED,
-            PENDING_RECONCILIATION or PENDING_REVIEW. Excludes REJECTED worklogs and open sessions.
+            Total seconds worked on this date. Counts only closed worklogs in CONFIRMED or APPROVED, the same rule as the
+            worked-hours PDF (BFF 0.0.104; in 0.0.103 it also counted pending worklogs). Excludes
+            PENDING_RECONCILIATION and PENDING_REVIEW (see pendingSeconds), REJECTED worklogs and open sessions.
           example: 30600
         pendingSeconds:
           type: integer
           format: int64
           minimum: 0
           description: >
-            Seconds of closed worklogs in PENDING_RECONCILIATION or PENDING_REVIEW. Always already
-            included in totalSeconds; do not add them on top. Absent when the client should show nothing.
+            Seconds of closed worklogs in PENDING_RECONCILIATION or PENDING_REVIEW, net of effective
+            breaks and attributed to the business-local date of the clock-in, like totalSeconds. NOT
+            included in totalSeconds (BFF 0.0.104; in 0.0.103 they were included): the app shows them
+            apart, for example «+1 h 20 min pendientes de revisar». 0 means nothing pending. Absent means
+            the pending seconds could not be read: show nothing, never 0.
           example: 3600
         sessions:
           type: array
@@ -480,16 +485,20 @@ components:
           type: integer
           format: int64
           description: >
-            Total seconds worked in this week. Includes closed worklogs in CONFIRMED, APPROVED,
-            PENDING_RECONCILIATION or PENDING_REVIEW. Excludes REJECTED worklogs and open sessions.
+            Total seconds worked in this week. Counts only closed worklogs in CONFIRMED or APPROVED, the same rule as the
+            worked-hours PDF (BFF 0.0.104; in 0.0.103 it also counted pending worklogs). Excludes
+            PENDING_RECONCILIATION and PENDING_REVIEW (see pendingSeconds), REJECTED worklogs and open sessions.
           example: 144000
         pendingSeconds:
           type: integer
           format: int64
           minimum: 0
           description: >
-            Seconds of closed worklogs in PENDING_RECONCILIATION or PENDING_REVIEW. Always already
-            included in totalSeconds; do not add them on top. Absent when the client should show nothing.
+            Seconds of closed worklogs in PENDING_RECONCILIATION or PENDING_REVIEW, net of effective
+            breaks and attributed to the business-local date of the clock-in, like totalSeconds. NOT
+            included in totalSeconds (BFF 0.0.104; in 0.0.103 they were included): the app shows them
+            apart, for example «+1 h 20 min pendientes de revisar». 0 means nothing pending. Absent means
+            the pending seconds could not be read: show nothing, never 0.
           example: 3600
         totalSessions:
           type: integer
@@ -528,16 +537,20 @@ components:
           type: integer
           format: int64
           description: >
-            Total seconds worked on this day. Includes closed worklogs in CONFIRMED, APPROVED,
-            PENDING_RECONCILIATION or PENDING_REVIEW. Excludes REJECTED worklogs and open sessions.
+            Total seconds worked on this day. Counts only closed worklogs in CONFIRMED or APPROVED, the same rule as the
+            worked-hours PDF (BFF 0.0.104; in 0.0.103 it also counted pending worklogs). Excludes
+            PENDING_RECONCILIATION and PENDING_REVIEW (see pendingSeconds), REJECTED worklogs and open sessions.
           example: 28800
         pendingSeconds:
           type: integer
           format: int64
           minimum: 0
           description: >
-            Seconds of closed worklogs in PENDING_RECONCILIATION or PENDING_REVIEW. Always already
-            included in totalSeconds; do not add them on top. Absent when the client should show nothing.
+            Seconds of closed worklogs in PENDING_RECONCILIATION or PENDING_REVIEW, net of effective
+            breaks and attributed to the business-local date of the clock-in, like totalSeconds. NOT
+            included in totalSeconds (BFF 0.0.104; in 0.0.103 they were included): the app shows them
+            apart, for example «+1 h 20 min pendientes de revisar». 0 means nothing pending. Absent means
+            the pending seconds could not be read: show nothing, never 0.
           example: 1800
         sessions:
           type: array
@@ -565,16 +578,20 @@ components:
           type: integer
           format: int64
           description: >
-            Total seconds worked in this month. Includes closed worklogs in CONFIRMED, APPROVED,
-            PENDING_RECONCILIATION or PENDING_REVIEW. Excludes REJECTED worklogs and open sessions.
+            Total seconds worked in this month. Counts only closed worklogs in CONFIRMED or APPROVED, the same rule as the
+            worked-hours PDF (BFF 0.0.104; in 0.0.103 it also counted pending worklogs). Excludes
+            PENDING_RECONCILIATION and PENDING_REVIEW (see pendingSeconds), REJECTED worklogs and open sessions.
           example: 237600
         pendingSeconds:
           type: integer
           format: int64
           minimum: 0
           description: >
-            Seconds of closed worklogs in PENDING_RECONCILIATION or PENDING_REVIEW. Always already
-            included in totalSeconds; do not add them on top. Absent when the client should show nothing.
+            Seconds of closed worklogs in PENDING_RECONCILIATION or PENDING_REVIEW, net of effective
+            breaks and attributed to the business-local date of the clock-in, like totalSeconds. NOT
+            included in totalSeconds (BFF 0.0.104; in 0.0.103 they were included): the app shows them
+            apart, for example «+1 h 20 min pendientes de revisar». 0 means nothing pending. Absent means
+            the pending seconds could not be read: show nothing, never 0.
           example: 7200
         totalSessions:
           type: integer
@@ -605,9 +622,21 @@ components:
           type: integer
           format: int64
           description: >
-            Total seconds worked on this day. Includes closed worklogs in CONFIRMED, APPROVED,
-            PENDING_RECONCILIATION or PENDING_REVIEW. Excludes REJECTED worklogs and open sessions.
+            Total seconds worked on this day. Counts only closed worklogs in CONFIRMED or APPROVED, the same rule as the
+            worked-hours PDF (BFF 0.0.104; in 0.0.103 it also counted pending worklogs). Excludes
+            PENDING_RECONCILIATION and PENDING_REVIEW (see pendingSeconds), REJECTED worklogs and open sessions.
           example: 28800
+        pendingSeconds:
+          type: integer
+          format: int64
+          minimum: 0
+          description: >
+            Seconds of closed worklogs in PENDING_RECONCILIATION or PENDING_REVIEW, net of effective
+            breaks and attributed to the business-local date of the clock-in, like totalSeconds. NOT
+            included in totalSeconds (BFF 0.0.104; in 0.0.103 they were included): the app shows them
+            apart, for example «+1 h 20 min pendientes de revisar». 0 means nothing pending. Absent means
+            the pending seconds could not be read: show nothing, never 0.
+          example: 1800
       required:
         - date
         - totalSeconds
