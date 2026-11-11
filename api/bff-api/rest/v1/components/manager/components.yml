@@ -659,7 +659,11 @@ components:
 
     ManagerDayHistoryResponseDTO:
       type: object
-      description: All workers' sessions for a specific day in a business
+      description: >
+        All workers' sessions for a specific day in a business. Since BFF 0.0.107 (option B) the
+        totals count only CONFIRMED + APPROVED, the same rule as `history/week` and `history/month`;
+        pending is apart in `pendingSeconds` and REJECTED counts in neither. A worklog counts in the
+        business-local day of its clock-in.
       properties:
         date:
           type: string
@@ -669,16 +673,34 @@ components:
         totalSeconds:
           type: integer
           format: int64
-          description: Total seconds worked by all workers on this date
+          description: >
+            Closed CONFIRMED + APPROVED seconds of all workers on this date, net of effective breaks:
+            the sum of `workers[].totalSeconds`. Up to BFF 0.0.106 it summed every closed session,
+            pending and REJECTED included.
           example: 86400
+        pendingSeconds:
+          type: integer
+          format: int64
+          minimum: 0
+          description: >
+            Pending seconds of all workers on this date, the sum of `workers[].pendingSeconds`: closed PENDING_REVIEW + PENDING_RECONCILIATION worklogs, net of effective breaks
+            (BFF 0.0.107). NOT included in `totalSeconds`; the app shows it apart as «+X h pendientes».
+            0 means nothing pending; absent means the pending read failed or an older BFF, and the
+            app shows nothing.
+          example: 7200
         totalWorkers:
           type: integer
           format: int32
-          description: Number of workers who worked on this date
+          description: >
+            Number of `workers` items: workers with at least one session that day, whatever its
+            review status (unchanged)
           example: 3
         workers:
           type: array
-          description: Per-worker breakdown with session details
+          description: >
+            Per-worker breakdown with session details. Unchanged membership: a worker with at least
+            one session that day, also when every session is pending or REJECTED (then
+            `totalSeconds: 0`)
           items:
             $ref: "#/components/schemas/ManagerDayWorkerDTO"
       required:
@@ -703,11 +725,26 @@ components:
         totalSeconds:
           type: integer
           format: int64
-          description: Total seconds worked by this worker on this day
+          description: >
+            Closed CONFIRMED + APPROVED seconds of this worker on this day, net of effective breaks
+            (BFF 0.0.107; before, every closed session, pending and REJECTED included)
           example: 30600
+        pendingSeconds:
+          type: integer
+          format: int64
+          minimum: 0
+          description: >
+            Pending seconds of this worker on this day: closed PENDING_REVIEW + PENDING_RECONCILIATION worklogs, net of effective breaks
+            (BFF 0.0.107). NOT included in `totalSeconds`; the app shows it apart as «+X h pendientes».
+            0 means nothing pending; absent means the pending read failed or an older BFF, and the
+            app shows nothing.
+          example: 0
         sessions:
           type: array
-          description: Individual work sessions
+          description: >
+            Individual work sessions, unchanged: every session of the day, whatever its review
+            status, each with its own `durationSeconds`. `SessionDTO` carries no review status, so
+            the sessions do not tell which ones count in `totalSeconds`
           items:
             $ref: "../common/components.yml#/components/schemas/SessionDTO"
       required:
@@ -728,11 +765,24 @@ components:
         totalSeconds:
           type: integer
           format: int64
-          description: Total seconds worked by all workers in this week
+          description: >
+            Closed CONFIRMED + APPROVED seconds of all workers in this week, net of effective breaks
+            (Main `getBusinessReports` without `reviewStatus`). Unchanged in BFF 0.0.107: it already
+            excluded pending and REJECTED
           example: 432000
+        pendingSeconds:
+          type: integer
+          format: int64
+          minimum: 0
+          description: >
+            Pending seconds of all workers in this week: closed PENDING_REVIEW + PENDING_RECONCILIATION worklogs, net of effective breaks
+            (BFF 0.0.107). NOT included in `totalSeconds`; the app shows it apart as «+X h pendientes».
+            0 means nothing pending; absent means the pending read failed or an older BFF, and the
+            app shows nothing.
+          example: 14400
         days:
           type: array
-          description: Per-day breakdown with worker-level totals
+          description: Per-day breakdown with worker-level totals, Monday to Sunday (always seven items)
           items:
             $ref: "#/components/schemas/ManagerWeekDayDTO"
       required:
@@ -752,11 +802,23 @@ components:
         totalSeconds:
           type: integer
           format: int64
-          description: Total seconds worked by all workers on this day
+          description: Closed CONFIRMED + APPROVED seconds of all workers on this day (unchanged)
           example: 86400
+        pendingSeconds:
+          type: integer
+          format: int64
+          minimum: 0
+          description: >
+            Pending seconds of all workers on this day: closed PENDING_REVIEW + PENDING_RECONCILIATION worklogs, net of effective breaks
+            (BFF 0.0.107). NOT included in `totalSeconds`; the app shows it apart as «+X h pendientes».
+            0 means nothing pending; absent means the pending read failed or an older BFF, and the
+            app shows nothing.
+          example: 3600
         workers:
           type: array
-          description: Per-worker totals for this day (no session detail)
+          description: >
+            Per-worker totals for this day (no session detail): workers with confirmed or, since BFF
+            0.0.107, pending seconds that day (a pending-only worker has `totalSeconds: 0`)
           items:
             $ref: "#/components/schemas/ManagerWeekDayWorkerDTO"
       required:
@@ -780,8 +842,18 @@ components:
         totalSeconds:
           type: integer
           format: int64
-          description: Total seconds worked by this worker on this day
+          description: Closed CONFIRMED + APPROVED seconds of this worker on this day (unchanged)
           example: 28800
+        pendingSeconds:
+          type: integer
+          format: int64
+          minimum: 0
+          description: >
+            Pending seconds of this worker on this day: closed PENDING_REVIEW + PENDING_RECONCILIATION worklogs, net of effective breaks
+            (BFF 0.0.107). NOT included in `totalSeconds`; the app shows it apart as «+X h pendientes».
+            0 means nothing pending; absent means the pending read failed or an older BFF, and the
+            app shows nothing.
+          example: 0
       required:
         - userId
         - name
@@ -801,8 +873,20 @@ components:
         totalSeconds:
           type: integer
           format: int64
-          description: Total seconds worked by all workers in this month
+          description: >
+            Closed CONFIRMED + APPROVED seconds of all workers in this month, net of effective breaks
+            (Main `getBusinessReports` without `reviewStatus`). Unchanged in BFF 0.0.107
           example: 2376000
+        pendingSeconds:
+          type: integer
+          format: int64
+          minimum: 0
+          description: >
+            Pending seconds of all workers in this month: closed PENDING_REVIEW + PENDING_RECONCILIATION worklogs, net of effective breaks
+            (BFF 0.0.107). NOT included in `totalSeconds`; the app shows it apart as «+X h pendientes».
+            0 means nothing pending; absent means the pending read failed or an older BFF, and the
+            app shows nothing.
+          example: 28800
         totalSessions:
           type: integer
           format: int32
@@ -810,7 +894,9 @@ components:
           example: 100
         days:
           type: array
-          description: Per-day summary for the month
+          description: >
+            Per-day summary for the month, only days with confirmed or, since BFF 0.0.107, pending
+            seconds (a pending-only day has `totalSeconds: 0`)
           items:
             $ref: "#/components/schemas/ManagerMonthDayDTO"
       required:
@@ -831,8 +917,18 @@ components:
         totalSeconds:
           type: integer
           format: int64
-          description: Total seconds worked by all workers on this day
+          description: Closed CONFIRMED + APPROVED seconds of all workers on this day (unchanged)
           example: 86400
+        pendingSeconds:
+          type: integer
+          format: int64
+          minimum: 0
+          description: >
+            Pending seconds of all workers on this day: closed PENDING_REVIEW + PENDING_RECONCILIATION worklogs, net of effective breaks
+            (BFF 0.0.107). NOT included in `totalSeconds`; the app shows it apart as «+X h pendientes».
+            0 means nothing pending; absent means the pending read failed or an older BFF, and the
+            app shows nothing.
+          example: 3600
         workerCount:
           type: integer
           format: int32
