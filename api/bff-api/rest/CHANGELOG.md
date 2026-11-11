@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.0.108
+
+Spec only. No BFF implementation in this change. No Main API change: Main `WorkLogResponseDTO.reviewStatus` is already required, and the BFF already maps it into `WorklogSession.reviewStatus`. This is a draft increment of `info.version`, not a repository tag or release. The published solver contract is unchanged. Depends on 0.0.107 (#79).
+
+### Added
+
+- Optional `reviewStatus` on `SessionDTO`, reusing `AttendanceReviewStatusDTO` (`CONFIRMED`, `PENDING_RECONCILIATION`, `PENDING_REVIEW`, `APPROVED`, `REJECTED`). It appears in every response with sessions:
+  - manager day history;
+  - worker clock view, worker day and week history;
+  - clock-in, clock-out and `managerUpdateWorklog`.
+- The app shows «Pendiente de revisar» for `PENDING_*` and «Rechazada» for `REJECTED`. Closed non-REJECTED sessions add up to `totalSeconds + pendingSeconds`.
+- Open session: its current status (normally `CONFIRMED`); it counts in no total.
+- Absent: older BFF or unknown value; the app shows no chip.
+
+### Deployment
+
+- BFF before the app. An app on an older BFF only shows no chips.
+
 ## 0.0.107
 
 Spec only. No BFF implementation in this change. No Main API change: day totals come from the review status of the worklogs the BFF already reads. Week and month pending come from `getBusinessReports` with `reviewStatus`, which already exists. This is a draft increment of `info.version`, not a repository tag or release. The published solver contract is unchanged.

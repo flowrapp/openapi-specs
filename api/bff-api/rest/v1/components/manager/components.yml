@@ -743,8 +743,9 @@ components:
           type: array
           description: >
             Individual work sessions, unchanged: every session of the day, whatever its review
-            status, each with its own `durationSeconds`. `SessionDTO` carries no review status, so
-            the sessions do not tell which ones count in `totalSeconds`
+            status, each with its own `durationSeconds`. Since BFF 0.0.108 each session carries its
+            optional `reviewStatus`, which tells where it counts (`totalSeconds`, `pendingSeconds`
+            or, for REJECTED, neither)
           items:
             $ref: "../common/components.yml#/components/schemas/SessionDTO"
       required:
