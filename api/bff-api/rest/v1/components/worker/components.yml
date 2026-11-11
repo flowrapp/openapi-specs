@@ -167,12 +167,18 @@ components:
         totalSecondsWeek:
           type: integer
           format: int64
-          description: Total seconds worked in the current ISO week
+          description: >
+            Total seconds worked in the current ISO week. Includes closed worklogs in CONFIRMED,
+            APPROVED, PENDING_RECONCILIATION or PENDING_REVIEW. Excludes REJECTED worklogs and
+            open sessions.
           example: 129600
         totalSecondsMonth:
           type: integer
           format: int64
-          description: Total seconds worked in the current calendar month
+          description: >
+            Total seconds worked in the current calendar month. Includes closed worklogs in
+            CONFIRMED, APPROVED, PENDING_RECONCILIATION or PENDING_REVIEW. Excludes REJECTED
+            worklogs and open sessions.
           example: 504000
         autoClocking:
           description: >
@@ -430,8 +436,18 @@ components:
         totalSeconds:
           type: integer
           format: int64
-          description: Total seconds worked on this date
+          description: >
+            Total seconds worked on this date. Includes closed worklogs in CONFIRMED, APPROVED,
+            PENDING_RECONCILIATION or PENDING_REVIEW. Excludes REJECTED worklogs and open sessions.
           example: 30600
+        pendingSeconds:
+          type: integer
+          format: int64
+          minimum: 0
+          description: >
+            Seconds of closed worklogs in PENDING_RECONCILIATION or PENDING_REVIEW. Always already
+            included in totalSeconds; do not add them on top. Absent when the client should show nothing.
+          example: 3600
         sessions:
           type: array
           description: Individual work sessions for this date
@@ -463,8 +479,18 @@ components:
         totalSeconds:
           type: integer
           format: int64
-          description: Total seconds worked in this week
+          description: >
+            Total seconds worked in this week. Includes closed worklogs in CONFIRMED, APPROVED,
+            PENDING_RECONCILIATION or PENDING_REVIEW. Excludes REJECTED worklogs and open sessions.
           example: 144000
+        pendingSeconds:
+          type: integer
+          format: int64
+          minimum: 0
+          description: >
+            Seconds of closed worklogs in PENDING_RECONCILIATION or PENDING_REVIEW. Always already
+            included in totalSeconds; do not add them on top. Absent when the client should show nothing.
+          example: 3600
         totalSessions:
           type: integer
           format: int32
@@ -501,8 +527,18 @@ components:
         totalSeconds:
           type: integer
           format: int64
-          description: Total seconds worked on this day
+          description: >
+            Total seconds worked on this day. Includes closed worklogs in CONFIRMED, APPROVED,
+            PENDING_RECONCILIATION or PENDING_REVIEW. Excludes REJECTED worklogs and open sessions.
           example: 28800
+        pendingSeconds:
+          type: integer
+          format: int64
+          minimum: 0
+          description: >
+            Seconds of closed worklogs in PENDING_RECONCILIATION or PENDING_REVIEW. Always already
+            included in totalSeconds; do not add them on top. Absent when the client should show nothing.
+          example: 1800
         sessions:
           type: array
           description: Work sessions for this day
@@ -528,8 +564,18 @@ components:
         totalSeconds:
           type: integer
           format: int64
-          description: Total seconds worked in this month
+          description: >
+            Total seconds worked in this month. Includes closed worklogs in CONFIRMED, APPROVED,
+            PENDING_RECONCILIATION or PENDING_REVIEW. Excludes REJECTED worklogs and open sessions.
           example: 237600
+        pendingSeconds:
+          type: integer
+          format: int64
+          minimum: 0
+          description: >
+            Seconds of closed worklogs in PENDING_RECONCILIATION or PENDING_REVIEW. Always already
+            included in totalSeconds; do not add them on top. Absent when the client should show nothing.
+          example: 7200
         totalSessions:
           type: integer
           format: int32
@@ -558,7 +604,9 @@ components:
         totalSeconds:
           type: integer
           format: int64
-          description: Total seconds worked on this day
+          description: >
+            Total seconds worked on this day. Includes closed worklogs in CONFIRMED, APPROVED,
+            PENDING_RECONCILIATION or PENDING_REVIEW. Excludes REJECTED worklogs and open sessions.
           example: 28800
       required:
         - date

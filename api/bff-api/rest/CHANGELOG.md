@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.0.103
+
+Spec only. No BFF implementation in this change. Requires Main API contract 0.0.113. This is a draft increment of `info.version`, not a repository tag or release. The published solver contract is unchanged.
+
+### Added
+
+- Optional `pendingSeconds` (`integer`, `int64`, minimum 0, not required) on the worker day-history total, the week-history total, each week-history day, and the month-history total. It is the seconds of closed worklogs in `PENDING_RECONCILIATION` or `PENDING_REVIEW`, already included in `totalSeconds`. Absent means the client shows nothing.
+
+### Changed
+
+- Descriptions of worker `totalSeconds` on day history, week history (total and each day) and month history (total and each day), and of clock-view `totalSecondsWeek` and `totalSecondsMonth`. They count closed worklogs in `CONFIRMED`, `APPROVED`, `PENDING_RECONCILIATION` and `PENDING_REVIEW`, and exclude `REJECTED` worklogs and open sessions. The clock view does not add `pendingSeconds`.
+
 ## 0.0.102
 
 Spec only. No BFF implementation in this change. Requires Main API contract 0.0.112. This is a draft increment of `info.version`, not a repository tag or release. The published solver contract is unchanged.

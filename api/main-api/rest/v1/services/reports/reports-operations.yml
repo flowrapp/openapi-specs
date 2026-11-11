@@ -376,8 +376,20 @@ reports:
       summary: Get current user's reports
       description: |
         Retrieves daily time reports for the authenticated user within a date range.
-        Returns raw daily seconds, suitable for aggregation into weekly, monthly, or custom period totals.
+        Returns daily seconds per business and business-local day, suitable for aggregation into weekly, monthly, or custom period totals.
         Always scoped to the current user's own data.
+        Each closed worklog is attributed to the business-local calendar date of its clock-in, in the business time zone,
+        and its seconds are net of effective breaks (the same reportable-seconds rule as worked-hours reports).
+        Open worklogs never count.
+        When reviewStatus is omitted, only worklogs whose reviewStatus is CONFIRMED or APPROVED count, read from the materialized reports table, exactly as before.
+        A closed worklog in PENDING_RECONCILIATION does not count until attendance
+        reconciliation moves it to CONFIRMED or PENDING_REVIEW. PENDING_REVIEW does
+        not count either.
+        When reviewStatus is sent, only closed worklogs in the requested states count, aggregated on the fly
+        by user and business-local day with the same day attribution and break deduction.
+        For example, reviewStatus=PENDING_RECONCILIATION&reviewStatus=PENDING_REVIEW returns the
+        seconds still waiting for reconciliation or review.
+        REJECTED may be requested. The worker history totals do not request it.
       tags:
         - Reports
       operationId: getUserReports
@@ -409,6 +421,17 @@ reports:
             type: integer
             format: int64
             example: 123
+        - name: reviewStatus
+          in: query
+          required: false
+          style: form
+          explode: true
+          description: "One or more review states whose seconds are returned. Repeating the parameter adds a state. When omitted, CONFIRMED and APPROVED count, as before."
+          schema:
+            type: array
+            items:
+              $ref: '../../components/worklogs/components.yml#/components/schemas/WorklogReviewStatusDTO'
+            example: [PENDING_RECONCILIATION, PENDING_REVIEW]
       responses:
         '200':
           description: Reports retrieved successfully
@@ -419,6 +442,6 @@ reports:
                 items:
                   $ref: '../../components/reports/components.yml#/components/schemas/ReportResponseDTO'
         '400':
-          description: Invalid request parameters
+          description: Invalid request parameters (date range or review status)
         '401':
           description: Unauthorized
