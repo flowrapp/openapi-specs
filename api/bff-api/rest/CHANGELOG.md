@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.0.104
+
+Spec only. No BFF implementation in this change. Requires Main API contract 0.0.114. This is a draft increment of `info.version`, not a repository tag or release. The published solver contract is unchanged.
+
+### Added
+
+- «Mis horas» (worker), approved by Sergio on 2026-11-11. Always the caller's own data (no user parameter). Current or past membership of the business, no contract check, no `REPORTS_EXPORT`, no business feature (every plan); never a member `403` `1015`. The BFF forwards the Main API check and does not pre-check with `getWorkerBusinesses`.
+  - `getWorkerHoursMonths` (`GET /api/v1/worker/businesses/{businessId}/hours/months?before=YYYY-MM&limit=1..12`, default 12). Forwards Main `getCurrentUserWorkedHoursMonths` (12 most recent months, current first) and adds `report {available, provisional, effectiveTo}` to each month. `confirmedSeconds` (`CONFIRMED`/`APPROVED`) equals the month total of the PDF; `pendingSeconds` (`PENDING_REVIEW`/`PENDING_RECONCILIATION`) is apart, required, and the request fails instead of omitting it.
+  - `getWorkerWorkedHoursReportPdf` (`GET /api/v1/worker/businesses/{businessId}/worked-hours-report?month=YYYY-MM`). Forwards Main `exportCurrentUserWorkedHoursReportPdf`: synchronous `application/pdf`, `Content-Disposition: attachment; filename="registro-jornada-YYYY-MM.pdf"`, `Content-Length`. Month outside the 12-month window or in the future: `400` `1025`. Rate limit 6 per minute and 30 per hour per authenticated worker, all businesses together: `429` (no functional code).
+- Manager preview of a member's monthly PDF keeps using `exportManagerWorkedHoursReportPdf` (`periodType=MONTH`, `userIds`, `REPORTS_EXPORT`).
+
+### Unchanged
+
+- Worker history (`history/day`, `history/week`, `history/month`) and clock-view totals keep the 0.0.103 meaning in this version; changing them is a separate contract.
+
 ## 0.0.103
 
 Spec only. No BFF implementation in this change. Requires Main API contract 0.0.113. This is a draft increment of `info.version`, not a repository tag or release. The published solver contract is unchanged.

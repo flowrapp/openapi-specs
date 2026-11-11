@@ -32,6 +32,7 @@ info:
     | getManagerBusiness*Settings, updateManagerBusiness*Setting(s)/Policy/Preference | CLOCKING_SETTINGS_MANAGE |
     | updateManagerBusinessProfile, updateManagerBusinessGeofence | BUSINESS_EDIT |
     | removeBusinessMember, getAccessRoles, createAccessRole, replaceAccessRole, deleteAccessRole, updateMemberAccessRole | OWNER |
+    | getWorkerHoursMonths, getWorkerWorkedHoursReportPdf | current or past membership (no contract check); always the caller's own data (never REPORTS_EXPORT, no user parameter) |
     | worker, me and team-schedule operations | membership only |
 
     ## Business plans and features
@@ -50,7 +51,7 @@ info:
     | SCHEDULING | manual shift catalog, draft creation, assignment and publication; operations requiring SCHEDULE_VIEW, SCHEDULE_MANAGE or SHIFT_CHANGES_APPROVE; getWorkerTeamSchedule; every shift exchange and schedule change operation. Included in ESSENTIAL and PROFESSIONAL. |
     | ATTENDANCE | every Attendance operation; getWorkerAttendanceIncidents, getWorkerAttendanceMatch, getWorkerAttendanceIncidentGroups, getWorkerAttendanceIncidentGroup, justifyWorkerAttendanceIncidentGroup |
     | ADVANCED_PLANNING | requestPlanGeneration, getPlanGeneration, getWeekCoverage, getManagerPlanningGenerationSettings, replaceManagerPlanningGenerationSettings, deleteManagerPlanningGenerationSettings. Requires SCHEDULING; included in PROFESSIONAL. |
-  version: 0.0.103
+  version: 0.0.104
   contact:
     name: Flowrapp Team
     url: https://flowrapp.github.io
@@ -196,6 +197,10 @@ paths:
     $ref: "v1/services/worker/worker-operations.yml#/worker/history-week"
   "/api/v1/worker/businesses/{businessId}/history/month":
     $ref: "v1/services/worker/worker-operations.yml#/worker/history-month"
+  "/api/v1/worker/businesses/{businessId}/hours/months":
+    $ref: "v1/services/worker/worker-operations.yml#/worker/hours-months"
+  "/api/v1/worker/businesses/{businessId}/worked-hours-report":
+    $ref: "v1/services/worker/worker-operations.yml#/worker/worked-hours-report"
   "/api/v1/worker/businesses/{businessId}/attendance-incidents":
     $ref: "v1/services/worker/worker-inbox-operations.yml#/workerInbox/incidents"
   "/api/v1/worker/businesses/{businessId}/worklog-change-confirmations":

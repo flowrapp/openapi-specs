@@ -612,6 +612,105 @@ components:
         - date
         - totalSeconds
 
+    WorkerHoursMonthsResponseDTO:
+      type: object
+      description: >
+        One page of the worker's own monthly totals for «Mis horas», newest month first. Always the caller's data.
+      properties:
+        zone:
+          type: string
+          description: IANA time zone of the business. Months, days and today are calendar values in this zone.
+          example: Europe/Madrid
+        today:
+          type: string
+          format: date
+          description: Today in the business time zone, from the server clock
+          example: "2026-11-11"
+        months:
+          type: array
+          description: >
+            Consecutive calendar months, newest first, with no gaps (a month without worklogs has hasWorklogs false).
+            Without `before`, the first item is always the current month, even when empty. At most the 12 most recent
+            months (the current month and the 11 before it), and never before the worker's first month in the business
+            (earliest of the membership join date and the first worklog). Empty when `before` is on or before the
+            oldest month of that range.
+          items:
+            $ref: '#/components/schemas/WorkerHoursMonthDTO'
+        nextBefore:
+          type:
+            - string
+            - 'null'
+          pattern: '^\d{4}-(0[1-9]|1[0-2])$'
+          description: Send it as `before` for the next (older) page. Null when no older month remains inside the 12-month window and on or after the first month.
+          example: "2026-09"
+      required: [zone, today, months, nextBefore]
+
+    WorkerHoursMonthDTO:
+      type: object
+      description: >
+        Totals of one calendar month for the worker. Worklogs are attributed to the business-local date of their
+        clock-in and seconds are net of effective closed breaks, the same rule as the worked-hours PDF. REJECTED
+        and open worklogs are in neither figure. Independent of the worker history `totalSeconds` rule.
+      properties:
+        month:
+          type: string
+          pattern: '^\d{4}-(0[1-9]|1[0-2])$'
+          description: Calendar month (YYYY-MM)
+          example: "2026-10"
+        inProgress:
+          type: boolean
+          description: True for the current month in the business time zone
+          example: false
+        confirmedSeconds:
+          type: integer
+          format: int64
+          minimum: 0
+          description: >
+            Closed worklogs in CONFIRMED or APPROVED. Equals the «Total» of the month in the PDF of
+            getWorkerWorkedHoursReportPdf; the Main API computes both with the same queries and domain rule.
+          example: 561600
+        pendingSeconds:
+          type: integer
+          format: int64
+          minimum: 0
+          description: >
+            Closed worklogs in PENDING_REVIEW or PENDING_RECONCILIATION. Not included in confirmedSeconds; the app
+            shows it apart («+X h pendientes de revisar»). Always present: 0 means nothing pending. If it cannot be
+            read the whole request fails.
+          example: 15300
+        pendingCount:
+          type: integer
+          format: int32
+          minimum: 0
+          description: Number of the closed worklogs counted in pendingSeconds
+          example: 2
+        hasWorklogs:
+          type: boolean
+          description: True when the worker has at least one worklog with its clock-in in this month, in any review status, open ones included
+          example: true
+        report:
+          $ref: '#/components/schemas/WorkerHoursMonthReportDTO'
+      required: [month, inProgress, confirmedSeconds, pendingSeconds, pendingCount, hasWorklogs, report]
+
+    WorkerHoursMonthReportDTO:
+      type: object
+      description: Whether the app offers the monthly PDF (getWorkerWorkedHoursReportPdf) for this month
+      properties:
+        available:
+          type: boolean
+          description: Equals hasWorklogs. The endpoint also answers for a month without worklogs; this flag only says whether the app offers it.
+          example: true
+        provisional:
+          type: boolean
+          description: Equals inProgress. The PDF covers the month only up to today.
+          example: false
+        effectiveTo:
+          type: string
+          format: date
+          description: Last day the PDF covers, the last day of the month, or today for the current month
+          example: "2026-10-31"
+      required: [available, provisional, effectiveTo]
+
     WorkerTeamScheduleResponseDTO:
       type: object
       description: >-

@@ -635,6 +635,219 @@ worker:
         '404':
           description: Business not found
 
+  hours-months:
+    get:
+      summary: List the worker's own monthly hours for «Mis horas»
+      description: |
+        One page of the worker's own monthly totals in this business, newest month first, for the «Mis horas»
+        screen. Forwards to the Main API `getCurrentUserWorkedHoursMonths` and adds `report` to each month.
+        The person is always the caller, derived from the access token; there is no user parameter and the
+        response never holds another member's data. The caller must be or have been a member of the business (an
+        active or a removed membership, forwarded to the Main API check); contracts are not checked, so a worker
+        whose contracts ended or who was removed still reads their own data. A user that never was a member gets
+        403 (1015). No REPORTS_EXPORT, no other business permission and no business feature: every plan. The BFF does
+        not pre-check membership with getWorkerBusinesses (that list holds active memberships only).
+        Window: the 12 most recent calendar months in the business time zone, the current month included.
+        `confirmedSeconds` is the month total of the monthly PDF (`getWorkerWorkedHoursReportPdf`).
+        `pendingSeconds` is apart and always present. These fields do not follow the worker history `totalSeconds`
+        rule: their meaning does not change whatever is decided for the history and clock-view totals.
+        If the Main API call fails the request fails (5xx); no field is omitted or replaced by 0.
+      tags:
+        - Worker
+      operationId: getWorkerHoursMonths
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: businessId
+          in: path
+          required: true
+          description: ID of the business
+          schema:
+            type: integer
+            format: int64
+        - name: before
+          in: query
+          required: false
+          description: Exclusive upper bound (YYYY-MM). Omit it for the first page, which starts with the current month; then send the previous nextBefore. After the current month 400 (1025); on or before the oldest month of the window, an empty page.
+          schema:
+            type: string
+            pattern: '^\d{4}-(0[1-9]|1[0-2])$'
+            example: "2026-11"
+        - name: limit
+          in: query
+          required: false
+          description: Maximum number of months in the page
+          schema:
+            type: integer
+            format: int32
+            minimum: 1
+            maximum: 12
+            default: 12
+            example: 12
+      responses:
+        '200':
+          description: One page of monthly totals
+          content:
+            application/json:
+              schema:
+                $ref: '../../components/worker/components.yml#/components/schemas/WorkerHoursMonthsResponseDTO'
+              example:
+                zone: Europe/Madrid
+                today: "2026-11-11"
+                months:
+                  - month: "2026-11"
+                    inProgress: true
+                    confirmedSeconds: 189000
+                    pendingSeconds: 15300
+                    pendingCount: 2
+                    hasWorklogs: true
+                    report: {available: true, provisional: true, effectiveTo: "2026-11-11"}
+                  - month: "2026-10"
+                    inProgress: false
+                    confirmedSeconds: 561600
+                    pendingSeconds: 0
+                    pendingCount: 0
+                    hasWorklogs: true
+                    report: {available: true, provisional: false, effectiveTo: "2026-10-31"}
+                  - month: "2026-09"
+                    inProgress: false
+                    confirmedSeconds: 0
+                    pendingSeconds: 0
+                    pendingCount: 0
+                    hasWorklogs: false
+                    report: {available: false, provisional: false, effectiveTo: "2026-09-30"}
+                nextBefore: "2026-09"
+        '400':
+          description: Invalid before or limit (1 to 12), or before after the current month
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              example: {status: 400, detail: "1025 - from date must be before or equal to to date"}
+        '401':
+          description: Unauthorized
+        '403':
+          description: The caller never was a member of the business
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              examples:
+                notMember:
+                  summary: "1015 - user is not member of business"
+                  value: {status: 403, detail: "1015 - user is not member of business"}
+        '404':
+          description: Business not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              example: {status: 404, detail: "1006 - business does not exist"}
+      x-functional-errors: [1006, 1015, 1025]
+
+  worked-hours-report:
+    get:
+      summary: Get the worker's own monthly worked hours report PDF
+      description: |
+        Returns, in the response body, the worker's own worked-hours report PDF for one calendar month in this
+        business, for the in-app PDF viewer and the system share sheet of «Mis horas». No email is sent. Forwards to
+        the Main API `exportCurrentUserWorkedHoursReportPdf` and streams its PDF and headers unchanged.
+        The person is always the caller, derived from the access token; there is no user parameter and the
+        response never holds another member's data. The caller must be or have been a member of the business (an
+        active or a removed membership, forwarded to the Main API check); contracts are not checked, so a worker
+        whose contracts ended or who was removed still reads their own data. A user that never was a member gets
+        403 (1015). No REPORTS_EXPORT, no other business permission and no business feature: every plan. The BFF does
+        not pre-check membership with getWorkerBusinesses (that list holds active memberships only).
+        Same v2 render as the manager export with periodType MONTH for one person (no centre summary page). Its
+        month total equals `confirmedSeconds` of `getWorkerHoursMonths`; pending, rejected and open worklogs are in
+        annex B, outside the total. The month must be inside the 12-month window of `getWorkerHoursMonths` (the
+        current month or one of the 11 before it); a future month or an older one returns 400 (1025). The current
+        month is truncated to today in the business time zone and the PDF says so («hasta hoy»).
+        Synchronous, no polling. If the p95 generation time measured in develop exceeds about 5 s, it moves to a
+        queue (RabbitMQ) with stored PDFs in a later version.
+        Rate limit: 6 requests per minute and 30 per hour per authenticated worker, all businesses together (429).
+        Error bodies are problem+json, but a client that downloads the binary may rely on the status code only.
+        A manager who wants to preview a member's monthly PDF in the same viewer uses
+        `exportManagerWorkedHoursReportPdf` with periodType=MONTH and userIds set to that member (REPORTS_EXPORT);
+        this operation is not for that.
+      tags:
+        - Worker
+      operationId: getWorkerWorkedHoursReportPdf
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: businessId
+          in: path
+          required: true
+          description: ID of the business
+          schema:
+            type: integer
+            format: int64
+        - name: month
+          in: query
+          required: true
+          description: Calendar month of the report in the business time zone (YYYY-MM)
+          schema:
+            type: string
+            pattern: '^\d{4}-(0[1-9]|1[0-2])$'
+            example: "2026-10"
+      responses:
+        '200':
+          description: The worker's own monthly report, as a single PDF document
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+          headers:
+            Content-Disposition:
+              description: Forwarded from the Main API. Attachment with the filename registro-jornada-{YYYY-MM}.pdf (no person name)
+              schema:
+                type: string
+                example: 'attachment; filename="registro-jornada-2026-10.pdf"'
+            Content-Length:
+              description: Size of the PDF in bytes
+              schema:
+                type: integer
+                format: int64
+                example: 83995
+        '400':
+          description: Invalid month, a future month, or a month older than the 12-month window
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              example: {status: 400, detail: "1025 - from date must be before or equal to to date"}
+        '401':
+          description: Unauthorized
+        '403':
+          description: The caller never was a member of the business
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              examples:
+                notMember:
+                  summary: "1015 - user is not member of business"
+                  value: {status: 403, detail: "1015 - user is not member of business"}
+        '404':
+          description: Business not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              example: {status: 404, detail: "1006 - business does not exist"}
+        '429':
+          description: More than 6 requests in a minute or 30 in an hour from this worker (all businesses together). Retry later. No functional code; the body is the rate limiter's default problem.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              example: {title: Too Many Requests, status: 429, detail: "Too many requests. Retry later."}
+        '500':
+          description: The report could not be generated
+      x-functional-errors: [1006, 1015, 1025]
+
   team-schedule:
     get:
       summary: Get the worker-visible team schedule for an ISO week
