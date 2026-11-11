@@ -1,5 +1,25 @@
 # Changelog
 
+## 0.0.105
+
+Spec only. No BFF implementation in this change. No Main API change: it uses `getUserReports` with `reviewStatus`, available since Main API 0.0.113. This is a draft increment of `info.version`, not a repository tag or release. The published solver contract is unchanged.
+
+Decision of Sergio, 2026-11-11 23:41 (option B): every worker total counts only `CONFIRMED` and `APPROVED`, like the worked-hours PDF and «Mis horas»; pending worklogs are shown apart («+X h pendientes de revisar»). This partly reverts 0.0.103 (BFF #66).
+
+### Changed
+
+- `totalSeconds` of day history, week history (total and each day) and month history (total and each day), and clock-view `totalSecondsWeek` and `totalSecondsMonth`, count only closed `CONFIRMED`/`APPROVED` worklogs. No schema change: only the value and the descriptions.
+- `pendingSeconds` (day, week total, week days, month total) keeps its value but is no longer included in the total. `0` means nothing pending; absent still means the pending read failed or an older BFF, and the app shows nothing.
+
+### Added
+
+- Optional `pendingSeconds` on each month-history day (`WorkerMonthDayDTO`).
+- Optional `pendingSecondsWeek` and `pendingSecondsMonth` on the clock view, same meaning and absence rule.
+
+### Deployment
+
+- BFF before the app: an app that shows «+X h» next to a 0.0.103/0.0.104 total would add pending time twice.
+
 ## 0.0.104
 
 Spec only. No BFF implementation in this change. Requires Main API contract 0.0.114. This is a draft increment of `info.version`, not a repository tag or release. The published solver contract is unchanged.
