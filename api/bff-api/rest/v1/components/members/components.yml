@@ -271,7 +271,9 @@ components:
         worklog, closed or open, counts in the week of the business-local day of its clock-in (business
         `ZoneId`, as Attendance), so a worklog that crosses midnight from Sunday to Monday counts in the
         week of its clock-in, open and after closing. `workedSeconds + openElapsedSeconds` is the big
-        figure, `plannedSeconds` the «de N h planificadas».
+        figure, `plannedSeconds` the «de N h planificadas». Since BFF 0.0.106 (option B, owner views)
+        `workedSeconds` counts only CONFIRMED + APPROVED and `pendingSeconds` is shown apart
+        («+X h pendientes de revisar»), as in the worker history and Attendance «Horas».
       properties:
         week:
           type: string
@@ -292,11 +294,23 @@ components:
           format: int64
           minimum: 0
           description: >
-            Closed worklogs of the week, net of effective breaks: reportable (CONFIRMED + APPROVED) plus
-            pending (PENDING_RECONCILIATION + PENDING_REVIEW); REJECTED never counts. Two `getBusinessReports`
-            calls, summed. The same figure as `clockedSeconds` of Attendance «Horas» for this person and week,
-            so «Su histórico» shows the same number. The open worklog is not included.
-          example: 68700
+            Closed CONFIRMED + APPROVED worklogs of the week, net of effective breaks (`getBusinessReports`
+            without `reviewStatus`). Since BFF 0.0.106 pending worklogs (PENDING_RECONCILIATION +
+            PENDING_REVIEW) are NOT included: they are `pendingSeconds`. REJECTED never counts. The same
+            figure as `clockedSeconds` of Attendance «Horas» for this person and week, so «Su histórico»
+            shows the same number. The open worklog is not included.
+          example: 61500
+        pendingSeconds:
+          type: integer
+          format: int64
+          minimum: 0
+          description: >
+            Closed PENDING_RECONCILIATION + PENDING_REVIEW worklogs of the week, net of effective breaks
+            (`getBusinessReports` with those `reviewStatus`), NOT included in `workedSeconds` (BFF 0.0.106).
+            The app shows them apart as «+X h pendientes de revisar». 0 means nothing pending; absent
+            means the pending read failed or an older BFF, and the app shows nothing. Same figure as
+            `pendingReviewSeconds` of Attendance «Horas» for this person and week.
+          example: 7200
         openElapsedSeconds:
           type: integer
           format: int64
@@ -320,8 +334,9 @@ components:
           format: int64
           minimum: 0
           description: >
-            «Por hacer»: `max(0, plannedSeconds − workedSeconds − openElapsedSeconds)`; null when
-            `plannedSeconds` is null.
+            «Por hacer»: `max(0, plannedSeconds − workedSeconds − pendingSeconds − openElapsedSeconds)`
+            (`pendingSeconds` absent = 0), so the value is the same as before BFF 0.0.106: time pending
+            review is time already worked. Null when `plannedSeconds` is null.
           example: 44940
       required: [week, from, to, workedSeconds, openElapsedSeconds, plannedSeconds, remainingPlannedSeconds]
 

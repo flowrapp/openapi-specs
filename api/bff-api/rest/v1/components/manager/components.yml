@@ -203,9 +203,10 @@ components:
           type: object
           description: >
             Team time worked in the current business-local ISO week, clipped at asOf for open
-            worklogs; excludes future time. Optional `clockedSeconds` and `plannedSeconds`
-            (OWNER) come from the same BFF attendance/hours totals for the Home «Horas semana»
-            card. Legacy `totalSeconds` stays unchanged for compatibility and must not be mixed
+            worklogs; excludes future time. Optional `clockedSeconds`, `pendingReviewSeconds` and
+            `plannedSeconds` (OWNER) come from the same BFF attendance/hours totals for the Home
+            «Horas semana» card (since BFF 0.0.106 `clockedSeconds` is confirmed only and pending
+            is apart). Legacy `totalSeconds` stays unchanged for compatibility and must not be mixed
             with `plannedSeconds` on that card.
           properties:
             week:
@@ -229,10 +230,20 @@ components:
               description: |
                 OWNER only when attendance/hours is available (omitted or null for MANAGER).
                 `getAttendanceHours` → `totals.clockedSeconds` for the current business-local
-                ISO week (reportable + pending closed, not REJECTED; same source as
-                `plannedSeconds`). Pair with `plannedSeconds` on the Home hours card; do not
-                mix with legacy `totalSeconds`.
+                ISO week: closed CONFIRMED + APPROVED only since BFF 0.0.106 (up to 0.0.105
+                reportable + pending); same source as `plannedSeconds`. Pair with
+                `plannedSeconds` on the Home hours card; do not mix with legacy `totalSeconds`.
               example: 48720
+            pendingReviewSeconds:
+              type: [integer, "null"]
+              format: int64
+              minimum: 0
+              description: |
+                OWNER only when attendance/hours is available (omitted or null for MANAGER).
+                `getAttendanceHours` → `totals.pendingReviewSeconds` of the same week (BFF
+                0.0.106): pending time NOT included in `clockedSeconds`, shown apart as
+                «+X h pendientes de revisar». Absent or null: show nothing.
+              example: 3600
             plannedSeconds:
               type: [integer, "null"]
               format: int64
