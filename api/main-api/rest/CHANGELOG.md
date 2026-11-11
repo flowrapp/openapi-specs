@@ -6,12 +6,14 @@ Spec only. No Main API implementation in this change. Coordinate with BFF API 0.
 
 ### Added
 
-- `exportCurrentUserWorkedHoursReportPdf` (`GET /api/v1/businesses/{businessId}/reports/worked-hours/users/me?month=YYYY-MM`): the caller's own worked-hours PDF for one calendar month, returned in the response body (`application/pdf`, `Content-Disposition: inline`), no email. The person is always the authenticated user; there is no `userIds` parameter. Membership only: it does not require `REPORTS_EXPORT` and no business feature owns it. A non-owner member needs a contract in force today (`403` `1104`); a non-member gets `403` `1015`; a month whose first day is after today gets `400` `1025`; the current month is truncated to today. Same layout and counting rules as `exportBusinessWorkedHoursReportPdf` with `periodType=MONTH` and `userIds` = caller (only `CONFIRMED` and `APPROVED` count).
+- `getCurrentUserWorkedHoursMonths` (`GET /api/v1/businesses/{businessId}/reports/worked-hours/users/me/months?before=YYYY-MM&limit=1..24`, default 12): one page of the caller's own monthly totals, newest first, current month first even when empty, consecutive months down to the caller's first month in the business. Top-level `zone`, `today`, `nextBefore`. Per month: `month`, `inProgress`, `effectiveTo`, `confirmedSeconds` (closed `CONFIRMED`/`APPROVED`, net of effective breaks, same queries and rule as the worked-hours PDF; the materialized reports table is not read), `pendingSeconds` (closed `PENDING_REVIEW`/`PENDING_RECONCILIATION`, not included in `confirmedSeconds`, always present), `pendingCount`, `hasWorklogs`. `REJECTED` and open worklogs count in neither.
+- `exportCurrentUserWorkedHoursReportPdf` (`GET /api/v1/businesses/{businessId}/reports/worked-hours/users/me?month=YYYY-MM`): the caller's own worked-hours PDF for one calendar month, synchronous, in the response body (`application/pdf`, `Content-Disposition: attachment; filename="registro-jornada-YYYY-MM.pdf"`, `Content-Length`), no email, no server cache. Same layout and counting rules as `exportBusinessWorkedHoursReportPdf` with `periodType=MONTH` and `userIds` = caller. Its month total equals `confirmedSeconds` of the month list.
+- Both operations: the person is always the authenticated user (no user parameter); membership only, no `REPORTS_EXPORT`, no business feature. Non-member `403` `1015`; non-owner member without a contract in force today `403` `1104`; future month or `before` `400` `1025`; unknown business `404` `1006`.
 - Catalog entry for `1104` `EMPLOYEE_WITHOUT_ACTIVE_CONTRACT` (`403`), already returned by the backend and so far listed only as reserved.
 
 ### Unchanged
 
-- `getUserReports` needs no change for the worker totals: without `reviewStatus` it counts `CONFIRMED` and `APPROVED` (materialized table); with `reviewStatus=CONFIRMED&reviewStatus=APPROVED` it computes the same states on the fly from the worklogs.
+- `getUserReports` and every worker history total. This version does not depend on how the history and clock-view totals count pending worklogs.
 
 ## 0.0.113
 

@@ -58,3 +58,84 @@ components:
       enum: [MONTH, YEAR, RANGE]
       default: RANGE
       example: MONTH
+
+    CurrentUserWorkedHoursMonthsResponseDTO:
+      type: object
+      description: |
+        One page of the caller's own monthly worked-hours summary in one business, newest month first.
+        Always the authenticated user; there is no user parameter.
+      properties:
+        zone:
+          type: string
+          description: IANA time zone of the business. Months, days and today are calendar values in this zone.
+          example: Europe/Madrid
+        today:
+          type: string
+          format: date
+          description: Today in the business time zone, from the server clock
+          example: "2026-11-11"
+        months:
+          type: array
+          description: |
+            Consecutive calendar months, newest first, with no gaps: a month without worklogs is listed with
+            hasWorklogs false and zero seconds. Without `before`, the first item is always the current month, even
+            when it has no worklogs. The list never goes back past the caller's first month in the business (the
+            earliest of the membership `joinedAt` and the first worklog clock-in, in the business time zone).
+            Empty when `before` is on or before that first month.
+          items:
+            $ref: '#/components/schemas/CurrentUserWorkedHoursMonthDTO'
+        nextBefore:
+          type:
+            - string
+            - 'null'
+          pattern: '^\d{4}-(0[1-9]|1[0-2])$'
+          description: Send it as `before` to read the next (older) page. It is the month of the last item when older months remain; null when there are none.
+          example: "2025-12"
+      required: [zone, today, months, nextBefore]
+
+    CurrentUserWorkedHoursMonthDTO:
+      type: object
+      description: |
+        Totals of one calendar month for the caller. Worklogs are attributed to the business-local date of their
+        clock-in, and seconds are net of effective closed breaks (`reportableSeconds`), the same attribution and
+        rule as the worked-hours PDF. Open worklogs and REJECTED worklogs are in neither figure.
+      properties:
+        month:
+          type: string
+          pattern: '^\d{4}-(0[1-9]|1[0-2])$'
+          description: Calendar month (YYYY-MM)
+          example: "2026-10"
+        inProgress:
+          type: boolean
+          description: True for the current month in the business time zone
+          example: false
+        effectiveTo:
+          type: string
+          format: date
+          description: Last day covered, the last day of the month, or today for the current month. Same effective end as the monthly PDF.
+          example: "2026-10-31"
+        confirmedSeconds:
+          type: integer
+          format: int64
+          minimum: 0
+          description: |
+            Closed worklogs whose reviewStatus is CONFIRMED or APPROVED. Equals the month total of
+            exportCurrentUserWorkedHoursReportPdf for the same month; the server computes both with the same queries and domain rule.
+          example: 561600
+        pendingSeconds:
+          type: integer
+          format: int64
+          minimum: 0
+          description: Closed worklogs whose reviewStatus is PENDING_REVIEW or PENDING_RECONCILIATION. Not included in confirmedSeconds. Always present; 0 when nothing is pending.
+          example: 15300
+        pendingCount:
+          type: integer
+          format: int32
+          minimum: 0
+          description: Number of the closed worklogs counted in pendingSeconds
+          example: 2
+        hasWorklogs:
+          type: boolean
+          description: True when the caller has at least one worklog with its clock-in in this month, in any review status, open ones included
+          example: true
+      required: [month, inProgress, effectiveTo, confirmedSeconds, pendingSeconds, pendingCount, hasWorklogs]

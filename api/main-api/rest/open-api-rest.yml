@@ -270,6 +270,8 @@ paths:
   "/api/v1/businesses/{businessId}/reports/worked-hours.pdf":
     $ref: "v1/services/reports/reports-operations.yml#/reports/business-work\
       ed-hours-report-pdf"
+  "/api/v1/businesses/{businessId}/reports/worked-hours/users/me/months":
+    $ref: "v1/services/reports/reports-operations.yml#/reports/current-user-worked-hours-months"
   "/api/v1/businesses/{businessId}/reports/worked-hours/users/me":
     $ref: "v1/services/reports/reports-operations.yml#/reports/current-user-worked-hours-report-pdf"
   "/api/v1/reports":

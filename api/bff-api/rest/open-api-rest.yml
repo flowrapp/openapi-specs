@@ -32,7 +32,7 @@ info:
     | getManagerBusiness*Settings, updateManagerBusiness*Setting(s)/Policy/Preference | CLOCKING_SETTINGS_MANAGE |
     | updateManagerBusinessProfile, updateManagerBusinessGeofence | BUSINESS_EDIT |
     | removeBusinessMember, getAccessRoles, createAccessRole, replaceAccessRole, deleteAccessRole, updateMemberAccessRole | OWNER |
-    | getWorkerWorkedHoursReportPdf | membership only; always the caller's own data (never REPORTS_EXPORT, no userIds) |
+    | getWorkerHoursMonths, getWorkerWorkedHoursReportPdf | membership only; always the caller's own data (never REPORTS_EXPORT, no user parameter) |
     | worker, me and team-schedule operations | membership only |
 
     ## Business plans and features
@@ -197,6 +197,8 @@ paths:
     $ref: "v1/services/worker/worker-operations.yml#/worker/history-week"
   "/api/v1/worker/businesses/{businessId}/history/month":
     $ref: "v1/services/worker/worker-operations.yml#/worker/history-month"
+  "/api/v1/worker/businesses/{businessId}/hours/months":
+    $ref: "v1/services/worker/worker-operations.yml#/worker/hours-months"
   "/api/v1/worker/businesses/{businessId}/worked-hours-report":
     $ref: "v1/services/worker/worker-operations.yml#/worker/worked-hours-report"
   "/api/v1/worker/businesses/{businessId}/attendance-incidents":

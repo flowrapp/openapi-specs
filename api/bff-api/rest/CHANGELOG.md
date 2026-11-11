@@ -6,13 +6,15 @@ Spec only. No BFF implementation in this change. Requires Main API contract 0.0.
 
 ### Added
 
-- `getWorkerWorkedHoursReportPdf` (`GET /api/v1/worker/businesses/{businessId}/worked-hours-report?month=YYYY-MM`) for «Mis horas»: the worker's own monthly worked-hours PDF in the response body (`application/pdf`, `Content-Disposition: inline`), no email. Forwards to Main `exportCurrentUserWorkedHoursReportPdf`. The person is always the caller; there is no `userIds` parameter. Membership only, never `REPORTS_EXPORT`; no business feature owns it. Errors forwarded: `403` `1015` / `1104`, `400` `1025`, `404` `1006`. A manager preview of a member's monthly PDF keeps using `exportManagerWorkedHoursReportPdf` (`periodType=MONTH`, `userIds`, `REPORTS_EXPORT`).
-- Optional `pendingSeconds` on each `WorkerMonthDayDTO` (month history `days[]`), same meaning as on the other history objects.
+- «Mis horas» (worker), always the caller's own data, membership only (never `REPORTS_EXPORT`, no user parameter, no business feature):
+  - `getWorkerHoursMonths` (`GET /api/v1/worker/businesses/{businessId}/hours/months?before=YYYY-MM&limit=1..24`, default 12). Forwards Main `getCurrentUserWorkedHoursMonths` and adds `report {available, provisional, effectiveTo}` to each month. `confirmedSeconds` (`CONFIRMED`/`APPROVED`) equals the month total of the PDF; `pendingSeconds` (`PENDING_REVIEW`/`PENDING_RECONCILIATION`) is apart, required, and the request fails instead of omitting it.
+  - `getWorkerWorkedHoursReportPdf` (`GET /api/v1/worker/businesses/{businessId}/worked-hours-report?month=YYYY-MM`). Forwards Main `exportCurrentUserWorkedHoursReportPdf`: synchronous `application/pdf`, `Content-Disposition: attachment; filename="registro-jornada-YYYY-MM.pdf"`, `Content-Length`. Rate limited per user and business (`429`, no functional code).
+  - Errors forwarded: `403` `1015` / `1104`, `400` `1025`, `404` `1006`.
+- Manager preview of a member's monthly PDF keeps using `exportManagerWorkedHoursReportPdf` (`periodType=MONTH`, `userIds`, `REPORTS_EXPORT`).
 
-### Changed
+### Unchanged
 
-- Worker totals count only closed worklogs in `CONFIRMED` or `APPROVED`, the same rule as the worked-hours PDF (decision of 2026-11-11). This partly reverts 0.0.103: `totalSeconds` of day history, week history (total and each day) and month history (total and each day), and clock-view `totalSecondsWeek` and `totalSecondsMonth`, no longer include `PENDING_RECONCILIATION` or `PENDING_REVIEW`. No schema change: only the value and the descriptions change.
-- `pendingSeconds` (day, week total, week days, month total, and now month days) keeps its value but is no longer included in `totalSeconds`: the app shows it apart («+X h pendientes de revisar»). `0` means nothing pending; absent still means the pending read failed or an older BFF, and the app shows nothing. The clock view still has no pending field.
+- Worker history (`history/day`, `history/week`, `history/month`) and clock-view totals, and their `pendingSeconds`, keep the 0.0.103 meaning. Whether they stop counting pending worklogs is an open decision and is not part of this version.
 
 ## 0.0.103
 
