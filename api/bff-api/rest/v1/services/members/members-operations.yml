@@ -353,8 +353,10 @@ members:
              worklog (live status, open elapsed seconds). Worklogs are then filtered by instant in Kotlin;
            - 2 × `getBusinessReports` (`GET /api/v1/businesses/{businessId}/reports?from&to&userId`), Monday to
              Sunday of the business-local week: once without `reviewStatus` (CONFIRMED + APPROVED) and once
-             with `reviewStatus=PENDING_RECONCILIATION&reviewStatus=PENDING_REVIEW`; their sum is
-             `week.workedSeconds`, the same rule as Attendance «Horas» `clockedSeconds`;
+             with `reviewStatus=PENDING_RECONCILIATION&reviewStatus=PENDING_REVIEW`; the first is
+             `week.workedSeconds` and the second `week.pendingSeconds` (BFF 0.0.106; before, their sum
+             was `workedSeconds`), the same rule as Attendance «Horas» `clockedSeconds` and
+             `pendingReviewSeconds`;
            - `getBusinessTeamSchedule` (`GET /api/v1/businesses/{businessId}/team-schedules/{weekStart}?userIds`):
              planned seconds of the week. A 404 1046 (no published planning) is not an error here: it
              gives `week.plannedSeconds: null`;
@@ -429,7 +431,8 @@ members:
                       week: "2026-W47"
                       from: "2026-11-16"
                       to: "2026-11-22"
-                      workedSeconds: 68700
+                      workedSeconds: 61500
+                      pendingSeconds: 7200
                       openElapsedSeconds: 1560
                       plannedSeconds: 115200
                       remainingPlannedSeconds: 44940
@@ -503,6 +506,7 @@ members:
                       from: "2026-11-16"
                       to: "2026-11-22"
                       workedSeconds: 75600
+                      pendingSeconds: 0
                       openElapsedSeconds: 0
                       plannedSeconds: 115200
                       remainingPlannedSeconds: 39600

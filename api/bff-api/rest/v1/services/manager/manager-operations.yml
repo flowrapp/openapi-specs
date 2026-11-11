@@ -19,6 +19,8 @@ manager:
           `attendanceToday.upcoming` = `counts.upcoming`.
         - `teamHours.clockedSeconds` + `teamHours.plannedSeconds` from the same BFF
           `getAttendanceHours` totals (`totals.clockedSeconds` / `totals.plannedSeconds`).
+          Since BFF 0.0.106 `clockedSeconds` is CONFIRMED + APPROVED only and
+          `teamHours.pendingReviewSeconds` (`totals.pendingReviewSeconds`) is apart.
           Home «Horas semana» must use that pair; legacy `teamHours.totalSeconds` stays for
           compatibility and must not be mixed with `plannedSeconds`. `plannedSeconds` null =
           no published plan; `clockedSeconds` remains present for OWNER.
@@ -100,7 +102,8 @@ manager:
                       teamHours:
                         week: 2026-W39
                         totalSeconds: 99000
-                        clockedSeconds: 99000
+                        clockedSeconds: 95400
+                        pendingReviewSeconds: 3600
                         plannedSeconds: 1764000
                         days:
                           - {date: '2026-09-21', totalSeconds: 28800}

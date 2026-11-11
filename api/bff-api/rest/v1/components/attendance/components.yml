@@ -618,7 +618,12 @@ components:
       description: >
         «Horas» screen for one ISO week, already filtered. Definitions: reportable =
         CONFIRMED + APPROVED; pending = PENDING_RECONCILIATION + PENDING_REVIEW; clocked =
-        reportable + pending (closed, not REJECTED). Every figure comes from
+        reportable (closed). Since BFF 0.0.106 (option B, owner views) every `clockedSeconds`
+        (totals, days, day people, selected day, rows) counts only CONFIRMED + APPROVED and
+        pending is NOT included: it is `pendingReviewSeconds`, shown apart as «+X h pendientes
+        de revisar». Up to 0.0.105 clocked was reportable + pending. REJECTED never counts.
+        Only the aggregated figures changed: the rows' review status, chips and the detail
+        actions (accept, correct, reject) are unchanged. Every figure comes from
         `getBusinessReports`: business-local day of the clock-in and seconds net of effective
         breaks. Open worklogs count in no figure (shown as `open` on the row). A worklog with
         an open AUTOMATIC_CLOSE incident counts 0 until it is corrected or rejected. Planned
@@ -637,16 +642,23 @@ components:
               type: integer
               format: int64
               minimum: 0
-              example: 324000
+              description: >
+                Week total of CONFIRMED + APPROVED, the big figure. Pending is NOT included
+                (BFF 0.0.106)
+              example: 302400
             pendingReviewSeconds:
               type: integer
               format: int64
               minimum: 0
+              description: Week total of pending, apart from `clockedSeconds` («+X h pendientes de revisar»)
               example: 21600
             reportableSeconds:
               type: integer
               format: int64
               minimum: 0
+              description: >
+                CONFIRMED + APPROVED. Equal to `clockedSeconds` since BFF 0.0.106; kept for
+                compatibility
               example: 302400
             plannedSeconds:
               type: [integer, "null"]
@@ -665,7 +677,7 @@ components:
         legend:
           type: array
           description: >
-            People with clocked seconds in the week, in a stable order (name, then userId).
+            People with clocked or pending seconds in the week, in a stable order (name, then userId).
             The front assigns colours by index.
           items:
             $ref: "#/components/schemas/AttendanceWorkerDTO"
@@ -697,11 +709,13 @@ components:
           type: integer
           format: int64
           minimum: 0
-          example: 50400
+          description: CONFIRMED + APPROVED of the day; pending NOT included (BFF 0.0.106)
+          example: 41400
         pendingReviewSeconds:
           type: integer
           format: int64
           minimum: 0
+          description: Pending of the day, apart from `clockedSeconds`
           example: 9000
         plannedSeconds:
           type: [integer, "null"]
@@ -711,7 +725,10 @@ components:
           example: 57600
         people:
           type: array
-          description: Clocked seconds per person that day, in legend order (chart accessibility)
+          description: >
+            Clocked seconds per person that day, in legend order (chart accessibility). One item
+            per person with clocked or pending seconds that day (BFF 0.0.106: a person with only
+            pending time has `clockedSeconds: 0`)
           items:
             type: object
             properties:
@@ -727,7 +744,16 @@ components:
                 type: integer
                 format: int64
                 minimum: 0
+                description: CONFIRMED + APPROVED; pending NOT included (BFF 0.0.106)
                 example: 14400
+              pendingReviewSeconds:
+                type: integer
+                format: int64
+                minimum: 0
+                description: >
+                  Pending of the person that day, apart from `clockedSeconds` (BFF 0.0.106).
+                  Absent from an older BFF
+                example: 0
             required: [userId, name, clockedSeconds]
       required: [date, closed, isToday, clockedSeconds, pendingReviewSeconds, plannedSeconds, people]
 
@@ -742,11 +768,13 @@ components:
           type: integer
           format: int64
           minimum: 0
-          example: 50400
+          description: CONFIRMED + APPROVED of the day; pending NOT included (BFF 0.0.106)
+          example: 41400
         pendingReviewSeconds:
           type: integer
           format: int64
           minimum: 0
+          description: Pending of the day, apart from `clockedSeconds`
           example: 9000
         peopleCount:
           type: integer
@@ -758,8 +786,10 @@ components:
           type: integer
           format: int64
           minimum: 0
-          description: clockedSeconds / peopleCount, rounded; 0 without rows
-          example: 8400
+          description: >
+            clockedSeconds / peopleCount, rounded; 0 without rows. Confirmed only since BFF
+            0.0.106; `peopleCount` still counts every row (also pending-only and open rows)
+          example: 6900
         rows:
           type: array
           description: >
@@ -806,12 +836,14 @@ components:
           type: integer
           format: int64
           minimum: 0
-          example: 13440
+          description: CONFIRMED + APPROVED of the person that day; pending NOT included (BFF 0.0.106)
+          example: 9840
         pendingReviewSeconds:
           type: integer
           format: int64
           minimum: 0
-          example: 13440
+          description: Pending of the person that day, apart from `clockedSeconds`
+          example: 3600
         warnings:
           type: array
           description: Open incidents and alerts of the person's attendances that day
@@ -1359,7 +1391,9 @@ components:
                 Seconds of the CLOSED worklogs of `clockIns`, REJECTED excluded, net of
                 effective breaks, computed by the BFF from `clockIns`. Open worklogs count 0,
                 as in Hours (D3 default), and so does a worklog with an open AUTOMATIC_CLOSE
-                (`provisionalClockOut`). The same figure for SHIFT and UNMATCHED.
+                (`provisionalClockOut`). The same figure for SHIFT and UNMATCHED. A per-attendance
+                figure: unlike the Hours totals since BFF 0.0.106 it still includes pending
+                worklogs (unchanged by option B).
               example: 0
             openElapsedSeconds:
               type: [integer, "null"]

@@ -1,5 +1,34 @@
 # Changelog
 
+## 0.0.106
+
+Spec only. No BFF implementation in this change. No Main API change: the BFF already reads `getBusinessReports` once without `reviewStatus` (CONFIRMED + APPROVED) and once with the pending statuses. This is a draft increment of `info.version`, not a repository tag or release. The published solver contract is unchanged.
+
+Decision of Sergio, 2026-11-11 (t19s1): option B also applies to the owner views, the member profile and Attendance. They show the confirmed total (CONFIRMED + APPROVED only) and «+X h pendientes de revisar» apart.
+
+### Changed
+
+- Member profile `week.workedSeconds` (`MemberWeekHoursDTO`) counts only CONFIRMED + APPROVED. `remainingPlannedSeconds` keeps its value: it also subtracts the pending time.
+- Attendance «Horas» (`getAttendanceHours`): every `clockedSeconds` (`totals`, `days[]`, `days[].people[]`, `selectedDay`, `selectedDay.rows[]`) counts only CONFIRMED + APPROVED. `pendingReviewSeconds` keeps its value but is no longer included. `averageSecondsPerPerson` follows `clockedSeconds`. `totals.reportableSeconds` is now equal to `totals.clockedSeconds`.
+  - The legend and `days[].people[]` also list people with only pending time.
+- Manager Home `teamHours.clockedSeconds` follows `totals.clockedSeconds` of attendance/hours, so it is confirmed only.
+- No schema change in these fields: only the value and the descriptions.
+
+### Added
+
+- Optional `pendingSeconds` on `MemberWeekHoursDTO`. Absent means the pending read failed or an older BFF; the app shows nothing.
+- Optional `pendingReviewSeconds` on each `days[].people[]` item of attendance/hours.
+- Optional `teamHours.pendingReviewSeconds` on the Manager Home (OWNER).
+
+### Unchanged
+
+- Attendance rows and sessions: each attendance's `clocked.workedSeconds`, review status, chips, incidents and the detail actions (accept, correct, reject). Attendance Day and Week have no aggregated hour total, only counters.
+- Manager history (`history/day`, `history/week`, `history/month`), legacy `teamHours.totalSeconds` and `teamHours.days`, and `workingNow.workers[].totalSeconds`. They are out of this decision (see the PR).
+
+### Deployment
+
+- BFF before the app. An app that shows «+X h pendientes de revisar» next to a 0.0.105 total would count pending time twice. An older app on BFF 0.0.106 only sees the clocked figures and bars drop by the pending time; Attendance already shows pending as a separate figure. The app copy changes in its own PR.
+
 ## 0.0.105
 
 Spec only. No BFF implementation in this change. No Main API change: it uses `getUserReports` with `reviewStatus`, available since Main API 0.0.113. This is a draft increment of `info.version`, not a repository tag or release. The published solver contract is unchanged.

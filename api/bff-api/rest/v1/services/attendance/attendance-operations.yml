@@ -27,7 +27,7 @@ attendance:
 
         `jobRoleId` is forwarded to `getBusinessReports` and `getDailyAttendance` (Main API 0.0.87), which
         filter it server-side together with `userIds` (AND), so all thirteen calls run in the one `parZip`.
-        When no member matches, the response has zeros (or null planned seconds without a plan) and no rows. clocked = reportable + pending, per person, day and week.
+        When no member matches, the response has zeros (or null planned seconds without a plan) and no rows. clocked = reportable (CONFIRMED + APPROVED), per person, day and week; pending apart in `pendingReviewSeconds` (BFF 0.0.106; up to 0.0.105 clocked = reportable + pending).
 
         Validation before any Main API call: an invalid `week` or `date`, or a `date` outside `week`, returns
         400 1115. The BFF never moves `date` into the week: the front sends a `date` of the week it shows.
@@ -53,7 +53,7 @@ attendance:
                 $ref: '../../components/attendance/components.yml#/components/schemas/AttendanceHoursDTO'
               example:
                 week: {week: "2026-W44", from: "2026-10-26", to: "2026-11-01"}
-                totals: {clockedSeconds: 50400, pendingReviewSeconds: 13440, reportableSeconds: 36960, plannedSeconds: 57600}
+                totals: {clockedSeconds: 36960, pendingReviewSeconds: 13440, reportableSeconds: 36960, plannedSeconds: 57600}
                 days:
                   - {date: "2026-10-26", closed: false, isToday: false, clockedSeconds: 0, pendingReviewSeconds: 0, plannedSeconds: 0, people: []}
                   - {date: "2026-10-27", closed: false, isToday: false, clockedSeconds: 0, pendingReviewSeconds: 0, plannedSeconds: 0, people: []}
@@ -62,13 +62,13 @@ attendance:
                   - date: "2026-10-30"
                     closed: false
                     isToday: true
-                    clockedSeconds: 50400
+                    clockedSeconds: 36960
                     pendingReviewSeconds: 13440
                     plannedSeconds: 57600
                     people:
-                      - {userId: 102, name: Lucía Martín, clockedSeconds: 18180}
-                      - {userId: 103, name: Carlos Vega, clockedSeconds: 13440}
-                      - {userId: 109, name: irene.navas@example.com, clockedSeconds: 18780}
+                      - {userId: 102, name: Lucía Martín, clockedSeconds: 18180, pendingReviewSeconds: 0}
+                      - {userId: 103, name: Carlos Vega, clockedSeconds: 0, pendingReviewSeconds: 13440}
+                      - {userId: 109, name: irene.navas@example.com, clockedSeconds: 18780, pendingReviewSeconds: 0}
                   - {date: "2026-10-31", closed: false, isToday: false, clockedSeconds: 0, pendingReviewSeconds: 0, plannedSeconds: 0, people: []}
                   - {date: "2026-11-01", closed: false, isToday: false, clockedSeconds: 0, pendingReviewSeconds: 0, plannedSeconds: 0, people: []}
                 legend:
@@ -77,10 +77,10 @@ attendance:
                   - {userId: 102, name: Lucía Martín}
                 selectedDay:
                   date: "2026-10-30"
-                  clockedSeconds: 50400
+                  clockedSeconds: 36960
                   pendingReviewSeconds: 13440
                   peopleCount: 3
-                  averageSecondsPerPerson: 16800
+                  averageSecondsPerPerson: 12320
                   rows:
                     - userId: 102
                       name: Lucía Martín
@@ -98,7 +98,7 @@ attendance:
                       firstClockIn: "2026-10-30T09:18:00+01:00"
                       lastClockOut: "2026-10-30T13:02:00+01:00"
                       open: false
-                      clockedSeconds: 13440
+                      clockedSeconds: 0
                       pendingReviewSeconds: 13440
                       warnings:
                         - {type: LATE_ENTRY, severity: WARNING, seconds: 1080}
