@@ -417,7 +417,10 @@ manager:
       summary: Get manager day history
       description: >
         Returns all workers' sessions for a specific day in a business. Shows each worker's
-        individual clock-in/clock-out sessions and their daily total.
+        individual clock-in/clock-out sessions and their daily total. Since BFF 0.0.107 the day and
+        worker totals count only CONFIRMED + APPROVED (as `history/week` and `history/month`), with
+        `pendingSeconds` apart («+X h pendientes») and REJECTED in neither. The BFF computes them from
+        the review status of the sessions it already reads (`getWorklogs`); the sessions are unchanged.
       tags:
         - Manager
       operationId: getManagerDayHistory
@@ -458,7 +461,11 @@ manager:
       summary: Get manager week history
       description: >
         Returns a weekly summary for a business, broken down by day with per-worker totals
-        for each day. Use the day history endpoint for session-level detail.
+        for each day. Use the day history endpoint for session-level detail. Totals: Main
+        `getBusinessReports` without `reviewStatus` (CONFIRMED + APPROVED). Since BFF 0.0.107 a second
+        `getBusinessReports` with `reviewStatus=PENDING_REVIEW&reviewStatus=PENDING_RECONCILIATION`, run
+        in parallel, gives the optional `pendingSeconds`; when it fails they are omitted and the totals
+        are still returned.
       tags:
         - Manager
       operationId: getManagerWeekHistory
@@ -499,7 +506,9 @@ manager:
       summary: Get manager month history
       description: >
         Returns a monthly calendar view for a business with day-level totals and worker counts.
-        No session-level detail. Use the day history endpoint to drill into a specific day.
+        No session-level detail. Use the day history endpoint to drill into a specific day. Totals and
+        the optional `pendingSeconds` (BFF 0.0.107) follow the same two `getBusinessReports` reads as
+        the week history.
       tags:
         - Manager
       operationId: getManagerMonthHistory

@@ -1,5 +1,34 @@
 # Changelog
 
+## 0.0.107
+
+Spec only. No BFF implementation in this change. No Main API change: day totals come from the review status of the worklogs the BFF already reads. Week and month pending come from `getBusinessReports` with `reviewStatus`, which already exists. This is a draft increment of `info.version`, not a repository tag or release. The published solver contract is unchanged.
+
+Option B (Sergio, t19s1) in the manager history: the three history views follow one rule. The total is CONFIRMED + APPROVED, pending is shown apart («+X h pendientes») and REJECTED counts in neither.
+
+### Changed
+
+- `history/day` (`getManagerDayHistory`): `totalSeconds` of the day and of each worker counts only closed CONFIRMED + APPROVED worklogs. Up to 0.0.106 it summed every closed session, pending and REJECTED included.
+  - No schema change: only the value and the descriptions.
+  - `workers`, `totalWorkers` and the sessions are unchanged.
+
+### Added
+
+- Optional `pendingSeconds`, closed PENDING_REVIEW + PENDING_RECONCILIATION worklogs net of effective breaks, outside `totalSeconds`, on:
+  - `ManagerDayHistoryResponseDTO` and `ManagerDayWorkerDTO`;
+  - `ManagerWeekHistoryResponseDTO`, `ManagerWeekDayDTO` and `ManagerWeekDayWorkerDTO`;
+  - `ManagerMonthHistoryResponseDTO` and `ManagerMonthDayDTO`.
+- Absent `pendingSeconds` means the pending read failed or an older BFF; the app shows nothing.
+- Week `days[].workers` and month `days` also list workers and days with only pending time, with `totalSeconds: 0`.
+
+### Unchanged
+
+- Week and month `totalSeconds`: they were already CONFIRMED + APPROVED (Main `getBusinessReports` without `reviewStatus` reads the materialized reports).
+
+### Deployment
+
+- BFF before the app: an app that shows «+X h pendientes» next to a 0.0.106 day total would count pending time twice.
+
 ## 0.0.106
 
 Spec only. No BFF implementation in this change. No Main API change: the BFF already reads `getBusinessReports` once without `reviewStatus` (CONFIRMED + APPROVED) and once with the pending statuses. This is a draft increment of `info.version`, not a repository tag or release. The published solver contract is unchanged.
