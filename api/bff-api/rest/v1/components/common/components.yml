@@ -91,6 +91,25 @@ components:
             API `reportableSeconds`, so the sum of a day's sessions matches the reports-based week and
             month totals for those worklogs. Never negative. Null while the session is still active.
           example: 30600
+        reviewStatus:
+          $ref: "../attendance/components.yml#/components/schemas/AttendanceReviewStatusDTO"
+          description: >
+            Review status of the worklog (BFF 0.0.108), Main API `WorkLogResponseDTO.reviewStatus`
+            passed through, in every response that returns a `SessionDTO`: manager day history,
+            worker clock view (`activeWorklog`, `sessions`), worker day and week history, clock-in,
+            clock-out and `managerUpdateWorklog`.
+            - For closed sessions, it says where the session's `durationSeconds` counts:
+              CONFIRMED/APPROVED in `totalSeconds`, PENDING_REVIEW/PENDING_RECONCILIATION in
+              `pendingSeconds`, REJECTED in neither. So the closed sessions of a day add up to
+              `totalSeconds + pendingSeconds` once REJECTED ones are left out. The app shows the
+              chip «Pendiente de revisar» for PENDING_* and «Rechazada» for REJECTED, and no chip
+              for CONFIRMED/APPROVED.
+            - An open session (`clockOut` null) carries its current status, normally CONFIRMED
+              (Main creates worklogs CONFIRMED and moves them to PENDING_RECONCILIATION when they
+              close). It counts in no total, whatever its status, and its `durationSeconds` is null.
+            - Absent from a BFF older than 0.0.108, or when Main sends a value the BFF does not
+              know: the app shows no chip.
+          example: CONFIRMED
       required:
         - id
         - clockIn
