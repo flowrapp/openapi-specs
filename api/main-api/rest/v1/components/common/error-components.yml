@@ -143,7 +143,6 @@ components:
         | 1098 | 400 | PLANNING_CREATE_ON_PAST | Planning week creation cannot be in the past |
         | 1102 | 409 | CONTRACT_DELETE_BLOCKED_BY_PLANNING | contract deletion is blocked by planning state |
         | 1103 | 400 | INVALID_REPORT_TYPE | only PDF worked-hours reports are supported |
-        | 1104 | 403 | EMPLOYEE_WITHOUT_ACTIVE_CONTRACT | employee has no active contract in this business |
         | 1105 | 403 | CANNOT_REMOVE_SELF_FROM_BUSINESS | user cannot remove themselves from the business |
         | 1106 | 403 | CANNOT_REMOVE_OWNER_FROM_BUSINESS | user cannot remove the owner from the business |
         | 1107 | 400 | SEARCH_QUERY_TOO_SHORT | search query is shorter than 2 characters after trim and normalization |
@@ -199,7 +198,7 @@ components:
 
         Codes 1086, 1087 and 1088 are the backend enum: SESSION_EXPIRED, PLANNING_ALREADY_EXISTS and PLANNING_VERSION_MISMATCH. Codes 1089–1092 belonged to weekly attendance periods, which were never implemented, and are removed with those routes. Code 1095 remains a separate PLANNING_ALREADY_EXISTS entry and is unchanged here. Code 1115 is raised by the BFF attendance screens (invalid `week` or `date`, or a `date` outside `week`); no Main API operation returns it.
 
-        Codes 1116–1119 belong to notifyShiftClockIn and 1120–1125 to the planning generation operations (Main API 0.0.88). Codes 1099, 1100 and 1101 are used by the backend enum but are not documented here yet; they are not free and must not be reused. Code 1104 (`EMPLOYEE_WITHOUT_ACTIVE_CONTRACT`) is documented since Main API 0.0.114 for `exportCurrentUserWorkedHoursReportPdf`; the backend already returns it from its membership and permission checks when a non-owner member has no contract in force today.
+        Codes 1116–1119 belong to notifyShiftClockIn and 1120–1125 to the planning generation operations (Main API 0.0.88). Codes 1099, 1100, 1101 and 1104 are used by the backend enum but are not documented here yet; they are not free and must not be reused.
 
         Code 1126 is raised by the BFF member profile (`getBusinessMemberProfile`, BFF 0.0.69) when the user is not an active member of the business; no Main API operation returns it. Code 1011 (`USER_INVITATION_NOT_OWNER`) stays in the backend enum, but no operation returns it: the business invitation operations reject a non-owner with 1020.
 
@@ -310,7 +309,6 @@ components:
         - 1098
         - 1102
         - 1103
-        - 1104
         - 1105
         - 1106
         - 1107

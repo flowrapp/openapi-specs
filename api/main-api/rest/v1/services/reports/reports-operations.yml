@@ -270,9 +270,13 @@ reports:
         Returns one page of monthly totals of the authenticated user only, in one business, newest month first,
         for the worker screen «Mis horas». The user is derived from the access token; there is no user parameter
         and the response never holds another member's data.
-        Authorization is membership only, the same rule as exportCurrentUserWorkedHoursReportPdf: no business
-        permission (REPORTS_EXPORT is not required) and no business feature. A non-owner member needs a contract in
-        force today in the business time zone (403 1104).
+        Authorization: the caller is or was a member of the business, that is, a membership row exists for the
+        caller and this business, active or removed (removing a member sets removedAt and keeps the row). Contracts
+        are not checked: a member whose contracts ended, or who was removed from the business, still reads their own
+        data. No business permission (REPORTS_EXPORT is not required) and no business feature: available on every
+        plan. An OWNER may call it for their own worklogs. A user that never was a member gets 403 (1015).
+        Window: the 12 most recent calendar months in the business time zone, the current month included (the
+        current month and the 11 before it).
         confirmedSeconds is the month total of the monthly PDF: the server computes it with the same worklog
         queries and domain rule as the worked-hours report (closed worklogs in CONFIRMED or APPROVED, net of
         effective closed breaks, attributed to the business-local date of the clock-in). pendingSeconds
@@ -298,7 +302,8 @@ reports:
           required: false
           description: |
             Exclusive upper bound (YYYY-MM): the page starts with the month before it. Omit it for the first page,
-            which starts with the current month. Use the previous page's nextBefore. A month after the current month returns 400 (1025).
+            which starts with the current month. Use the previous page's nextBefore. A month after the current month returns 400 (1025);
+            a month on or before the oldest month of the 12-month window returns an empty page.
           schema:
             type: string
             pattern: '^\d{4}-(0[1-9]|1[0-2])$'
@@ -311,7 +316,7 @@ reports:
             type: integer
             format: int32
             minimum: 1
-            maximum: 24
+            maximum: 12
             default: 12
             example: 12
       responses:
@@ -330,7 +335,7 @@ reports:
                   - {month: "2026-09", inProgress: false, effectiveTo: "2026-09-30", confirmedSeconds: 0, pendingSeconds: 0, pendingCount: 0, hasWorklogs: false}
                 nextBefore: "2026-09"
         '400':
-          description: Invalid before or limit, or before after the current month
+          description: Invalid before or limit (1 to 12), or before after the current month
           content:
             application/problem+json:
               schema:
@@ -344,7 +349,7 @@ reports:
         '401':
           description: Unauthorized
         '403':
-          description: The caller is not a member of the business, or is a non-owner member without a contract in force today
+          description: The caller never was a member of the business
           content:
             application/problem+json:
               schema:
@@ -355,11 +360,6 @@ reports:
                   value:
                     status: 403
                     detail: "1015 - user is not member of business"
-                EMPLOYEE_WITHOUT_ACTIVE_CONTRACT:
-                  summary: "1104 - employee has no active contract in this business"
-                  value:
-                    status: 403
-                    detail: "1104 - employee has no active contract in this business"
         '404':
           description: Business not found
           content:
@@ -376,7 +376,6 @@ reports:
         - 1006
         - 1015
         - 1025
-        - 1104
 
   current-user-worked-hours-report-pdf:
     get:
@@ -386,21 +385,26 @@ reports:
         authenticated user only, in one business. No email is sent. It is meant to be shown in an in-app PDF viewer.
         The person is always the caller: the user is derived from the access token and this operation has no
         userIds parameter. It never returns another member's data, whatever permissions the caller holds.
-        Authorization is membership only, the same rule as the other self-service operations of the caller's own
-        data: it does not require REPORTS_EXPORT or any other business permission, and no business feature owns it.
-        An OWNER may call it for their own worklogs. A member that is not the OWNER needs a contract in force today
-        in the business time zone (403 1104), the same rule as the existing membership checks.
+        Authorization: the caller is or was a member of the business, that is, a membership row exists for the
+        caller and this business, active or removed (removing a member sets removedAt and keeps the row). Contracts
+        are not checked: a member whose contracts ended, or who was removed from the business, still reads their own
+        data. No business permission (REPORTS_EXPORT is not required) and no business feature: available on every
+        plan. An OWNER may call it for their own worklogs. A user that never was a member gets 403 (1015).
         The layout, rules and content are exactly those of exportBusinessWorkedHoursReportPdf with periodType MONTH,
         from the first and to the last day of the month, and userIds equal to the caller: a single-person
         PDF with no centre summary page, totals that include only closed worklogs whose reviewStatus is CONFIRMED or
         APPROVED (net of effective breaks, attributed to the business-local date of the clock-in), annex A with the
         corrections and annex B with the worklogs left out of the total (rejected, pending review, pending
         reconciliation, open).
-        The current month is accepted and truncated by the server to today in the business time zone. A month whose
-        first day is after today returns 400 (1025). A month without countable worklogs still returns a PDF.
+        The month must be inside the same 12-month window as getCurrentUserWorkedHoursMonths: the current month in
+        the business time zone or one of the 11 before it. A future month, or a month older than the window, returns
+        400 (1025). The current month is accepted and truncated by the server to today (provisional report). A month
+        of the window without countable worklogs still returns a PDF.
         Its month total equals confirmedSeconds of getCurrentUserWorkedHoursMonths for the same month.
         Synchronous: the PDF is rendered within the request, like exportBusinessWorkedHoursReportPdf. No server
         cache: every call renders the current data, and the footer carries the generation time.
+        Generation time is measured in develop; if its p95 exceeds about 5 s, generation moves to a queue (RabbitMQ)
+        with stored PDFs, and this operation will change in a later version.
       tags:
         - Reports
       operationId: exportCurrentUserWorkedHoursReportPdf
@@ -445,7 +449,7 @@ reports:
                 format: int64
                 example: 83995
         '400':
-          description: Invalid month, or a month whose first day is after today in the business time zone
+          description: Invalid month, a future month, or a month older than the 12-month window
           content:
             application/problem+json:
               schema:
@@ -459,7 +463,7 @@ reports:
         '401':
           description: Unauthorized
         '403':
-          description: The caller is not a member of the business, or is a non-owner member without a contract in force today
+          description: The caller never was a member of the business
           content:
             application/problem+json:
               schema:
@@ -470,11 +474,6 @@ reports:
                   value:
                     status: 403
                     detail: "1015 - user is not member of business"
-                EMPLOYEE_WITHOUT_ACTIVE_CONTRACT:
-                  summary: "1104 - employee has no active contract in this business"
-                  value:
-                    status: 403
-                    detail: "1104 - employee has no active contract in this business"
         '404':
           description: Business not found
           content:
@@ -491,7 +490,6 @@ reports:
         - 1006
         - 1015
         - 1025
-        - 1104
 
   request-business-worked-hours-report:
     post:

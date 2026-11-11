@@ -32,7 +32,7 @@ info:
     | getManagerBusiness*Settings, updateManagerBusiness*Setting(s)/Policy/Preference | CLOCKING_SETTINGS_MANAGE |
     | updateManagerBusinessProfile, updateManagerBusinessGeofence | BUSINESS_EDIT |
     | removeBusinessMember, getAccessRoles, createAccessRole, replaceAccessRole, deleteAccessRole, updateMemberAccessRole | OWNER |
-    | getWorkerHoursMonths, getWorkerWorkedHoursReportPdf | membership only; always the caller's own data (never REPORTS_EXPORT, no user parameter) |
+    | getWorkerHoursMonths, getWorkerWorkedHoursReportPdf | current or past membership (no contract check); always the caller's own data (never REPORTS_EXPORT, no user parameter) |
     | worker, me and team-schedule operations | membership only |
 
     ## Business plans and features

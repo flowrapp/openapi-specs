@@ -79,9 +79,10 @@ components:
           description: |
             Consecutive calendar months, newest first, with no gaps: a month without worklogs is listed with
             hasWorklogs false and zero seconds. Without `before`, the first item is always the current month, even
-            when it has no worklogs. The list never goes back past the caller's first month in the business (the
-            earliest of the membership `joinedAt` and the first worklog clock-in, in the business time zone).
-            Empty when `before` is on or before that first month.
+            when it has no worklogs. The list covers at most the 12 most recent months (the current month and the
+            11 before it) and never goes back past the caller's first month in the business (the earliest of the
+            membership `joinedAt` and the first worklog clock-in, in the business time zone), whichever is later.
+            Empty when `before` is on or before the oldest month of that range.
           items:
             $ref: '#/components/schemas/CurrentUserWorkedHoursMonthDTO'
         nextBefore:
@@ -89,7 +90,7 @@ components:
             - string
             - 'null'
           pattern: '^\d{4}-(0[1-9]|1[0-2])$'
-          description: Send it as `before` to read the next (older) page. It is the month of the last item when older months remain; null when there are none.
+          description: Send it as `before` to read the next (older) page. It is the month of the last item when older months remain inside the 12-month window and on or after the first month; null otherwise.
           example: "2025-12"
       required: [zone, today, months, nextBefore]
 
