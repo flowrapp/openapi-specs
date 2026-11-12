@@ -21,3 +21,49 @@ components:
       enum: [MONTH, YEAR, RANGE]
       default: RANGE
       example: MONTH
+
+    WorkedHoursReportTypeDTO:
+      type: string
+      description: |
+        Output format of a worked-hours report download. Both formats cover the same period, the same people
+        and the same counting rules; the PDF month total equals the sum of «Horas netas» over the CSV rows with
+        «Cuenta en el total» = Sí, up to the per-row rounding described below.
+        - PDF (default): the registro de jornada PDF (`application/pdf`).
+        - CSV: a text file for Excel in Spanish (`text/csv; charset=utf-8`):
+          - Encoding UTF-8 with a byte order mark (EF BB BF), so Excel detects it. Separator `;`. Line endings CRLF.
+            Decimal comma.
+          - The first line is the header, in Spanish and in this order:
+            `Persona;ID persona;Puesto;Fecha;Entrada;Salida;Salida día siguiente;Pausas (min);Horas netas;Duración;Estado;Cuenta en el total`
+          - One row per closed worklog (clock-out set) of the people in scope whose clock-in falls in the period
+            (business time zone), in CONFIRMED, APPROVED, PENDING_REVIEW or PENDING_RECONCILIATION. REJECTED and
+            open worklogs are not listed. No total or subtotal rows. A period without such worklogs returns the
+            header line only.
+          - Rows ordered by person (name ignoring case, then user id), then date, then clock-in.
+          - Persona: display name with the PDF rule (`Persona #<id>` when the name is empty or looks like an
+            email). The email is never written.
+          - ID persona: user id, to tell apart people with the same name.
+          - Puesto: name of the job role of the person's contract in force on that date, or empty.
+          - Fecha: business-local date of the clock-in, `dd/MM/yyyy` (the PDF day attribution).
+          - Entrada, Salida: `HH:mm`, business-local.
+          - Salida día siguiente: `Sí` when the clock-out falls on a later business-local date than the
+            clock-in, otherwise `No`.
+          - Pausas (min): whole minutes of the effective closed breaks of the worklog, truncated.
+          - Duración: net time (clock-out − clock-in − effective closed breaks, truncated to the minute) as
+            `H:MM`, the PDF format (e.g. `7:45`).
+          - Horas netas: the same truncated net minutes divided by 60, two decimals rounded half up, decimal
+            comma (e.g. `7,75`).
+          - Estado: `Confirmado`, `Aprobado`, `Pendiente de revisión` or `Pendiente de conciliación` (the PDF
+            wording).
+          - Cuenta en el total: `Sí` for CONFIRMED and APPROVED, `No` for PENDING_REVIEW and
+            PENDING_RECONCILIATION.
+          - Quoting (RFC 4180): a field is enclosed in double quotes only when it contains `;`, `"`, CR or LF;
+            an inner double quote is doubled.
+          - Formula protection (CSV injection): a text field (Persona, Puesto) that starts with `=`, `+`, `-`,
+            `@`, TAB or CR is written with a leading apostrophe (`'`). Generated numeric, date and time columns
+            are never prefixed.
+          - Instants are converted to business-local dates and times in the server code with the business
+            ZoneId, not in SQL.
+        Any other value returns 400 (1103). The BFF forwards it unchanged to the main API, which renders the file.
+      enum: [PDF, CSV]
+      default: PDF
+      example: CSV

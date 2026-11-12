@@ -141,8 +141,10 @@ components:
         | 1096 | 409 | PLANNING_NOT_EDITABLE | planning scheduled shifts can only be replaced while the planning is in DRAFT |
         | 1097 | 409 | CONTRACT_ALREADY_STARTED | contract has already started |
         | 1098 | 400 | PLANNING_CREATE_ON_PAST | Planning week creation cannot be in the past |
+        | 1101 | 400 | INVALID_REPORT_USER_IDS | report user IDs must belong to the business |
         | 1102 | 409 | CONTRACT_DELETE_BLOCKED_BY_PLANNING | contract deletion is blocked by planning state |
-        | 1103 | 400 | INVALID_REPORT_TYPE | only PDF worked-hours reports are supported |
+        | 1103 | 400 | INVALID_REPORT_TYPE | worked-hours report type is not supported |
+        | 1104 | 403 | EMPLOYEE_WITHOUT_ACTIVE_CONTRACT | employee has no active contract in this business |
         | 1105 | 403 | CANNOT_REMOVE_SELF_FROM_BUSINESS | user cannot remove themselves from the business |
         | 1106 | 403 | CANNOT_REMOVE_OWNER_FROM_BUSINESS | user cannot remove the owner from the business |
         | 1107 | 400 | SEARCH_QUERY_TOO_SHORT | search query is shorter than 2 characters after trim and normalization |
@@ -198,7 +200,9 @@ components:
 
         Codes 1086, 1087 and 1088 are the backend enum: SESSION_EXPIRED, PLANNING_ALREADY_EXISTS and PLANNING_VERSION_MISMATCH. Codes 1089–1092 belonged to weekly attendance periods, which were never implemented, and are removed with those routes. Code 1095 remains a separate PLANNING_ALREADY_EXISTS entry and is unchanged here. Code 1115 is raised by the BFF attendance screens (invalid `week` or `date`, or a `date` outside `week`); no Main API operation returns it.
 
-        Codes 1116–1119 belong to notifyShiftClockIn and 1120–1125 to the planning generation operations (Main API 0.0.88). Codes 1099, 1100, 1101 and 1104 are used by the backend enum but are not documented here yet; they are not free and must not be reused.
+        Codes 1116–1119 belong to notifyShiftClockIn and 1120–1125 to the planning generation operations (Main API 0.0.88). Codes 1099 and 1100 are used by the backend enum but are not documented here yet; they are not free and must not be reused.
+
+        Codes 1101 (`INVALID_REPORT_USER_IDS`: a report `userIds` value without a membership row in the business, active or removed) and 1104 (`EMPLOYEE_WITHOUT_ACTIVE_CONTRACT`: an EMPLOYEE with the required permission but no contract in force) are documented from Main API 0.0.115. Code 1103 now means a worked-hours report `type` other than PDF or CSV (CSV added in 0.0.115; EXCEL removed); its message changes accordingly. The worked-hours report operations reuse 1111 (`INVALID_USER_IDS`) for more than 50 `userIds`, the cap already used by the BFF attendance screens.
 
         Code 1126 is raised by the BFF member profile (`getBusinessMemberProfile`, BFF 0.0.69) when the user is not an active member of the business; no Main API operation returns it. Code 1011 (`USER_INVITATION_NOT_OWNER`) stays in the backend enum, but no operation returns it: the business invitation operations reject a non-owner with 1020.
 
@@ -307,8 +311,10 @@ components:
         - 1096
         - 1097
         - 1098
+        - 1101
         - 1102
         - 1103
+        - 1104
         - 1105
         - 1106
         - 1107

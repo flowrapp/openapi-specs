@@ -133,19 +133,33 @@ reports:
 
   business-worked-hours-report-pdf:
     get:
-      summary: Export business worked hours report as PDF or Excel
+      summary: Export the business worked hours report as PDF or CSV
       description: |
-        Generates and downloads a PDF or Excel (.xlsx) report containing worked-hours information for the selected employees in the business within the requested date range.
-        If userIds is omitted or empty, all employees in the business are included. Every supplied user ID must belong to the requested business.
-        The type parameter selects the output format and defaults to PDF. The .pdf URL suffix is retained for compatibility, including when Excel is requested.
-        The range is day-based and inclusive. This endpoint is intended for annual reports, but supports any valid date range.
-        The optional periodType (MONTH, YEAR or RANGE, default RANGE) selects the report layout and how from and to are validated; when it is omitted the request behaves exactly as before (RANGE).
-        A period that ends after today is accepted and truncated by the server to today in the business time zone; a period whose from is after today returns 400.
-        Seconds include only worklogs whose reviewStatus is CONFIRMED or APPROVED.
-        A closed worklog in PENDING_RECONCILIATION does not count until attendance
-        reconciliation moves it to CONFIRMED or PENDING_REVIEW. PENDING_REVIEW does not count either.
-        Only the business OWNER may export the report. A MANAGER or EMPLOYEE receives 403 (1020).
-        A PDF report that covers several employees, for any periodType including YEAR, is delivered as one single PDF document, not as a ZIP.
+        Generates and returns, in the response body, the worked-hours report of the selected people of the
+        business for the requested period, as one PDF document or one CSV file (type). No email is sent and
+        nothing is stored: every call renders the current data (synchronous, no server cache).
+        Authorization: the business permission REPORTS_EXPORT (see the API description). The OWNER holds it; an
+        EMPLOYEE holds it through its access role. Without it: 403 (1020, `user lacks permission REPORTS_EXPORT
+        in business`); an EMPLOYEE without a contract in force: 403 (1104). REPORTS_EXPORT belongs to no business
+        feature: every plan.
+        People: if userIds is omitted or empty, every member of the business active at some point of the period
+        (removed members included until their removal). With userIds, exactly those people, current or former
+        members (a removed membership is still valid); an id without a membership row in the business returns 400
+        (1101). At most 50 distinct ids: 400 (1111). Several people produce one single file (one PDF with a
+        section per person and a centre summary page, or one CSV), never a ZIP.
+        The range is day-based and inclusive. periodType (MONTH, YEAR or RANGE, default RANGE) selects the
+        layout and how from and to are validated (400 1114 when they do not match). The owner reports screen
+        uses MONTH only.
+        A period that ends after today is accepted and truncated by the server to today in the business time
+        zone (provisional report: the PDF says so and the filename carries the date); a period whose from is after
+        today returns 400 (1025).
+        Totals include only closed worklogs whose reviewStatus is CONFIRMED or APPROVED. PENDING_REVIEW and
+        PENDING_RECONCILIATION do not count until reviewed or reconciled; in the PDF they are listed in annex B,
+        in the CSV they are rows with «Cuenta en el total» = No. REJECTED and open worklogs count nowhere.
+        The month total of the PDF equals confirmedSeconds of getBusinessWorkedHoursMonths for the same month and
+        userIds. See WorkedHoursReportTypeDTO for the CSV columns and format.
+        The `.pdf` suffix of the path is kept for both types; the media type and the filename extension follow
+        type.
       tags:
         - Reports
       operationId: exportBusinessWorkedHoursReportPdf
@@ -168,7 +182,7 @@ reports:
           schema:
             type: string
             format: date
-            example: "2025-01-01"
+            example: "2026-10-01"
         - name: to
           in: query
           required: true
@@ -176,76 +190,104 @@ reports:
           schema:
             type: string
             format: date
-            example: "2025-12-31"
+            example: "2026-10-31"
         - name: periodType
           in: query
           required: false
-          description: Period type of the report. Omit it to keep the previous behavior (RANGE). MONTH requires from and to to cover exactly one calendar month and YEAR exactly one calendar year.
+          description: Period type of the report. Omit it for RANGE. MONTH requires from and to to cover exactly one calendar month and YEAR exactly one calendar year.
           schema:
             $ref: '../../components/reports/components.yml#/components/schemas/WorkedHoursReportPeriodTypeDTO'
         - name: type
           in: query
           required: false
-          description: Output format of the report. EXCEL generates an .xlsx workbook.
+          description: Output format, PDF (default) or CSV. See WorkedHoursReportTypeDTO.
           schema:
-            type: string
-            enum: [PDF, EXCEL]
-            default: PDF
-            example: EXCEL
+            $ref: '../../components/reports/components.yml#/components/schemas/WorkedHoursReportTypeDTO'
         - name: userIds
           in: query
           required: false
-          description: User IDs to include, all belonging to this business. Omit or leave empty to include all employees. Repeat the parameter for multiple IDs (userIds=12&userIds=34).
+          description: People to include, current or former members of this business. Omit or leave empty for the whole business. Repeat the parameter for several ids (userIds=12&userIds=34). At most 50 distinct ids.
           style: form
           explode: true
           allowEmptyValue: true
           schema:
             type: array
+            maxItems: 50
             items:
               type: integer
               format: int64
             example: [12, 34]
       responses:
         '200':
-          description: Report generated successfully. The response media type and attachment extension match the requested type.
+          description: Report generated. The media type and the filename extension match type.
           content:
             application/pdf:
               schema:
                 type: string
                 format: binary
-            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+            text/csv:
               schema:
                 type: string
                 format: binary
           headers:
             Content-Disposition:
-              description: Attachment filename ending in .pdf for PDF or .xlsx for EXCEL
+              description: |
+                `attachment; filename="registro-jornada-<period>-<scope>.<pdf|csv>"`, ASCII only. The PDF and the
+                CSV of the same request differ only in the extension.
+                - period: `YYYY-MM` for MONTH; `YYYY` for YEAR; `<from>-<to>` (YYYY-MM-DD) for RANGE. When the
+                  period is truncated to today (provisional), `-hasta-<today YYYY-MM-DD>` is appended, e.g.
+                  `2026-11-hasta-2026-11-12`.
+                - scope: `todo-el-negocio` without userIds; with one id, the person's display name lowercased,
+                  accents removed, every run of other characters replaced by `-`, at most 40 characters (`persona-<id>`
+                  when the PDF rule gives no name); with two or more distinct ids, `<N>-personas`.
+                Examples: `registro-jornada-2026-10-todo-el-negocio.pdf`, `registro-jornada-2026-10-lucia-ruiz.csv`,
+                `registro-jornada-2026-11-hasta-2026-11-12-3-personas.pdf`.
               schema:
                 type: string
-                example: 'attachment; filename="worked-hours-report-2025-01-01-2025-12-31.pdf"'
-        '400':
-          description: Invalid date range (including from after today), period type (from and to do not match periodType), report type, or user IDs (including users outside the requested business)
-          content:
-            application/problem+json:
+                example: 'attachment; filename="registro-jornada-2026-10-todo-el-negocio.pdf"'
+            Content-Length:
+              description: Size of the file in bytes
               schema:
-                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
-              example:
-                status: 400
-                detail: "1114 - from and to do not match periodType"
-        '401':
-          description: Unauthorized
-        '403':
-          description: Current user is not the owner of the business (a MANAGER is not allowed)
+                type: integer
+                format: int64
+                example: 83995
+        '400':
+          description: Invalid date range or from after today (1025), period type mismatch (1114), report type (1103), an id without membership in the business (1101) or more than 50 userIds (1111)
           content:
             application/problem+json:
               schema:
                 $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
               examples:
-                USER_NOT_OWNER_OF_BUSINESS:
-                  summary: "1020 - user is not the owner of business"
-                  value:
-                    status: 403
-                    detail: "1020 - user is not the owner of business"
+                INVALID_DATE_RANGE:
+                  summary: "1025 - from date must be before or equal to to date"
+                  value: {status: 400, detail: "1025 - from date must be before or equal to to date"}
+                REPORT_PERIOD_TYPE_MISMATCH:
+                  summary: "1114 - from and to do not match periodType"
+                  value: {status: 400, detail: "1114 - from and to do not match periodType"}
+                INVALID_REPORT_TYPE:
+                  summary: "1103 - worked-hours report type is not supported"
+                  value: {status: 400, detail: "1103 - worked-hours report type is not supported"}
+                INVALID_REPORT_USER_IDS:
+                  summary: "1101 - report user IDs must belong to the business"
+                  value: {status: 400, detail: "1101 - report user IDs must belong to the business"}
+                INVALID_USER_IDS:
+                  summary: "1111 - userIds must contain between 1 and 50 identifiers"
+                  value: {status: 400, detail: "1111 - userIds must contain between 1 and 50 identifiers"}
+        '401':
+          description: Unauthorized
+        '403':
+          description: The caller lacks REPORTS_EXPORT in the business, or is an EMPLOYEE without a contract in force
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+              examples:
+                MISSING_PERMISSION:
+                  summary: "1020 - user lacks permission REPORTS_EXPORT in business"
+                  value: {status: 403, detail: "1020 - user lacks permission REPORTS_EXPORT in business"}
+                EMPLOYEE_WITHOUT_ACTIVE_CONTRACT:
+                  summary: "1104 - employee has no active contract in this business"
+                  value: {status: 403, detail: "1104 - employee has no active contract in this business"}
         '404':
           description: Business not found
           content:
@@ -261,7 +303,229 @@ reports:
       x-functional-errors:
         - 1006
         - 1020
+        - 1025
+        - 1101
+        - 1103
+        - 1104
+        - 1111
         - 1114
+
+  business-worked-hours-months:
+    get:
+      summary: List the monthly worked hours of the business for the owner reports screen
+      description: |
+        Returns one page of monthly worked-hours totals of the business, newest month first, for the owner
+        reports screen. Same shape, paging and counting rules as getCurrentUserWorkedHoursMonths («Mis horas»),
+        for the whole business or for the requested people, plus oldestMonth and peopleCount.
+        Authorization: REPORTS_EXPORT, the same as exportBusinessWorkedHoursReportPdf, so whoever reads a figure
+        can download its PDF and CSV. Without it: 403 (1020); an EMPLOYEE without a contract in force: 403 (1104).
+        Every plan.
+        Scope: without userIds, every member of the business, removed members included (their worklogs count in
+        the months they worked). With userIds, those people only, current or former members; an id without a
+        membership row in the business returns 400 (1101); at most 50 distinct ids, 400 (1111). Every figure is
+        the sum over the people in scope, exactly as the PDF of the same month and userIds.
+        Window: at most the 48 most recent calendar months in the business time zone (4 years: the current month
+        and the 47 before it). The size is a server setting of at most 48; oldestMonth carries the effective
+        limit. The list never goes back past the first month of the scope:
+        - without userIds, the month of the earliest worklog clock-in of the business (any member, any status);
+        - with userIds, the earliest, over those people, of the membership joinedAt and the first worklog
+          clock-in: the rule of «Mis horas», so a person shows the same months in both screens.
+        A business without any worklog lists the current month only.
+        Paging: before is an exclusive upper bound (YYYY-MM) and limit 1 to 12 (default 12). Omit before for the
+        first page, which starts with the current month; then send the previous nextBefore. A before after the
+        current month returns 400 (1025); a before on or before oldestMonth returns an empty page with nextBefore
+        null.
+        Totals (option B): confirmedSeconds counts closed CONFIRMED and APPROVED worklogs; pendingSeconds counts
+        closed PENDING_REVIEW and PENDING_RECONCILIATION apart and is not included in confirmedSeconds; REJECTED and
+        open worklogs count in neither. Same worklog queries and domain rule as the worked-hours PDF; the
+        materialized reports table is not read.
+        Nothing is stored: a month's PDF and CSV are generated when downloaded. The per-month archive field is
+        reserved for the 4-year retention and is not returned in this version.
+      tags:
+        - Reports
+      operationId: getBusinessWorkedHoursMonths
+      security:
+        - basicAuth: []
+        - bearerAuth: []
+      parameters:
+        - name: businessId
+          in: path
+          required: true
+          description: ID of the business
+          schema:
+            type: integer
+            format: int64
+            example: 123
+        - name: userIds
+          in: query
+          required: false
+          style: form
+          explode: true
+          description: People in scope, current or former members of this business. Repeat the parameter for several ids (userIds=12&userIds=34). Omit it for the whole business. At most 50 distinct ids.
+          schema:
+            type: array
+            uniqueItems: true
+            maxItems: 50
+            items:
+              type: integer
+              format: int64
+              minimum: 1
+            example: [12, 34]
+        - name: before
+          in: query
+          required: false
+          description: |
+            Exclusive upper bound (YYYY-MM): the page starts with the month before it. Omit it for the first page,
+            which starts with the current month. Use the previous page's nextBefore. A month after the current month
+            returns 400 (1025); a month on or before oldestMonth returns an empty page.
+          schema:
+            type: string
+            pattern: '^\d{4}-(0[1-9]|1[0-2])$'
+            example: "2025-11"
+        - name: limit
+          in: query
+          required: false
+          description: Maximum number of months in the page
+          schema:
+            type: integer
+            format: int32
+            minimum: 1
+            maximum: 12
+            default: 12
+            example: 12
+      responses:
+        '200':
+          description: One page of monthly totals
+          content:
+            application/json:
+              schema:
+                $ref: '../../components/reports/components.yml#/components/schemas/BusinessWorkedHoursMonthsResponseDTO'
+              example:
+                zone: Europe/Madrid
+                today: "2026-11-12"
+                oldestMonth: "2025-03"
+                months:
+                  - {month: "2026-11", inProgress: true, effectiveTo: "2026-11-12", confirmedSeconds: 4624200, pendingSeconds: 130500, pendingCount: 14, hasWorklogs: true, peopleCount: 8}
+                  - {month: "2026-10", inProgress: false, effectiveTo: "2026-10-31", confirmedSeconds: 9734400, pendingSeconds: 0, pendingCount: 0, hasWorklogs: true, peopleCount: 8}
+                  - {month: "2026-09", inProgress: false, effectiveTo: "2026-09-30", confirmedSeconds: 0, pendingSeconds: 0, pendingCount: 0, hasWorklogs: false, peopleCount: 0}
+                nextBefore: "2026-09"
+        '400':
+          description: Invalid before or limit (1 to 12) or before after the current month (1025), an id without membership in the business (1101), or more than 50 userIds (1111)
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+              examples:
+                INVALID_DATE_RANGE:
+                  summary: "1025 - from date must be before or equal to to date"
+                  value: {status: 400, detail: "1025 - from date must be before or equal to to date"}
+                INVALID_REPORT_USER_IDS:
+                  summary: "1101 - report user IDs must belong to the business"
+                  value: {status: 400, detail: "1101 - report user IDs must belong to the business"}
+                INVALID_USER_IDS:
+                  summary: "1111 - userIds must contain between 1 and 50 identifiers"
+                  value: {status: 400, detail: "1111 - userIds must contain between 1 and 50 identifiers"}
+        '401':
+          description: Unauthorized
+        '403':
+          description: The caller lacks REPORTS_EXPORT in the business, or is an EMPLOYEE without a contract in force
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+              examples:
+                MISSING_PERMISSION:
+                  summary: "1020 - user lacks permission REPORTS_EXPORT in business"
+                  value: {status: 403, detail: "1020 - user lacks permission REPORTS_EXPORT in business"}
+                EMPLOYEE_WITHOUT_ACTIVE_CONTRACT:
+                  summary: "1104 - employee has no active contract in this business"
+                  value: {status: 403, detail: "1104 - employee has no active contract in this business"}
+        '404':
+          description: Business not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+              examples:
+                BUSINESS_NOT_FOUND:
+                  summary: "1006 - business does not exist"
+                  value: {status: 404, detail: "1006 - business does not exist"}
+      x-functional-errors:
+        - 1006
+        - 1020
+        - 1025
+        - 1101
+        - 1104
+        - 1111
+
+  business-worked-hours-people:
+    get:
+      summary: List the people of the owner reports selector, current and former members
+      description: |
+        Lists the people a REPORTS_EXPORT holder can pick in the owner reports selector: every membership of the
+        business, active or removed, except platform administrators (the people the worked-hours PDF can hold).
+        A removed membership is listed when it was removed on or after the first day of the oldest month of the
+        48-month window of getBusinessWorkedHoursMonths, so every person whose record is still inside the window
+        can be picked; older removals are not listed. removedAt tells former members apart. Every listed userId is
+        accepted by getBusinessWorkedHoursMonths and exportBusinessWorkedHoursReportPdf.
+        Authorization: REPORTS_EXPORT (403 1020; an EMPLOYEE without a contract in force 403 1104), not
+        TEAM_VIEW: getBusinessUsers needs TEAM_VIEW, which a reports user may lack. It returns only what the
+        selector shows: no email, no contract detail. Not paginated (a business roster).
+      tags:
+        - Reports
+      operationId: getBusinessWorkedHoursPeople
+      security:
+        - basicAuth: []
+        - bearerAuth: []
+      parameters:
+        - name: businessId
+          in: path
+          required: true
+          description: ID of the business
+          schema:
+            type: integer
+            format: int64
+            example: 123
+      responses:
+        '200':
+          description: People of the selector
+          content:
+            application/json:
+              schema:
+                $ref: '../../components/reports/components.yml#/components/schemas/BusinessWorkedHoursPeopleResponseDTO'
+              example:
+                people:
+                  - {userId: 104, name: "Ana Gil", jobRoleName: null, joinedAt: "2025-03-02T09:00:00Z", removedAt: "2026-06-30T18:00:00Z"}
+                  - {userId: 103, name: "Lucía Ruiz", jobRoleName: "Sala", joinedAt: "2026-07-01T07:00:00Z", removedAt: null}
+        '401':
+          description: Unauthorized
+        '403':
+          description: The caller lacks REPORTS_EXPORT in the business, or is an EMPLOYEE without a contract in force
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+              examples:
+                MISSING_PERMISSION:
+                  summary: "1020 - user lacks permission REPORTS_EXPORT in business"
+                  value: {status: 403, detail: "1020 - user lacks permission REPORTS_EXPORT in business"}
+                EMPLOYEE_WITHOUT_ACTIVE_CONTRACT:
+                  summary: "1104 - employee has no active contract in this business"
+                  value: {status: 403, detail: "1104 - employee has no active contract in this business"}
+        '404':
+          description: Business not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+              examples:
+                BUSINESS_NOT_FOUND:
+                  summary: "1006 - business does not exist"
+                  value: {status: 404, detail: "1006 - business does not exist"}
+      x-functional-errors:
+        - 1006
+        - 1020
+        - 1104
 
   current-user-worked-hours-months:
     get:
@@ -495,16 +759,22 @@ reports:
     post:
       summary: Request asynchronous business worked hours report generation
       description: |
-        Accepts a request to generate a PDF or Excel (.xlsx) worked-hours report for the selected
-        employees in the business. If userIds is omitted or empty, all employees in the business
-        are included. Every supplied user ID must belong to the requested business. The report is
-        generated asynchronously; this response only confirms that the request was accepted.
+        Accepts a request to generate the worked-hours PDF for the selected people of the business and
+        email it to the requester. If userIds is omitted or empty, the whole business is included; with
+        userIds, current or former members only (an id without a membership row returns 400 1101), at most
+        50 distinct ids (400 1111). The report is generated asynchronously; this response only confirms that
+        the request was accepted. Only PDF is sent by email; the CSV is download-only
+        (exportBusinessWorkedHoursReportPdf).
+        The owner reports screen no longer uses this operation (Main API 0.0.115): it lists months with
+        getBusinessWorkedHoursMonths and downloads with exportBusinessWorkedHoursReportPdf. It is kept unchanged
+        otherwise.
         The optional periodType (MONTH, YEAR or RANGE, default RANGE) selects the report layout and how from and to are validated; when it is omitted the request behaves exactly as before (RANGE).
         A period that ends after today is accepted and truncated by the server to today in the business time zone; a period whose from is after today returns 400.
         Seconds include only worklogs whose reviewStatus is CONFIRMED or APPROVED.
         A closed worklog in PENDING_RECONCILIATION does not count until attendance
         reconciliation moves it to CONFIRMED or PENDING_REVIEW. PENDING_REVIEW does not count either.
-        Only the business OWNER may request the report. A MANAGER or EMPLOYEE receives 403 (1020).
+        Authorization: REPORTS_EXPORT. Without it: 403 (1020, `user lacks permission REPORTS_EXPORT in
+        business`); an EMPLOYEE without a contract in force: 403 (1104).
         A PDF report that covers several employees, for any periodType including YEAR, is delivered as one single PDF document, not as a ZIP.
       tags:
         - Reports
@@ -543,12 +813,13 @@ reports:
                   description: Period type of the report. Omit it to keep the previous behavior (RANGE).
                 type:
                   type: string
-                  enum: [PDF, EXCEL]
+                  enum: [PDF]
                   default: PDF
-                  description: Output format of the report
+                  description: Output format of the report. Only PDF is sent by email; any other value returns 400 (1103).
                 userIds:
                   type: array
-                  description: User IDs to include. Omit or leave empty to include all employees.
+                  maxItems: 50
+                  description: People to include, current or former members. Omit or leave empty for the whole business. At most 50 distinct ids.
                   items:
                     type: integer
                     format: int64
@@ -563,7 +834,7 @@ reports:
         '202':
           description: Report generation request accepted; no report is returned in this response
         '400':
-          description: Invalid date range (including from after today), period type (from and to do not match periodType), report type, or user IDs (including users outside the requested business)
+          description: Invalid date range or from after today (1025), period type mismatch (1114), report type (1103), an id without membership in the business (1101) or more than 50 userIds (1111)
           content:
             application/problem+json:
               schema:
@@ -574,17 +845,17 @@ reports:
         '401':
           description: Unauthorized
         '403':
-          description: Current user is not the owner of the business (a MANAGER is not allowed)
+          description: The caller lacks REPORTS_EXPORT in the business, or is an EMPLOYEE without a contract in force
           content:
             application/problem+json:
               schema:
                 $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
               examples:
-                USER_NOT_OWNER_OF_BUSINESS:
-                  summary: "1020 - user is not the owner of business"
+                MISSING_PERMISSION:
+                  summary: "1020 - user lacks permission REPORTS_EXPORT in business"
                   value:
                     status: 403
-                    detail: "1020 - user is not the owner of business"
+                    detail: "1020 - user lacks permission REPORTS_EXPORT in business"
         '404':
           description: Business not found
           content:
@@ -597,7 +868,7 @@ reports:
                   value:
                     status: 404
                     detail: "1006 - business does not exist"
-      x-functional-errors: [1006, 1020, 1114]
+      x-functional-errors: [1006, 1020, 1025, 1101, 1103, 1104, 1111, 1114]
 
   user-reports:
     get:
