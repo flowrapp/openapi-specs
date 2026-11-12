@@ -1,5 +1,25 @@
 # Changelog
 
+## 0.0.112
+
+Spec only. No BFF implementation in this change. Depends on Main API 0.0.118 (`getCurrentUserAttendanceIncidentDailyCounts`). Planned seconds use the existing Main `getBusinessTeamSchedule`; Main does not change them. Next repository tag: `v1.0.28` (after `v1.0.27`). This change does not create the tag. The published solver contract is unchanged.
+
+Month tab of the worker history: an accumulated line of confirmed hours against accumulated planned hours, one bar per day, and an incident warning. The same day fields are on the week history. No legacy form: the new fields are required and are not optional or absent.
+
+### Added
+
+- Required, nullable `plannedSeconds` (`integer` `int64`) and `unjustifiedIncidentCount` (`integer` `int32`, minimum 0) on `WorkerMonthDayDTO` (`getWorkerMonthHistory`) and `WorkerWeekDayDTO` (`getWorkerWeekHistory`).
+- `plannedSeconds`: seconds planned for the caller that business-local date from the PUBLISHED planning of that date's ISO week (team-schedules, caller only). A shift is the sum of its segments minus the break; the unpaid gap of a split shift is not included; a night shift counts entirely on its start day. `null` means no data (no published planning for that ISO week, or the business has no SCHEDULING feature). `0` means the week is published and that date has no shift. The client must not interpolate nulls. An ISO week that crosses the month affects only its own dates. PUBLISHED, or ARCHIVED that was previously published (what team-schedules returns), counts as published.
+- `unjustifiedIncidentCount`: the caller's attendance incidents anchored on that business-local date that are still OPEN with no justification. Same definition as the worker inbox. Justified-but-still-OPEN and resolved incidents are not counted. `null` when the business has no ATTENDANCE feature; `0` when the feature is on and the date is absent from Main `getCurrentUserAttendanceIncidentDailyCounts`.
+
+### Changed
+
+- Descriptions of day `totalSeconds` and `pendingSeconds`: the semantics are unchanged (confirmed seconds, and pending review seconds shown apart). Pending seconds are not added to `plannedSeconds`.
+
+### Deployment
+
+- Main 0.0.118 before the BFF that fills these fields. A 403 1155 from team-schedules nulls `plannedSeconds`; a 403 1155 from daily-counts nulls `unjustifiedIncidentCount`. The history request still returns 200. Any other failure of those calls fails the history request; the BFF does not substitute 0.
+
 ## 0.0.111
 
 Spec only. No BFF implementation in this change. Depends on Main API 0.0.117. Next repository tag: `v1.0.27` (after `v1.0.26`). This change does not create the tag. The published solver contract is unchanged.

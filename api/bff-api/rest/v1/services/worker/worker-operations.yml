@@ -558,7 +558,34 @@ worker:
       summary: Get worker week history
       description: >
         Returns the work history for an ISO week, broken down by day with individual sessions
-        per day. Includes total seconds and session count for the week.
+        per day. Includes total seconds and session count for the week. Day `totalSeconds`
+        (confirmed) and `pendingSeconds` keep their meaning; pending seconds are not added
+        to `plannedSeconds`.
+
+
+        `plannedSeconds` comes from one Main `getBusinessTeamSchedule`
+        (`GET /api/v1/businesses/{businessId}/team-schedules/{weekStart}?userIds=` the caller),
+        where `weekStart` is the Monday of this ISO week. Sum the caller's shift
+        `plannedSeconds` on each date. `null` means no data (no published planning for that
+        week, or the business has no SCHEDULING feature): do not call team-schedules when
+        SCHEDULING is absent, and a 404 for the week means no published planning. `0` means
+        the week is published and that date has no shift. The client must not interpolate
+        nulls. There is no Main API change for planned seconds.
+
+
+        `unjustifiedIncidentCount` comes from Main `getCurrentUserAttendanceIncidentDailyCounts`
+        with `from` Monday and `to` Sunday of this week. Unjustified means OPEN with no
+        justification. Dates omitted by that list are 0. `unjustifiedIncidentCount` is
+        `null` on every day when the business has no ATTENDANCE feature; do not call
+        the endpoint in that case.
+
+
+        A 403 1155 from team-schedules means SCHEDULING is unavailable: `plannedSeconds`
+        is null and this request still returns 200. A 403 1155 from daily-counts means
+        ATTENDANCE is unavailable: `unjustifiedIncidentCount` is null and this request
+        still returns 200. Any other failure of those calls fails this request; the BFF
+        does not substitute 0. The new fields are required. There is no legacy response
+        that omits them.
       tags:
         - Worker
       operationId: getWorkerWeekHistory
@@ -587,6 +614,37 @@ worker:
             application/json:
               schema:
                 $ref: '../../components/worker/components.yml#/components/schemas/WorkerWeekHistoryResponseDTO'
+              examples:
+                publishedWeek:
+                  summary: Published ISO week. Days without a shift are 0, not null.
+                  value:
+                    week: "2026-W10"
+                    totalSeconds: 28800
+                    pendingSeconds: 1800
+                    totalSessions: 1
+                    days:
+                      - {date: "2026-03-02", closed: false, totalSeconds: 28800, pendingSeconds: 1800, plannedSeconds: 28800, unjustifiedIncidentCount: 1, sessions: []}
+                      - {date: "2026-03-03", closed: false, totalSeconds: 0, pendingSeconds: 0, plannedSeconds: 0, unjustifiedIncidentCount: 0, sessions: []}
+                      - {date: "2026-03-04", closed: false, totalSeconds: 0, pendingSeconds: 0, plannedSeconds: 0, unjustifiedIncidentCount: 0, sessions: []}
+                      - {date: "2026-03-05", closed: false, totalSeconds: 0, pendingSeconds: 0, plannedSeconds: 0, unjustifiedIncidentCount: 0, sessions: []}
+                      - {date: "2026-03-06", closed: false, totalSeconds: 0, pendingSeconds: 0, plannedSeconds: 0, unjustifiedIncidentCount: 0, sessions: []}
+                      - {date: "2026-03-07", closed: false, totalSeconds: 0, pendingSeconds: 0, plannedSeconds: 0, unjustifiedIncidentCount: 0, sessions: []}
+                      - {date: "2026-03-08", closed: true, totalSeconds: 0, pendingSeconds: 0, plannedSeconds: 0, unjustifiedIncidentCount: 0, sessions: []}
+                noPublishedPlanning:
+                  summary: No published planning. Every plannedSeconds is null; the client must not interpolate nulls.
+                  value:
+                    week: "2026-W09"
+                    totalSeconds: 0
+                    pendingSeconds: 0
+                    totalSessions: 0
+                    days:
+                      - {date: "2026-02-23", closed: false, totalSeconds: 0, pendingSeconds: 0, plannedSeconds: null, unjustifiedIncidentCount: 0, sessions: []}
+                      - {date: "2026-02-24", closed: false, totalSeconds: 0, pendingSeconds: 0, plannedSeconds: null, unjustifiedIncidentCount: 0, sessions: []}
+                      - {date: "2026-02-25", closed: false, totalSeconds: 0, pendingSeconds: 0, plannedSeconds: null, unjustifiedIncidentCount: 0, sessions: []}
+                      - {date: "2026-02-26", closed: false, totalSeconds: 0, pendingSeconds: 0, plannedSeconds: null, unjustifiedIncidentCount: 0, sessions: []}
+                      - {date: "2026-02-27", closed: false, totalSeconds: 0, pendingSeconds: 0, plannedSeconds: null, unjustifiedIncidentCount: 0, sessions: []}
+                      - {date: "2026-02-28", closed: false, totalSeconds: 0, pendingSeconds: 0, plannedSeconds: null, unjustifiedIncidentCount: 0, sessions: []}
+                      - {date: "2026-03-01", closed: false, totalSeconds: 0, pendingSeconds: 0, plannedSeconds: null, unjustifiedIncidentCount: 0, sessions: []}
         '401':
           description: Unauthorized
         '403':
@@ -599,7 +657,39 @@ worker:
       summary: Get worker month history
       description: >
         Returns a calendar view for a month with day-level totals only (no session detail).
-        Use the day history endpoint to drill into a specific day's sessions.
+        Use the day history endpoint to drill into a specific day's sessions. The month tab
+        accumulates daily confirmed `totalSeconds` against daily `plannedSeconds`, draws one
+        bar per day and warns from `unjustifiedIncidentCount`. Day `totalSeconds` (confirmed)
+        and `pendingSeconds` keep their meaning; pending seconds are not added to
+        `plannedSeconds`.
+
+
+        `plannedSeconds` comes from Main `getBusinessTeamSchedule`
+        (`GET /api/v1/businesses/{businessId}/team-schedules/{weekStart}?userIds=` the caller)
+        for each ISO week that contains a date of this month. Only the dates of that week
+        that fall in this month are filled from it; a week that crosses the month does not
+        change any other month. `null` means no data (no published planning for that date's
+        ISO week, or the business has no SCHEDULING feature). `0` means the week is
+        published and that date has no shift. The client must not interpolate nulls. Do not
+        call team-schedules when SCHEDULING is absent. A 404 for one week means no published
+        planning for the dates of that week inside this month. There is no Main API change
+        for planned seconds.
+
+
+        `unjustifiedIncidentCount` comes from one Main
+        `getCurrentUserAttendanceIncidentDailyCounts` with `from` the first day of the month
+        and `to` the last (at most 31 dates). Unjustified means OPEN with no justification.
+        Dates omitted by that list are 0. `unjustifiedIncidentCount` is `null` on every
+        day when the business has no ATTENDANCE feature; do not call the endpoint in
+        that case.
+
+
+        A 403 1155 from team-schedules means SCHEDULING is unavailable: `plannedSeconds`
+        is null and this request still returns 200. A 403 1155 from daily-counts means
+        ATTENDANCE is unavailable: `unjustifiedIncidentCount` is null and this request
+        still returns 200. Any other failure of those calls fails this request; the BFF
+        does not substitute 0. The new fields are required. There is no legacy response
+        that omits them.
       tags:
         - Worker
       operationId: getWorkerMonthHistory
@@ -628,6 +718,22 @@ worker:
             application/json:
               schema:
                 $ref: '../../components/worker/components.yml#/components/schemas/WorkerMonthHistoryResponseDTO'
+              examples:
+                crossingWeeks:
+                  summary: >
+                    Three dates, not the whole month. 2026-03-01 belongs to an unpublished
+                    ISO week (null = no data). 2026-03-02 is a published shift and 2026-03-03
+                    is published with no shift (0). The client must not interpolate the null
+                    from either neighbour.
+                  value:
+                    month: "2026-03"
+                    totalSeconds: 28800
+                    pendingSeconds: 1800
+                    totalSessions: 1
+                    days:
+                      - {date: "2026-03-01", totalSeconds: 0, pendingSeconds: 0, plannedSeconds: null, unjustifiedIncidentCount: 0}
+                      - {date: "2026-03-02", totalSeconds: 28800, pendingSeconds: 1800, plannedSeconds: 28800, unjustifiedIncidentCount: 1}
+                      - {date: "2026-03-03", totalSeconds: 0, pendingSeconds: 0, plannedSeconds: 0, unjustifiedIncidentCount: 0}
         '401':
           description: Unauthorized
         '403':

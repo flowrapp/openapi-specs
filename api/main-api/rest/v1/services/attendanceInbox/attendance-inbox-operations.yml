@@ -79,6 +79,84 @@ attendanceInbox:
           $ref: '../../components/attendanceInbox/components.yml#/components/responses/BusinessNotFound'
       x-functional-errors: [1006, 1015, 1142]
 
+  daily-counts:
+    get:
+      tags: [Attendance]
+      operationId: getCurrentUserAttendanceIncidentDailyCounts
+      summary: Count the caller's unjustified attendance incidents by day
+      description: |
+        Returns the caller's own attendance incidents in this business, counted by
+        the business-local anchor date, for an inclusive date range. Any active
+        membership role may call it. The caller never receives another worker's
+        incidents.
+
+        The path is nested under the caller-scoped collection
+        `GET /api/v1/businesses/{businessId}/attendance-incidents`
+        (`getCurrentUserAttendanceIncidents`) because these rows are the same
+        incidents aggregated by date. Groups stay on the sibling path
+        `/attendance-incident-groups`: they have their own `S-` / `M-` identity.
+        The business-scoped incidents path has no `{incidentId}` child, so
+        `daily-counts` does not collide with the individual justification route
+        (`POST /api/v1/attendance-incidents/{incidentId}/justification`).
+
+        Unjustified means lifecycle OPEN and justification null. An OPEN incident
+        that already has a justification, and a resolved incident, are not counted.
+        The anchor date is the same as the worker inbox: the business-local shift
+        start for SHIFT scope or a MATCHED match, otherwise the business-local
+        clock-in date. A night shift's incidents stay on the shift's start date.
+        Dates use the business time zone, including DST days of 23 or 25 hours.
+
+        `from` and `to` are required `YYYY-MM-DD` query dates. The range is
+        inclusive: the number of dates is (to - from) + 1, and 42 is the maximum
+        (a six-week month grid). `from` after `to`, or more than 42 dates, is
+        400 `1157`. A missing parameter or a value that is not a date is a plain
+        400 without a functional code.
+
+        The list contains only dates with `unjustifiedCount` > 0, ordered by
+        `date` ascending. A date with no unjustified incident is omitted, not
+        returned as 0. An empty range match is `200` with `[]`.
+
+        Requires membership and the ATTENDANCE feature. An active member of a
+        business without it receives 403 `1155`, the same as the other
+        self-service operations of that feature; `1155` is not repeated in
+        `x-functional-errors`. A caller who is not an active member receives
+        403 `1015`. An unknown business is 404 `1006`. No `ATTENDANCE_VIEW`
+        permission is required. Planned seconds are not part of this operation;
+        the BFF reads them from `getBusinessTeamSchedule`.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '../../components/attendanceInbox/components.yml#/components/parameters/BusinessId'
+        - $ref: '../../components/attendanceInbox/components.yml#/components/parameters/DailyCountFrom'
+        - $ref: '../../components/attendanceInbox/components.yml#/components/parameters/DailyCountTo'
+      responses:
+        '200':
+          description: Dates in the range on which the caller has at least one OPEN incident with no justification.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '../../components/attendanceInbox/components.yml#/components/schemas/CurrentUserAttendanceIncidentDailyCountDTO'
+              examples:
+                someDays:
+                  summary: Two dates with unjustified incidents; the other dates of the range are omitted
+                  value:
+                    - {date: '2026-03-02', unjustifiedCount: 1}
+                    - {date: '2026-03-18', unjustifiedCount: 2}
+                empty:
+                  summary: No unjustified incidents in the range
+                  value: []
+        '400':
+          $ref: '../../components/attendanceInbox/components.yml#/components/responses/DailyCountsBadRequest'
+        '401':
+          $ref: '../../components/attendanceInbox/components.yml#/components/responses/Unauthorized'
+        '403':
+          $ref: '../../components/attendanceInbox/components.yml#/components/responses/NotMember'
+        '404':
+          $ref: '../../components/attendanceInbox/components.yml#/components/responses/BusinessNotFound'
+      x-functional-errors: [1006, 1015, 1157]
+
   confirmations:
     get:
       tags: [Worklogs]
