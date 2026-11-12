@@ -763,6 +763,10 @@ worker:
         annex B, outside the total. The month must be inside the 12-month window of `getWorkerHoursMonths` (the
         current month or one of the 11 before it); a future month or an older one returns 400 (1025). The current
         month is truncated to today in the business time zone and the PDF says so («hasta hoy»).
+        Filename (Content-Disposition, forwarded from the Main API): `registro-jornada-YYYY-MM.pdf` for a closed
+        month; for the provisional current month, `registro-jornada-YYYY-MM-hasta-YYYY-MM-DD.pdf`, where the second
+        date is today in the business time zone (for example `registro-jornada-2026-11-hasta-2026-11-12.pdf`), the
+        same `-hasta-` convention as the manager export. No person name in the filename.
         Synchronous, no polling. If the p95 generation time measured in develop exceeds about 5 s, it moves to a
         queue (RabbitMQ) with stored PDFs in a later version.
         Rate limit: 6 requests per minute and 30 per hour per authenticated worker, all businesses together (429).
@@ -801,7 +805,10 @@ worker:
                 format: binary
           headers:
             Content-Disposition:
-              description: Forwarded from the Main API. Attachment with the filename registro-jornada-{YYYY-MM}.pdf (no person name)
+              description: |
+                Forwarded from the Main API. Closed month: `registro-jornada-YYYY-MM.pdf`. Provisional current
+                month: `registro-jornada-YYYY-MM-hasta-YYYY-MM-DD.pdf` (today in the business time zone), for example
+                `registro-jornada-2026-11-hasta-2026-11-12.pdf`. No person name.
               schema:
                 type: string
                 example: 'attachment; filename="registro-jornada-2026-10.pdf"'

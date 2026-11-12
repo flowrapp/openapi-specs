@@ -664,6 +664,10 @@ reports:
         the business time zone or one of the 11 before it. A future month, or a month older than the window, returns
         400 (1025). The current month is accepted and truncated by the server to today (provisional report). A month
         of the window without countable worklogs still returns a PDF.
+        Filename (Content-Disposition): registro-jornada-YYYY-MM.pdf for a closed month; for the provisional
+        current month, registro-jornada-YYYY-MM-hasta-YYYY-MM-DD.pdf, where the second date is today in the
+        business time zone (for example registro-jornada-2026-11-hasta-2026-11-12.pdf), the same `-hasta-`
+        convention as exportBusinessWorkedHoursReportPdf. The person's name is never in the filename.
         Its month total equals confirmedSeconds of getCurrentUserWorkedHoursMonths for the same month.
         Synchronous: the PDF is rendered within the request, like exportBusinessWorkedHoursReportPdf. No server
         cache: every call renders the current data, and the footer carries the generation time.
@@ -702,7 +706,10 @@ reports:
                 format: binary
           headers:
             Content-Disposition:
-              description: Attachment disposition with the filename registro-jornada-{YYYY-MM}.pdf (the person's name is not in the filename)
+              description: |
+                Attachment disposition. Closed month: `registro-jornada-YYYY-MM.pdf`. Provisional current month:
+                `registro-jornada-YYYY-MM-hasta-YYYY-MM-DD.pdf` (today in the business time zone), for example
+                `registro-jornada-2026-11-hasta-2026-11-12.pdf`. The person's name is not in the filename.
               schema:
                 type: string
                 example: 'attachment; filename="registro-jornada-2026-10.pdf"'
@@ -757,6 +764,7 @@ reports:
 
   request-business-worked-hours-report:
     post:
+      deprecated: true
       summary: Request asynchronous business worked hours report generation
       description: |
         Accepts a request to generate the worked-hours PDF for the selected people of the business and
@@ -765,9 +773,10 @@ reports:
         50 distinct ids (400 1111). The report is generated asynchronously; this response only confirms that
         the request was accepted. Only PDF is sent by email; the CSV is download-only
         (exportBusinessWorkedHoursReportPdf).
-        The owner reports screen no longer uses this operation (Main API 0.0.115): it lists months with
-        getBusinessWorkedHoursMonths and downloads with exportBusinessWorkedHoursReportPdf. It is kept unchanged
-        otherwise.
+        Deprecated since Main API 0.0.116 (Sergio, 2026-11-12, t43s1): the owner reports screen now uses the
+        direct export. It lists months with getBusinessWorkedHoursMonths and downloads the PDF or CSV of each month,
+        in the response body, with exportBusinessWorkedHoursReportPdf; nothing is emailed. New clients must not use
+        this operation. It still works exactly as before; its removal will come in a later version.
         The optional periodType (MONTH, YEAR or RANGE, default RANGE) selects the report layout and how from and to are validated; when it is omitted the request behaves exactly as before (RANGE).
         A period that ends after today is accepted and truncated by the server to today in the business time zone; a period whose from is after today returns 400.
         Seconds include only worklogs whose reviewStatus is CONFIRMED or APPROVED.

@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.0.110
+
+Spec only. No BFF implementation in this change. Depends on Main API 0.0.116. This is a draft increment of `info.version`, not a repository tag or release. The published solver contract is unchanged.
+
+Decisions by Sergio on 2026-11-12 (t43s1), after the owner reports screen (0.0.109).
+
+### Deprecated
+
+- `requestBusinessWorkedHoursReport` (`POST /api/v1/businesses/{businessId}/reports/worked-hours`, email): `deprecated: true`. The owner reports screen uses the direct export instead (`getManagerHoursMonths` + `exportManagerWorkedHoursReportPdf`, PDF or CSV in the response body). Behaviour, rate limit and errors are unchanged; removal in a later version.
+
+### Changed
+
+- `getWorkerWorkedHoursReportPdf` («Mis horas»): the provisional PDF of the current month is named `registro-jornada-YYYY-MM-hasta-YYYY-MM-DD.pdf` (forwarded from Main `exportCurrentUserWorkedHoursReportPdf`), aligned with the manager export. A closed month keeps `registro-jornada-YYYY-MM.pdf`. Only the `Content-Disposition` filename changes.
+
 ## 0.0.109
 
 Spec only. No BFF implementation in this change. Depends on Main API 0.0.115 (`getBusinessWorkedHoursMonths`, `getBusinessWorkedHoursPeople`, `type=CSV`). This is a draft increment of `info.version`, not a repository tag or release. The published solver contract is unchanged.
