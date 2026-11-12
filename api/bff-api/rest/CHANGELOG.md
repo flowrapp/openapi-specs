@@ -1,5 +1,31 @@
 # Changelog
 
+## 0.0.109
+
+Spec only. No BFF implementation in this change. Depends on Main API 0.0.115 (`getBusinessWorkedHoursMonths`, `getBusinessWorkedHoursPeople`, `type=CSV`). This is a draft increment of `info.version`, not a repository tag or release. The published solver contract is unchanged.
+
+Owner reports screen, phase 1 without storage (Sergio t40s1, t31u, t42u). Every operation below requires `REPORTS_EXPORT` (`403` `1020`; `403` `1104` for an EMPLOYEE without a contract in force).
+
+### Added
+
+- `getManagerHoursMonths` (`GET /api/v1/manager/businesses/{businessId}/hours/months?userIds=…&before=YYYY-MM&limit=1..12`): forwards Main `getBusinessWorkedHoursMonths` and adds `report {available, provisional, effectiveTo}` per month, like `getWorkerHoursMonths`. Whole business without `userIds`; with `userIds` (repeatable, at most 50, current or former members) the sum over those people. `peopleCount` per month, `oldestMonth` (window of at most 48 months), `nextBefore` null at the end. Option B. Optional `archive`, reserved and not returned.
+- `getManagerHoursPeople` (`GET /api/v1/manager/businesses/{businessId}/hours/people`): the selector roster with current and former members (`removedAt`), forwarded from Main `getBusinessWorkedHoursPeople`. No email. Needs `REPORTS_EXPORT`, not `TEAM_VIEW`.
+- `type=CSV` on `exportManagerWorkedHoursReportPdf` (see `WorkedHoursReportTypeDTO`).
+- 429 documented, one bucket per authenticated user and business each, no functional code (implementation in the BFF):
+  - download `exportManagerWorkedHoursReportPdf` (PDF and CSV): 6 per minute, 30 per hour;
+  - list `getManagerHoursMonths` + `getManagerHoursPeople`: 20 per minute, 200 per hour;
+  - email `requestBusinessWorkedHoursReport`: 2 per minute, 10 per hour (the current `manager-export` values, no longer shared with the download).
+
+### Changed
+
+- `exportManagerWorkedHoursReportPdf`: `type` is `PDF` or `CSV`; `EXCEL` removed (never implemented; the app only sends `PDF`). Filename forwarded from Main: `registro-jornada-<period>-<scope>.<pdf|csv>` (`-hasta-YYYY-MM-DD` when provisional; `todo-el-negocio`, the person's slug or `<N>-personas`). `userIds` capped at 50 (`400` `1111`).
+- `exportManagerWorkedHoursReportPdf` and `requestBusinessWorkedHoursReport`: «Only the business OWNER» removed from the descriptions; the permission table (`REPORTS_EXPORT`) rules.
+- `requestBusinessWorkedHoursReport`: `type` is `PDF` only; the owner reports screen stops using it; the operation stays.
+
+### Deployment
+
+- Main 0.0.115 before the BFF; BFF before the app. The app must not call `hours/months`, `hours/people` or `type=CSV` against an older BFF.
+
 ## 0.0.108
 
 Spec only. No BFF implementation in this change. No Main API change: Main `WorkLogResponseDTO.reviewStatus` is already required, and the BFF already maps it into `WorklogSession.reviewStatus`. This is a draft increment of `info.version`, not a repository tag or release. The published solver contract is unchanged. Depends on 0.0.107 (#79).

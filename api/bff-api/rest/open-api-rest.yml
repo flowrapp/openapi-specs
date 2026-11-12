@@ -28,7 +28,7 @@ info:
     | getManagerPlanning, getManagerShifts, getManagerShift, getManagerEffectiveRecurringSchedule, getManagerScheduleExceptions, getManagerPlanningGenerationSettings, getPlanGeneration, getWeekCoverage | SCHEDULE_VIEW |
     | every other schedule, shift, job-role, planning and generation write, requestPlanGeneration | SCHEDULE_MANAGE |
     | approve*, createScheduleChangeRequest, cancelScheduleChangeRequest, reviewer view and reviewer rejection of shift-change requests | SHIFT_CHANGES_APPROVE |
-    | exportManagerWorkedHoursReportPdf, requestBusinessWorkedHoursReport | REPORTS_EXPORT |
+    | exportManagerWorkedHoursReportPdf, requestBusinessWorkedHoursReport, getManagerHoursMonths, getManagerHoursPeople | REPORTS_EXPORT |
     | getManagerBusiness*Settings, updateManagerBusiness*Setting(s)/Policy/Preference | CLOCKING_SETTINGS_MANAGE |
     | updateManagerBusinessProfile, updateManagerBusinessGeofence | BUSINESS_EDIT |
     | removeBusinessMember, getAccessRoles, createAccessRole, replaceAccessRole, deleteAccessRole, updateMemberAccessRole | OWNER |
@@ -51,7 +51,7 @@ info:
     | SCHEDULING | manual shift catalog, draft creation, assignment and publication; operations requiring SCHEDULE_VIEW, SCHEDULE_MANAGE or SHIFT_CHANGES_APPROVE; getWorkerTeamSchedule; every shift exchange and schedule change operation. Included in ESSENTIAL and PROFESSIONAL. |
     | ATTENDANCE | every Attendance operation; getWorkerAttendanceIncidents, getWorkerAttendanceMatch, getWorkerAttendanceIncidentGroups, getWorkerAttendanceIncidentGroup, justifyWorkerAttendanceIncidentGroup |
     | ADVANCED_PLANNING | requestPlanGeneration, getPlanGeneration, getWeekCoverage, getManagerPlanningGenerationSettings, replaceManagerPlanningGenerationSettings, deleteManagerPlanningGenerationSettings. Requires SCHEDULING; included in PROFESSIONAL. |
-  version: 0.0.108
+  version: 0.0.109
   contact:
     name: Flowrapp Team
     url: https://flowrapp.github.io
@@ -390,6 +390,10 @@ paths:
   "/api/v1/manager/businesses/{businessId}/invitations/{invitationId}/resend":
     $ref: "v1/services/manager/manager-operations.yml#/manager/resend-invita\
       tion"
+  "/api/v1/manager/businesses/{businessId}/hours/months":
+    $ref: "v1/services/manager/manager-operations.yml#/manager/hours-months"
+  "/api/v1/manager/businesses/{businessId}/hours/people":
+    $ref: "v1/services/manager/manager-operations.yml#/manager/hours-people"
   "/api/v1/manager/businesses/{businessId}/export/worked-hours-report":
     $ref: "v1/services/manager/manager-operations.yml#/manager/export-worked\
       -hours-report"
