@@ -20,31 +20,6 @@ user:
         '401':
           description: Unauthorized
 
-  change-password:
-    put:
-      deprecated: true
-      summary: Change current user's password
-      description: Updates the password for the currently authenticated user.
-      tags:
-        - User
-      operationId: changeCurrentUserPassword
-      security:
-        - bearerAuth: []
-      requestBody:
-        description: New password
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '../../components/user/components.yml#/components/schemas/PasswordChangeRequestDTO'
-      responses:
-        '200':
-          description: Password changed successfully
-        '400':
-          description: Invalid password format
-        '401':
-          description: Unauthorized
-
   invitations:
     get:
       summary: List current user's invitations

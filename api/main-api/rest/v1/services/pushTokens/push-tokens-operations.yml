@@ -42,8 +42,8 @@ pushTokens:
       summary: Delete push notification token
       description: >
         Deletes a device push notification token for the authenticated user.
-        Does not revoke the authentication session; use POST /api/v1/auth/logout
-        to revoke the current session and remove its push registration together.
+        Does not revoke the authentication session; it only removes the push
+        registration for this device.
       tags:
         - Push Tokens
       operationId: deletePushToken

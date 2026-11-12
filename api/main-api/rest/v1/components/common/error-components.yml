@@ -50,7 +50,6 @@ components:
         | 1001 | 500 | ADMIN_USER_NOT_FOUND | admin user not found |
         | 1002 | 409 | USERNAME_ALREADY_EXISTS | user already exists |
         | 1003 | 401 | INVALID_CREDENTIALS | invalid credentials |
-        | 1004 | 401 | INVALID_REFRESH_TOKEN | invalid refresh token |
         | 1005 | 404 | INVITATION_NOT_FOUND | invitation not found |
         | 1006 | 404 | BUSINESS_NOT_FOUND | business does not exist |
         | 1007 | 409 | USER_ALREADY_MEMBER_OF_BUSINESS | user already member of business |
@@ -69,11 +68,7 @@ components:
         | 1020 | 403 | USER_NOT_OWNER_OF_BUSINESS | user is not the owner of business |
         | 1021 | 400 | ZONE_ID_NOT_FOUND | zone id not found |
         | 1022 | 409 | WORKLOG_OVERLAP | worklog overlaps with existing worklog |
-        | 1023 | 401 | OAUTH2_INVALID_TOKEN | oauth2 token is invalid |
-        | 1024 | 400 | USER_AUTH_PROVIDER_NOT_FOUND | user auth provider not found |
         | 1025 | 400 | WORKLOG_NOT_VALID | worklog is not valid |
-        | 1026 | 400 | PASSWORD_RESET_CODE_INVALID | password reset code is invalid or expired |
-        | 1027 | 429 | PASSWORD_RESET_TOO_MANY_ATTEMPTS | too many password reset attempts |
         | 1028 | 403 | CONTRACT_OPERATION_NOT_ENOUGH_PERMISSIONS | User does not have permission to create a contract |
         | 1029 | 409 | CONTRACT_OVERLAPS | contract overlaps another contract for the same user and business |
         | 1030 | 404 | CONTRACT_NOT_FOUND | Contract not found |
@@ -132,7 +127,6 @@ components:
         | 1083 | 409 | ATTENDANCE_STRUCTURAL_INCIDENTS | attendance has unresolved structural incidents |
         | 1084 | 409 | ATTENDANCE_INVALID_RESOLUTION | attendance resolution is not allowed for the current state |
         | 1085 | 404 | ATTENDANCE_INCIDENT_NOT_FOUND | attendance incident not found |
-        | 1086 | 401 | SESSION_EXPIRED | session expired |
         | 1087 | 409 | PLANNING_ALREADY_EXISTS | a planning already exists for this business and week |
         | 1088 | 409 | PLANNING_VERSION_MISMATCH | planning version does not match |
         | 1093 | 400 | INVALID_BUSINESS_PROFILE | business profile is invalid |
@@ -198,7 +192,7 @@ components:
         | 1155 | 403 | BUSINESS_FEATURE_UNAVAILABLE | business feature <FEATURE> is not available |
         | 1156 | 400 | BUSINESS_PLAN_UNKNOWN | business plan is unknown |
 
-        Codes 1086, 1087 and 1088 are the backend enum: SESSION_EXPIRED, PLANNING_ALREADY_EXISTS and PLANNING_VERSION_MISMATCH. Codes 1089–1092 belonged to weekly attendance periods, which were never implemented, and are removed with those routes. Code 1095 remains a separate PLANNING_ALREADY_EXISTS entry and is unchanged here. Code 1115 is raised by the BFF attendance screens (invalid `week` or `date`, or a `date` outside `week`); no Main API operation returns it.
+        Codes 1087 and 1088 are the backend enum: PLANNING_ALREADY_EXISTS and PLANNING_VERSION_MISMATCH. Code 1086 (`SESSION_EXPIRED`) belonged to legacy in-house sessions and is removed with those routes; it is not free and must not be reused. Codes 1004, 1023, 1024, 1026 and 1027 belonged to legacy login, token refresh, OAuth and password reset and are removed with those routes; they are not free and must not be reused. Code 1003 (`INVALID_CREDENTIALS`) stays: `getBusinessMemberProfile` returns 401 1003 when the JWT `sub` is not a numeric user id. Codes 1089–1092 belonged to weekly attendance periods, which were never implemented, and are removed with those routes. Code 1095 remains a separate PLANNING_ALREADY_EXISTS entry and is unchanged here. Code 1115 is raised by the BFF attendance screens (invalid `week` or `date`, or a `date` outside `week`); no Main API operation returns it.
 
         Codes 1116–1119 belong to notifyShiftClockIn and 1120–1125 to the planning generation operations (Main API 0.0.88). Codes 1099 and 1100 are used by the backend enum but are not documented here yet; they are not free and must not be reused.
 
@@ -220,7 +214,6 @@ components:
         - 1001
         - 1002
         - 1003
-        - 1004
         - 1005
         - 1006
         - 1007
@@ -239,11 +232,7 @@ components:
         - 1020
         - 1021
         - 1022
-        - 1023
-        - 1024
         - 1025
-        - 1026
-        - 1027
         - 1028
         - 1029
         - 1030
@@ -302,7 +291,6 @@ components:
         - 1083
         - 1084
         - 1085
-        - 1086
         - 1087
         - 1088
         - 1093
