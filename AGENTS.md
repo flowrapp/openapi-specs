@@ -49,7 +49,7 @@ Hay dos specs principales:
 - `api/main-api/rest/open-api-rest.yml`
   - OpenAPI del **MIG**.
   - Es la API donde se concentra la lógica de negocio de Flowrapp.
-  - Expone contratos de autenticación, usuarios, negocios, invitaciones, worklogs, reports, timesheets, push tokens y sistema.
+  - Expone contratos de usuarios, negocios, invitaciones, worklogs, reports, timesheets, push tokens y sistema. La sesión se autentica con Clerk (`bearerAuth`); este contrato no emite tokens.
   - Mantiene operaciones cercanas al dominio y a los recursos backend.
   - Es la fuente que el BFF consulta para obtener datos y ejecutar operaciones de negocio.
 
@@ -57,7 +57,7 @@ Hay dos specs principales:
   - OpenAPI del **BFF**.
   - Backend-for-Frontend para la aplicación móvil.
   - Hace llamadas al MIG, agrega y adapta datos para construir vistas móviles listas para consumir.
-  - Está organizado por experiencia de usuario y rol: `Worker`, `Manager`, `User`, `Authentication`, `Push Tokens`, `System`.
+  - Está organizado por experiencia de usuario y rol: `Worker`, `Manager`, `User`, `Invitations`, `Push Tokens`, `System`.
   - Esta API debe favorecer respuestas listas para pintar en móvil, evitando que el cliente tenga que componer demasiada lógica.
 
 ## Estructura esperada

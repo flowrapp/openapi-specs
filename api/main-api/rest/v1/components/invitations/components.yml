@@ -13,12 +13,6 @@ components:
           description: Phone number of the user
           maxLength: 15
           example: "+1234567890"
-        password:
-          type: string
-          description: Deprecated and ignored. Authentication is handled by Clerk.
-          format: password
-          deprecated: true
-          example: "securePassword123"
       required:
         - username
         - phone

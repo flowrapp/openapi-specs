@@ -59,7 +59,7 @@ info:
     existing permission requirements; authorised users can access their underlying business data.
 
     `updateBusinessPlan` (platform admin) changes the plan and emits a `PERMISSIONS` sync signal.
-  version: 0.0.116
+  version: 0.0.117
   contact:
     name: Flowrapp Team
     url: https://flowrapp.github.io
@@ -77,9 +77,6 @@ tags:
     description: >-
       Operations related to user management, including user profile retrieval,
       creation, and updates.
-  - name: Authentication
-    description: >-
-      Endpoints for user authentication, token management, and session handling.
   - name: Admin
     description: Administrative operations that require elevated privileges.
   - name: Businesses
@@ -148,22 +145,6 @@ paths:
     $ref: "v1/services/users/user-operations.yml#/users/me"
   "/api/v1/users/me/geofence-device-credentials":
     $ref: "v1/services/geofenceEvents/geofence-device-credential-operations.yml#/geofenceDeviceCredentials/collection"
-  "/api/v1/users/password":
-    $ref: "v1/services/users/user-operations.yml#/users/change-password"
-  "/api/v1/auth/login":
-    $ref: "v1/services/auth/auth-operations.yml#/auth/login"
-  "/api/v1/auth/logout":
-    $ref: "v1/services/auth/auth-operations.yml#/auth/logout"
-  "/api/v1/auth/token-refresh":
-    $ref: "v1/services/auth/auth-operations.yml#/auth/token-refresh"
-  "/api/v1/auth/forgot-password":
-    $ref: "v1/services/auth/auth-operations.yml#/auth/forgot-password"
-  "/api/v1/auth/reset-password":
-    $ref: "v1/services/auth/auth-operations.yml#/auth/reset-password"
-  "/api/v1/auth/oauth/github":
-    $ref: "v1/services/auth/auth-operations.yml#/auth/github"
-  "/api/v1/auth/oauth/google":
-    $ref: "v1/services/auth/auth-operations.yml#/auth/google"
   "/api/v1/admin/register":
     $ref: "v1/services/admin/admin-operations.yml#/admin/register"
   "/api/v1/admin/businesses/{businessId}/plan":
@@ -572,10 +553,7 @@ components:
       description: >-
         Clerk session JWT issued by the configured Clerk instance. Tokens carry
         the mail, name and roles claims; when roles is absent, the default role
-        is USER. During the migration, legacy Flowrapp-issued tokens are still
-        accepted under their existing rules: tokens issued with deviceId must
-        match an active server-side user/device session and are rejected
-        immediately when that session is missing or revoked.
+        is USER.
     geofenceDeviceCredential:
       type: apiKey
       in: header

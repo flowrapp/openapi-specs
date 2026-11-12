@@ -51,7 +51,7 @@ info:
     | SCHEDULING | manual shift catalog, draft creation, assignment and publication; operations requiring SCHEDULE_VIEW, SCHEDULE_MANAGE or SHIFT_CHANGES_APPROVE; getWorkerTeamSchedule; every shift exchange and schedule change operation. Included in ESSENTIAL and PROFESSIONAL. |
     | ATTENDANCE | every Attendance operation; getWorkerAttendanceIncidents, getWorkerAttendanceMatch, getWorkerAttendanceIncidentGroups, getWorkerAttendanceIncidentGroup, justifyWorkerAttendanceIncidentGroup |
     | ADVANCED_PLANNING | requestPlanGeneration, getPlanGeneration, getWeekCoverage, getManagerPlanningGenerationSettings, replaceManagerPlanningGenerationSettings, deleteManagerPlanningGenerationSettings. Requires SCHEDULING; included in PROFESSIONAL. |
-  version: 0.0.110
+  version: 0.0.111
   contact:
     name: Flowrapp Team
     url: https://flowrapp.github.io
@@ -67,12 +67,11 @@ servers:
 tags:
   - name: System
     description: System utility endpoints for health checks.
-  - name: Authentication
-    description: >
-      User authentication and token management endpoints.
-      These are pass-through proxies to the main API.
   - name: User
     description: Current user profile and account management.
+  - name: Invitations
+    description: >
+      Registration from a business invitation with a Clerk session.
   - name: Push Tokens
     description: >-
       Push notification token management. Pass-through to the main API.
@@ -126,29 +125,13 @@ paths:
   "/api/v1/ping":
     $ref: "v1/services/system/system-operations.yml#/system/ping"
 
-  # ── Authentication (pass-through; logout requires bearer auth) ──────────
-  "/api/v1/auth/login":
-    $ref: "v1/services/auth/auth-operations.yml#/auth/login"
-  "/api/v1/auth/logout":
-    $ref: "v1/services/auth/auth-operations.yml#/auth/logout"
-  "/api/v1/auth/token-refresh":
-    $ref: "v1/services/auth/auth-operations.yml#/auth/token-refresh"
-  "/api/v1/auth/forgot-password":
-    $ref: "v1/services/auth/auth-operations.yml#/auth/forgot-password"
-  "/api/v1/auth/reset-password":
-    $ref: "v1/services/auth/auth-operations.yml#/auth/reset-password"
-  "/api/v1/auth/oauth/github":
-    $ref: "v1/services/auth/auth-operations.yml#/auth/github"
-  "/api/v1/auth/oauth/google":
-    $ref: "v1/services/auth/auth-operations.yml#/auth/google"
+  # ── Invitations ─────────────────────────────────────────────────────────
   "/api/v1/invitations/register":
     $ref: "v1/services/auth/auth-operations.yml#/auth/register-from-invitation"
 
   # ── User (shared, authenticated) ────────────────────────────────────────
   "/api/v1/me":
     $ref: "v1/services/user/user-operations.yml#/user/profile"
-  "/api/v1/me/password":
-    $ref: "v1/services/user/user-operations.yml#/user/change-password"
   "/api/v1/me/settings/geofencing":
     $ref: "v1/services/settings/settings-operations.yml#/settings/current-user-geofencing"
   "/api/v1/worker/geofencing/device-credential":
@@ -414,10 +397,7 @@ components:
       description: >-
         Clerk session JWT issued by the configured Clerk instance. Tokens carry
         the mail, name and roles claims; when roles is absent, the default role
-        is USER. During the migration, legacy Flowrapp-issued tokens are still
-        accepted under their existing rules: tokens issued with deviceId must
-        match an active server-side user/device session and are rejected
-        immediately when that session is missing or revoked.
+        is USER.
     geofenceDeviceCredential:
       type: apiKey
       in: header

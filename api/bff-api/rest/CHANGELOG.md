@@ -1,5 +1,28 @@
 # Changelog
 
+## 0.0.111
+
+Spec only. No BFF implementation in this change. Depends on Main API 0.0.117. Next repository tag: `v1.0.27` (after `v1.0.26`). This change does not create the tag. The published solver contract is unchanged.
+
+Legacy in-house authentication is removed from the contract. `bearerAuth` describes Clerk session JWTs only.
+
+### Removed
+
+- `login`, `logout`, `refreshToken`, `forgotPassword`, `resetPassword`, `oauthGithub` and `oauthGoogle` (`POST /api/v1/auth/login`, `/logout`, `/token-refresh`, `/forgot-password`, `/reset-password`, `/oauth/github`, `/oauth/google`).
+- `changeCurrentUserPassword` (`PUT /api/v1/me/password`).
+- Schemas used only by those operations: `LoginRequestDTO`, `LogoutRequestDTO`, `TokenResponseDTO` (the login `200` body), `RefreshRequestDTO`, `ForgotPasswordRequestDTO`, `ResetPasswordRequestDTO`, `OAuthCredentialRequestDTO` and `PasswordChangeRequestDTO`.
+- `password` on `RegisterUserFromInvitationRequestDTO`.
+
+### Changed
+
+- `registerUserFromInvitation` (`POST /api/v1/invitations/register`) keeps its path and operationId. Its tag is `Invitations`; the `Authentication` tag had no other operation.
+- `bearerAuth` no longer accepts legacy Flowrapp-issued tokens.
+- `deletePushToken` no longer points at `POST /api/v1/auth/logout`. It still only removes the push registration.
+
+### Unchanged
+
+- `registerUserFromInvitation` request, responses and errors, aside from the removed `password` property. `GET /api/v1/me`, geofence operations and `basicAuth` (Main only) are unchanged.
+
 ## 0.0.110
 
 Spec only. No BFF implementation in this change. Depends on Main API 0.0.116. This is a draft increment of `info.version`, not a repository tag or release. The published solver contract is unchanged.

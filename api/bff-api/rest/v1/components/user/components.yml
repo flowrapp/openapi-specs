@@ -33,18 +33,6 @@ components:
         - email
         - role
 
-    PasswordChangeRequestDTO:
-      type: object
-      description: Request object for changing the user's password
-      properties:
-        password:
-          type: string
-          description: New password
-          format: password
-          example: "newSecurePassword123"
-      required:
-        - password
-
     UserInvitationResponseDTO:
       type: object
       description: Invitation addressed to the currently authenticated user
