@@ -3,36 +3,74 @@ attendance:
     get:
       summary: Get the Hours screen
       description: |
-        «Horas» for one ISO week, OWNER only, ready to paint: totals, 7 days, legend, the selected day's
-        rows and the filter options. All seconds are net of effective breaks and attributed to the
-        business-local day of the clock-in. Open worklogs count in no figure (D3 default).
+        «Horas» for one ISO week, requires ATTENDANCE_VIEW (1020), ready to paint: totals, 7 days,
+        legend, `people`, the selected day's rows and the filter options. All seconds are net of
+        effective breaks and attributed to the business-local day of the clock-in. Open worklogs
+        count in no figure (D3 default).
 
         Main API calls:
-        1. Stage 0: `getUserBusinesses` (`GET /api/v1/businesses`), for the caller's role (OWNER required, otherwise 403 1020; not a member: 403 1015) and the business time zone.
-        2. Stage 1, one `parZip` (13 calls, at most 8 in flight):
+        1. Stage 0: `getUserBusinesses` (`GET /api/v1/businesses`), for ATTENDANCE_VIEW (otherwise 403 1020; not a member: 403 1015; ATTENDANCE unavailable: 403 1155) and the business time zone.
+        2. Stage 1, one `parZip` (9 calls, at most 8 in flight):
            - `getBusinessReports` (`GET /api/v1/businesses/{businessId}/reports?from&to&userIds`), the
              reportable seconds (CONFIRMED + APPROVED) per person and day;
            - `getBusinessReports` with `reviewStatus=PENDING_RECONCILIATION&reviewStatus=PENDING_REVIEW`, the
              pending seconds per person and day;
-           - 7 × `getDailyAttendance` (`GET /api/v1/businesses/{businessId}/attendance?date&userIds`), one per
-             day, for the planned seconds (`metrics.plannedSeconds`), the clock-in and clock-out of the
-             selected day's rows, their warnings and their `detailRef`;
-           - `getPlannings` (`GET /api/v1/businesses/{businessId}/plannings?from&to`, the week), to tell
-             «no published plan» (`plannedSeconds: null`) from «a plan with 0 h» (`0`): only a planning in
-             PUBLISHED or ARCHIVED counts as published;
-           - `getBusinessUsers` (`includeRemoved=true`), for names, current job roles and `filterOptions.people`;
-           - `getBusinessJobRoles` without `active` (all roles, inactive included), for the job-role name of
-             each row: a current contract may point to a role that is no longer active;
-           - `getBusinessJobRoles` (`active=true`), for `filterOptions.jobRoles` (the Main API filters it).
+           - one `getDailyAttendance` (`GET /api/v1/businesses/{businessId}/attendance?date&userIds`) of the
+             selected day only, for the clock-in and clock-out of that day's rows, their warnings and
+             their `detailRef`. It is not the source of planned seconds;
+           - one `getBusinessTeamSchedule`
+             (`GET /api/v1/businesses/{businessId}/team-schedules/{weekStart}`, `weekStart` the Monday),
+             the planned seconds of the week;
+           - one `getBusinessAttendanceIncidentDailyCounts`
+             (`GET /api/v1/businesses/{businessId}/attendance/incident-daily-counts?from&to`, the seven
+             dates), the unjustified incidents of the filtered audience;
+           - `getPlanningGenerationInput`
+             (`GET /api/v1/businesses/{businessId}/planning-generations/input?weekStart=`, the Monday),
+             for `closed`;
+           - `getBusinessUsers` (`includeRemoved=true`), the roster, including removed members, for
+             names, the current job role, `removed` and `filterOptions.people`;
+           - `getBusinessJobRoles` without `active` (all roles, inactive included), for the job-role
+             name of each row;
+           - `getBusinessJobRoles` (`active=true`), for `filterOptions.jobRoles`.
 
-        `jobRoleId` is forwarded to `getBusinessReports` and `getDailyAttendance` (Main API 0.0.87), which
-        filter it server-side together with `userIds` (AND), so all thirteen calls run in the one `parZip`.
-        When no member matches, the response has zeros (or null planned seconds without a plan) and no rows. clocked = reportable (CONFIRMED + APPROVED), per person, day and week; pending apart in `pendingReviewSeconds` (BFF 0.0.106; up to 0.0.105 clocked = reportable + pending).
+        `jobRoleId` is forwarded, together with `userIds` (AND), to the two reports, the selected day's
+        `getDailyAttendance`, `getBusinessTeamSchedule` and `getBusinessAttendanceIncidentDailyCounts`.
+        Team-schedules filters the role stored on the shift. The other three use the `getDailyAttendance`
+        rule (a worklog or incident without a shift uses the contract in force that business-local day).
+        When no member matches, the response has zeros, or null planned seconds when the week is not
+        published, and no rows.
 
-        Validation before any Main API call: an invalid `week` or `date`, or a `date` outside `week`, returns
-        400 1115. The BFF never moves `date` into the week: the front sends a `date` of the week it shows.
+        Planned seconds (`days[].plannedSeconds`, `totals.plannedSeconds`, `people[].plannedSeconds`)
+        come from that team schedule (v1.0.28). A shift is the sum of its segments minus the break; the
+        unpaid gap of a split shift is not included; a night shift counts entirely on its start day.
+        PUBLISHED, or ARCHIVED that was previously published, counts as published. After stage 0, 404
+        1046 means the ISO week is not published: every planned-seconds field of the week is null. 0
+        means the week is published and that day, or that person, has no shift. The seven days and the
+        total are either all null or all numbers. The client must not interpolate nulls. Any other
+        failure of team-schedules, of the reports, of the incident counts or of the selected day fails
+        the request; the BFF does not substitute 0. Up to BFF 0.0.112 planned seconds came from
+        `getDailyAttendance` `metrics.plannedSeconds` and `getPlannings`. There is no legacy form.
 
-        Concurrency: independent Main API calls of one stage run with Arrow `parZip`; fan-outs are bounded by `Semaphore(8)`, so at most 8 Main API calls are in flight per request. The BFF never filters rows in memory: every filter (date, week, users) is a Main API parameter.
+        `people` lists every person of the filtered audience who has confirmed or pending seconds in
+        the week, a published shift, or an unjustified incident. Order is `needsReview` true first,
+        then name, then userId. There is no people list for the month.
+
+        clocked = reportable (CONFIRMED + APPROVED), per person, day and week; pending apart in
+        `pendingReviewSeconds` (BFF 0.0.106; up to 0.0.105 clocked = reportable + pending).
+        `unjustifiedIncidentCount` is required and not nullable: ATTENDANCE implies SCHEDULING, and a
+        caller who passes ATTENDANCE_VIEW has ATTENDANCE. It counts OPEN incidents whose justification
+        is null, anchored like the inbox (shift start for SHIFT or a MATCHED match, otherwise the
+        business-local clock-in) in the business time zone. A date or person absent from the Main count
+        is 0.
+
+        Validation before any Main API call: an invalid `week` or `date`, or a `date` outside `week`,
+        returns 400 1115. The BFF never moves `date` into the week.
+
+        Rate limit: 120 requests per minute and 1200 per hour per authenticated user and business, one
+        bucket shared with the other attendance GET reads (day, week, month, badge, shift detail and
+        match detail). 429 has no functional code. POST actions are not in this bucket.
+
+        Concurrency: independent Main API calls of one stage run with Arrow `parZip`; fan-outs are bounded by `Semaphore(8)`, so at most 8 Main API calls are in flight per request. The BFF never filters rows in memory: every filter (date, week, users, job role) is a Main API parameter.
       tags:
         - Attendance
       operationId: getAttendanceHours
@@ -53,24 +91,53 @@ attendance:
                 $ref: '../../components/attendance/components.yml#/components/schemas/AttendanceHoursDTO'
               example:
                 week: {week: "2026-W44", from: "2026-10-26", to: "2026-11-01"}
-                totals: {clockedSeconds: 36960, pendingReviewSeconds: 13440, reportableSeconds: 36960, plannedSeconds: 57600}
+                totals: {clockedSeconds: 36960, pendingReviewSeconds: 13440, reportableSeconds: 36960, plannedSeconds: 57600, unjustifiedIncidentCount: 1}
                 days:
-                  - {date: "2026-10-26", closed: false, isToday: false, clockedSeconds: 0, pendingReviewSeconds: 0, plannedSeconds: 0, people: []}
-                  - {date: "2026-10-27", closed: false, isToday: false, clockedSeconds: 0, pendingReviewSeconds: 0, plannedSeconds: 0, people: []}
-                  - {date: "2026-10-28", closed: false, isToday: false, clockedSeconds: 0, pendingReviewSeconds: 0, plannedSeconds: 0, people: []}
-                  - {date: "2026-10-29", closed: false, isToday: false, clockedSeconds: 0, pendingReviewSeconds: 0, plannedSeconds: 0, people: []}
+                  - {date: "2026-10-26", closed: false, isToday: false, clockedSeconds: 0, pendingReviewSeconds: 0, plannedSeconds: 0, unjustifiedIncidentCount: 0, people: []}
+                  - {date: "2026-10-27", closed: false, isToday: false, clockedSeconds: 0, pendingReviewSeconds: 0, plannedSeconds: 0, unjustifiedIncidentCount: 0, people: []}
+                  - {date: "2026-10-28", closed: false, isToday: false, clockedSeconds: 0, pendingReviewSeconds: 0, plannedSeconds: 0, unjustifiedIncidentCount: 0, people: []}
+                  - {date: "2026-10-29", closed: false, isToday: false, clockedSeconds: 0, pendingReviewSeconds: 0, plannedSeconds: 0, unjustifiedIncidentCount: 0, people: []}
                   - date: "2026-10-30"
                     closed: false
                     isToday: true
                     clockedSeconds: 36960
                     pendingReviewSeconds: 13440
                     plannedSeconds: 57600
+                    unjustifiedIncidentCount: 1
                     people:
                       - {userId: 102, name: Lucía Martín, clockedSeconds: 18180, pendingReviewSeconds: 0}
                       - {userId: 103, name: Carlos Vega, clockedSeconds: 0, pendingReviewSeconds: 13440}
                       - {userId: 109, name: irene.navas@example.com, clockedSeconds: 18780, pendingReviewSeconds: 0}
-                  - {date: "2026-10-31", closed: false, isToday: false, clockedSeconds: 0, pendingReviewSeconds: 0, plannedSeconds: 0, people: []}
-                  - {date: "2026-11-01", closed: false, isToday: false, clockedSeconds: 0, pendingReviewSeconds: 0, plannedSeconds: 0, people: []}
+                  - {date: "2026-10-31", closed: false, isToday: false, clockedSeconds: 0, pendingReviewSeconds: 0, plannedSeconds: 0, unjustifiedIncidentCount: 0, people: []}
+                  - {date: "2026-11-01", closed: false, isToday: false, clockedSeconds: 0, pendingReviewSeconds: 0, plannedSeconds: 0, unjustifiedIncidentCount: 0, people: []}
+                people:
+                  - userId: 103
+                    name: Carlos Vega
+                    jobRole: {id: 3, name: Barra}
+                    removed: false
+                    clockedSeconds: 0
+                    pendingReviewSeconds: 13440
+                    plannedSeconds: 19200
+                    unjustifiedIncidentCount: 1
+                    needsReview: true
+                  - userId: 109
+                    name: irene.navas@example.com
+                    jobRole: {id: 1, name: Sala}
+                    removed: false
+                    clockedSeconds: 18780
+                    pendingReviewSeconds: 0
+                    plannedSeconds: 19200
+                    unjustifiedIncidentCount: 0
+                    needsReview: false
+                  - userId: 102
+                    name: Lucía Martín
+                    jobRole: {id: 2, name: Cocina}
+                    removed: false
+                    clockedSeconds: 18180
+                    pendingReviewSeconds: 0
+                    plannedSeconds: 19200
+                    unjustifiedIncidentCount: 0
+                    needsReview: false
                 legend:
                   - {userId: 103, name: Carlos Vega}
                   - {userId: 109, name: irene.navas@example.com}
@@ -140,15 +207,15 @@ attendance:
           description: No authenticated session
         '403':
           description: >
-            The caller is not the OWNER of the business (1020; the BFF checks the role with `getUserBusinesses` because the Main API reads also admit a MANAGER), or not a member of it (1015).
+            Requires ATTENDANCE_VIEW (1020). A caller who is not a member of the business receives 1015. ATTENDANCE unavailable is 403 1155 and is not repeated in `x-functional-errors`.
           content:
             application/problem+json:
               schema:
                 $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
               examples:
-                notOwner:
-                  summary: "1020 - user is not the owner of business"
-                  value: {status: 403, detail: "1020 - user is not the owner of business"}
+                lacksAttendanceView:
+                  summary: "1020 - user lacks permission ATTENDANCE_VIEW in business"
+                  value: {status: 403, detail: "1020 - user lacks permission ATTENDANCE_VIEW in business"}
                 notMember:
                   summary: "1015 - user is not member of business"
                   value: {status: 403, detail: "1015 - user is not member of business"}
@@ -163,23 +230,28 @@ attendance:
                 businessNotFound:
                   summary: "1006 - business does not exist"
                   value: {status: 404, detail: "1006 - business does not exist"}
+        '429':
+          $ref: '../../components/attendance/components.yml#/components/responses/AttendanceReadsTooManyRequests'
       x-functional-errors: [1006, 1015, 1020, 1111, 1115]
 
   day:
     get:
       summary: Get the Today screen (List and Timeline)
       description: |
-        «Hoy» for one business-local date, OWNER only: one row per scheduled shift and per worklog without
+        «Hoy» for one business-local date, requires ATTENDANCE_VIEW (1020): one row per scheduled shift and per worklog without
         a shift, with section, severity (fixed table in `AttendanceSeverityDTO`), status, planned and
         clocked times, segments, chips, enabled action codes and the detail reference, plus the counters
         of the filter chips. Order, sections and counts are decided by the BFF.
 
         Main API calls:
-        1. Stage 0: `getUserBusinesses` (`GET /api/v1/businesses`), for the caller's role (OWNER required, otherwise 403 1020; not a member: 403 1015) and the business time zone.
-        2. Stage 1, one `parZip` (4 calls):
+        1. Stage 0: `getUserBusinesses` (`GET /api/v1/businesses`), for ATTENDANCE_VIEW (otherwise 403 1020; not a member: 403 1015; ATTENDANCE unavailable: 403 1155) and the business time zone.
+        2. Stage 1, one `parZip` (5 calls):
            - `getDailyAttendance` (`GET /api/v1/businesses/{businessId}/attendance?date&userIds`), the
              rows: `shiftAttendances` (kind SHIFT) and `unmatchedAttendances` (kind UNMATCHED), with
              metrics, alerts, incidents and worklogs with breaks;
+           - `getPlanningGenerationInput`
+             (`GET /api/v1/businesses/{businessId}/planning-generations/input?weekStart=`, the Monday of
+             the date's ISO week), for `closed`;
            - `getBusinessJobRoles` (all, active or not), for the job-role name of each scheduled shift
              (`ScheduledShiftResponseDTO` has only `jobRoleId`);
            - `getBusinessUsers` (`includeRemoved=true`), for the job role of UNMATCHED rows and
@@ -189,6 +261,9 @@ attendance:
         `jobRoleId` is forwarded to `getDailyAttendance` (Main API 0.0.87), which filters it server-side with `userIds` (AND).
         Worklogs of a business without a published plan (NOT_APPLICABLE matches) are not part of the
         daily view, so they have no row here.
+
+        Rate limit: 120 requests per minute and 1200 per hour per authenticated user and business, one
+        bucket shared with the other attendance GET reads. 429 has no functional code.
 
         Concurrency: independent Main API calls of one stage run with Arrow `parZip`; fan-outs are bounded by `Semaphore(8)`, so at most 8 Main API calls are in flight per request. The BFF never filters rows in memory: every filter (date, week, users) is a Main API parameter.
       tags:
@@ -302,15 +377,15 @@ attendance:
           description: No authenticated session
         '403':
           description: >
-            The caller is not the OWNER of the business (1020; the BFF checks the role with `getUserBusinesses` because the Main API reads also admit a MANAGER), or not a member of it (1015).
+            Requires ATTENDANCE_VIEW (1020). A caller who is not a member of the business receives 1015. ATTENDANCE unavailable is 403 1155 and is not repeated in `x-functional-errors`.
           content:
             application/problem+json:
               schema:
                 $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
               examples:
-                notOwner:
-                  summary: "1020 - user is not the owner of business"
-                  value: {status: 403, detail: "1020 - user is not the owner of business"}
+                lacksAttendanceView:
+                  summary: "1020 - user lacks permission ATTENDANCE_VIEW in business"
+                  value: {status: 403, detail: "1020 - user lacks permission ATTENDANCE_VIEW in business"}
                 notMember:
                   summary: "1015 - user is not member of business"
                   value: {status: 403, detail: "1015 - user is not member of business"}
@@ -325,25 +400,33 @@ attendance:
                 businessNotFound:
                   summary: "1006 - business does not exist"
                   value: {status: 404, detail: "1006 - business does not exist"}
+        '429':
+          $ref: '../../components/attendance/components.yml#/components/responses/AttendanceReadsTooManyRequests'
       x-functional-errors: [1006, 1015, 1020, 1111, 1115]
 
   week:
     get:
       summary: Get the Week screen
       description: |
-        «Semana» for one ISO week, OWNER only: KPIs and a people × 7 days grid. Cell state and KPI rules
+        «Semana» for one ISO week, requires ATTENDANCE_VIEW (1020): KPIs and a people × 7 days grid. Cell state and KPI rules
         are in `AttendanceWeekCellStateDTO` and `AttendanceWeekKpisDTO`.
 
         Main API calls:
-        1. Stage 0: `getUserBusinesses` (`GET /api/v1/businesses`), for the caller's role (OWNER required, otherwise 403 1020; not a member: 403 1015) and the business time zone.
-        2. Stage 1, one `parZip` (9 calls, at most 8 in flight):
+        1. Stage 0: `getUserBusinesses` (`GET /api/v1/businesses`), for ATTENDANCE_VIEW (otherwise 403 1020; not a member: 403 1015; ATTENDANCE unavailable: 403 1155) and the business time zone.
+        2. Stage 1, one `parZip` (10 calls, at most 8 in flight):
            - 7 × `getDailyAttendance` (`GET /api/v1/businesses/{businessId}/attendance?date&userIds`), one
              per day; future days return their shifts as UPCOMING;
+           - `getPlanningGenerationInput`
+             (`GET /api/v1/businesses/{businessId}/planning-generations/input?weekStart=`, the Monday),
+             for `closed`;
            - `getBusinessUsers` (`includeRemoved=true`), for `filterOptions`;
            - `getBusinessJobRoles` (`active=true`), for `filterOptions.jobRoles`.
 
         `jobRoleId` is forwarded to each `getDailyAttendance` (Main API 0.0.87), filtered server-side with `userIds` (AND). There is no Main API range read; 7 daily calls are the
         approved approach until metrics ask for one.
+
+        Rate limit: 120 requests per minute and 1200 per hour per authenticated user and business, one
+        bucket shared with the other attendance GET reads. 429 has no functional code.
 
         Concurrency: independent Main API calls of one stage run with Arrow `parZip`; fan-outs are bounded by `Semaphore(8)`, so at most 8 Main API calls are in flight per request. The BFF never filters rows in memory: every filter (date, week, users) is a Main API parameter.
       tags:
@@ -408,15 +491,15 @@ attendance:
           description: No authenticated session
         '403':
           description: >
-            The caller is not the OWNER of the business (1020; the BFF checks the role with `getUserBusinesses` because the Main API reads also admit a MANAGER), or not a member of it (1015).
+            Requires ATTENDANCE_VIEW (1020). A caller who is not a member of the business receives 1015. ATTENDANCE unavailable is 403 1155 and is not repeated in `x-functional-errors`.
           content:
             application/problem+json:
               schema:
                 $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
               examples:
-                notOwner:
-                  summary: "1020 - user is not the owner of business"
-                  value: {status: 403, detail: "1020 - user is not the owner of business"}
+                lacksAttendanceView:
+                  summary: "1020 - user lacks permission ATTENDANCE_VIEW in business"
+                  value: {status: 403, detail: "1020 - user lacks permission ATTENDANCE_VIEW in business"}
                 notMember:
                   summary: "1015 - user is not member of business"
                   value: {status: 403, detail: "1015 - user is not member of business"}
@@ -431,19 +514,191 @@ attendance:
                 businessNotFound:
                   summary: "1006 - business does not exist"
                   value: {status: 404, detail: "1006 - business does not exist"}
+        '429':
+          $ref: '../../components/attendance/components.yml#/components/responses/AttendanceReadsTooManyRequests'
+      x-functional-errors: [1006, 1015, 1020, 1111, 1115]
+
+
+  month:
+    get:
+      summary: Get the Month screen
+      description: |
+        «Mes» for one calendar month, requires ATTENDANCE_VIEW (1020), ready to paint: totals,
+        one bar per date and the ISO weeks that touch the month, clipped to it. The BFF sums;
+        the client does not. Omit `userIds` for the whole team (phase 2, team by month). There
+        is no people list and no `closed` flag per day.
+
+        `month` is optional `YYYY-MM` and defaults to the current month in the business time
+        zone. A value that is not that pattern returns 400 1115. The message stays
+        `attendance week or date is invalid`; no new code. `userIds` is the existing parameter
+        (at most 50, 400 1111). `jobRoleId` is the existing parameter. Both are forwarded (AND).
+
+        Main API calls:
+        1. Stage 0: `getUserBusinesses` (`GET /api/v1/businesses`), for ATTENDANCE_VIEW (otherwise 403 1020; not a member: 403 1015; ATTENDANCE unavailable: 403 1155) and the business time zone.
+        2. Stage 1, at most 9 calls, at most 8 in flight:
+           - two `getBusinessReports` for `from`..`to` of the month (CONFIRMED + APPROVED, and
+             `reviewStatus=PENDING_RECONCILIATION&reviewStatus=PENDING_REVIEW`);
+           - at most six `getBusinessTeamSchedule`
+             (`GET /api/v1/businesses/{businessId}/team-schedules/{weekStart}`), one per ISO
+             week that touches the month;
+           - one `getBusinessAttendanceIncidentDailyCounts`
+             (`GET /api/v1/businesses/{businessId}/attendance/incident-daily-counts?from&to`),
+             `from` the first day and `to` the last (a month is at most 31 dates).
+
+        `userIds` and `jobRoleId` are forwarded to those calls. Team-schedules filters the role
+        stored on the shift. Reports and incident counts use the `getDailyAttendance` rule (a
+        worklog or incident without a shift uses the contract in force that business-local day).
+
+        Planned seconds use team-schedules v1.0.28: sum of segments minus the break; a night
+        shift counts entirely on its start day, so a shift that starts before the month is not
+        in it and a shift that starts on the last day counts entirely on that day. An ISO week
+        that crosses the month affects only its own dates. PUBLISHED, or ARCHIVED that was
+        previously published, counts as published. After stage 0, 404 1046 on a week means that
+        week's dates inside the month have `plannedSeconds: null` and the week `published: false`.
+        0 means the week is published and the filtered audience has no shift that day. The client
+        must not interpolate nulls. `totals.plannedSeconds` sums the dates whose planned seconds
+        are not null, and is null when no date of the month is published.
+        `totals.unpublishedDayCount` is how many dates are unpublished. Any other failure of
+        those Main API calls fails the request; the BFF does not substitute 0.
+
+        `unjustifiedIncidentCount` is required and not nullable. It counts OPEN incidents with
+        justification null, anchored like the inbox (shift start for SHIFT or a MATCHED match,
+        otherwise the business-local clock-in) in the business time zone. A date absent from the
+        Main count is 0. ATTENDANCE implies SCHEDULING, and ATTENDANCE_VIEW is only held when
+        ATTENDANCE is available.
+
+        clocked = CONFIRMED + APPROVED; pending apart in `pendingReviewSeconds`. Open worklogs
+        count in no figure. Seconds are net of effective breaks and attributed to the
+        business-local clock-in day.
+
+        Rate limit: 120 requests per minute and 1200 per hour per authenticated user and business,
+        one bucket shared with the other attendance GET reads (hours, day, week, badge, shift
+        detail and match detail). 429 has no functional code. POST actions are not in this bucket.
+
+        Concurrency: independent Main API calls of one stage run with Arrow `parZip`; fan-outs are bounded by `Semaphore(8)`, so at most 8 Main API calls are in flight per request. The BFF never filters rows in memory: every filter (month, users, job role) is a Main API parameter.
+      tags:
+        - Attendance
+      operationId: getAttendanceMonth
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '../../components/attendance/components.yml#/components/parameters/BusinessId'
+        - $ref: '../../components/attendance/components.yml#/components/parameters/Month'
+        - $ref: '../../components/attendance/components.yml#/components/parameters/UserIds'
+        - $ref: '../../components/attendance/components.yml#/components/parameters/JobRoleId'
+      responses:
+        '200':
+          description: Month already summed for the filtered audience
+          content:
+            application/json:
+              schema:
+                $ref: '../../components/attendance/components.yml#/components/schemas/AttendanceMonthDTO'
+              example:
+                month: "2026-02"
+                from: "2026-02-01"
+                to: "2026-02-28"
+                today: "2026-02-12"
+                totals:
+                  clockedSeconds: 43200
+                  pendingReviewSeconds: 3600
+                  plannedSeconds: 57600
+                  unjustifiedIncidentCount: 1
+                  unpublishedDayCount: 6
+                days:
+                  - {date: "2026-02-01", isToday: false, clockedSeconds: 0, pendingReviewSeconds: 0, plannedSeconds: 0, unjustifiedIncidentCount: 0}
+                  - {date: "2026-02-02", isToday: false, clockedSeconds: 28800, pendingReviewSeconds: 0, plannedSeconds: 28800, unjustifiedIncidentCount: 0}
+                  - {date: "2026-02-03", isToday: false, clockedSeconds: 0, pendingReviewSeconds: 0, plannedSeconds: 0, unjustifiedIncidentCount: 0}
+                  - {date: "2026-02-04", isToday: false, clockedSeconds: 0, pendingReviewSeconds: 0, plannedSeconds: 0, unjustifiedIncidentCount: 0}
+                  - {date: "2026-02-05", isToday: false, clockedSeconds: 0, pendingReviewSeconds: 0, plannedSeconds: 0, unjustifiedIncidentCount: 0}
+                  - {date: "2026-02-06", isToday: false, clockedSeconds: 0, pendingReviewSeconds: 0, plannedSeconds: 0, unjustifiedIncidentCount: 0}
+                  - {date: "2026-02-07", isToday: false, clockedSeconds: 0, pendingReviewSeconds: 0, plannedSeconds: 0, unjustifiedIncidentCount: 0}
+                  - {date: "2026-02-08", isToday: false, clockedSeconds: 0, pendingReviewSeconds: 0, plannedSeconds: 0, unjustifiedIncidentCount: 0}
+                  - {date: "2026-02-09", isToday: false, clockedSeconds: 0, pendingReviewSeconds: 0, plannedSeconds: 0, unjustifiedIncidentCount: 0}
+                  - {date: "2026-02-10", isToday: false, clockedSeconds: 0, pendingReviewSeconds: 0, plannedSeconds: 0, unjustifiedIncidentCount: 0}
+                  - {date: "2026-02-11", isToday: false, clockedSeconds: 0, pendingReviewSeconds: 0, plannedSeconds: 0, unjustifiedIncidentCount: 0}
+                  - {date: "2026-02-12", isToday: true, clockedSeconds: 14400, pendingReviewSeconds: 3600, plannedSeconds: 28800, unjustifiedIncidentCount: 1}
+                  - {date: "2026-02-13", isToday: false, clockedSeconds: 0, pendingReviewSeconds: 0, plannedSeconds: 0, unjustifiedIncidentCount: 0}
+                  - {date: "2026-02-14", isToday: false, clockedSeconds: 0, pendingReviewSeconds: 0, plannedSeconds: 0, unjustifiedIncidentCount: 0}
+                  - {date: "2026-02-15", isToday: false, clockedSeconds: 0, pendingReviewSeconds: 0, plannedSeconds: 0, unjustifiedIncidentCount: 0}
+                  - {date: "2026-02-16", isToday: false, clockedSeconds: 0, pendingReviewSeconds: 0, plannedSeconds: 0, unjustifiedIncidentCount: 0}
+                  - {date: "2026-02-17", isToday: false, clockedSeconds: 0, pendingReviewSeconds: 0, plannedSeconds: 0, unjustifiedIncidentCount: 0}
+                  - {date: "2026-02-18", isToday: false, clockedSeconds: 0, pendingReviewSeconds: 0, plannedSeconds: 0, unjustifiedIncidentCount: 0}
+                  - {date: "2026-02-19", isToday: false, clockedSeconds: 0, pendingReviewSeconds: 0, plannedSeconds: 0, unjustifiedIncidentCount: 0}
+                  - {date: "2026-02-20", isToday: false, clockedSeconds: 0, pendingReviewSeconds: 0, plannedSeconds: 0, unjustifiedIncidentCount: 0}
+                  - {date: "2026-02-21", isToday: false, clockedSeconds: 0, pendingReviewSeconds: 0, plannedSeconds: 0, unjustifiedIncidentCount: 0}
+                  - {date: "2026-02-22", isToday: false, clockedSeconds: 0, pendingReviewSeconds: 0, plannedSeconds: 0, unjustifiedIncidentCount: 0}
+                  - {date: "2026-02-23", isToday: false, clockedSeconds: 0, pendingReviewSeconds: 0, plannedSeconds: null, unjustifiedIncidentCount: 0}
+                  - {date: "2026-02-24", isToday: false, clockedSeconds: 0, pendingReviewSeconds: 0, plannedSeconds: null, unjustifiedIncidentCount: 0}
+                  - {date: "2026-02-25", isToday: false, clockedSeconds: 0, pendingReviewSeconds: 0, plannedSeconds: null, unjustifiedIncidentCount: 0}
+                  - {date: "2026-02-26", isToday: false, clockedSeconds: 0, pendingReviewSeconds: 0, plannedSeconds: null, unjustifiedIncidentCount: 0}
+                  - {date: "2026-02-27", isToday: false, clockedSeconds: 0, pendingReviewSeconds: 0, plannedSeconds: null, unjustifiedIncidentCount: 0}
+                  - {date: "2026-02-28", isToday: false, clockedSeconds: 0, pendingReviewSeconds: 0, plannedSeconds: null, unjustifiedIncidentCount: 0}
+                weeks:
+                  - {week: "2026-W05", from: "2026-02-01", to: "2026-02-01", published: true, clockedSeconds: 0, pendingReviewSeconds: 0, plannedSeconds: 0, unjustifiedIncidentCount: 0}
+                  - {week: "2026-W06", from: "2026-02-02", to: "2026-02-08", published: true, clockedSeconds: 28800, pendingReviewSeconds: 0, plannedSeconds: 28800, unjustifiedIncidentCount: 0}
+                  - {week: "2026-W07", from: "2026-02-09", to: "2026-02-15", published: true, clockedSeconds: 14400, pendingReviewSeconds: 3600, plannedSeconds: 28800, unjustifiedIncidentCount: 1}
+                  - {week: "2026-W08", from: "2026-02-16", to: "2026-02-22", published: true, clockedSeconds: 0, pendingReviewSeconds: 0, plannedSeconds: 0, unjustifiedIncidentCount: 0}
+                  - {week: "2026-W09", from: "2026-02-23", to: "2026-02-28", published: false, clockedSeconds: 0, pendingReviewSeconds: 0, plannedSeconds: null, unjustifiedIncidentCount: 0}
+        '400':
+          description: >
+            Invalid `month` (1115; the message stays `attendance week or date is invalid`), or
+            more than 50 `userIds` (1111).
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              examples:
+                invalidMonth:
+                  summary: "1115 - attendance week or date is invalid"
+                  value: {status: 400, detail: "1115 - attendance week or date is invalid"}
+                invalidUserIds:
+                  summary: "1111 - userIds must contain between 1 and 50 identifiers"
+                  value: {status: 400, detail: "1111 - userIds must contain between 1 and 50 identifiers"}
+        '401':
+          description: No authenticated session
+        '403':
+          description: >
+            Requires ATTENDANCE_VIEW (1020). A caller who is not a member of the business receives 1015. ATTENDANCE unavailable is 403 1155 and is not repeated in `x-functional-errors`.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              examples:
+                lacksAttendanceView:
+                  summary: "1020 - user lacks permission ATTENDANCE_VIEW in business"
+                  value: {status: 403, detail: "1020 - user lacks permission ATTENDANCE_VIEW in business"}
+                notMember:
+                  summary: "1015 - user is not member of business"
+                  value: {status: 403, detail: "1015 - user is not member of business"}
+        '404':
+          description: >
+            Business not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              examples:
+                businessNotFound:
+                  summary: "1006 - business does not exist"
+                  value: {status: 404, detail: "1006 - business does not exist"}
+        '429':
+          $ref: '../../components/attendance/components.yml#/components/responses/AttendanceReadsTooManyRequests'
       x-functional-errors: [1006, 1015, 1020, 1111, 1115]
 
   shift-detail:
     get:
       summary: Get the detail of a shift attendance
       description: |
-        Detail sheet of one scheduled shift, OWNER only: planned and clocked, the shift's worklogs with
+        Detail sheet of one scheduled shift, requires ATTENDANCE_VIEW (1020): planned and clocked, the shift's worklogs with
         breaks, segments and change history, incidents with severity and justification, the opaque
         `revision` and the enabled actions. `actions.accept.disabledReason` is the Main API
         `approvalBlocker`, forwarded unchanged.
 
+        Rate limit: 120 requests per minute and 1200 per hour per authenticated user and business, one
+        bucket shared with the other attendance GET reads. 429 has no functional code.
+
         Main API calls:
-        1. Stage 0: `getUserBusinesses` (`GET /api/v1/businesses`), for the caller's role (OWNER required, otherwise 403 1020; not a member: 403 1015) and the business time zone.
+        1. Stage 0: `getUserBusinesses` (`GET /api/v1/businesses`), for ATTENDANCE_VIEW (otherwise 403 1020; not a member: 403 1015; ATTENDANCE unavailable: 403 1155) and the business time zone.
         2. Stage 1: `getShiftAttendance` (`GET /api/v1/businesses/{businessId}/scheduled-shifts/{scheduledShiftId}/attendance`),
              `getBusinessUsers` (`includeRemoved=true`, names of justification and change authors and of
              resolvers) and `getBusinessJobRoles`, in one `parZip`; then `getWorklogHistory`
@@ -472,15 +727,15 @@ attendance:
           description: No authenticated session
         '403':
           description: >
-            The caller is not the OWNER of the business (1020; the BFF checks the role with `getUserBusinesses` because the Main API reads also admit a MANAGER), or not a member of it (1015).
+            Requires ATTENDANCE_VIEW (1020). A caller who is not a member of the business receives 1015. ATTENDANCE unavailable is 403 1155 and is not repeated in `x-functional-errors`.
           content:
             application/problem+json:
               schema:
                 $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
               examples:
-                notOwner:
-                  summary: "1020 - user is not the owner of business"
-                  value: {status: 403, detail: "1020 - user is not the owner of business"}
+                lacksAttendanceView:
+                  summary: "1020 - user lacks permission ATTENDANCE_VIEW in business"
+                  value: {status: 403, detail: "1020 - user lacks permission ATTENDANCE_VIEW in business"}
                 notMember:
                   summary: "1015 - user is not member of business"
                   value: {status: 403, detail: "1015 - user is not member of business"}
@@ -498,20 +753,25 @@ attendance:
                 shiftNotFound:
                   summary: "1076 - scheduled shift not found"
                   value: {status: 404, detail: "1076 - scheduled shift not found"}
+        '429':
+          $ref: '../../components/attendance/components.yml#/components/responses/AttendanceReadsTooManyRequests'
       x-functional-errors: [1006, 1015, 1020, 1076]
 
   match-detail:
     get:
       summary: Get the detail of a worklog without a shift
       description: |
-        Detail sheet of one attendance match without a shift (UNSCHEDULED or AMBIGUOUS), OWNER only.
+        Detail sheet of one attendance match without a shift (UNSCHEDULED or AMBIGUOUS), requires ATTENDANCE_VIEW (1020).
         The BFF reads the match by id with the Main API owner read `getBusinessAttendanceMatch`
         (Main API 0.0.87); the `date` and `userId` query parameters are deprecated, optional and
         ignored. If reconciliation has meanwhile assigned the match to a shift, the response is that
         shift's detail (`kind: SHIFT`), read with `getShiftAttendance`.
 
+        Rate limit: 120 requests per minute and 1200 per hour per authenticated user and business, one
+        bucket shared with the other attendance GET reads. 429 has no functional code.
+
         Main API calls:
-        1. Stage 0: `getUserBusinesses` (`GET /api/v1/businesses`), for the caller's role (OWNER required, otherwise 403 1020; not a member: 403 1015) and the business time zone.
+        1. Stage 0: `getUserBusinesses` (`GET /api/v1/businesses`), for ATTENDANCE_VIEW (otherwise 403 1020; not a member: 403 1015; ATTENDANCE unavailable: 403 1155) and the business time zone.
         2. Stage 1: `getBusinessAttendanceMatch` (`GET /api/v1/businesses/{businessId}/attendance-matches/{attendanceMatchId}`,
              404 1074 when missing), `getBusinessUsers` (`includeRemoved=true`) and `getBusinessJobRoles`, in
              one `parZip`; then `getWorklogHistory` for its worklog.
@@ -541,15 +801,15 @@ attendance:
           description: No authenticated session
         '403':
           description: >
-            The caller is not the OWNER of the business (1020; the BFF checks the role with `getUserBusinesses` because the Main API reads also admit a MANAGER), or not a member of it (1015).
+            Requires ATTENDANCE_VIEW (1020). A caller who is not a member of the business receives 1015. ATTENDANCE unavailable is 403 1155 and is not repeated in `x-functional-errors`.
           content:
             application/problem+json:
               schema:
                 $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
               examples:
-                notOwner:
-                  summary: "1020 - user is not the owner of business"
-                  value: {status: 403, detail: "1020 - user is not the owner of business"}
+                lacksAttendanceView:
+                  summary: "1020 - user lacks permission ATTENDANCE_VIEW in business"
+                  value: {status: 403, detail: "1020 - user lacks permission ATTENDANCE_VIEW in business"}
                 notMember:
                   summary: "1015 - user is not member of business"
                   value: {status: 403, detail: "1015 - user is not member of business"}
@@ -567,13 +827,15 @@ attendance:
                 matchNotFound:
                   summary: "1074 - attendance match not found"
                   value: {status: 404, detail: "1074 - attendance match not found"}
+        '429':
+          $ref: '../../components/attendance/components.yml#/components/responses/AttendanceReadsTooManyRequests'
       x-functional-errors: [1006, 1015, 1020, 1074]
 
   badge:
     get:
       summary: Get the tab badge
       description: |
-        What needs attention today (business time zone), for the red badge of the tab, OWNER only. It
+        What needs attention today (business time zone), for the red badge of the tab, requires ATTENDANCE_VIEW (1020). It
         takes no `date`: it is always today. The front shows `openIncidentCount` (Main API, open
         incidents only; alerts are not counted), as Sergio decided. `attentionCount` (the rows of today
         whose severity is not OK, `counts.incidents` of `getAttendanceDay` for today without filters, so
@@ -581,10 +843,13 @@ attendance:
         badge.
 
         Main API calls (sequential, today depends on the zone):
-        1. Stage 0: `getUserBusinesses` (`GET /api/v1/businesses`), for the caller's role (OWNER required, otherwise 403 1020; not a member: 403 1015) and the business time zone.
+        1. Stage 0: `getUserBusinesses` (`GET /api/v1/businesses`), for ATTENDANCE_VIEW (otherwise 403 1020; not a member: 403 1015; ATTENDANCE unavailable: 403 1155) and the business time zone.
         2. `getDailyAttendance` (`GET /api/v1/businesses/{businessId}/attendance?date={today}`) →
            `summary.openIncidentCount`, and the rows' severity with the fixed table of
            `AttendanceSeverityDTO` for `attentionCount`. No other call.
+
+        Rate limit: 120 requests per minute and 1200 per hour per authenticated user and business, one
+        bucket shared with the other attendance GET reads. 429 has no functional code.
 
         The BFF may cache the result per business for up to 60 seconds. Concurrency: independent Main API calls of one stage run with Arrow `parZip`; fan-outs are bounded by `Semaphore(8)`, so at most 8 Main API calls are in flight per request. The BFF never filters rows in memory: every filter (date, week, users) is a Main API parameter.
       tags:
@@ -609,15 +874,15 @@ attendance:
           description: No authenticated session
         '403':
           description: >
-            The caller is not the OWNER of the business (1020; the BFF checks the role with `getUserBusinesses` because the Main API reads also admit a MANAGER), or not a member of it (1015).
+            Requires ATTENDANCE_VIEW (1020). A caller who is not a member of the business receives 1015. ATTENDANCE unavailable is 403 1155 and is not repeated in `x-functional-errors`.
           content:
             application/problem+json:
               schema:
                 $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
               examples:
-                notOwner:
-                  summary: "1020 - user is not the owner of business"
-                  value: {status: 403, detail: "1020 - user is not the owner of business"}
+                lacksAttendanceView:
+                  summary: "1020 - user lacks permission ATTENDANCE_VIEW in business"
+                  value: {status: 403, detail: "1020 - user lacks permission ATTENDANCE_VIEW in business"}
                 notMember:
                   summary: "1015 - user is not member of business"
                   value: {status: 403, detail: "1015 - user is not member of business"}
@@ -632,6 +897,8 @@ attendance:
                 businessNotFound:
                   summary: "1006 - business does not exist"
                   value: {status: 404, detail: "1006 - business does not exist"}
+        '429':
+          $ref: '../../components/attendance/components.yml#/components/responses/AttendanceReadsTooManyRequests'
       x-functional-errors: [1006, 1015, 1020]
 
   shift-accept:

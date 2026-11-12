@@ -965,3 +965,35 @@ components:
             - $ref: '#/components/schemas/ClockInNoticeBlockerDTO'
             - type: 'null'
       required: [lastNotice, blocker]
+
+    BusinessAttendanceIncidentDailyCountDTO:
+      type: object
+      additionalProperties: false
+      description: >-
+        One worker and one business-local date with at least one attendance incident that is
+        still OPEN and has no justification. Rows with a count of zero are omitted.
+      properties:
+        userId:
+          type: integer
+          format: int64
+          minimum: 1
+          description: Worker the incidents belong to.
+          example: 103
+        date:
+          type: string
+          format: date
+          description: >-
+            Business-local anchor date in the business time zone. Same anchor as the inbox:
+            shift start for SHIFT scope or a MATCHED match, otherwise the worklog clock-in
+            date. A night shift stays on its start date.
+          example: '2026-02-12'
+        unjustifiedCount:
+          type: integer
+          format: int32
+          minimum: 1
+          description: >-
+            Incidents of `userId` anchored on `date` whose lifecycle is OPEN and whose
+            justification is null. An OPEN incident that already has a justification, and a
+            resolved incident, are not counted. Always at least 1: rows with zero are omitted.
+          example: 1
+      required: [userId, date, unjustifiedCount]

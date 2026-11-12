@@ -1,5 +1,32 @@
 # Changelog
 
+## 0.0.113
+
+Spec only. No BFF implementation in this change. Depends on Main API 0.0.119 (`getBusinessAttendanceIncidentDailyCounts`). Planned seconds of the owner attendance charts move to Main `getBusinessTeamSchedule` (the v1.0.28 semantics). Next repository tag: `v1.0.29` (after `v1.0.28`). This change does not create the tag. The published solver contract is unchanged.
+
+Owner attendance charts (Sergio and the Frontend Architect, 2026-11-13). Requires `ATTENDANCE_VIEW` only (403 1020). Not `REPORTS_VIEW` or `TEAM_VIEW`. There is no legacy form: the product is not in production.
+
+### Added
+
+- `AttendanceHoursDTO.people` (`AttendanceHoursPersonDTO`), every field required: `userId`, `name` (roster, removed members included, the same source as `legend`), `jobRole` (current contract, or null, the same rule as `AttendanceHoursRowDTO.jobRole`), `removed`, `clockedSeconds` (CONFIRMED + APPROVED of the week, the same rule as `totals.clockedSeconds`), `pendingReviewSeconds` (PENDING_RECONCILIATION + PENDING_REVIEW, apart), `plannedSeconds` (nullable; null = the week is not published, 0 = published and this person has no shift), `unjustifiedIncidentCount` (int32, minimum 0, not nullable) and `needsReview` (`pendingReviewSeconds > 0` or `unjustifiedIncidentCount > 0`). Who is listed: every person of the filtered audience (`userIds`, `jobRoleId`) with confirmed or pending seconds in the week, a published shift, or an unjustified incident. Order: `needsReview` true first, then name, then userId. There is no people list for the month.
+- `unjustifiedIncidentCount` (int32, minimum 0, required, not nullable) on `AttendanceHoursDayDTO` (sum of that day for the filtered audience) and on `totals` (sum of the week). Same inbox anchor as Main: shift start for SHIFT or a MATCHED match, otherwise the business-local clock-in, in the business time zone. OPEN with justification null. A missing date is 0. Not nullable because ATTENDANCE implies SCHEDULING and `ATTENDANCE_VIEW` is only held when ATTENDANCE is available.
+- `getAttendanceMonth` (`GET /api/v1/businesses/{businessId}/attendance/month?month=YYYY-MM`, optional `userIds`, optional `jobRoleId`). Same permission as the other attendance reads. `month` defaults to the current month in the business time zone; a value that is not `YYYY-MM` (month 01–12) is 400 1115 and the message stays `attendance week or date is invalid`. Omit `userIds` for the whole team. `200` is `AttendanceMonthDTO`: `month`, `from`, `to`, `today`, `totals` (`clockedSeconds`, `pendingReviewSeconds`, `plannedSeconds` nullable, `unjustifiedIncidentCount`, `unpublishedDayCount`), one `AttendanceMonthDayDTO` per date (no `closed`) and `weeks` for the ISO weeks that touch the month, clipped to it (`published`, seconds, nullable `plannedSeconds`). The BFF sums. `totals.plannedSeconds` sums the dates that are not null, and is null when no date of the month is published. An ISO week that crosses the month affects only its own dates. Errors: 400 1115 / 1111, 401, 403 1015 / 1020 / 1155, 404 1006, 429. `x-functional-errors`: `[1006, 1015, 1020, 1111, 1115]`.
+- 429 on the attendance GET reads (`getAttendanceHours`, `getAttendanceDay`, `getAttendanceWeek`, `getAttendanceMonth`, `getAttendanceBadge`, `getAttendanceShiftDetail`, `getAttendanceMatchDetail`). No functional code. Body: `{"title":"Too Many Requests","status":429,"detail":"Too many requests. Retry later."}`. Limit: 120 per minute and 1200 per hour per authenticated user and business, one shared bucket for those reads. POST actions are unchanged, including the clock-in notice 429 1119.
+
+### Changed
+
+- `days[].plannedSeconds` and `totals.plannedSeconds` of `getAttendanceHours`, and every planned-seconds field of `getAttendanceMonth` and `people[].plannedSeconds`, now come from `getBusinessTeamSchedule` with the v1.0.28 semantics: sum of segments minus the break; a night shift counts entirely on its start day; PUBLISHED, or ARCHIVED that was previously published, counts as published. Null means that ISO week is not published (404 1046 after membership is known). 0 means published and there is no shift. The client must not interpolate nulls. On Hours the seven days and the total are still either all null or all numbers. Any other failure of team-schedules fails the request; the BFF does not substitute 0. Up to 0.0.112 Hours read planned seconds from `getDailyAttendance` `metrics.plannedSeconds` and used `getPlannings` to tell null from 0. This is a semantic change with no legacy form.
+- Hours Main API calls are now stage 0 plus 9 (two reports, one `getDailyAttendance` of the selected day only, one `getBusinessTeamSchedule`, one `getBusinessAttendanceIncidentDailyCounts`, `getPlanningGenerationInput`, the roster, two job-role reads), at most 8 in flight. Day is stage 0 plus 5: the spec previously listed 4 and omitted `getPlanningGenerationInput`, which the BFF already calls for `closed`. Week is stage 0 plus 10 for the same reason (the spec previously listed 9).
+- Attendance GET descriptions that said «OWNER only» / «not the OWNER (1020)» now say «requires ATTENDANCE_VIEW (1020)». The 1020 example is `user lacks permission ATTENDANCE_VIEW in business`. POST review actions are not reworded: they require `ATTENDANCE_MANAGE`, and the permission table stays authoritative.
+
+### Unchanged
+
+- `getManagerMonthHistory` and the other manager history reads (`WORKLOGS_VIEW`). Worker week and month history from BFF 0.0.112, including nullable `plannedSeconds` and `unjustifiedIncidentCount` when a feature is off. Those screens null a 403 1155; these owner charts do not.
+
+### Deployment
+
+- Main 0.0.119 before the BFF that fills `people`, the incident counts and the month screen. A 404 1046 from team-schedules nulls planned seconds for that ISO week. Any other failure of the documented Main calls fails the request.
+
 ## 0.0.112
 
 Spec only. No BFF implementation in this change. Depends on Main API 0.0.118 (`getCurrentUserAttendanceIncidentDailyCounts`). Planned seconds use the existing Main `getBusinessTeamSchedule`; Main does not change them. Next repository tag: `v1.0.28` (after `v1.0.27`). This change does not create the tag. The published solver contract is unchanged.
