@@ -1,6 +1,7 @@
 reports:
   request-business-worked-hours-report:
     post:
+      deprecated: true
       summary: Request asynchronous business worked hours report generation
       description: |
         Requests the worked-hours PDF for the selected people of the business, emailed to the requester.
@@ -9,8 +10,10 @@ reports:
         asynchronously; this response only confirms that the request was accepted. Only PDF is sent by email;
         the CSV is download-only (exportManagerWorkedHoursReportPdf).
         Authorization: REPORTS_EXPORT (403 1020 without it; 403 1104 for an EMPLOYEE without a contract in force).
-        The owner reports screen no longer uses this operation (BFF 0.0.109): it lists months with
-        getManagerHoursMonths and downloads with exportManagerWorkedHoursReportPdf. It is kept otherwise unchanged.
+        Deprecated since BFF 0.0.110 (Sergio, 2026-11-12, t43s1): the owner reports screen now uses the direct
+        export. It lists months with getManagerHoursMonths and downloads the PDF or CSV of each month, in the
+        response body, with exportManagerWorkedHoursReportPdf; nothing is emailed. New clients must not use this
+        operation. It still works exactly as before; its removal will come in a later version.
         Rate limit: 2 requests per minute and 10 per hour per authenticated user and business, a bucket of its own
         (not shared with the download). 429 without a functional code.
         The optional periodType (MONTH, YEAR or RANGE, default RANGE) is forwarded to the main API; when it is omitted the request behaves exactly as before (RANGE).
