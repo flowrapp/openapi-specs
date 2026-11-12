@@ -48,7 +48,7 @@ info:
     | Feature | Plans | Requires | Owns permissions | Self-service operations |
     |---|---|---|---|---|
     | SCHEDULING | ESSENTIAL, PROFESSIONAL | — | SCHEDULE_VIEW, SCHEDULE_MANAGE, SHIFT_CHANGES_APPROVE | getCurrentUserScheduledShifts, getBusinessTeamSchedule, every shift exchange and schedule change operation |
-    | ATTENDANCE | PROFESSIONAL | SCHEDULING | ATTENDANCE_VIEW, ATTENDANCE_MANAGE | getAttendanceMatch, getDailyAttendance (any scope), justifyAttendanceIncident, getCurrentUserAttendanceIncidents, getCurrentUserAttendanceIncidentGroups, getCurrentUserAttendanceIncidentGroup, justifyCurrentUserAttendanceIncidentGroup, updateAttendanceTolerance |
+    | ATTENDANCE | PROFESSIONAL | SCHEDULING | ATTENDANCE_VIEW, ATTENDANCE_MANAGE | getAttendanceMatch, getDailyAttendance (any scope), justifyAttendanceIncident, getCurrentUserAttendanceIncidents, getCurrentUserAttendanceIncidentDailyCounts, getCurrentUserAttendanceIncidentGroups, getCurrentUserAttendanceIncidentGroup, justifyCurrentUserAttendanceIncidentGroup, updateAttendanceTolerance |
     | ADVANCED_PLANNING | PROFESSIONAL | SCHEDULING | — | — |
 
     ADVANCED_PLANNING is additionally required for requestPlanningGeneration,
@@ -59,7 +59,7 @@ info:
     existing permission requirements; authorised users can access their underlying business data.
 
     `updateBusinessPlan` (platform admin) changes the plan and emits a `PERMISSIONS` sync signal.
-  version: 0.0.117
+  version: 0.0.118
   contact:
     name: Flowrapp Team
     url: https://flowrapp.github.io
@@ -394,6 +394,8 @@ paths:
     $ref: "v1/services/attendance/attendance-operations.yml#/attendance/daily"
   "/api/v1/businesses/{businessId}/attendance-incidents":
     $ref: "v1/services/attendanceInbox/attendance-inbox-operations.yml#/attendanceInbox/incidents"
+  "/api/v1/businesses/{businessId}/attendance-incidents/daily-counts":
+    $ref: "v1/services/attendanceInbox/attendance-inbox-operations.yml#/attendanceInbox/daily-counts"
   "/api/v1/businesses/{businessId}/worklog-change-confirmations":
     $ref: "v1/services/attendanceInbox/attendance-inbox-operations.yml#/attendanceInbox/confirmations"
   "/api/v1/worklog-changes/{worklogChangeId}/confirmation":

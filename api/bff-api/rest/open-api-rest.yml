@@ -44,14 +44,16 @@ info:
     self-service operations below; ADVANCED_PLANNING is checked separately on the advanced operations.
     Aggregated responses (dashboard, clock view, history, member
     profile) omit data of an unavailable feature exactly as they omit data the caller lacks the
-    permission for.
+    permission for. On worker week and month history, `plannedSeconds` is null without SCHEDULING
+    and `unjustifiedIncidentCount` is null without ATTENDANCE; the history request itself stays
+    available on every plan. `null` planned seconds are no data and must not be interpolated.
 
     | Feature | Operations |
     |---|---|
     | SCHEDULING | manual shift catalog, draft creation, assignment and publication; operations requiring SCHEDULE_VIEW, SCHEDULE_MANAGE or SHIFT_CHANGES_APPROVE; getWorkerTeamSchedule; every shift exchange and schedule change operation. Included in ESSENTIAL and PROFESSIONAL. |
     | ATTENDANCE | every Attendance operation; getWorkerAttendanceIncidents, getWorkerAttendanceMatch, getWorkerAttendanceIncidentGroups, getWorkerAttendanceIncidentGroup, justifyWorkerAttendanceIncidentGroup |
     | ADVANCED_PLANNING | requestPlanGeneration, getPlanGeneration, getWeekCoverage, getManagerPlanningGenerationSettings, replaceManagerPlanningGenerationSettings, deleteManagerPlanningGenerationSettings. Requires SCHEDULING; included in PROFESSIONAL. |
-  version: 0.0.111
+  version: 0.0.112
   contact:
     name: Flowrapp Team
     url: https://flowrapp.github.io

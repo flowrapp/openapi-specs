@@ -191,6 +191,7 @@ components:
         | 1154 | 409 | ACCESS_ROLE_TARGET_NOT_EMPLOYEE | access role can only be assigned to an employee |
         | 1155 | 403 | BUSINESS_FEATURE_UNAVAILABLE | business feature <FEATURE> is not available |
         | 1156 | 400 | BUSINESS_PLAN_UNKNOWN | business plan is unknown |
+        | 1157 | 400 | INVALID_ATTENDANCE_INCIDENT_DATE_RANGE | attendance incident date range is invalid |
 
         Codes 1087 and 1088 are the backend enum: PLANNING_ALREADY_EXISTS and PLANNING_VERSION_MISMATCH. Code 1086 (`SESSION_EXPIRED`) belonged to legacy in-house sessions and is removed with those routes; it is not free and must not be reused. Codes 1004, 1023, 1024, 1026 and 1027 belonged to legacy login, token refresh, OAuth and password reset and are removed with those routes; they are not free and must not be reused. Code 1003 (`INVALID_CREDENTIALS`) stays: `getBusinessMemberProfile` returns 401 1003 when the JWT `sub` is not a numeric user id. Codes 1089–1092 belonged to weekly attendance periods, which were never implemented, and are removed with those routes. Code 1095 remains a separate PLANNING_ALREADY_EXISTS entry and is unchanged here. Code 1115 is raised by the BFF attendance screens (invalid `week` or `date`, or a `date` outside `week`); no Main API operation returns it.
 
@@ -209,6 +210,8 @@ components:
         Code 1020 (`USER_NOT_OWNER_OF_BUSINESS`) stays in the catalog as the business authorization error (Main API 0.0.103). Owner-only operations keep the message `user is not the owner of business`. An operation that requires a business permission uses the same code with the message `user lacks permission <PERMISSION> in business`. A caller that is not a member also gets 1020. Codes 1151–1154 belong to access roles.
 
         Codes 1155 and 1156 belong to business plans (Main API 0.0.106, BFF 0.0.96). 1155 is returned by any operation owned by a business feature that is unavailable for the business (see the API description), including when the caller's access role grants the permission; the BFF propagates it and also raises it early. It is not repeated in each operation's `x-functional-errors`.
+
+        Code 1157 (`INVALID_ATTENDANCE_INCIDENT_DATE_RANGE`, 400, `attendance incident date range is invalid`) belongs to `getCurrentUserAttendanceIncidentDailyCounts` (Main API 0.0.118). It is returned when `from` is after `to` or the inclusive range is longer than 42 dates. A missing or syntactically invalid date stays a plain 400 without this code. 1115 stays the BFF attendance-screen week/date code and is not reused here; 1025, 1057 and 1120 stay the worklog, contract and planning-generation range codes.
       enum:
         - 1000
         - 1001
@@ -355,3 +358,4 @@ components:
         - 1154
         - 1155
         - 1156
+        - 1157

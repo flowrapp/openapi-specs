@@ -56,6 +56,22 @@ components:
       required: true
       description: Opaque current group id, S-{scheduledShiftId} or M-{attendanceMatchId}.
       schema: {type: string, pattern: '^[SM]-[1-9][0-9]{0,18}$', example: S-900}
+    DailyCountFrom:
+      name: from
+      in: query
+      required: true
+      description: >-
+        First business-local date of the inclusive range (YYYY-MM-DD). Together with
+        `to`, at most 42 dates. `from` after `to`, or a longer range, is 400 1157.
+      schema: {type: string, format: date, example: '2026-03-01'}
+    DailyCountTo:
+      name: to
+      in: query
+      required: true
+      description: >-
+        Last business-local date of the inclusive range (YYYY-MM-DD). The inclusive
+        length `(to - from) + 1` is at most 42.
+      schema: {type: string, format: date, example: '2026-03-31'}
 
   schemas:
     AttendanceAnchorDTO:
@@ -92,6 +108,33 @@ components:
         hasNext: {type: boolean}
         nextCursor: {type: [string, 'null'], description: 'Opaque cursor; null on the final page.'}
       required: [content, hasNext, nextCursor]
+    CurrentUserAttendanceIncidentDailyCountDTO:
+      type: object
+      additionalProperties: false
+      description: >-
+        One business-local date on which the caller has at least one attendance
+        incident that is still OPEN with no justification. Dates with a count of
+        zero are omitted from the list.
+      properties:
+        date:
+          type: string
+          format: date
+          description: >-
+            Business-local anchor date in the business time zone. Same anchor as the
+            worker inbox: shift start for SHIFT scope or a MATCHED match, otherwise
+            the worklog clock-in date. A night shift stays on its start date.
+          example: '2026-03-02'
+        unjustifiedCount:
+          type: integer
+          format: int32
+          minimum: 1
+          description: >-
+            Incidents of the caller anchored on `date` whose lifecycle is OPEN and
+            whose justification is null. Unjustified means OPEN with no justification.
+            An OPEN incident that already has a justification, and a resolved
+            incident, are not counted. Always at least 1: days with zero are omitted.
+          example: 1
+      required: [date, unjustifiedCount]
     CurrentUserWorklogChangeConfirmationDTO:
       type: object
       description: >-
@@ -325,6 +368,20 @@ components:
         application/problem+json:
           schema: {$ref: '../common/error-components.yml#/components/schemas/ProblemDetail'}
           example: {status: 400, detail: '1142 - attendance inbox cursor is invalid or does not match this query'}
+    DailyCountsBadRequest:
+      description: >-
+        `from` is after `to`, or the inclusive range has more than 42 dates (1157).
+        A missing or non-date `from` or `to` is a plain 400 without a functional code.
+      content:
+        application/problem+json:
+          schema: {$ref: '../common/error-components.yml#/components/schemas/ProblemDetail'}
+          examples:
+            inverted:
+              summary: from is after to
+              value: {status: 400, detail: '1157 - attendance incident date range is invalid'}
+            tooLong:
+              summary: More than 42 inclusive dates
+              value: {status: 400, detail: '1157 - attendance incident date range is invalid'}
     GroupListBadRequest:
       description: Invalid date or limit (1144), or opaque group cursor invalid or bound to another scope/filter (1145).
       content:

@@ -537,7 +537,10 @@ components:
 
     WorkerWeekDayDTO:
       type: object
-      description: A single day within a week history, including session details
+      description: >
+        A single day within a week history, including session details.
+        `totalSeconds` is confirmed time and `pendingSeconds` keeps its own meaning;
+        pending seconds are not added to `plannedSeconds`.
       properties:
         date:
           type: string
@@ -559,6 +562,8 @@ components:
             Total seconds worked on this day. Counts only closed worklogs in CONFIRMED or APPROVED, the same rule as the
             worked-hours PDF and «Mis horas» confirmedSeconds (BFF 0.0.105; in 0.0.103 and 0.0.104 it also
             counted PENDING_RECONCILIATION and PENDING_REVIEW). Excludes pending, REJECTED worklogs and open sessions.
+            Confirmed seconds only: this meaning is unchanged, and these seconds are not planned time.
+            `pendingSeconds` is not added to `plannedSeconds`.
           example: 28800
         pendingSeconds:
           type: integer
@@ -570,7 +575,46 @@ components:
             in the total (BFF 0.0.105; in 0.0.103 and 0.0.104 they were included): the app shows them
             apart, «+X h pendientes de revisar». 0 means nothing pending. Absent means the pending seconds
             could not be read (or an older BFF): show nothing, never 0.
+            This meaning is unchanged. Pending seconds are not added to `plannedSeconds`.
           example: 1800
+        plannedSeconds:
+          type: [integer, 'null']
+          format: int64
+          minimum: 0
+          description: >
+            Planned seconds for the caller on this business-local date, from the PUBLISHED
+            planning of this date's ISO week. The BFF reads Main `getBusinessTeamSchedule`
+            (`GET /api/v1/businesses/{businessId}/team-schedules/{weekStart}`, filtered to the
+            caller) and sums `plannedSeconds` of the caller's shifts placed on this date.
+            A shift counts as the sum of its segments minus the break; the unpaid gap of a
+            split shift is not included. A night shift counts entirely on its start day (the
+            team-schedule date that already carries it) and adds nothing to the next date.
+            `null` means no data (no published planning for this date's ISO week, or the
+            business does not have the SCHEDULING feature). `0` means the week is published
+            and this date has no shift. The client must not interpolate nulls: a null day is
+            a gap, not a zero, and must not be filled from neighbouring days or treated as 0
+            when accumulating. An ISO week that crosses the month affects only its own dates
+            in this response. A week that team-schedules returns (PUBLISHED, or ARCHIVED that
+            was previously published) counts as published; DRAFT and a 404 do not.
+            `pendingSeconds` is not added to this value.
+          example: 28800
+        unjustifiedIncidentCount:
+          type: [integer, 'null']
+          format: int32
+          minimum: 0
+          description: >
+            Number of the caller's attendance incidents anchored on this business-local date
+            (the business time zone) that are still OPEN with no justification. Unjustified
+            means OPEN and justification null, the same definition as the worker inbox
+            (`getWorkerAttendanceIncidents` / Main `getCurrentUserAttendanceIncidents`):
+            an incident that is OPEN but already justified, and a resolved incident, are not
+            counted. The anchor date is the inbox anchor (business-local shift start for
+            SHIFT scope or a MATCHED match, otherwise the business-local clock-in date), so
+            a night shift's incidents stay on the shift's start date. `null` when the
+            business does not have the ATTENDANCE feature. `0` when the feature is available
+            and this date has no such incident (the date is absent from Main
+            `getCurrentUserAttendanceIncidentDailyCounts`).
+          example: 1
         sessions:
           type: array
           description: Work sessions for this day
@@ -580,13 +624,18 @@ components:
         - date
         - closed
         - totalSeconds
+        - plannedSeconds
+        - unjustifiedIncidentCount
         - sessions
 
     WorkerMonthHistoryResponseDTO:
       type: object
       description: >
         Work history calendar for a month. Returns day-level totals only (no session detail).
-        Use the day history endpoint to drill into a specific day.
+        Use the day history endpoint to drill into a specific day. The month line accumulates
+        daily confirmed `totalSeconds` against daily `plannedSeconds`. Pending seconds are not
+        added to planned seconds. A null `plannedSeconds` is a gap: the client must not
+        interpolate nulls.
       properties:
         month:
           type: string
@@ -630,7 +679,10 @@ components:
 
     WorkerMonthDayDTO:
       type: object
-      description: A single day within a month history (totals only, no session detail)
+      description: >
+        A single day within a month history (totals only, no session detail).
+        `totalSeconds` is confirmed time and `pendingSeconds` keeps its own meaning;
+        pending seconds are not added to `plannedSeconds`.
       properties:
         date:
           type: string
@@ -644,6 +696,8 @@ components:
             Total seconds worked on this day. Counts only closed worklogs in CONFIRMED or APPROVED, the same rule as the
             worked-hours PDF and «Mis horas» confirmedSeconds (BFF 0.0.105; in 0.0.103 and 0.0.104 it also
             counted PENDING_RECONCILIATION and PENDING_REVIEW). Excludes pending, REJECTED worklogs and open sessions.
+            Confirmed seconds only: this meaning is unchanged, and these seconds are not planned time.
+            `pendingSeconds` is not added to `plannedSeconds`.
           example: 28800
         pendingSeconds:
           type: integer
@@ -655,10 +709,51 @@ components:
             in the total (BFF 0.0.105; in 0.0.103 and 0.0.104 they were included): the app shows them
             apart, «+X h pendientes de revisar». 0 means nothing pending. Absent means the pending seconds
             could not be read (or an older BFF): show nothing, never 0.
+            This meaning is unchanged. Pending seconds are not added to `plannedSeconds`.
           example: 1800
+        plannedSeconds:
+          type: [integer, 'null']
+          format: int64
+          minimum: 0
+          description: >
+            Planned seconds for the caller on this business-local date, from the PUBLISHED
+            planning of this date's ISO week. The BFF reads Main `getBusinessTeamSchedule`
+            (`GET /api/v1/businesses/{businessId}/team-schedules/{weekStart}`, filtered to the
+            caller) and sums `plannedSeconds` of the caller's shifts placed on this date.
+            A shift counts as the sum of its segments minus the break; the unpaid gap of a
+            split shift is not included. A night shift counts entirely on its start day (the
+            team-schedule date that already carries it) and adds nothing to the next date.
+            `null` means no data (no published planning for this date's ISO week, or the
+            business does not have the SCHEDULING feature). `0` means the week is published
+            and this date has no shift. The client must not interpolate nulls: a null day is
+            a gap, not a zero, and must not be filled from neighbouring days or treated as 0
+            when accumulating. An ISO week that crosses the month affects only its own dates
+            in this response. A week that team-schedules returns (PUBLISHED, or ARCHIVED that
+            was previously published) counts as published; DRAFT and a 404 do not.
+            `pendingSeconds` is not added to this value.
+          example: 28800
+        unjustifiedIncidentCount:
+          type: [integer, 'null']
+          format: int32
+          minimum: 0
+          description: >
+            Number of the caller's attendance incidents anchored on this business-local date
+            (the business time zone) that are still OPEN with no justification. Unjustified
+            means OPEN and justification null, the same definition as the worker inbox
+            (`getWorkerAttendanceIncidents` / Main `getCurrentUserAttendanceIncidents`):
+            an incident that is OPEN but already justified, and a resolved incident, are not
+            counted. The anchor date is the inbox anchor (business-local shift start for
+            SHIFT scope or a MATCHED match, otherwise the business-local clock-in date), so
+            a night shift's incidents stay on the shift's start date. `null` when the
+            business does not have the ATTENDANCE feature. `0` when the feature is available
+            and this date has no such incident (the date is absent from Main
+            `getCurrentUserAttendanceIncidentDailyCounts`).
+          example: 1
       required:
         - date
         - totalSeconds
+        - plannedSeconds
+        - unjustifiedIncidentCount
 
     WorkerHoursMonthsResponseDTO:
       type: object
