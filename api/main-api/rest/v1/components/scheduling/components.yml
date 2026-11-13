@@ -1727,7 +1727,9 @@ components:
         name:
           type: string
           example: Bob Wilson
-      required: [id, name]
+        avatarUrl:
+          $ref: '../personalData/components.yml#/components/schemas/AvatarUrl'
+      required: [id, name, avatarUrl]
 
     TeamScheduleJobRoleDTO:
       type: object

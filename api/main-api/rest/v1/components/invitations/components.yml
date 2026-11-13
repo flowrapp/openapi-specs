@@ -10,9 +10,14 @@ components:
           example: "johndoe"
         phone:
           type: string
-          description: Phone number of the user
-          maxLength: 15
-          example: "+1234567890"
+          description: >
+            Phone number in E.164 (`^\+[1-9][0-9]{6,14}$`). The server does not
+            infer a country prefix. A value that does not match is 400 1161 and
+            the message does not echo it. Not unique across users.
+          minLength: 8
+          maxLength: 16
+          pattern: '^\+[1-9][0-9]{6,14}$'
+          example: "+34612345678"
       required:
         - username
         - phone
@@ -35,13 +40,36 @@ components:
             - $ref: '../contracts/components.yml#/components/schemas/ContractRequestDTO'
             - type: 'null'
           description: Optional contract proposal. When absent, acceptance creates a 40-hour GENERAL job contract.
+        identityDocument:
+          description: >
+            Optional identity document for this membership. Omit it or send null
+            to invite without one. Only the OWNER may send a document: a caller
+            who is not the OWNER and sends a non-null document receives 403 1020
+            (`user is not the owner of business`), even with `TEAM_INVITE`.
+            Creating the invitation still requires `TEAM_INVITE`. The document is
+            stored with the invitation and is not returned on
+            `InvitationResponseDTO`. Accept copies it onto the membership in the
+            same transaction and then clears it on the invitation. If the
+            membership already has a document and the invitation brings one, the
+            invitation wins; if the invitation has none, the membership document
+            is kept. If acceptance races with another active membership that
+            already has the same document, acceptance still succeeds, the
+            membership is stored without the document, and the drop is audited
+            without the number. Decline clears it. Revoke deletes the row.
+            The document is deleted as soon as the invitation expires
+            (`expires_at` in the past). There is no retention period. A resend
+            after expiry therefore comes back without a document. A resend
+            before expiry keeps it.
+          oneOf:
+            - $ref: '../personalData/components.yml#/components/schemas/IdentityDocumentRequestDTO'
+            - type: 'null'
       required:
         - email
         - role
 
     InvitationResponseDTO:
       type: object
-      description: Response containing invitation details
+      description: Response containing invitation details. The identity document is never included.
       properties:
         id:
           type: integer

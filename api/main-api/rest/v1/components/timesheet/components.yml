@@ -51,6 +51,8 @@ components:
           format: email
           description: Email address of the user
           example: "john.doe@example.com"
+        avatarUrl:
+          $ref: '../personalData/components.yml#/components/schemas/AvatarUrl'
         dailyHours:
           type: object
           description: Hours worked per day
@@ -72,5 +74,6 @@ components:
         - userId
         - username
         - email
+        - avatarUrl
         - dailyHours
         - totalHours

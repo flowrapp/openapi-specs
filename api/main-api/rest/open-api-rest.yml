@@ -20,6 +20,12 @@ info:
     |---|---|
     | getBusinessUsers, getBusinessUsersV2, getCurrentContractsForUsers, getOpenWorklogsForUsers, getBusinessContracts, getUserContracts, getCurrentUserContract, getBusinessJobRoles | TEAM_VIEW |
     | getBusinessInvitations, createBusinessInvitation (EMPLOYEE only), resendBusinessInvitation, deleteBusinessInvitation | TEAM_INVITE |
+    | createBusinessInvitation when identityDocument is present | OWNER, in addition to TEAM_INVITE. A non-owner who sends it receives 403 1020 |
+    | getBusinessUserPersonalData | PERSONAL_DATA_VIEW, the OWNER, or the subject. Email is not included |
+    | replaceBusinessUserIdentityDocument, deleteBusinessUserIdentityDocument, deleteBusinessUserAvatar | OWNER |
+    | getCurrentUserPersonalData | active membership. An EMPLOYEE without a contract in force receives 403 1104. Own phone and document |
+    | updateCurrentUserPhone | authenticated session. Global phone, not a business permission |
+    | receiveClerkWebhook | no bearer token. Svix signature (`CLERK_WEBHOOK_SIGNING_SECRET`) |
     | createUserContract, updateUserContract, deleteUserContract | CONTRACTS_MANAGE |
     | getWorklogs, getWorklogHistory of another worker | WORKLOGS_VIEW |
     | updateWorklog (business), correctBusinessWorklog, approveWorklog, rejectWorklog, correctBusinessWorklogBreak, voidBusinessWorklogBreak | WORKLOGS_MANAGE |
@@ -43,7 +49,10 @@ info:
     for the OWNER. An operation owned by an unavailable feature fails with `403 1155`; this applies
     to the operations of the feature's permissions (table above), to the self-service operations
     below, and to operations explicitly requiring ADVANCED_PLANNING. Everything else is core and
-    available in every plan.
+    available in every plan. `PERSONAL_DATA_VIEW` is core: it belongs to no feature, so it never
+    returns 1155, and it implies `TEAM_VIEW`. It is not added to existing access roles. It lets the
+    caller read another member's phone and identity document. The caller's own phone and document
+    do not require it. Email stays with `TEAM_VIEW`.
 
     | Feature | Plans | Requires | Owns permissions | Self-service operations |
     |---|---|---|---|---|
@@ -59,7 +68,7 @@ info:
     existing permission requirements; authorised users can access their underlying business data.
 
     `updateBusinessPlan` (platform admin) changes the plan and emits a `PERMISSIONS` sync signal.
-  version: 0.0.119
+  version: 0.0.120
   contact:
     name: Flowrapp Team
     url: https://flowrapp.github.io
@@ -75,8 +84,10 @@ servers:
 tags:
   - name: Users
     description: >-
-      Operations related to user management, including user profile retrieval,
-      creation, and updates.
+      Operations for the authenticated user's profile and phone.
+  - name: Webhooks
+    description: >-
+      Public callbacks verified by the service that sends them. No bearer token.
   - name: Admin
     description: Administrative operations that require elevated privileges.
   - name: Businesses
@@ -133,16 +144,18 @@ tags:
 paths:
   "/api/v1/ping":
     $ref: "v1/services/system/system-operations.yml#/system/ping"
+  "/api/v1/webhooks/clerk":
+    $ref: "v1/services/webhooks/clerk-webhook-operations.yml#/webhooks/clerk"
   "/api/v1/push-tokens":
     $ref: "v1/services/pushTokens/push-tokens-operations.yml#/pushTokens/pus\
       h-tokens"
   "/api/v1/push-tokens/{deviceId}":
     $ref: "v1/services/pushTokens/push-tokens-operations.yml#/pushTokens/del\
       etion"
-  "/api/v1/users":
-    $ref: "v1/services/users/user-operations.yml#/users/byName"
   "/api/v1/users/me":
     $ref: "v1/services/users/user-operations.yml#/users/me"
+  "/api/v1/users/me/phone":
+    $ref: "v1/services/users/user-operations.yml#/users/phone"
   "/api/v1/users/me/geofence-device-credentials":
     $ref: "v1/services/geofenceEvents/geofence-device-credential-operations.yml#/geofenceDeviceCredentials/collection"
   "/api/v1/admin/register":
@@ -178,8 +191,16 @@ paths:
   "/api/v2/businesses/{businessId}/users":
     $ref: "v1/services/business/businesses-operations.yml#/businesses/get-bu\
       siness-users-v2"
+  "/api/v1/businesses/{businessId}/users/me/personal-data":
+    $ref: "v1/services/personalData/personal-data-operations.yml#/personalData/current-user"
   "/api/v1/businesses/{businessId}/users/{userId}":
     $ref: "v1/services/business/businesses-operations.yml#/businesses/remove-business-user"
+  "/api/v1/businesses/{businessId}/users/{userId}/personal-data":
+    $ref: "v1/services/personalData/personal-data-operations.yml#/personalData/member"
+  "/api/v1/businesses/{businessId}/users/{userId}/identity-document":
+    $ref: "v1/services/personalData/personal-data-operations.yml#/personalData/identity-document"
+  "/api/v1/businesses/{businessId}/users/{userId}/avatar":
+    $ref: "v1/services/personalData/personal-data-operations.yml#/personalData/avatar"
   "/api/v1/businesses/{businessId}/users/{userId}/access-role":
     $ref: "v1/services/business/access-roles-operations.yml#/accessRoles/member-access-role"
   "/api/v1/businesses/{businessId}/access-roles":

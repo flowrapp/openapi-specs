@@ -343,7 +343,8 @@ businesses:
       description: >
         Ends a user's membership in the business. Only the business OWNER may perform this
         operation; the MANAGER role is not sufficient. The user's historical data (worklogs,
-        contracts, reports) is preserved. An OWNER cannot be removed.
+        contracts, reports) is preserved. The identity document of the membership is kept
+        and stops counting for uniqueness in the business. An OWNER cannot be removed.
       tags:
         - Businesses
       operationId: removeBusinessUser

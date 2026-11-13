@@ -268,6 +268,8 @@ components:
           format: email
           description: Email address of the user
           example: "john.doe@example.com"
+        avatarUrl:
+          $ref: '../personalData/components.yml#/components/schemas/AvatarUrl'
         role:
           type: string
           description: Role of the user in the business
@@ -288,7 +290,7 @@ components:
             - $ref: '#/components/schemas/BusinessAccessRoleSummaryDTO'
             - type: 'null'
           description: Access role of the member, or null for an OWNER or an EMPLOYEE without one
-      required: [userId, username, name, email, role, currentContract, accessRole]
+      required: [userId, username, name, email, avatarUrl, role, currentContract, accessRole]
 
     BusinessUserMembershipPageDTO:
       type: object
@@ -342,12 +344,14 @@ components:
           type: string
           description: Display name (`users.name`). Search matches this field only, not email.
           example: "Turín García"
+        avatarUrl:
+          $ref: '../personalData/components.yml#/components/schemas/AvatarUrl'
         role:
           type: string
           description: Role of the user in the business
           enum: [OWNER, EMPLOYEE]
           example: EMPLOYEE
-      required: [userId, username, name, role]
+      required: [userId, username, name, avatarUrl, role]
 
     BusinessCurrentContractBatchItemDTO:
       type: object
@@ -398,8 +402,8 @@ components:
       type: string
       description: >
         Business permission. Implications are closed when an access role is saved:
-        TEAM_INVITE, CONTRACTS_MANAGE, WORKLOGS_VIEW, SCHEDULE_VIEW, REPORTS_VIEW and
-        CLOCKING_SETTINGS_MANAGE imply TEAM_VIEW; WORKLOGS_MANAGE implies WORKLOGS_VIEW;
+        TEAM_INVITE, CONTRACTS_MANAGE, WORKLOGS_VIEW, SCHEDULE_VIEW, REPORTS_VIEW,
+        CLOCKING_SETTINGS_MANAGE and PERSONAL_DATA_VIEW imply TEAM_VIEW; WORKLOGS_MANAGE implies WORKLOGS_VIEW;
         ATTENDANCE_VIEW implies WORKLOGS_VIEW, SCHEDULE_VIEW and REPORTS_VIEW; ATTENDANCE_MANAGE implies ATTENDANCE_VIEW and
         WORKLOGS_MANAGE; SCHEDULE_MANAGE and SHIFT_CHANGES_APPROVE imply SCHEDULE_VIEW;
         REPORTS_EXPORT implies REPORTS_VIEW. The operation each permission unlocks is listed in
@@ -419,6 +423,7 @@ components:
         - REPORTS_EXPORT
         - CLOCKING_SETTINGS_MANAGE
         - BUSINESS_EDIT
+        - PERSONAL_DATA_VIEW
       example: TEAM_VIEW
 
     BusinessFeature:

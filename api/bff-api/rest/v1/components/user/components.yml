@@ -19,9 +19,13 @@ components:
           description: Email address of the user
           example: "john.doe@example.com"
         phone:
-          type: string
-          description: Phone number of the user
+          type: [string, "null"]
+          pattern: '^\+[1-9][0-9]{6,14}$'
+          description: >
+            Global phone in E.164, or null when unset. Not unique across users.
           example: "+34612345678"
+        avatarUrl:
+          $ref: '../personalData/components.yml#/components/schemas/AvatarUrl'
         role:
           type: string
           description: Global role of the user in the system
@@ -31,6 +35,8 @@ components:
         - id
         - name
         - email
+        - phone
+        - avatarUrl
         - role
 
     UserInvitationResponseDTO:

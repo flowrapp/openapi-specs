@@ -76,6 +76,8 @@ components:
           type: string
           description: Display name of the business user.
           example: Ana García
+        avatarUrl:
+          $ref: "../personalData/components.yml#/components/schemas/AvatarUrl"
         role:
           type: string
           description: Role of this user in the business.
@@ -93,7 +95,7 @@ components:
             Whether auto-clocking is effectively enabled. Equals the
             business-wide enabled value AND this user's enabled value.
           example: true
-      required: [businessUserId, name, role, enabled, effectiveEnabled]
+      required: [businessUserId, name, role, enabled, effectiveEnabled, avatarUrl]
 
     GeofencingPolicy:
       type: string
@@ -146,6 +148,8 @@ components:
           type: string
           description: Display name of the business user.
           example: Ana García
+        avatarUrl:
+          $ref: "../personalData/components.yml#/components/schemas/AvatarUrl"
         role:
           type: string
           description: Role of this user in the business.
@@ -159,4 +163,4 @@ components:
             ordered ALLOW < WARN < BLOCK. An individual policy cannot relax the
             business-wide policy. Applies to both clock-in and clock-out.
           $ref: "#/components/schemas/GeofencingPolicy"
-      required: [businessUserId, name, role, policy, effectivePolicy]
+      required: [businessUserId, name, role, policy, effectivePolicy, avatarUrl]

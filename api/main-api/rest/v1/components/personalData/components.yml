@@ -1,0 +1,111 @@
+components:
+  schemas:
+    AvatarUrl:
+      type: [string, "null"]
+      format: uri
+      description: >
+        Clerk profile photo URL, or null. Null means Clerk has no uploaded image
+        (`has_image` false), no webhook has synced this user yet (there is no
+        initial backfill), the user was deleted in Clerk, or an owner removed the
+        photo. Only an `https` URL is stored. The client may append Clerk
+        image-optimization parameters (`width`, `height`, `fit`, `quality`).
+        Visible to the whole team. Not gated by `PERSONAL_DATA_VIEW`.
+      example: null
+
+    IdentityDocumentTypeDTO:
+      type: string
+      description: >
+        Identity document type of one business membership. `DNI` and `NIE` carry a
+        Spanish check letter. `PASSPORT` is format only.
+      enum: [DNI, NIE, PASSPORT]
+      example: DNI
+
+    IdentityDocumentDTO:
+      type: object
+      additionalProperties: false
+      description: >
+        Identity document of this business membership, already normalized
+        (trimmed, uppercased, spaces, hyphens and dots removed). `documentNumber`
+        is complete and never masked; the app masks it. It is never returned in
+        lists, invitations, search or reports. Servers must not log it or copy it
+        into an error detail or an audit payload.
+      properties:
+        documentType:
+          $ref: "#/components/schemas/IdentityDocumentTypeDTO"
+        documentNumber:
+          type: string
+          description: Normalized number. Complete, never masked.
+          example: "12345678Z"
+      required: [documentType, documentNumber]
+
+    IdentityDocumentRequestDTO:
+      type: object
+      additionalProperties: false
+      description: >
+        Identity document to store for one business membership. The server trims,
+        uppercases and removes spaces, hyphens and dots before validating, and
+        stores the normalized value. The submitted number is never echoed in
+        errors or logs.
+
+        Validation, format before check letter. After normalization, a character
+        outside `[A-Z0-9]`, a missing `documentType` or `documentNumber`, an
+        unknown type, or a number that does not match the type is 400 1158.
+        `DNI` must match `^[0-9]{8}[A-Z]$` and the letter must be
+        `TRWAGMYFPDXBNJZSQVHLCKE[n % 23]`. `NIE` must match `^[XYZ][0-9]{7}[A-Z]$`,
+        with `X`/`Y`/`Z` read as 0/1/2 and the same letter. `PASSPORT` must match
+        `^(?=.*[0-9])[A-Z0-9]{5,20}$` and has no check letter. A `DNI` or `NIE`
+        whose pattern matches and whose letter does not is 400 1159.
+
+        Uniqueness is inside the business only: active memberships and `PENDING`
+        invitations. A removed member keeps the document and does not occupy the
+        unique slot. A conflict is 409 1160 and the message does not say who holds
+        it. Another business may store the same document.
+      properties:
+        documentType:
+          $ref: "#/components/schemas/IdentityDocumentTypeDTO"
+        documentNumber:
+          type: string
+          maxLength: 32
+          description: Raw number. Normalized on the server before validation.
+          example: "12345678-Z"
+      required: [documentType, documentNumber]
+
+    MemberPersonalDataDTO:
+      type: object
+      additionalProperties: false
+      description: >
+        Phone and identity document the caller is allowed to read for one
+        membership. Both properties are always present. `phone` null means the
+        user has not set a phone. `identityDocument` null means this business has
+        no document. Email is not part of this object. Responses that carry this
+        object send `Cache-Control: no-store`.
+      properties:
+        phone:
+          type: [string, "null"]
+          pattern: '^\+[1-9][0-9]{6,14}$'
+          description: >
+            Global phone in E.164, or null when unset. Not unique across users.
+          example: "+34612345678"
+        identityDocument:
+          description: Document of this business membership, or null when none is stored.
+          oneOf:
+            - $ref: "#/components/schemas/IdentityDocumentDTO"
+            - type: "null"
+      required: [phone, identityDocument]
+
+    UpdateCurrentUserPhoneRequestDTO:
+      type: object
+      additionalProperties: false
+      description: >
+        Replaces the caller's global phone. `phone: null` clears it. The server
+        does not infer a country prefix. Spaces, hyphens, dots and parentheses
+        must already be removed by the client. A value that is not null and does
+        not match `^\+[1-9][0-9]{6,14}$` is 400 1161, and the message does not
+        echo the value. The phone is not unique.
+      properties:
+        phone:
+          type: [string, "null"]
+          pattern: '^\+[1-9][0-9]{6,14}$'
+          description: E.164 phone, or null to clear it.
+          example: "+34612345678"
+      required: [phone]

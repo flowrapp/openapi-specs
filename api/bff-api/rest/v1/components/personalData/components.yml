@@ -1,0 +1,177 @@
+components:
+  schemas:
+    AvatarUrl:
+      type: [string, "null"]
+      format: uri
+      description: >
+        Clerk profile photo URL, or null. Null means Clerk has no uploaded image
+        (`has_image` false), no webhook has synced this user yet (there is no
+        initial backfill), the user was deleted in Clerk, or an owner removed the
+        photo. Only an `https` URL is stored. The client may append Clerk
+        image-optimization parameters (`width`, `height`, `fit`, `quality`).
+        Visible to the whole team. Not gated by `PERSONAL_DATA_VIEW`. The app
+        paints a generated avatar when this is null or the image fails to load.
+      example: null
+
+    IdentityDocumentTypeDTO:
+      type: string
+      description: >
+        Identity document type of one business membership. Same values as the
+        Main API. `DNI` and `NIE` carry a Spanish check letter. `PASSPORT` is
+        format only.
+      enum: [DNI, NIE, PASSPORT]
+      example: DNI
+
+    IdentityDocumentDTO:
+      type: object
+      additionalProperties: false
+      description: >
+        Identity document of this business membership, normalized by the Main API
+        (trimmed, uppercased, spaces, hyphens and dots removed). `documentNumber`
+        is complete and never masked; the app masks it in the UI. It is never
+        returned in lists, invitations, search, attendance, the schedule or reports.
+      properties:
+        documentType:
+          $ref: "#/components/schemas/IdentityDocumentTypeDTO"
+        documentNumber:
+          type: string
+          description: Normalized number. Complete, never masked. The app masks it.
+          example: "12345678Z"
+      required: [documentType, documentNumber]
+
+    IdentityDocumentRequestDTO:
+      type: object
+      additionalProperties: false
+      description: >
+        Identity document to store. Passed through to the Main API, which
+        normalizes and validates it. Format failures are 400 1158, a `DNI` or
+        `NIE` check letter failure is 400 1159, and a document already used by an
+        active member or a pending invitation of this business is 409 1160. The
+        number is never echoed in the error. See the Main API
+        `IdentityDocumentRequestDTO` for the patterns.
+      properties:
+        documentType:
+          $ref: "#/components/schemas/IdentityDocumentTypeDTO"
+        documentNumber:
+          type: string
+          maxLength: 32
+          description: Raw number. Normalized by the Main API before validation.
+          example: "12345678-Z"
+      required: [documentType, documentNumber]
+
+    MemberPersonalDataDTO:
+      type: object
+      additionalProperties: false
+      description: >
+        Phone and identity document of one membership. Both properties are always
+        present and either may be null when that value is unset. Email is not
+        part of this object. On `MemberProfileDTO` the whole object is null when
+        the caller may not see it, which is different from this object with null
+        properties. Responses that carry personal data send `Cache-Control: no-store`.
+      properties:
+        phone:
+          type: [string, "null"]
+          pattern: '^\+[1-9][0-9]{6,14}$'
+          description: Global phone in E.164, or null when unset. Not unique across users.
+          example: "+34612345678"
+        identityDocument:
+          description: Document of this business membership, or null when none is stored.
+          oneOf:
+            - $ref: "#/components/schemas/IdentityDocumentDTO"
+            - type: "null"
+      required: [phone, identityDocument]
+
+    UpdateCurrentUserPhoneRequestDTO:
+      type: object
+      additionalProperties: false
+      description: >
+        Replaces the caller's global phone. Pass-through to Main API
+        `updateCurrentUserPhone`. `phone: null` clears it. The value must already
+        be E.164 (`^\+[1-9][0-9]{6,14}$`); the server does not infer a country
+        prefix. Anything else is 400 1161.
+      properties:
+        phone:
+          type: [string, "null"]
+          pattern: '^\+[1-9][0-9]{6,14}$'
+          description: E.164 phone, or null to clear it.
+          example: "+34612345678"
+      required: [phone]
+
+    WorkerProfileJobRoleDTO:
+      type: object
+      additionalProperties: false
+      description: Job role of the caller's current contract in this business. Id and name only.
+      properties:
+        id:
+          type: integer
+          format: int64
+          minimum: 1
+          description: Job role identifier
+          example: 10
+        name:
+          type: string
+          description: Display name of the job role
+          example: Sala
+      required: [id, name]
+
+    WorkerProfileDTO:
+      type: object
+      additionalProperties: false
+      description: >
+        The caller's own profile in one business, ready to paint. The number is
+        complete; the app masks it. `phone` and `identityDocument` are the
+        caller's own data and do not require `PERSONAL_DATA_VIEW`.
+      properties:
+        userId:
+          type: integer
+          format: int64
+          minimum: 1
+          description: Flowrapp user id (`getCurrentUser.id`)
+          example: 41
+        name:
+          type: string
+          description: Display name
+          example: Lucía Ramos
+        email:
+          type: string
+          format: email
+          description: Email. Not gated by `PERSONAL_DATA_VIEW`.
+          example: lucia.ramos@example.com
+        phone:
+          type: [string, "null"]
+          pattern: '^\+[1-9][0-9]{6,14}$'
+          description: Global phone in E.164, or null when unset.
+          example: "+34612345678"
+        avatarUrl:
+          $ref: "#/components/schemas/AvatarUrl"
+        businessId:
+          type: integer
+          format: int64
+          minimum: 1
+          example: 101
+        businessName:
+          type: string
+          description: Name of the business
+          example: Coffee Time
+        jobRole:
+          description: >
+            Job role of the contract in force today, or null when the caller has
+            none (an OWNER need not have a contract).
+          oneOf:
+            - $ref: "#/components/schemas/WorkerProfileJobRoleDTO"
+            - type: "null"
+        identityDocument:
+          description: Document of this business membership, or null when none is stored.
+          oneOf:
+            - $ref: "#/components/schemas/IdentityDocumentDTO"
+            - type: "null"
+      required:
+        - userId
+        - name
+        - email
+        - phone
+        - avatarUrl
+        - businessId
+        - businessName
+        - jobRole
+        - identityDocument

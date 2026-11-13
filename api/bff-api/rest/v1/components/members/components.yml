@@ -45,6 +45,8 @@ components:
           type: string
           description: Display name. Search matches this field only, not email.
           example: "Turín García"
+        avatarUrl:
+          $ref: "../personalData/components.yml#/components/schemas/AvatarUrl"
         role:
           type: string
           description: Role of the user in the business
@@ -104,7 +106,7 @@ components:
             True when the open-worklog batch for this page includes the user id.
             False when it does not. Always present.
           example: true
-      required: [userId, name, role, jobRole, currentContractId, totalWeekHours, currentContractEndDate, contractEndingSoon, workingNow]
+      required: [userId, name, avatarUrl, role, jobRole, currentContractId, totalWeekHours, currentContractEndDate, contractEndingSoon, workingNow]
 
     MemberProfileDTO:
       type: object
@@ -138,8 +140,24 @@ components:
         email:
           type: string
           format: email
-          description: Email (`getBusinessUsers.email`)
+          description: >
+            Email (`getBusinessUsers.email`). Visible with `TEAM_VIEW`. Not part of
+            `personalData` and not protected by `PERSONAL_DATA_VIEW`.
           example: "lucia.ramos@example.com"
+        avatarUrl:
+          $ref: "../personalData/components.yml#/components/schemas/AvatarUrl"
+        personalData:
+          description: >
+            Phone and identity document of this membership. Null when the caller is
+            not the OWNER, does not have `PERSONAL_DATA_VIEW` and is not the subject.
+            Null means the caller may not see the block. An allowed caller receives
+            the object with `phone` and `identityDocument` null when those values are
+            unset. The BFF calls Main API `getCurrentUserPersonalData` for the subject
+            and `getBusinessUserPersonalData` otherwise, and skips both calls when the
+            block is null.
+          oneOf:
+            - $ref: "../personalData/components.yml#/components/schemas/MemberPersonalDataDTO"
+            - type: "null"
         role:
           type: string
           description: Role in the business (`getBusinessUsers.role`). Read only on this screen. Open enum.
@@ -201,7 +219,7 @@ components:
           $ref: "#/components/schemas/MemberContractsDTO"
         actions:
           $ref: "#/components/schemas/MemberProfileActionsDTO"
-      required: [userId, businessUserId, name, email, role, accessRole, isSelf, asOf, zone, date, liveStatus, week, today, clockInRules, employment, contracts, actions]
+      required: [userId, businessUserId, name, email, avatarUrl, personalData, role, accessRole, isSelf, asOf, zone, date, liveStatus, week, today, clockInRules, employment, contracts, actions]
 
     MemberLiveStatusStateDTO:
       type: string
@@ -695,14 +713,29 @@ components:
           type: boolean
           description: True when the caller is the OWNER and the member is an EMPLOYEE (`updateMemberAccessRole`)
           example: true
-      required: [canEndContract, canRemove, removeBlockedReason, canChangeAccessRole]
+        canEditIdentityDocument:
+          type: boolean
+          description: >
+            True when the caller is the OWNER (`replaceManagerWorkerIdentityDocument`
+            and `deleteManagerWorkerIdentityDocument`). False for an encargado, including
+            one with `PERSONAL_DATA_VIEW`, and for the subject when they are not the OWNER.
+          example: true
+        canRemovePhoto:
+          type: boolean
+          description: >
+            True when the caller is the OWNER and `avatarUrl` is not null
+            (`deleteManagerWorkerPhoto`). Removing the photo deletes it in Clerk for
+            every business of that user.
+          example: false
+      required: [canEndContract, canRemove, removeBlockedReason, canChangeAccessRole, canEditIdentityDocument, canRemovePhoto]
 
     BusinessPermission:
       type: string
       description: >
         Business permission, same catalog as the Main API `BusinessPermission`. Implications are
-        closed by the Main API when an access role is saved (ATTENDANCE_VIEW also implies SCHEDULE_VIEW
-        and REPORTS_VIEW: the attendance screens compare the schedule with the worked hours). Open enum for clients: ignore unknown values.
+        closed by the Main API when an access role is saved. `PERSONAL_DATA_VIEW` implies `TEAM_VIEW`.
+        ATTENDANCE_VIEW also implies SCHEDULE_VIEW
+        and REPORTS_VIEW: the attendance screens compare the schedule with the worked hours. Open enum for clients: ignore unknown values.
       enum:
         - TEAM_VIEW
         - TEAM_INVITE
@@ -718,6 +751,7 @@ components:
         - REPORTS_EXPORT
         - CLOCKING_SETTINGS_MANAGE
         - BUSINESS_EDIT
+        - PERSONAL_DATA_VIEW
       example: TEAM_VIEW
 
     BusinessFeature:

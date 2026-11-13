@@ -197,7 +197,9 @@ components:
           type: string
           minLength: 1
           example: Ana Ruiz
-      required: [userId, displayName]
+        avatarUrl:
+          $ref: '../personalData/components.yml#/components/schemas/AvatarUrl'
+      required: [userId, displayName, avatarUrl]
 
     ShiftChangeJobRoleDTO:
       type: object

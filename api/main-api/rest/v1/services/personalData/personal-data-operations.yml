@@ -1,0 +1,502 @@
+personalData:
+  current-user:
+    get:
+      summary: Get the caller's phone and identity document in a business
+      description: >
+        Returns the caller's own phone and the identity document of this
+        membership. Any active member. An EMPLOYEE without a contract in force
+        receives 403 1104. The read is not audited. The response sends
+        `Cache-Control: no-store`. `PERSONAL_DATA_VIEW` is not required.
+      tags:
+        - Businesses
+      operationId: getCurrentUserPersonalData
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: businessId
+          in: path
+          required: true
+          description: Unique identifier of the business
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+      responses:
+        '200':
+          description: The caller's phone and identity document for this business
+          headers:
+            Cache-Control:
+              description: Personal data must not be stored by caches.
+              required: true
+              schema:
+                type: string
+                enum: ["no-store"]
+          content:
+            application/json:
+              schema:
+                $ref: '../../components/personalData/components.yml#/components/schemas/MemberPersonalDataDTO'
+              example:
+                phone: "+34612345678"
+                identityDocument:
+                  documentType: DNI
+                  documentNumber: "12345678Z"
+        '401':
+          description: Missing or invalid bearer token
+        '403':
+          description: >
+            The caller is not a member of the business (1015), or is an EMPLOYEE
+            without a contract in force (1104).
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+              examples:
+                notMember:
+                  summary: "1015 - user is not member of business"
+                  value:
+                    status: 403
+                    detail: "1015 - user is not member of business"
+                noContract:
+                  summary: "1104 - employee has no active contract in this business"
+                  value:
+                    status: 403
+                    detail: "1104 - employee has no active contract in this business"
+        '404':
+          description: Business not found (1006)
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+              examples:
+                businessNotFound:
+                  summary: "1006 - business does not exist"
+                  value:
+                    status: 404
+                    detail: "1006 - business does not exist"
+      x-functional-errors: [1006, 1015, 1104]
+
+  member:
+    get:
+      summary: Get a member's phone and identity document
+      description: >
+        Returns the phone and the identity document of one active member.
+        Allowed for the OWNER, a caller with `PERSONAL_DATA_VIEW`, or the
+        subject. Anyone else receives 403 1020 (`user lacks permission
+        PERSONAL_DATA_VIEW in business`). An EMPLOYEE without a contract in
+        force receives 403 1104, including the subject (the subject's own read
+        without that check is `getCurrentUserPersonalData`). A target who is
+        not an active member receives 404 1126. When the caller is not the
+        subject, the read is audited with the business, the subject, the viewer
+        and whether a phone and a document were present. The audit payload has
+        neither the number nor the phone. The response sends
+        `Cache-Control: no-store`.
+      tags:
+        - Businesses
+      operationId: getBusinessUserPersonalData
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: businessId
+          in: path
+          required: true
+          description: Unique identifier of the business
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+        - name: userId
+          in: path
+          required: true
+          description: User id of the member, not the membership id
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+      responses:
+        '200':
+          description: Phone and identity document of the member in this business
+          headers:
+            Cache-Control:
+              description: Personal data must not be stored by caches.
+              required: true
+              schema:
+                type: string
+                enum: ["no-store"]
+          content:
+            application/json:
+              schema:
+                $ref: '../../components/personalData/components.yml#/components/schemas/MemberPersonalDataDTO'
+              example:
+                phone: "+34612345678"
+                identityDocument:
+                  documentType: DNI
+                  documentNumber: "12345678Z"
+        '401':
+          description: Missing or invalid bearer token
+        '403':
+          description: >
+            The caller is not a member (1015), is an EMPLOYEE without a contract
+            in force (1104), or is not the OWNER, does not have
+            `PERSONAL_DATA_VIEW` and is not the subject (1020).
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+              examples:
+                notAllowed:
+                  summary: "1020 - user lacks permission PERSONAL_DATA_VIEW in business"
+                  value:
+                    status: 403
+                    detail: "1020 - user lacks permission PERSONAL_DATA_VIEW in business"
+                notMember:
+                  summary: "1015 - user is not member of business"
+                  value:
+                    status: 403
+                    detail: "1015 - user is not member of business"
+                noContract:
+                  summary: "1104 - employee has no active contract in this business"
+                  value:
+                    status: 403
+                    detail: "1104 - employee has no active contract in this business"
+        '404':
+          description: >
+            Business not found (1006), or the target is not an active member of
+            the business (1126).
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+              examples:
+                businessNotFound:
+                  summary: "1006 - business does not exist"
+                  value:
+                    status: 404
+                    detail: "1006 - business does not exist"
+                memberNotFound:
+                  summary: "1126 - user is not an active member of the business"
+                  value:
+                    status: 404
+                    detail: "1126 - user is not an active member of the business"
+      x-functional-errors: [1006, 1015, 1020, 1104, 1126]
+
+  identity-document:
+    put:
+      summary: Replace a member's identity document
+      description: >
+        Stores the identity document of one active membership. OWNER only
+        (403 1020, `user is not the owner of business`). The number is
+        normalized and validated as `IdentityDocumentRequestDTO` describes
+        (400 1158, then 400 1159). A document already used by an active member
+        or a pending invitation of this business is 409 1160. The previous
+        document of this membership is replaced. The change is audited without
+        the number (`SET` and the document type). The response is the member's
+        personal data and sends `Cache-Control: no-store`. A removed member
+        keeps a previously stored document, but this operation does not edit it
+        (404 1126).
+      tags:
+        - Businesses
+      operationId: replaceBusinessUserIdentityDocument
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: businessId
+          in: path
+          required: true
+          description: Unique identifier of the business
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+        - name: userId
+          in: path
+          required: true
+          description: User id of the member, not the membership id
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+      requestBody:
+        required: true
+        description: Document to store. The number is not echoed in errors.
+        content:
+          application/json:
+            schema:
+              $ref: '../../components/personalData/components.yml#/components/schemas/IdentityDocumentRequestDTO'
+            example:
+              documentType: DNI
+              documentNumber: "12345678-Z"
+      responses:
+        '200':
+          description: Document stored. Body is the member's personal data, with the normalized document.
+          headers:
+            Cache-Control:
+              description: Personal data must not be stored by caches.
+              required: true
+              schema:
+                type: string
+                enum: ["no-store"]
+          content:
+            application/json:
+              schema:
+                $ref: '../../components/personalData/components.yml#/components/schemas/MemberPersonalDataDTO'
+              example:
+                phone: "+34612345678"
+                identityDocument:
+                  documentType: DNI
+                  documentNumber: "12345678Z"
+        '400':
+          description: >
+            The document does not match the type (1158), or a DNI or NIE check
+            letter does not match (1159). The detail never includes the number.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+              examples:
+                invalidFormat:
+                  summary: "1158 - identity document format is invalid"
+                  value:
+                    status: 400
+                    detail: "1158 - identity document format is invalid"
+                invalidLetter:
+                  summary: "1159 - identity document check letter is invalid"
+                  value:
+                    status: 400
+                    detail: "1159 - identity document check letter is invalid"
+        '401':
+          description: Missing or invalid bearer token
+        '403':
+          description: >
+            The caller is not the owner (1020) or is not a member of the
+            business (1015).
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+              examples:
+                notOwner:
+                  summary: "1020 - user is not the owner of business"
+                  value:
+                    status: 403
+                    detail: "1020 - user is not the owner of business"
+                notMember:
+                  summary: "1015 - user is not member of business"
+                  value:
+                    status: 403
+                    detail: "1015 - user is not member of business"
+        '404':
+          description: >
+            Business not found (1006), or the target is not an active member (1126).
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+              examples:
+                businessNotFound:
+                  summary: "1006 - business does not exist"
+                  value:
+                    status: 404
+                    detail: "1006 - business does not exist"
+                memberNotFound:
+                  summary: "1126 - user is not an active member of the business"
+                  value:
+                    status: 404
+                    detail: "1126 - user is not an active member of the business"
+        '409':
+          description: >
+            The document is already used by an active member or a pending
+            invitation of this business (1160). The message does not say who.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+              examples:
+                alreadyInUse:
+                  summary: "1160 - identity document is already used in this business"
+                  value:
+                    status: 409
+                    detail: "1160 - identity document is already used in this business"
+      x-functional-errors: [1006, 1015, 1020, 1126, 1158, 1159, 1160]
+
+    delete:
+      summary: Delete a member's identity document
+      description: >
+        Clears the identity document of one active membership. OWNER only
+        (403 1020, `user is not the owner of business`). Idempotent: 204 when
+        the member has no document. The clear is audited without a number.
+        A removed member's document is kept and is not cleared here (404 1126).
+      tags:
+        - Businesses
+      operationId: deleteBusinessUserIdentityDocument
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: businessId
+          in: path
+          required: true
+          description: Unique identifier of the business
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+        - name: userId
+          in: path
+          required: true
+          description: User id of the member, not the membership id
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+      responses:
+        '204':
+          description: Document cleared, or the member already had none. No body.
+        '401':
+          description: Missing or invalid bearer token
+        '403':
+          description: >
+            The caller is not the owner (1020) or is not a member of the
+            business (1015).
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+              examples:
+                notOwner:
+                  summary: "1020 - user is not the owner of business"
+                  value:
+                    status: 403
+                    detail: "1020 - user is not the owner of business"
+                notMember:
+                  summary: "1015 - user is not member of business"
+                  value:
+                    status: 403
+                    detail: "1015 - user is not member of business"
+        '404':
+          description: >
+            Business not found (1006), or the target is not an active member (1126).
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+              examples:
+                businessNotFound:
+                  summary: "1006 - business does not exist"
+                  value:
+                    status: 404
+                    detail: "1006 - business does not exist"
+                memberNotFound:
+                  summary: "1126 - user is not an active member of the business"
+                  value:
+                    status: 404
+                    detail: "1126 - user is not an active member of the business"
+      x-functional-errors: [1006, 1015, 1020, 1126]
+
+  avatar:
+    delete:
+      summary: Remove a member's profile photo in Clerk
+      description: >
+        Removes the profile photo of one active member by calling Clerk
+        `DELETE /v1/users/{clerk_user_id}/profile_image`. OWNER only (403 1020,
+        `user is not the owner of business`). The photo is global: it disappears
+        in every business of that user, in Clerk, and on the user's own devices
+        after the next sync. This is not a per-business hide.
+
+        Main calls Clerk with `CLERK_SECRET_KEY`. The BFF does not hold that
+        secret. The call is outside the database transaction. On success, or
+        when Clerk responds 404 because the image is already gone, `avatarUrl`
+        is set to null. Idempotent: 204 when the user has no Clerk id or no
+        photo, without calling Clerk. A Clerk 5xx, a timeout or a Clerk 429
+        returns 502 1162 and does not change the stored URL. When Clerk sends
+        `Retry-After`, that header is forwarded.
+
+        There is no realtime signal. Clients see the change on the next read.
+        The removal is audited without a URL.
+      tags:
+        - Businesses
+      operationId: deleteBusinessUserAvatar
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: businessId
+          in: path
+          required: true
+          description: Unique identifier of the business
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+        - name: userId
+          in: path
+          required: true
+          description: User id of the member, not the membership id
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+      responses:
+        '204':
+          description: >
+            Photo removed in Clerk, already absent, or the user has no Clerk id
+            yet. No body.
+        '401':
+          description: Missing or invalid bearer token
+        '403':
+          description: >
+            The caller is not the owner (1020) or is not a member of the
+            business (1015).
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+              examples:
+                notOwner:
+                  summary: "1020 - user is not the owner of business"
+                  value:
+                    status: 403
+                    detail: "1020 - user is not the owner of business"
+                notMember:
+                  summary: "1015 - user is not member of business"
+                  value:
+                    status: 403
+                    detail: "1015 - user is not member of business"
+        '404':
+          description: >
+            Business not found (1006), or the target is not an active member (1126).
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+              examples:
+                businessNotFound:
+                  summary: "1006 - business does not exist"
+                  value:
+                    status: 404
+                    detail: "1006 - business does not exist"
+                memberNotFound:
+                  summary: "1126 - user is not an active member of the business"
+                  value:
+                    status: 404
+                    detail: "1126 - user is not an active member of the business"
+        '502':
+          description: >
+            Clerk was unavailable, timed out, or returned 429 or 5xx (1162).
+            The stored photo is unchanged.
+          headers:
+            Retry-After:
+              description: >
+                Whole seconds, present only when Clerk sent `Retry-After`.
+                Omitted on a timeout or a Clerk 5xx that did not send it.
+              schema:
+                type: integer
+                minimum: 0
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+              examples:
+                providerUnavailable:
+                  summary: "1162 - identity provider is unavailable"
+                  value:
+                    status: 502
+                    detail: "1162 - identity provider is unavailable"
+      x-functional-errors: [1006, 1015, 1020, 1126, 1162]

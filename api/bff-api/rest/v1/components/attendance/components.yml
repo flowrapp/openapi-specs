@@ -506,7 +506,9 @@ components:
         name:
           type: string
           example: Carlos Vega
-      required: [userId, name]
+        avatarUrl:
+          $ref: "../personalData/components.yml#/components/schemas/AvatarUrl"
+      required: [userId, name, avatarUrl]
 
     AttendanceJobRoleDTO:
       type: object
@@ -618,6 +620,8 @@ components:
               name:
                 type: string
                 example: Carlos Vega
+              avatarUrl:
+                $ref: "../personalData/components.yml#/components/schemas/AvatarUrl"
               jobRoleId:
                 type: [integer, "null"]
                 format: int64
@@ -628,7 +632,7 @@ components:
                 type: boolean
                 description: True when the membership ended by removal (Main API `removedAt` is set)
                 example: false
-            required: [userId, name, jobRoleId, removed]
+            required: [userId, name, avatarUrl, jobRoleId, removed]
         jobRoles:
           type: array
           items:
@@ -699,6 +703,8 @@ components:
         name:
           type: string
           example: Carlos Vega
+        avatarUrl:
+          $ref: "../personalData/components.yml#/components/schemas/AvatarUrl"
         jobRole:
           description: Job role of the current contract, or null without one
           oneOf:
@@ -751,6 +757,7 @@ components:
       required:
         - userId
         - name
+        - avatarUrl
         - jobRole
         - removed
         - clockedSeconds
@@ -931,6 +938,8 @@ components:
               name:
                 type: string
                 example: Carlos Vega
+              avatarUrl:
+                $ref: "../personalData/components.yml#/components/schemas/AvatarUrl"
               clockedSeconds:
                 type: integer
                 format: int64
@@ -963,7 +972,7 @@ components:
                   This person's OPEN incidents with justification null anchored on this date.
                   Required and not nullable. 0 when none.
                 example: 0
-            required: [userId, name, clockedSeconds, pendingReviewSeconds, plannedSeconds, unjustifiedIncidentCount]
+            required: [userId, name, avatarUrl, clockedSeconds, pendingReviewSeconds, plannedSeconds, unjustifiedIncidentCount]
       required: [date, closed, isToday, clockedSeconds, pendingReviewSeconds, plannedSeconds, unjustifiedIncidentCount, people]
 
     AttendanceHoursSelectedDayDTO:
@@ -1019,6 +1028,8 @@ components:
         name:
           type: string
           example: Carlos Vega
+        avatarUrl:
+          $ref: "../personalData/components.yml#/components/schemas/AvatarUrl"
         jobRole:
           description: Job role of the current contract, or null
           oneOf:
@@ -1084,7 +1095,7 @@ components:
           oneOf:
             - $ref: "#/components/schemas/AttendanceDetailRefDTO"
             - type: "null"
-      required: [userId, name, jobRole, firstClockIn, lastClockOut, open, clockedSeconds, pendingReviewSeconds, plannedSeconds, unjustifiedIncidentCount, warnings, detailRef]
+      required: [userId, name, avatarUrl, jobRole, firstClockIn, lastClockOut, open, clockedSeconds, pendingReviewSeconds, plannedSeconds, unjustifiedIncidentCount, warnings, detailRef]
 
     # ── Month ──────────────────────────────────────────────────────────────────
     AttendanceMonthDTO:
@@ -1669,13 +1680,15 @@ components:
         name:
           type: string
           example: Pablo Ruiz
+        avatarUrl:
+          $ref: "../personalData/components.yml#/components/schemas/AvatarUrl"
         cells:
           type: array
           minItems: 7
           maxItems: 7
           items:
             $ref: "#/components/schemas/AttendanceWeekCellDTO"
-      required: [userId, name, cells]
+      required: [userId, name, avatarUrl, cells]
 
     AttendanceWeekCellDTO:
       type: object

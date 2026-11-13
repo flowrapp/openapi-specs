@@ -302,13 +302,15 @@ components:
         name:
           type: string
           example: Carlos Vega
+        avatarUrl:
+          $ref: "../personalData/components.yml#/components/schemas/AvatarUrl"
         contractedSeconds:
           type: integer
           format: int64
           minimum: 0
           description: Σ floor(totalWeekHours * 3600 * coveredDays / 7) of the person's contracts of this role in the week
           example: 144000
-      required: [userId, name, contractedSeconds]
+      required: [userId, name, avatarUrl, contractedSeconds]
 
     WeekCoverageRoleDTO:
       type: object
