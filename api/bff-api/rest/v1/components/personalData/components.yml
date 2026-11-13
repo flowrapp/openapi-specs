@@ -116,7 +116,10 @@ components:
     WorkerProfileJobRoleDTO:
       type: object
       additionalProperties: false
-      description: Job role of the caller's current contract in this business. Id and name only.
+      description: >
+        Job role of the caller's contract in force in this business. Id and name
+        only, from Main `getCurrentUserContracts` (`id` is `jobRoleId`, `name` is
+        `jobRoleName`).
       properties:
         id:
           type: integer
@@ -173,9 +176,10 @@ components:
           example: Coffee Time
         jobRole:
           description: >
-            Job role of the contract in force today, or null when there is none.
-            An employee without a contract in force still receives this profile;
-            `jobRole` is null.
+            Job role of the contract in force in this business, from Main
+            `getCurrentUserContracts` (`id` is `jobRoleId`, `name` is `jobRoleName`).
+            Null only when there is no contract in force. An employee without a
+            contract in force still receives this profile.
           oneOf:
             - $ref: "#/components/schemas/WorkerProfileJobRoleDTO"
             - type: "null"

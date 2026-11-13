@@ -338,18 +338,21 @@ members:
         The shortcuts «Su histórico» and «Su horario» need no data: the front opens Attendance with
         `userIds=<userId>` and the schedule with `userIds=<userId>` (or `employeeId`) for `week.from`.
 
-        The caller's id (for `isSelf`) is the JWT `sub`, read before any Main API call, the same source
-        as the BFF `GET /api/v1/me`. A `sub` that is not
-        a numeric user id returns 401 1003 and makes no Main API call.
+        The caller's id (for `isSelf`) comes from Main API `getCurrentUser` (`id`).
+        The Clerk session `sub` is not a numeric Flowrapp user id and is not used.
+        A missing or invalid bearer token is 401 and makes no Main API call.
 
         `avatarUrl` comes from `getBusinessUsers`. When the caller may see personal data, the BFF
         adds one call: `getCurrentUserPersonalData` if the caller is the subject, otherwise
         `getBusinessUserPersonalData`. Otherwise it does not call them and `personalData` is null.
         The response sends `Cache-Control: no-store`. There is no realtime signal.
 
-        Main API calls (11, with one page each of contracts and job roles; never one per contract, day
+        Main API calls (12, with one page each of contracts and job roles; never one per contract, day
         or worklog; full lists are read and the member is picked in Kotlin; at most 8 in flight):
-        1. Stage 0, one `parZip` (2 calls):
+        1. Stage 0 (3 calls):
+           - `getCurrentUser` (`GET /api/v1/users/me`): numeric id of the caller, used for `isSelf`
+             and to choose the personal-data read. The Clerk session `sub` is not a numeric
+             Flowrapp user id and is not read;
            - `getUserBusinesses` (`GET /api/v1/businesses`): `TEAM_VIEW` (otherwise
              403 1020; not a member: 403 1015), `zone`, `attendanceToleranceMinutes` and `location.area`;
            - `getBusinessUsers` (`GET /api/v1/businesses/{businessId}/users`, active members only): name,
@@ -595,7 +598,7 @@ members:
                       canEditIdentityDocument: true
                       canRemovePhoto: false
         '401':
-          description: No authenticated session, or a JWT `sub` that is not a numeric user id (1003)
+          description: No authenticated session
         '403':
           description: >
             The caller lacks `TEAM_VIEW` (1020, `user lacks permission TEAM_VIEW in business`),
@@ -626,4 +629,4 @@ members:
                 businessNotFound:
                   summary: "1006 - business does not exist"
                   value: {status: 404, detail: "1006 - business does not exist"}
-      x-functional-errors: [1003, 1006, 1015, 1020, 1126]
+      x-functional-errors: [1006, 1015, 1020, 1126]

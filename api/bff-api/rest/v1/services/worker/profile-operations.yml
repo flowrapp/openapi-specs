@@ -4,12 +4,14 @@ workerProfile:
       summary: Get the caller's profile in a business
       description: >
         Profile screen of the signed-in worker in one business. Active membership
-        is enough. An employee without a contract in force still receives 200,
-        with `jobRole: null`. This operation does not return 403 1104.
+        is enough. An employee without a contract in force still receives 200.
+        This operation does not return 403 1104.
         The response is composed from Main API `getCurrentUser` (name, email,
-        avatarUrl), `getCurrentUserPersonalData` (phone and identity document)
-        and the caller's current contract (job role) and business name. The
-        document number is complete; the app masks it. Own data does not require
+        avatarUrl), `getCurrentUserPersonalData` (phone and identity document),
+        the contract in force in `getCurrentUserContracts` and the business name.
+        `jobRole` comes from that contract in force (`id` is `jobRoleId`, `name`
+        is `jobRoleName`). It is null only when there is no contract in force.
+        The document number is complete; the app masks it. Own data does not require
         `PERSONAL_DATA_VIEW`. The worker uploads or removes their own photo with
         the Clerk SDK (`user.setProfileImage`), not through the BFF. `avatarUrl`
         then changes asynchronously when the webhook arrives. There is no

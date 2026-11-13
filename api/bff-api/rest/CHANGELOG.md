@@ -2,14 +2,14 @@
 
 ## 0.0.114
 
-Spec only. No BFF implementation in this change. Depends on Main API 0.0.120. Next repository tag: `v1.0.30` (after `v1.0.29`). This change does not create the tag. The published solver contract is unchanged.
+Spec only. No BFF implementation in this change. Depends on Main API 0.0.120. `info.version` stays 0.0.114 because that version is not published. Next repository tag: `v1.0.31` (after `v1.0.30`). This change does not create the tag. The published solver contract is unchanged.
 
 Worker profile for the mobile app (Sergio S1–S7 and the Frontend Architect, 2026-11-13). `personalData` is a nested block. `PUT /me/phone` uses E.164. `avatarUrl` is on every DTO that shows a person, including the people of `getWorkerTeamSchedule`. `getAttendanceMonth` has no `avatarUrl`. There is no realtime topic.
 
 ### Added
 
 - `updateCurrentUserPhone` (`PUT /api/v1/me/phone`). Pass-through of Main `updateCurrentUserPhone`. Body `{phone}` required and nullable, pattern `^\+[1-9][0-9]{6,14}$`. Null clears the phone. 400 1161. `200` is `UserProfileResponseDTO` with `Cache-Control: no-store`.
-- `getWorkerProfile` (`GET /api/v1/worker/businesses/{businessId}/profile`). Active membership only. No contract check and no 403 1104. Without a contract in force, `jobRole` is null. `WorkerProfileDTO`: `userId`, `name`, `email`, nullable `phone` (stored value, no E.164 pattern), nullable `avatarUrl`, `businessId`, `businessName`, nullable `jobRole` `{id, name}`, nullable `identityDocument`. The number is complete; the app masks it. Own data, so `PERSONAL_DATA_VIEW` is not required. Composed from `getCurrentUser`, `getCurrentUserPersonalData` and the current contract. The worker uploads or removes their own photo with the Clerk SDK (`user.setProfileImage`), not through the BFF. `avatarUrl` changes asynchronously when the webhook arrives. There is no operation to force that refresh. `Cache-Control: no-store`.
+- `getWorkerProfile` (`GET /api/v1/worker/businesses/{businessId}/profile`). Active membership only. No contract check and no 403 1104. `jobRole` is null only when there is no contract in force. `WorkerProfileDTO`: `userId`, `name`, `email`, nullable `phone` (stored value, no E.164 pattern), nullable `avatarUrl`, `businessId`, `businessName`, nullable `jobRole` `{id, name}`, nullable `identityDocument`. The number is complete; the app masks it. Own data, so `PERSONAL_DATA_VIEW` is not required. Composed from `getCurrentUser` (name, email, avatarUrl), `getCurrentUserPersonalData` (phone and identity document) and the contract in force in Main `getCurrentUserContracts` (`jobRole.id` is `jobRoleId`, `jobRole.name` is `jobRoleName`). The worker uploads or removes their own photo with the Clerk SDK (`user.setProfileImage`), not through the BFF. `avatarUrl` changes asynchronously when the webhook arrives. There is no operation to force that refresh. `Cache-Control: no-store`.
 - `replaceManagerWorkerIdentityDocument` and `deleteManagerWorkerIdentityDocument` (`PUT` and `DELETE /api/v1/manager/businesses/{businessId}/workers/{userId}/identity-document`). OWNER only. Pass-through of the Main identity-document operations. `PUT` returns `MemberPersonalDataDTO` with `Cache-Control: no-store`. Errors 400 1158 and 1159, 409 1160, 403 1020 and 1015, 404 1006 and 1126. `DELETE` is 204.
 - `deleteManagerWorkerPhoto` (`DELETE /api/v1/manager/businesses/{businessId}/workers/{userId}/photo`). OWNER only. Pass-through of Main `deleteBusinessUserAvatar`. The photo is deleted in Clerk for every business of that user. After the 204, the next read returns `avatarUrl: null`. 502 1162 forwards `Retry-After` when Main sends it. The BFF does not hold `CLERK_SECRET_KEY`. The worker's own photo uses the Clerk SDK (`user.setProfileImage`), not this operation, and there is no operation to force the webhook refresh.
 - `receiveClerkWebhook` (`POST /api/v1/webhooks/clerk`, `x-internal: true`). The mobile app does not call it. Only Clerk does. Public (`security: []`). Forwards the raw body and `svix-id`, `svix-timestamp` and `svix-signature` to Main and returns that status. A body larger than 256 KiB is 413 and is not forwarded. Invalid signature is 401 1163. The BFF does not verify the signature and has no Clerk secret.
@@ -25,6 +25,8 @@ Worker profile for the mobile app (Sergio S1–S7 and the Frontend Architect, 20
 - `getBusinessMemberProfile` requires `TEAM_VIEW`. The previous operation text that said owner-only is aligned with the permission table. `personalData` is the only new restriction.
 - `managerCreateInvitation` requires `TEAM_INVITE`, and OWNER when `identityDocument` is present. Errors add 1158, 1159 and 1160.
 - `removeBusinessMember` keeps the identity document. It stops counting for uniqueness.
+- `getWorkerProfile`: `jobRole` comes from the contract in force in Main `getCurrentUserContracts` (`id` is `jobRoleId`, `name` is `jobRoleName`). It is null only when that business has no contract in force. Depends on Main `jobRoleName` in this same unpublished version.
+- `getBusinessMemberProfile`: the caller's id for `isSelf` comes from Main `getCurrentUser.id`. The Clerk session `sub` is not a numeric Flowrapp user id and is not used. The operation no longer returns 401 1003. Stage 0 includes `getCurrentUser` (12 Main API calls). `1003` stays in the enum and must not be reused.
 
 ### Unchanged
 
@@ -35,7 +37,7 @@ Worker profile for the mobile app (Sergio S1–S7 and the Frontend Architect, 20
 
 ### Deployment
 
-- Main API 0.0.120 before the BFF routes that read or write the phone, the document or the photo. `avatarUrl` may be null until each user is touched by a Clerk webhook.
+- Main API 0.0.120 before the BFF routes that read or write the phone, the document or the photo. `avatarUrl` may be null until each user is touched by a Clerk webhook. `getWorkerProfile` reads `jobRoleName` from Main `getCurrentUserContracts`, so that field must be in the same Main version.
 - Current app builds drop `PERSONAL_DATA_VIEW` when an access role is edited. The app version that keeps that permission must be published before the permission is granted.
 - Registration with a phone that has no prefix now returns 400 1161. The app build that normalizes the phone to `+34` must ship before, or together with, Main API 0.0.120.
 
