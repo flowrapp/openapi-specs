@@ -639,7 +639,13 @@ contracts:
   current-user-contracts:
     get:
       summary: List the authenticated user's contract history across businesses
-      description: Retrieves a paginated slice of all contracts belonging to the authenticated user across every associated business, ordered by start date descending.
+      description: >
+        Retrieves a paginated slice of every contract of the authenticated user across
+        all of their businesses, ordered by start date descending. Membership is enough;
+        TEAM_VIEW is not required. Each contract includes `jobRoleName`, the display
+        name of `jobRoleId`. The job-role catalog requires TEAM_VIEW, so an employee
+        without that permission still receives the name here. `jobRoleName` is null
+        only when the role has no stored name.
       tags:
         - Contracts
       operationId: getCurrentUserContracts
@@ -654,12 +660,13 @@ contracts:
           content:
             application/json:
               schema:
-                $ref: '../../components/contracts/components.yml#/components/schemas/ContractSliceResponseDTO'
+                $ref: '../../components/contracts/components.yml#/components/schemas/CurrentUserContractSliceResponseDTO'
               example:
                 content:
                   - id: 123
                     businessId: 101
                     jobRoleId: 10
+                    jobRoleName: Sala
                     totalWeekHours: 40.0
                     startDate: "2025-01-01"
                     endDate: null
@@ -668,6 +675,7 @@ contracts:
                   - id: 122
                     businessId: 202
                     jobRoleId: 20
+                    jobRoleName: Cocina
                     totalWeekHours: 20.0
                     startDate: "2024-06-01"
                     endDate: "2024-12-31"

@@ -165,7 +165,9 @@ components:
           example: EMPLOYEE
         isSelf:
           type: boolean
-          description: True when the member is the caller (the JWT `sub` equals `userId`)
+          description: >
+            True when the member is the caller (`getCurrentUser.id` equals `userId`).
+            The Clerk session `sub` is not a numeric Flowrapp user id.
           example: false
         asOf:
           type: string

@@ -170,6 +170,72 @@ components:
         - createdAt
         - updatedAt
 
+    CurrentUserContractResponseDTO:
+      type: object
+      description: >
+        One contract of the authenticated user, as returned by getCurrentUserContracts.
+        Same terms as ContractResponseDTO, plus the job role name. The caller may lack
+        TEAM_VIEW, and the job-role catalog requires TEAM_VIEW, so the name is returned
+        here. Create, update, getUserContracts and getCurrentUserContract keep
+        ContractResponseDTO and do not return the name.
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: Unique identifier for the contract
+          example: 123
+        businessId:
+          type: integer
+          format: int64
+          description: Unique identifier of the business associated with the contract
+          example: 101
+        jobRoleId:
+          type: integer
+          format: int64
+          description: Job role associated with the contract
+          example: 10
+        jobRoleName:
+          type: ["string", "null"]
+          description: >
+            Display name of `jobRoleId`. Always present. Null only when the role has
+            no stored name.
+          example: Sala
+        totalWeekHours:
+          type: number
+          format: double
+          description: Number of hours agreed for a working week
+          example: 40.0
+        startDate:
+          type: string
+          format: date
+          description: Date from which the contract is effective
+          example: "2025-01-01"
+        endDate:
+          type: ["string", "null"]
+          format: date
+          description: Date until which the contract is effective, or null for an open-ended contract
+          example: "2025-12-31"
+        createdAt:
+          type: string
+          format: date-time
+          description: Instant when the contract was created
+          example: "2024-12-20T10:15:00+00:00"
+        updatedAt:
+          type: string
+          format: date-time
+          description: Instant when the contract was last updated
+          example: "2024-12-20T10:15:00+00:00"
+      required:
+        - id
+        - businessId
+        - jobRoleId
+        - jobRoleName
+        - totalWeekHours
+        - startDate
+        - endDate
+        - createdAt
+        - updatedAt
+
     ContractSliceResponseDTO:
       type: object
       description: Slice of contracts without a total-count query
@@ -179,6 +245,39 @@ components:
           description: Contracts in the requested slice
           items:
             $ref: '#/components/schemas/ContractResponseDTO'
+        page:
+          type: integer
+          format: int32
+          minimum: 0
+          description: Current page number, zero-based
+          example: 0
+        size:
+          type: integer
+          format: int32
+          minimum: 1
+          description: Requested page size
+          example: 20
+        hasNext:
+          type: boolean
+          description: Whether another slice is available
+          example: true
+      required:
+        - content
+        - page
+        - size
+        - hasNext
+
+    CurrentUserContractSliceResponseDTO:
+      type: object
+      description: >
+        Slice of the authenticated user's contracts, including each job role name,
+        without a total-count query. Used only by getCurrentUserContracts.
+      properties:
+        content:
+          type: array
+          description: Contracts in the requested slice
+          items:
+            $ref: '#/components/schemas/CurrentUserContractResponseDTO'
         page:
           type: integer
           format: int32
