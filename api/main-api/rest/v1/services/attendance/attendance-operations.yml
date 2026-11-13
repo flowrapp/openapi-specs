@@ -130,6 +130,181 @@ attendance:
               example: {status: 404, detail: '1006 - business does not exist'}
       x-functional-errors: [1006, 1015]
 
+  incident-daily-counts:
+    get:
+      summary: Count unjustified attendance incidents by worker and day
+      description: >
+        Returns attendance incidents of this business, counted by worker and by the
+        business-local anchor date, for an inclusive date range. Requires an active
+        membership, the ATTENDANCE feature and ATTENDANCE_VIEW. An active member of a
+        business without ATTENDANCE receives 403 `1155` (`1155` is not repeated in
+        `x-functional-errors`). A member who lacks ATTENDANCE_VIEW receives 403 `1020`,
+        including an EMPLOYEE asking for their own incidents: the caller-scoped read is
+        `getCurrentUserAttendanceIncidentDailyCounts`. A caller who is not an active member
+        receives 403 `1015`. An unknown business is 404 `1006`.
+
+
+        Unjustified means lifecycle OPEN and justification null. An OPEN incident that
+        already has a justification, and a resolved incident, are not counted. The anchor
+        date is the inbox anchor in the business time zone: the shift start for SHIFT scope
+        or a MATCHED match, otherwise the clock-in date. A night shift's incidents stay on
+        the shift's start date. Dates use the business time zone, including DST days of 23
+        or 25 hours.
+
+
+        `from` and `to` are required `YYYY-MM-DD` query dates. The range is inclusive: the
+        number of dates is (to - from) + 1, and 42 is the maximum. `from` after `to`, or
+        more than 42 dates, is 400 `1157` (`INVALID_ATTENDANCE_INCIDENT_DATE_RANGE`). A
+        missing parameter or a value that is not a date is a plain 400 without a functional
+        code.
+
+
+        `userIds` is optional. Omit it for the whole business. When present it holds 1 to 50
+        distinct ids (`uniqueItems`); more than 50, an empty list or duplicates is 400
+        `1111`. A value that is not an integer is a plain 400. An id that is not a member,
+        or that has no unjustified incident in the range, adds no row.
+
+
+        `jobRoleId` is optional and uses the same rule as `getDailyAttendance`. The job role
+        of a scheduled shift is the one stored on the shift when it was created
+        (`scheduled_shifts.job_role_id`), so a past day keeps the job role in force that day.
+        A match without a shift uses the job role of the member's contract in force on that
+        business-local day. Combined with `userIds` using AND. A job role of another
+        business, or one with no matching incident, returns `[]`.
+
+
+        The list contains only rows with `unjustifiedCount` > 0, ordered by `date` ascending
+        and then `userId` ascending. A worker-date with no unjustified incident is omitted,
+        not returned as 0. No matches is `200` with `[]`.
+      tags: [Attendance]
+      operationId: getBusinessAttendanceIncidentDailyCounts
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: businessId
+          in: path
+          required: true
+          description: Business whose attendance incidents are counted.
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+            example: 101
+        - name: from
+          in: query
+          required: true
+          description: >
+            First business-local date of the inclusive range (YYYY-MM-DD). Together with
+            `to`, at most 42 dates. `from` after `to`, or a longer range, is 400 1157.
+          schema:
+            type: string
+            format: date
+            example: '2026-02-01'
+        - name: to
+          in: query
+          required: true
+          description: >
+            Last business-local date of the inclusive range (YYYY-MM-DD). The inclusive
+            length `(to - from) + 1` is at most 42.
+          schema:
+            type: string
+            format: date
+            example: '2026-02-28'
+        - name: userIds
+          in: query
+          required: false
+          style: form
+          explode: true
+          description: >
+            Restricts the count to these workers. Omit it for the whole business. Repeat it
+            for several users (`userIds=102&userIds=103`). At most 50 distinct ids; more
+            than 50, an empty list or duplicates is 400 1111.
+          schema:
+            type: array
+            minItems: 1
+            maxItems: 50
+            uniqueItems: true
+            items:
+              type: integer
+              format: int64
+              minimum: 1
+            example: [102, 103]
+        - name: jobRoleId
+          in: query
+          required: false
+          description: >
+            Restricts the count to this job role, the same rule as `getDailyAttendance`:
+            the role stored on the scheduled shift, or, for a match without a shift, the
+            contract in force on that business-local day. Combined with `userIds` using AND.
+            A role of another business, or with no match, returns an empty list.
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+            example: 3
+      responses:
+        '200':
+          description: >
+            Worker-dates in the range with at least one OPEN incident and no justification.
+            Ordered by date ascending, then userId ascending. Empty when nothing matches.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '../../components/attendance/components.yml#/components/schemas/BusinessAttendanceIncidentDailyCountDTO'
+              examples:
+                someRows:
+                  summary: Two worker-dates; every other worker-date of the range is omitted
+                  value:
+                    - {userId: 103, date: '2026-02-12', unjustifiedCount: 1}
+                    - {userId: 102, date: '2026-02-18', unjustifiedCount: 2}
+                empty:
+                  summary: No unjustified incidents in the range, or the job role matches nothing
+                  value: []
+        '400':
+          description: >
+            `from` after `to`, or more than 42 inclusive dates (1157); or `userIds` empty,
+            duplicated or longer than 50 (1111). A missing or non-date `from` or `to`, or a
+            non-integer id, is a plain 400 without a functional code.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+              examples:
+                invalidRange:
+                  summary: "1157 - attendance incident date range is invalid"
+                  value: {status: 400, detail: '1157 - attendance incident date range is invalid'}
+                invalidUserIds:
+                  summary: "1111 - userIds must contain between 1 and 50 identifiers"
+                  value: {status: 400, detail: '1111 - userIds must contain between 1 and 50 identifiers'}
+        '401':
+          description: Unauthorized.
+        '403':
+          description: >
+            Not an active member (1015), lacks ATTENDANCE_VIEW (1020), or ATTENDANCE is
+            unavailable (1155, not listed in `x-functional-errors`). An EMPLOYEE without
+            ATTENDANCE_VIEW receives 1020 even for their own incidents.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+              examples:
+                notMember:
+                  summary: "1015 - user is not member of business"
+                  value: {status: 403, detail: '1015 - user is not member of business'}
+                lacksAttendanceView:
+                  summary: "1020 - user lacks permission ATTENDANCE_VIEW in business"
+                  value: {status: 403, detail: '1020 - user lacks permission ATTENDANCE_VIEW in business'}
+        '404':
+          description: Business not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+              example: {status: 404, detail: '1006 - business does not exist'}
+      x-functional-errors: [1006, 1015, 1020, 1111, 1157]
+
   tolerance:
     put:
       summary: Update business attendance tolerance

@@ -78,12 +78,16 @@ components:
       description: >
         Restricts the screen to these users (`userIds=3&userIds=7`). Forwarded as `userIds`
         to every Main API call that returns attendance or hours, so the Main API filters;
-        the BFF never filters rows in memory. Omit it for the whole team. More than 50 ids
-        returns 400 1111. It does not narrow `filterOptions.people`: the filtered people are
-        always listed there (see `AttendanceFilterOptionsDTO`).
+        the BFF never filters rows in memory. Omit the parameter for the whole filtered
+        audience (still narrowed by `jobRoleId` when that parameter is sent). When present,
+        1 to 50 distinct ids (`uniqueItems`), the same rule as Main. An empty value
+        (`userIds=`), duplicates, or more than 50 return 400 1111. It does not narrow
+        `filterOptions.people`: the filtered people are always listed there (see
+        `AttendanceFilterOptionsDTO`).
       schema:
         type: array
         uniqueItems: true
+        minItems: 1
         maxItems: 50
         items:
           type: integer
@@ -97,12 +101,14 @@ components:
       description: >
         Restricts the screen to this job role: the job role stored on each scheduled shift
         (Main API semantics, so a past day keeps the job role in force that day); worklogs
-        without a shift use the job role of the member's contract in force that day. The
-        BFF forwards it unchanged as `jobRoleId` to the Main API calls that back the screen
-        (`getBusinessReports` and `getDailyAttendance`, Main API 0.0.87), which filter it
-        server-side; it no longer resolves the job role to `userIds`. With `userIds` too,
-        both are forwarded and apply (AND). When no member matches, the Main API returns
-        empty data and the BFF answers with an empty screen.
+        and incidents without a shift use the job role of the member's contract in force
+        that day. The BFF forwards it unchanged as `jobRoleId` to the Main API calls of
+        that screen that accept it (`getBusinessReports`, `getDailyAttendance`,
+        `getBusinessTeamSchedule`, `getBusinessAttendanceIncidentDailyCounts`), which filter
+        it server-side. Team-schedules filters only the role stored on the shift.
+        It no longer resolves the job role to `userIds`. With `userIds` too, both are
+        forwarded and apply (AND). When no member matches, the Main API returns empty
+        data and the BFF answers with an empty screen.
       schema:
         type: integer
         format: int64
@@ -132,6 +138,69 @@ components:
         type: string
         pattern: '^[0-9]{4}-W(0[1-9]|[1-4][0-9]|5[0-3])$'
         example: "2026-W44"
+    Month:
+      name: month
+      in: query
+      required: false
+      description: >
+        Calendar month (`YYYY-MM`) in the business time zone. Defaults to the current
+        month. A value that does not match `YYYY-MM` with a month 01 to 12 returns 400
+        1115. The message stays `attendance week or date is invalid`; no new code.
+      schema:
+        type: string
+        pattern: '^[0-9]{4}-(0[1-9]|1[0-2])$'
+        example: "2026-02"
+
+  headers:
+    XRateLimitRetryAfterSeconds:
+      description: >
+        Integer seconds until this user may call this business's attendance GET reads
+        again. Sent by the BFF limiter (bucket4j-spring-boot-starter) on 429. This is not
+        the standard `Retry-After` header. `Retry-After` is only forwarded when Main sends
+        it (for example 429 1119 or 503 1149) and this limiter does not set it. The BFF
+        implementation PR must verify this header with an integration test.
+      required: true
+      schema:
+        type: integer
+        format: int32
+        minimum: 0
+        example: 12
+    XRateLimitRemaining:
+      description: >
+        Requests this user may still make for this business in the current attendance
+        GET-read bucket. Sent by the BFF limiter on an allowed response. The BFF
+        implementation PR must verify this header with an integration test.
+      required: true
+      schema:
+        type: integer
+        format: int32
+        minimum: 0
+        example: 119
+
+  responses:
+    AttendanceReadsTooManyRequests:
+      description: >
+        More than 120 requests in a minute or 1200 in an hour from this authenticated user
+        for this business on the attendance GET reads (`getAttendanceHours`,
+        `getAttendanceDay`, `getAttendanceWeek`, `getAttendanceMonth`, `getAttendanceBadge`,
+        `getAttendanceShiftDetail`, `getAttendanceMatchDetail`). Those reads share one
+        bucket. POST review actions are not in it. No functional code; the body is the
+        rate limiter's default problem. The limiter sets
+        `X-Rate-Limit-Retry-After-Seconds` (integer seconds) and does not set
+        `Retry-After`. An allowed response of these reads carries
+        `X-Rate-Limit-Remaining`. The BFF implementation PR must verify both headers with
+        an integration test.
+      headers:
+        X-Rate-Limit-Retry-After-Seconds:
+          $ref: "#/components/headers/XRateLimitRetryAfterSeconds"
+      content:
+        application/problem+json:
+          schema:
+            $ref: "../common/components.yml#/components/schemas/ProblemDetail"
+          example:
+            title: Too Many Requests
+            status: 429
+            detail: "Too many requests. Retry later."
 
   examples:
     AttendanceShiftDetail:
@@ -613,6 +682,83 @@ components:
       required: [type, severity, seconds, sinceSeconds, justified]
 
     # ── Hours ──────────────────────────────────────────────────────────────────
+    AttendanceHoursPersonDTO:
+      type: object
+      description: >
+        One person of the filtered audience on the Hours screen. Included when that person
+        has confirmed or pending seconds in the week, a published shift, or an unjustified
+        incident. `name` comes from the roster, removed members included, the same source as
+        `legend`, and may be an email when the user has no name. `jobRole` is the current
+        contract, the same rule as `AttendanceHoursRowDTO.jobRole`.
+      properties:
+        userId:
+          type: integer
+          format: int64
+          minimum: 1
+          example: 103
+        name:
+          type: string
+          example: Carlos Vega
+        jobRole:
+          description: Job role of the current contract, or null without one
+          oneOf:
+            - $ref: "#/components/schemas/AttendanceJobRoleDTO"
+            - type: "null"
+        removed:
+          type: boolean
+          description: True when the membership ended by removal (roster `removedAt` is set)
+          example: false
+        clockedSeconds:
+          type: integer
+          format: int64
+          minimum: 0
+          description: >
+            CONFIRMED + APPROVED of this person in the week, the same rule as
+            `totals.clockedSeconds`. Pending is not included.
+          example: 0
+        pendingReviewSeconds:
+          type: integer
+          format: int64
+          minimum: 0
+          description: >
+            PENDING_RECONCILIATION + PENDING_REVIEW of this person in the week, apart from
+            `clockedSeconds`
+          example: 13440
+        plannedSeconds:
+          type: [integer, "null"]
+          format: int64
+          minimum: 0
+          description: >
+            Planned seconds of this person's published shifts in the week, from
+            `getBusinessTeamSchedule`. Null when the ISO week is not published. 0 when it is
+            published and this person has no shift. Same segment, break and night-shift rule
+            as `totals.plannedSeconds`.
+          example: 19200
+        unjustifiedIncidentCount:
+          type: integer
+          format: int32
+          minimum: 0
+          description: >
+            This person's OPEN incidents with justification null anchored in the week.
+            Required and not nullable. 0 when none.
+          example: 1
+        needsReview:
+          type: boolean
+          description: >
+            True when `pendingReviewSeconds` > 0 or `unjustifiedIncidentCount` > 0. The BFF
+            sets it; the client does not recompute a different value.
+          example: true
+      required:
+        - userId
+        - name
+        - jobRole
+        - removed
+        - clockedSeconds
+        - pendingReviewSeconds
+        - plannedSeconds
+        - unjustifiedIncidentCount
+        - needsReview
+
     AttendanceHoursDTO:
       type: object
       description: >
@@ -625,13 +771,22 @@ components:
         Only the aggregated figures changed: the rows' review status, chips and the detail
         actions (accept, correct, reject) are unchanged. Every figure comes from
         `getBusinessReports`: business-local day of the clock-in and seconds net of effective
-        breaks. Open worklogs count in no figure (shown as `open` on the row). A worklog with
-        an open AUTOMATIC_CLOSE incident counts 0 until it is corrected or rejected. Planned
-        seconds are `metrics.plannedSeconds` of the published plan from `getDailyAttendance`.
-        `plannedSeconds` is null when the week has no published plan (`getPlannings` returns
-        no planning in PUBLISHED or ARCHIVED for it) and 0 when there is a plan with 0 h for
-        the filtered people. Plans are weekly, so the totals and the seven days are either
-        all null or all numbers.
+        breaks.         Open worklogs count in no figure (shown as `open` on the row). A worklog with
+        an open AUTOMATIC_CLOSE incident counts 0 until it is corrected or rejected. Since
+        BFF 0.0.113, planned seconds come from `getBusinessTeamSchedule` (v1.0.28): the sum
+        of each shift's segments minus the break; the unpaid gap of a split shift is not
+        included; a night shift counts entirely on its start day. PUBLISHED, or ARCHIVED that
+        was previously published (what team-schedules returns), counts as published. Null
+        means the ISO week is not published (404 1046 after membership is known). 0 means the
+        week is published and there is no shift for the filtered audience. The client must
+        not interpolate nulls. The total and the seven days are either all null or all
+        numbers. Up to 0.0.112 planned seconds came from `getDailyAttendance`
+        `metrics.plannedSeconds` and `getPlannings`. There is no legacy form.
+        `unjustifiedIncidentCount` counts OPEN incidents with justification null, anchored
+        like the inbox, and is required and not nullable: under ATTENDANCE_VIEW the
+        ATTENDANCE feature is available. `people` is the filtered audience who have confirmed
+        or pending seconds, a published shift, or an unjustified incident, ordered by
+        `needsReview` true first, then name, then userId.
       properties:
         week:
           $ref: "#/components/schemas/AttendanceWeekRangeDTO"
@@ -664,9 +819,20 @@ components:
               type: [integer, "null"]
               format: int64
               minimum: 0
-              description: Null without a published plan for the week; 0 means a plan with 0 h
-              example: 345600
-          required: [clockedSeconds, pendingReviewSeconds, reportableSeconds, plannedSeconds]
+              description: >
+                Null when the ISO week is not published (team-schedules 404 1046). 0 means
+                the week is published and the filtered audience has no shift. Since BFF 0.0.113
+                this is the team-schedule sum, not `getDailyAttendance` metrics.
+              example: 57600
+            unjustifiedIncidentCount:
+              type: integer
+              format: int32
+              minimum: 0
+              description: >
+                Week sum of OPEN incidents with justification null for the filtered audience.
+                Required and not nullable. 0 when none.
+              example: 1
+          required: [clockedSeconds, pendingReviewSeconds, reportableSeconds, plannedSeconds, unjustifiedIncidentCount]
         days:
           type: array
           minItems: 7
@@ -674,18 +840,30 @@ components:
           description: Monday to Sunday
           items:
             $ref: "#/components/schemas/AttendanceHoursDayDTO"
+        people:
+          type: array
+          description: >
+            Filtered audience (`userIds` and `jobRoleId`) who have confirmed or pending
+            seconds in the week, a published shift, or an unjustified incident. Ordered by
+            `needsReview` true first, then `name`, then `userId`. Name order is case- and
+            accent-insensitive Spanish locale collation (`es`); ties break by `userId`
+            ascending. Under that rule `irene` sorts before `Lucía`. There is no people list
+            on the month screen. The BFF sorts; the client does not.
+          items:
+            $ref: "#/components/schemas/AttendanceHoursPersonDTO"
         legend:
           type: array
           description: >
-            People with clocked or pending seconds in the week, in a stable order (name, then userId).
-            The front assigns colours by index.
+            People with clocked or pending seconds in the week, ordered by name, then userId.
+            Name order is the same case- and accent-insensitive Spanish locale collation as
+            `people`. The front assigns colours by index.
           items:
             $ref: "#/components/schemas/AttendanceWorkerDTO"
         selectedDay:
           $ref: "#/components/schemas/AttendanceHoursSelectedDayDTO"
         filterOptions:
           $ref: "#/components/schemas/AttendanceFilterOptionsDTO"
-      required: [week, totals, days, legend, selectedDay, filterOptions]
+      required: [week, totals, days, people, legend, selectedDay, filterOptions]
 
     AttendanceHoursDayDTO:
       type: object
@@ -721,14 +899,27 @@ components:
           type: [integer, "null"]
           format: int64
           minimum: 0
-          description: Null without a published plan for the week; 0 means a plan with 0 h that day
+          description: >
+            Null when the ISO week is not published; 0 when it is published and the filtered
+            audience has no shift that day. Same value on every day of an unpublished week.
+            Since BFF 0.0.113, from `getBusinessTeamSchedule`.
           example: 57600
+        unjustifiedIncidentCount:
+          type: integer
+          format: int32
+          minimum: 0
+          description: >
+            Sum for the filtered audience of OPEN incidents with justification null anchored
+            on this business-local date. Required and not nullable. 0 when the date is absent
+            from `getBusinessAttendanceIncidentDailyCounts`.
+          example: 1
         people:
           type: array
           description: >
-            Clocked seconds per person that day, in legend order (chart accessibility). One item
-            per person with clocked or pending seconds that day (BFF 0.0.106: a person with only
-            pending time has `clockedSeconds: 0`)
+            One item per person with clocked or pending seconds that day, in legend order
+            (chart accessibility; BFF 0.0.106: a person with only pending time has
+            `clockedSeconds: 0`). `plannedSeconds` and `unjustifiedIncidentCount` are that
+            person's figures for this date.
           items:
             type: object
             properties:
@@ -751,11 +942,29 @@ components:
                 format: int64
                 minimum: 0
                 description: >
-                  Pending of the person that day, apart from `clockedSeconds` (BFF 0.0.106).
-                  Absent from an older BFF
+                  Pending of the person that day, apart from `clockedSeconds`. Required
+                  (BFF 0.0.113; up to 0.0.112 it could be absent).
                 example: 0
-            required: [userId, name, clockedSeconds]
-      required: [date, closed, isToday, clockedSeconds, pendingReviewSeconds, plannedSeconds, people]
+              plannedSeconds:
+                type: [integer, "null"]
+                format: int64
+                minimum: 0
+                description: >
+                  This person's planned seconds on this date, from `getBusinessTeamSchedule`
+                  (v1.0.28). Null when the ISO week is not published. 0 when it is published
+                  and this person has no shift that day. A night shift counts in full on its
+                  start day. The same shift has this figure on Hours, Today and Month.
+                example: 19200
+              unjustifiedIncidentCount:
+                type: integer
+                format: int32
+                minimum: 0
+                description: >
+                  This person's OPEN incidents with justification null anchored on this date.
+                  Required and not nullable. 0 when none.
+                example: 0
+            required: [userId, name, clockedSeconds, pendingReviewSeconds, plannedSeconds, unjustifiedIncidentCount]
+      required: [date, closed, isToday, clockedSeconds, pendingReviewSeconds, plannedSeconds, unjustifiedIncidentCount, people]
 
     AttendanceHoursSelectedDayDTO:
       type: object
@@ -844,6 +1053,25 @@ components:
           minimum: 0
           description: Pending of the person that day, apart from `clockedSeconds`
           example: 3600
+        plannedSeconds:
+          type: [integer, "null"]
+          format: int64
+          minimum: 0
+          description: >
+            This person's planned seconds on the selected day, from
+            `getBusinessTeamSchedule` (v1.0.28). Null when the ISO week is not published.
+            0 when it is published and this person has no shift that day. A night shift
+            counts in full on its start day. The same shift has this figure on Hours, Today
+            and Month.
+          example: 19200
+        unjustifiedIncidentCount:
+          type: integer
+          format: int32
+          minimum: 0
+          description: >
+            This person's OPEN incidents with justification null anchored on the selected
+            day. Required and not nullable. 0 when none.
+          example: 1
         warnings:
           type: array
           description: Open incidents and alerts of the person's attendances that day
@@ -856,7 +1084,203 @@ components:
           oneOf:
             - $ref: "#/components/schemas/AttendanceDetailRefDTO"
             - type: "null"
-      required: [userId, name, jobRole, firstClockIn, lastClockOut, open, clockedSeconds, pendingReviewSeconds, warnings, detailRef]
+      required: [userId, name, jobRole, firstClockIn, lastClockOut, open, clockedSeconds, pendingReviewSeconds, plannedSeconds, unjustifiedIncidentCount, warnings, detailRef]
+
+    # ── Month ──────────────────────────────────────────────────────────────────
+    AttendanceMonthDTO:
+      type: object
+      description: >
+        «Mes» for one calendar month in the business time zone, already summed by the BFF.
+        The client does not add the days or the weeks. There is no `closed` flag and no
+        people list. `clockedSeconds` is CONFIRMED + APPROVED and `pendingReviewSeconds` is
+        PENDING_RECONCILIATION + PENDING_REVIEW, the same rules as Hours, attributed to the
+        business-local clock-in day and net of effective breaks. Open worklogs count in no
+        figure. Planned seconds come from `getBusinessTeamSchedule` (v1.0.28): sum of
+        segments minus the break; a night shift counts entirely on its start day, so a shift
+        that starts outside this month is not included and a shift that starts on the last
+        day of this month counts entirely here. An ISO week that crosses the month affects
+        only its own dates. PUBLISHED, or ARCHIVED that was previously published, counts as
+        published. Null planned seconds means that date's ISO week is not published (404
+        1046). 0 means the week is published and the filtered audience has no shift that day.
+        The client must not interpolate nulls. `unjustifiedIncidentCount` is required and
+        not nullable (ATTENDANCE_VIEW implies ATTENDANCE). Any Main API failure other than
+        team-schedules 404 1046 fails this request; the BFF does not substitute 0.
+      properties:
+        month:
+          type: string
+          description: Requested month, YYYY-MM
+          pattern: '^[0-9]{4}-(0[1-9]|1[0-2])$'
+          example: "2026-02"
+        from:
+          type: string
+          format: date
+          description: First day of the month, inclusive
+          example: "2026-02-01"
+        to:
+          type: string
+          format: date
+          description: Last day of the month, inclusive
+          example: "2026-02-28"
+        today:
+          type: string
+          format: date
+          description: Today in the business time zone. It may fall outside `month`.
+          example: "2026-02-12"
+        totals:
+          $ref: "#/components/schemas/AttendanceMonthTotalsDTO"
+        days:
+          type: array
+          minItems: 28
+          maxItems: 31
+          description: One entry per date from `from` to `to`, ascending
+          items:
+            $ref: "#/components/schemas/AttendanceMonthDayDTO"
+        weeks:
+          type: array
+          minItems: 4
+          maxItems: 6
+          description: >
+            ISO weeks that touch the month, Monday-based, clipped to the month, ascending.
+          items:
+            $ref: "#/components/schemas/AttendanceMonthWeekDTO"
+      required: [month, from, to, today, totals, days, weeks]
+
+    AttendanceMonthTotalsDTO:
+      type: object
+      description: >
+        Month sums. `plannedSeconds` is the sum of the dates whose planned seconds are not
+        null, and null when no date of the month is published. `unpublishedDayCount` is the
+        number of dates whose ISO week is not published.
+      properties:
+        clockedSeconds:
+          type: integer
+          format: int64
+          minimum: 0
+          description: CONFIRMED + APPROVED of the month. Pending is not included.
+          example: 43200
+        pendingReviewSeconds:
+          type: integer
+          format: int64
+          minimum: 0
+          description: PENDING_RECONCILIATION + PENDING_REVIEW of the month, apart from clocked
+          example: 3600
+        plannedSeconds:
+          type: [integer, "null"]
+          format: int64
+          minimum: 0
+          description: >
+            Sum of dates with non-null planned seconds. Null when no date of the month is
+            published. A published day with 0 still counts as published and adds 0.
+          example: 57600
+        unjustifiedIncidentCount:
+          type: integer
+          format: int32
+          minimum: 0
+          description: Sum of the month. Required and not nullable.
+          example: 1
+        unpublishedDayCount:
+          type: integer
+          format: int32
+          minimum: 0
+          description: Dates of the month whose ISO week is not published
+          example: 6
+      required: [clockedSeconds, pendingReviewSeconds, plannedSeconds, unjustifiedIncidentCount, unpublishedDayCount]
+
+    AttendanceMonthDayDTO:
+      type: object
+      description: >
+        One date of the month. No `closed` flag. `isToday` is true only when `date` is
+        `today` in the business time zone.
+      properties:
+        date:
+          type: string
+          format: date
+          example: "2026-02-12"
+        isToday:
+          type: boolean
+          example: true
+        clockedSeconds:
+          type: integer
+          format: int64
+          minimum: 0
+          description: CONFIRMED + APPROVED of the filtered audience that day
+          example: 14400
+        pendingReviewSeconds:
+          type: integer
+          format: int64
+          minimum: 0
+          description: Pending of the filtered audience that day, apart from clocked
+          example: 3600
+        plannedSeconds:
+          type: [integer, "null"]
+          format: int64
+          minimum: 0
+          description: >
+            Planned seconds of the filtered audience on this date, from the team schedule of
+            this date's ISO week. Null when that week is not published. 0 when it is published
+            and there is no shift. A week that crosses the month changes only its own dates.
+          example: 28800
+        unjustifiedIncidentCount:
+          type: integer
+          format: int32
+          minimum: 0
+          description: >
+            OPEN incidents with justification null anchored on this date for the filtered
+            audience. Required and not nullable. 0 when the date is absent from the count.
+          example: 1
+      required: [date, isToday, clockedSeconds, pendingReviewSeconds, plannedSeconds, unjustifiedIncidentCount]
+
+    AttendanceMonthWeekDTO:
+      type: object
+      description: >
+        One ISO week that touches the month, clipped to the dates that fall inside the month.
+        Seconds are the sums of those dates. `plannedSeconds` is null when the week is not
+        published, including when only part of the week is inside the month.
+      properties:
+        week:
+          type: string
+          description: ISO week, YYYY-Www
+          pattern: '^[0-9]{4}-W(0[1-9]|[1-4][0-9]|5[0-3])$'
+          example: "2026-W07"
+        from:
+          type: string
+          format: date
+          description: First date of this week that falls inside the month
+          example: "2026-02-09"
+        to:
+          type: string
+          format: date
+          description: Last date of this week that falls inside the month
+          example: "2026-02-15"
+        published:
+          type: boolean
+          description: >
+            True when team-schedules returns this week (PUBLISHED, or ARCHIVED that was
+            previously published). False on 404 1046.
+          example: true
+        clockedSeconds:
+          type: integer
+          format: int64
+          minimum: 0
+          example: 14400
+        pendingReviewSeconds:
+          type: integer
+          format: int64
+          minimum: 0
+          example: 3600
+        plannedSeconds:
+          type: [integer, "null"]
+          format: int64
+          minimum: 0
+          description: >
+            Sum of this week's dates inside the month. Null when `published` is false.
+          example: 28800
+        unjustifiedIncidentCount:
+          type: integer
+          format: int32
+          minimum: 0
+          example: 1
+      required: [week, from, to, published, clockedSeconds, pendingReviewSeconds, plannedSeconds, unjustifiedIncidentCount]
 
     # ── Day ────────────────────────────────────────────────────────────────────
     AttendanceDayDTO:
@@ -1034,11 +1458,14 @@ components:
     AttendancePlannedDTO:
       type: object
       description: >
-        Planned scheduled shift (Main API `ScheduledShiftResponseDTO` and
-        `metrics.plannedSeconds`). One object per shift, not per segment.
+        Planned scheduled shift. One object per shift, not per segment.
         `startAt` and `endAt` are the envelope. `segments` are the planned
         intervals and are not `clocked.segments`. `plannedSeconds`,
-        `durationSeconds` and `netSeconds` are the same net.
+        `durationSeconds` and `netSeconds` are the same net, taken from
+        `getBusinessTeamSchedule` (v1.0.28), not from `getDailyAttendance`
+        `metrics.plannedSeconds` and not by splitting the shift across the days
+        it overlaps. A night shift counts in full on its start day. The same
+        shift has this figure on Hours and Month.
       properties:
         shiftId:
           type: integer
@@ -1083,9 +1510,12 @@ components:
           minimum: 0
           readOnly: true
           description: >
-            Net planned seconds from the Main API: sum of the planned segment
-            durations minus `breakMinutes`, never negative. The unpaid gap is
-            not included. Same value as `durationSeconds` and `netSeconds`.
+            Net planned seconds of this shift from `getBusinessTeamSchedule`
+            (v1.0.28): sum of the planned segment durations minus `breakMinutes`,
+            never negative. The unpaid gap is not included. A night shift counts
+            in full on its start day. Same value as `durationSeconds` and
+            `netSeconds`, and the same figure Hours and Month use for this shift.
+            Not an overlap slice of the calendar day.
           example: 27000
         durationSeconds:
           type: integer
@@ -1167,7 +1597,8 @@ components:
           type: array
           description: >
             Every worker who appears in the 7 daily views (shift or unmatched worklog), ordered
-            by name, then userId.
+            by name, then userId. Name order is case- and accent-insensitive Spanish locale
+            collation (`es`); ties break by `userId` ascending.
           items:
             $ref: "#/components/schemas/AttendanceWeekPersonDTO"
         filterOptions:
@@ -1359,9 +1790,11 @@ components:
                   minimum: 0
                   readOnly: true
                   description: >
-                    Main API `metrics.plannedSeconds`: sum of the planned segment
-                    durations minus `breakMinutes`, never negative. Same value as
-                    `durationSeconds`. The unpaid gap is not included.
+                    Same figure as `AttendancePlannedDTO.plannedSeconds`: the
+                    shift's `getBusinessTeamSchedule` planned seconds (v1.0.28),
+                    sum of segments minus the break, a night shift in full on its
+                    start day. Not `getDailyAttendance` `metrics.plannedSeconds`
+                    and not an overlap slice. Same value as `durationSeconds`.
                   example: 27000
                 durationSeconds:
                   type: integer

@@ -23,7 +23,7 @@ info:
     | createUserContract, updateUserContract, deleteUserContract | CONTRACTS_MANAGE |
     | getWorklogs, getWorklogHistory of another worker | WORKLOGS_VIEW |
     | updateWorklog (business), correctBusinessWorklog, approveWorklog, rejectWorklog, correctBusinessWorklogBreak, voidBusinessWorklogBreak | WORKLOGS_MANAGE |
-    | getDailyAttendance for everyone (otherwise narrowed to the caller), getShiftAttendance, getBusinessAttendanceMatch | ATTENDANCE_VIEW |
+    | getDailyAttendance for everyone (otherwise narrowed to the caller), getShiftAttendance, getBusinessAttendanceMatch, getBusinessAttendanceIncidentDailyCounts | ATTENDANCE_VIEW |
     | resolveAttendanceMatch, acceptUnplannedAttendance, approveShiftAttendance, acknowledgeNoShow, notifyShiftClockIn | ATTENDANCE_MANAGE |
     | getRecurringSchedules, getRecurringSchedule, getEffectiveRecurringSchedule, getScheduleExceptions, getBusinessShifts, getBusinessShift, getPlannings, getPlanning, getPlanningSettings, getPlanningGeneration, getPlanningGenerationInput | SCHEDULE_VIEW |
     | recurring schedule, schedule exception, shift, job role and planning settings writes; createDraftPlanning, replacePlanningScheduledShifts, publishPlanning, requestPlanningGeneration | SCHEDULE_MANAGE |
@@ -59,7 +59,7 @@ info:
     existing permission requirements; authorised users can access their underlying business data.
 
     `updateBusinessPlan` (platform admin) changes the plan and emits a `PERMISSIONS` sync signal.
-  version: 0.0.118
+  version: 0.0.119
   contact:
     name: Flowrapp Team
     url: https://flowrapp.github.io
@@ -392,6 +392,8 @@ paths:
       dent-justification"
   "/api/v1/businesses/{businessId}/attendance":
     $ref: "v1/services/attendance/attendance-operations.yml#/attendance/daily"
+  "/api/v1/businesses/{businessId}/attendance/incident-daily-counts":
+    $ref: "v1/services/attendance/attendance-operations.yml#/attendance/incident-daily-counts"
   "/api/v1/businesses/{businessId}/attendance-incidents":
     $ref: "v1/services/attendanceInbox/attendance-inbox-operations.yml#/attendanceInbox/incidents"
   "/api/v1/businesses/{businessId}/attendance-incidents/daily-counts":
