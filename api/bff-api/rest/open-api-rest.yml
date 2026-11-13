@@ -36,7 +36,7 @@ info:
     | updateManagerBusinessProfile, updateManagerBusinessGeofence | BUSINESS_EDIT |
     | removeBusinessMember, getAccessRoles, createAccessRole, replaceAccessRole, deleteAccessRole, updateMemberAccessRole | OWNER |
     | getWorkerHoursMonths, getWorkerWorkedHoursReportPdf | current or past membership (no contract check); always the caller's own data (never REPORTS_EXPORT, no user parameter) |
-    | getWorkerProfile | active membership; an EMPLOYEE without a contract in force receives 403 1104. Own phone and document, no PERSONAL_DATA_VIEW |
+    | getWorkerProfile | active membership. Own phone and document, no PERSONAL_DATA_VIEW. No contract check and no 1104; jobRole is null without a contract in force |
     | updateCurrentUserPhone | authenticated session. Global phone, not a business permission |
     | receiveClerkWebhook | public. Forwards the raw body and Svix headers. The Main API verifies the signature |
     | worker, me and team-schedule operations | membership only |

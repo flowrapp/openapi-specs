@@ -5,7 +5,8 @@ auth:
       description: >
         Requires a Clerk session whose mail claim matches the invited email.
         A not-yet-enabled invited user is enabled, their username and phone are
-        updated, and the invitation is accepted. `phone` must be E.164 or the
+        updated, and the invitation is accepted. `phone` is required on purpose:
+        registration is when it is collected, and it must be E.164 or the
         response is 400 1161. Accepting copies an identity document from the
         invitation onto the membership and then clears it. The document is
         already gone if the invitation had expired. An already-enabled invited

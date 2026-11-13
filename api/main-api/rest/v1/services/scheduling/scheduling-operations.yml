@@ -1222,7 +1222,7 @@ planning:
                         open: true
                         shifts:
                           - id: 900
-                            worker: {id: 3, name: Bob Wilson}
+                            worker: {id: 3, name: Bob Wilson, avatarUrl: null}
                             jobRole: {id: 10, code: WAITER, name: Waiter, color: "#1A2B3C", icon: front-of-house}
                             shiftId: 20
                             shiftName: Morning service
@@ -1234,7 +1234,7 @@ planning:
                             durationSeconds: 27000
                             netSeconds: 27000
                           - id: 902
-                            worker: {id: 5, name: Luis García}
+                            worker: {id: 5, name: Luis García, avatarUrl: null}
                             jobRole: {id: 10, code: WAITER, name: Waiter, color: "#1A2B3C", icon: front-of-house}
                             shiftId: 22
                             shiftName: Split service
@@ -1251,7 +1251,7 @@ planning:
                               - startAt: "2025-07-28T18:00:00+02:00"
                                 endAt: "2025-07-28T23:00:00+02:00"
                           - id: 901
-                            worker: {id: 4, name: Alice Brown}
+                            worker: {id: 4, name: Alice Brown, avatarUrl: null}
                             jobRole: {id: 11, code: KITCHEN, name: Kitchen, color: "#4C9F70", icon: kitchen}
                             shiftId: 21
                             shiftName: Night service
@@ -1280,7 +1280,7 @@ planning:
                         open: true
                         shifts:
                           - id: 850
-                            worker: {id: 3, name: Bob Wilson}
+                            worker: {id: 3, name: Bob Wilson, avatarUrl: null}
                             jobRole: {id: 10, code: WAITER, name: Waiter, color: "#1A2B3C", icon: front-of-house}
                             shiftId: 20
                             shiftName: Morning service

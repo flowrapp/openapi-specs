@@ -206,9 +206,12 @@ managerPersonalData:
       description: >
         Removes the member's profile photo in Clerk for every business of that
         user. OWNER only. Pass-through to Main API `deleteBusinessUserAvatar`.
-        Idempotent 204 when there is no photo. A Clerk failure is 502 1162, and
+        Idempotent 204 when there is no photo. After the 204, the next read
+        returns `avatarUrl: null`. A Clerk failure is 502 1162, and
         `Retry-After` is forwarded when Main sends it. The BFF does not hold
-        `CLERK_SECRET_KEY` and does not call Clerk itself. No realtime signal.
+        `CLERK_SECRET_KEY` and does not call Clerk itself. The worker's own
+        photo is uploaded or removed with the Clerk SDK (`user.setProfileImage`),
+        not through this operation. There is no realtime signal.
       tags:
         - Manager
       operationId: deleteManagerWorkerPhoto
@@ -233,7 +236,9 @@ managerPersonalData:
             minimum: 1
       responses:
         '204':
-          description: Photo removed, or already absent. No body.
+          description: >
+            Photo removed, or already absent. No body. After the 204, the next
+            read returns `avatarUrl: null`.
         '401':
           description: Missing or invalid bearer token
         '403':

@@ -5,7 +5,8 @@ invitations:
       description: >-
         Requires a Clerk session whose mail claim matches the invited email.
         A not-yet-enabled invited user is enabled, their username and phone are
-        updated, and the invitation is accepted. `phone` must be E.164 or the
+        updated, and the invitation is accepted. `phone` is required on purpose:
+        registration is when it is collected, and it must be E.164 or the
         response is 400 1161. Accepting copies an identity document from the
         invitation onto the membership in the same transaction and then clears
         it on the invitation. The document is already gone if the invitation
@@ -259,6 +260,7 @@ invitations:
                 $ref: '../../components/invitations/components.yml#/components/schemas/InvitationResponseDTO'
               example:
                 id: 123
+                hasIdentityDocument: false
                 businessId: 101
                 businessName: "Coffee Time"
                 email: "invitee@example.com"
@@ -386,6 +388,7 @@ invitations:
                   $ref: '../../components/invitations/components.yml#/components/schemas/InvitationResponseDTO'
               example:
                 - id: 123
+                  hasIdentityDocument: false
                   businessId: 101
                   businessName: "Coffee Time"
                   email: "invitee@example.com"
@@ -395,6 +398,7 @@ invitations:
                   createdAt: "2023-06-15T14:30:00+00:00"
                   expiresAt: "2023-06-22T14:30:00+00:00"
                 - id: 124
+                  hasIdentityDocument: false
                   businessId: 101
                   businessName: "Coffee Time"
                   email: "another@example.com"
@@ -568,6 +572,7 @@ invitations:
                 $ref: '../../components/invitations/components.yml#/components/schemas/InvitationResponseDTO'
               example:
                 id: 123
+                hasIdentityDocument: false
                 businessId: 101
                 businessName: "Coffee Time"
                 email: "invitee@example.com"
@@ -669,6 +674,7 @@ invitations:
                   $ref: '../../components/invitations/components.yml#/components/schemas/InvitationResponseDTO'
               example:
                 - id: 123
+                  hasIdentityDocument: false
                   businessId: 101
                   businessName: "Coffee Time"
                   email: "invitee@example.com"
@@ -678,6 +684,7 @@ invitations:
                   createdAt: "2023-06-15T14:30:00+00:00"
                   expiresAt: "2023-06-22T14:30:00+00:00"
                 - id: 124
+                  hasIdentityDocument: false
                   businessId: 202
                   businessName: "Bistro Central"
                   email: "another@example.com"

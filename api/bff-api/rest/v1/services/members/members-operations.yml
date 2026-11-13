@@ -206,6 +206,7 @@ members:
               example:
                 content:
                   - userId: 41
+                    avatarUrl: null
                     name: "Turín García"
                     role: EMPLOYEE
                     jobRole:
@@ -221,6 +222,7 @@ members:
                     contractEndingSoon: false
                     workingNow: true
                   - userId: 18
+                    avatarUrl: null
                     name: "Arturo López"
                     role: EMPLOYEE
                     jobRole:
@@ -236,6 +238,7 @@ members:
                     contractEndingSoon: true
                     workingNow: false
                   - userId: 27
+                    avatarUrl: null
                     name: "Saturnino Ruiz"
                     role: EMPLOYEE
                     jobRole: null

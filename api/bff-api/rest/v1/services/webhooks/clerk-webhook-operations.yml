@@ -4,7 +4,8 @@ webhooks:
       summary: Receive a Clerk user webhook
       description: >
         Public route (`permitAll`, `security` is empty), same idea as the device
-        geofence route. Clerk sends `user.created`, `user.updated` and
+        geofence route. The mobile app does not call this operation. Only Clerk
+        does. Clerk sends `user.created`, `user.updated` and
         `user.deleted` here. The BFF does not parse the body and does not verify
         the signature. It forwards the raw bytes and the `svix-id`,
         `svix-timestamp` and `svix-signature` headers to Main API
@@ -15,6 +16,7 @@ webhooks:
       tags:
         - Webhooks
       operationId: receiveClerkWebhook
+      x-internal: true
       security: []
       parameters:
         - name: svix-id

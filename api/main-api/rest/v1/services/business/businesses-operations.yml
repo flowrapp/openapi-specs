@@ -269,6 +269,7 @@ businesses:
                   $ref: '../../components/business/components.yml#/components/schemas/BusinessUserResponseDTO'
               example:
                 - userId: 1
+                  avatarUrl: null
                   username: "john.doe"
                   name: "John Doe"
                   email: "john.doe@example.com"
@@ -289,6 +290,7 @@ businesses:
                     startDate: "2025-01-01"
                     endDate: null
                 - userId: 2
+                  avatarUrl: null
                   username: "jane.doe"
                   name: "Jane Doe"
                   email: "jane.doe@example.com"
@@ -296,6 +298,7 @@ businesses:
                   accessRole: {id: 7, name: Encargado}
                   currentContract: null
                 - userId: 3
+                  avatarUrl: null
                   username: "sam.lee"
                   name: "Sam Lee"
                   email: "sam.lee@example.com"
@@ -526,14 +529,17 @@ businesses:
               example:
                 content:
                   - userId: 41
+                    avatarUrl: null
                     username: "Turín García"
                     name: "Turín García"
                     role: EMPLOYEE
                   - userId: 18
+                    avatarUrl: null
                     username: "Arturo López"
                     name: "Arturo López"
                     role: EMPLOYEE
                   - userId: 27
+                    avatarUrl: null
                     username: "Saturnino Ruiz"
                     name: "Saturnino Ruiz"
                     role: EMPLOYEE

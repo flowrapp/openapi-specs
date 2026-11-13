@@ -3,7 +3,8 @@ webhooks:
     post:
       summary: Receive a Clerk user webhook
       description: >
-        Public endpoint. No JWT (`security` is empty). Clerk delivers
+        Public endpoint. No JWT (`security` is empty). The mobile app does not
+        call this operation. Only Clerk does. Clerk delivers
         `user.created`, `user.updated` and `user.deleted` through Svix to the
         BFF, which forwards the raw body and the `svix-id`, `svix-timestamp`
         and `svix-signature` headers here. The signature is verified with
@@ -35,6 +36,7 @@ webhooks:
       tags:
         - Webhooks
       operationId: receiveClerkWebhook
+      x-internal: true
       security: []
       parameters:
         - name: svix-id

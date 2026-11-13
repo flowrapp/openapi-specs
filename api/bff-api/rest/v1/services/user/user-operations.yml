@@ -4,8 +4,12 @@ user:
       summary: Get current user profile
       description: >
         Returns the profile of the currently authenticated user, including their name,
-        email, phone, profile photo and global system role. `avatarUrl` is null
-        until a Clerk webhook has synced the photo. There is no initial backfill.
+        email, phone, profile photo and global system role. The worker uploads or
+        removes their own photo with the Clerk SDK (`user.setProfileImage`), not
+        through the BFF. `avatarUrl` stays null until a Clerk webhook has synced
+        the photo, and then changes asynchronously. There is no operation to force
+        that refresh and no initial backfill. `phone` is the stored value and may
+        not be E.164 until the data normalization runs.
       tags:
         - User
       operationId: getCurrentUserProfile

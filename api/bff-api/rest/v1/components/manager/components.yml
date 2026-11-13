@@ -1075,6 +1075,14 @@ components:
           format: date-time
           description: When the invitation expires
           example: "2025-06-22T14:30:00+00:00"
+        hasIdentityDocument:
+          type: [boolean, "null"]
+          description: >
+            Whether this invitation currently stores an identity document.
+            `true` or `false` only when the caller is the OWNER of the business.
+            `null` for everyone else. The document itself is never returned.
+            Forwarded from the Main API `InvitationResponseDTO`.
+          example: false
       required:
         - id
         - email
@@ -1083,6 +1091,7 @@ components:
         - status
         - createdAt
         - expiresAt
+        - hasIdentityDocument
 
     ManagerLocalMinuteTimeDTO:
       type: string

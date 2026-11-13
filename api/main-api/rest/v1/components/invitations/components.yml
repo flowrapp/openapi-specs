@@ -11,7 +11,8 @@ components:
         phone:
           type: string
           description: >
-            Phone number in E.164 (`^\+[1-9][0-9]{6,14}$`). The server does not
+            Phone number in E.164 (`^\+[1-9][0-9]{6,14}$`). Required on purpose:
+            registration is when the phone is collected. The server does not
             infer a country prefix. A value that does not match is 400 1161 and
             the message does not echo it. Not unique across users.
           minLength: 8
@@ -112,6 +113,15 @@ components:
           format: date-time
           description: Date and time when the invitation expires
           example: "2023-06-22T14:30:00+00:00"
+        hasIdentityDocument:
+          type: [boolean, "null"]
+          description: >
+            Whether this invitation currently stores an identity document.
+            `true` or `false` only when the caller is the OWNER of the business.
+            `null` for everyone else, including a caller with `TEAM_INVITE` who
+            is not the OWNER and the invitee. The document itself is never
+            returned.
+          example: false
       required:
         - id
         - businessId
@@ -122,3 +132,4 @@ components:
         - status
         - createdAt
         - expiresAt
+        - hasIdentityDocument

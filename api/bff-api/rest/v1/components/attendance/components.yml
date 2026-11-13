@@ -209,7 +209,7 @@ components:
         kind: SHIFT
         detailRef: {date: "2026-10-30", userId: 103, scheduledShiftId: 900, attendanceMatchId: null}
         header:
-          worker: {userId: 103, name: Carlos Vega}
+          worker: {userId: 103, name: Carlos Vega, avatarUrl: null}
           jobRole: {id: 3, name: Barra}
           shiftName: Partido
           date: "2026-10-30"
@@ -248,7 +248,7 @@ components:
             justification:
               text: The bus was late.
               justifiedAt: "2026-10-30T09:40:00+01:00"
-              by: {userId: 103, name: Carlos Vega}
+              by: {userId: 103, name: Carlos Vega, avatarUrl: null}
             resolvedAt: null
             resolvedBy: null
             reason: null
@@ -268,7 +268,7 @@ components:
         kind: UNMATCHED
         detailRef: {date: "2026-10-29", userId: 110, scheduledShiftId: null, attendanceMatchId: 712}
         header:
-          worker: {userId: 110, name: Nuria Campos}
+          worker: {userId: 110, name: Nuria Campos, avatarUrl: null}
           jobRole: {id: 2, name: Cocina}
           shiftName: null
           date: "2026-10-29"

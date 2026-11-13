@@ -7,7 +7,10 @@ components:
         Clerk profile photo URL, or null. Null means Clerk has no uploaded image
         (`has_image` false), no webhook has synced this user yet (there is no
         initial backfill), the user was deleted in Clerk, or an owner removed the
-        photo. Only an `https` URL is stored. The client may append Clerk
+        photo. The worker uploads or removes their own photo with the Clerk SDK
+        (`user.setProfileImage`), not through the BFF. `avatarUrl` then changes
+        asynchronously when the webhook arrives. There is no operation to force
+        that refresh. Only an `https` URL is stored. The client may append Clerk
         image-optimization parameters (`width`, `height`, `fit`, `quality`).
         Visible to the whole team. Not gated by `PERSONAL_DATA_VIEW`. The app
         paints a generated avatar when this is null or the image fails to load.
@@ -16,9 +19,10 @@ components:
     IdentityDocumentTypeDTO:
       type: string
       description: >
-        Identity document type of one business membership. Same values as the
-        Main API. `DNI` and `NIE` carry a Spanish check letter. `PASSPORT` is
-        format only.
+        Closed set, the same values as the Main API: `DNI`, `NIE` and
+        `PASSPORT`. Clients must not tolerate any other value. Adding a value
+        is a version change. `DNI` and `NIE` carry a Spanish check letter.
+        `PASSPORT` is format only.
       enum: [DNI, NIE, PASSPORT]
       example: DNI
 
@@ -44,11 +48,21 @@ components:
       additionalProperties: false
       description: >
         Identity document to store. Passed through to the Main API, which
-        normalizes and validates it. Format failures are 400 1158, a `DNI` or
-        `NIE` check letter failure is 400 1159, and a document already used by an
-        active member or a pending invitation of this business is 409 1160. The
-        number is never echoed in the error. See the Main API
-        `IdentityDocumentRequestDTO` for the patterns.
+        normalizes and validates it with the same rules. The server trims,
+        uppercases and removes spaces, hyphens and dots before validating, and
+        stores the normalized value. The submitted number is never echoed in
+        errors or logs.
+
+        Validation, format before check letter. After normalization, a character
+        outside `[A-Z0-9]`, a missing `documentType` or `documentNumber`, an
+        unknown type, or a number that does not match the type is 400 1158.
+        `DNI` must match `^[0-9]{8}[A-Z]$` and the letter must be
+        `TRWAGMYFPDXBNJZSQVHLCKE[n % 23]`. `NIE` must match `^[XYZ][0-9]{7}[A-Z]$`,
+        with `X`/`Y`/`Z` read as 0/1/2 and the same letter. `PASSPORT` must match
+        `^(?=.*[0-9])[A-Z0-9]{5,20}$` and has no check letter. A `DNI` or `NIE`
+        whose pattern matches and whose letter does not is 400 1159. A document
+        already used by an active member or a pending invitation of this
+        business is 409 1160.
       properties:
         documentType:
           $ref: "#/components/schemas/IdentityDocumentTypeDTO"
@@ -71,8 +85,10 @@ components:
       properties:
         phone:
           type: [string, "null"]
-          pattern: '^\+[1-9][0-9]{6,14}$'
-          description: Global phone in E.164, or null when unset. Not unique across users.
+          description: >
+            Global phone as stored, or null when unset. Not unique across users.
+            New writes must be E.164. A value already stored may not be E.164
+            until the data normalization runs.
           example: "+34612345678"
         identityDocument:
           description: Document of this business membership, or null when none is stored.
@@ -139,8 +155,10 @@ components:
           example: lucia.ramos@example.com
         phone:
           type: [string, "null"]
-          pattern: '^\+[1-9][0-9]{6,14}$'
-          description: Global phone in E.164, or null when unset.
+          description: >
+            Global phone as stored, or null when unset. New writes must be
+            E.164. A value already stored may not be E.164 until the data
+            normalization runs.
           example: "+34612345678"
         avatarUrl:
           $ref: "#/components/schemas/AvatarUrl"
@@ -155,8 +173,9 @@ components:
           example: Coffee Time
         jobRole:
           description: >
-            Job role of the contract in force today, or null when the caller has
-            none (an OWNER need not have a contract).
+            Job role of the contract in force today, or null when there is none.
+            An employee without a contract in force still receives this profile;
+            `jobRole` is null.
           oneOf:
             - $ref: "#/components/schemas/WorkerProfileJobRoleDTO"
             - type: "null"

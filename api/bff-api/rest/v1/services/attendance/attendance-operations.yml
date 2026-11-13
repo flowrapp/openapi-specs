@@ -114,13 +114,14 @@ attendance:
                     plannedSeconds: 57600
                     unjustifiedIncidentCount: 1
                     people:
-                      - {userId: 102, name: Lucía Martín, clockedSeconds: 18180, pendingReviewSeconds: 0, plannedSeconds: 19200, unjustifiedIncidentCount: 0}
-                      - {userId: 103, name: Carlos Vega, clockedSeconds: 0, pendingReviewSeconds: 13440, plannedSeconds: 19200, unjustifiedIncidentCount: 1}
-                      - {userId: 109, name: irene.navas@example.com, clockedSeconds: 18780, pendingReviewSeconds: 0, plannedSeconds: 19200, unjustifiedIncidentCount: 0}
+                      - {userId: 102, name: Lucía Martín, clockedSeconds: 18180, pendingReviewSeconds: 0, plannedSeconds: 19200, unjustifiedIncidentCount: 0, avatarUrl: null}
+                      - {userId: 103, name: Carlos Vega, clockedSeconds: 0, pendingReviewSeconds: 13440, plannedSeconds: 19200, unjustifiedIncidentCount: 1, avatarUrl: null}
+                      - {userId: 109, name: irene.navas@example.com, clockedSeconds: 18780, pendingReviewSeconds: 0, plannedSeconds: 19200, unjustifiedIncidentCount: 0, avatarUrl: null}
                   - {date: "2026-10-31", closed: false, isToday: false, clockedSeconds: 0, pendingReviewSeconds: 0, plannedSeconds: 0, unjustifiedIncidentCount: 0, people: []}
                   - {date: "2026-11-01", closed: false, isToday: false, clockedSeconds: 0, pendingReviewSeconds: 0, plannedSeconds: 0, unjustifiedIncidentCount: 0, people: []}
                 people:
                   - userId: 103
+                    avatarUrl: null
                     name: Carlos Vega
                     jobRole: {id: 3, name: Barra}
                     removed: false
@@ -130,6 +131,7 @@ attendance:
                     unjustifiedIncidentCount: 1
                     needsReview: true
                   - userId: 109
+                    avatarUrl: null
                     name: irene.navas@example.com
                     jobRole: {id: 1, name: Sala}
                     removed: false
@@ -139,6 +141,7 @@ attendance:
                     unjustifiedIncidentCount: 0
                     needsReview: false
                   - userId: 102
+                    avatarUrl: null
                     name: Lucía Martín
                     jobRole: {id: 2, name: Cocina}
                     removed: false
@@ -148,9 +151,9 @@ attendance:
                     unjustifiedIncidentCount: 0
                     needsReview: false
                 legend:
-                  - {userId: 103, name: Carlos Vega}
-                  - {userId: 109, name: irene.navas@example.com}
-                  - {userId: 102, name: Lucía Martín}
+                  - {userId: 103, name: Carlos Vega, avatarUrl: null}
+                  - {userId: 109, name: irene.navas@example.com, avatarUrl: null}
+                  - {userId: 102, name: Lucía Martín, avatarUrl: null}
                 selectedDay:
                   date: "2026-10-30"
                   clockedSeconds: 36960
@@ -159,6 +162,7 @@ attendance:
                   averageSecondsPerPerson: 12320
                   rows:
                     - userId: 102
+                      avatarUrl: null
                       name: Lucía Martín
                       jobRole: {id: 2, name: Cocina}
                       firstClockIn: "2026-10-30T07:00:00+01:00"
@@ -171,6 +175,7 @@ attendance:
                       warnings: []
                       detailRef: {date: "2026-10-30", userId: 102, scheduledShiftId: 902, attendanceMatchId: null}
                     - userId: 103
+                      avatarUrl: null
                       name: Carlos Vega
                       jobRole: {id: 3, name: Barra}
                       firstClockIn: "2026-10-30T09:18:00+01:00"
@@ -184,6 +189,7 @@ attendance:
                         - {type: LATE_ENTRY, severity: WARNING, seconds: 1080}
                       detailRef: {date: "2026-10-30", userId: 103, scheduledShiftId: 900, attendanceMatchId: null}
                     - userId: 109
+                      avatarUrl: null
                       name: irene.navas@example.com
                       jobRole: {id: 1, name: Sala}
                       firstClockIn: "2026-10-30T07:31:00+01:00"
@@ -197,9 +203,9 @@ attendance:
                       detailRef: {date: "2026-10-30", userId: 109, scheduledShiftId: 909, attendanceMatchId: null}
                 filterOptions:
                   people:
-                    - {userId: 103, name: Carlos Vega, jobRoleId: 3, removed: false}
-                    - {userId: 109, name: irene.navas@example.com, jobRoleId: 1, removed: false}
-                    - {userId: 102, name: Lucía Martín, jobRoleId: 2, removed: false}
+                    - {userId: 103, name: Carlos Vega, jobRoleId: 3, removed: false, avatarUrl: null}
+                    - {userId: 109, name: irene.navas@example.com, jobRoleId: 1, removed: false, avatarUrl: null}
+                    - {userId: 102, name: Lucía Martín, jobRoleId: 2, removed: false, avatarUrl: null}
                   jobRoles:
                     - {id: 1, name: Sala}
                     - {id: 2, name: Cocina}
@@ -324,7 +330,7 @@ attendance:
                     section: INCIDENTS
                     severity: CRITICAL
                     status: FINISHED
-                    worker: {userId: 104, name: Diego Sanz}
+                    worker: {userId: 104, name: Diego Sanz, avatarUrl: null}
                     jobRole: {id: 2, name: Cocina}
                     planned: {shiftId: 11, shiftName: Mañana, shiftColor: "#4F8EF7", startAt: "2026-10-30T08:00:00+01:00", endAt: "2026-10-30T13:00:00+01:00", breakMinutes: 0, plannedSeconds: 18000}
                     clocked: {firstClockIn: null, lastClockOut: null, open: false, segments: []}
@@ -338,7 +344,7 @@ attendance:
                     section: INCIDENTS
                     severity: WARNING
                     status: IN_PROGRESS
-                    worker: {userId: 103, name: Carlos Vega}
+                    worker: {userId: 103, name: Carlos Vega, avatarUrl: null}
                     jobRole: {id: 3, name: Barra}
                     planned:
                       shiftId: 12
@@ -371,7 +377,7 @@ attendance:
                     section: UPCOMING
                     severity: OK
                     status: UPCOMING
-                    worker: {userId: 106, name: Pablo Ruiz}
+                    worker: {userId: 106, name: Pablo Ruiz, avatarUrl: null}
                     jobRole: {id: 1, name: Sala}
                     planned: {shiftId: 13, shiftName: Tarde, shiftColor: "#F59E0B", startAt: "2026-10-30T16:00:00+01:00", endAt: "2026-10-30T23:00:00+01:00", breakMinutes: 0, plannedSeconds: 25200}
                     clocked: {firstClockIn: null, lastClockOut: null, open: false, segments: []}
@@ -381,9 +387,9 @@ attendance:
                     detailRef: {date: "2026-10-30", userId: 106, scheduledShiftId: 906, attendanceMatchId: null}
                 filterOptions:
                   people:
-                    - {userId: 103, name: Carlos Vega, jobRoleId: 3, removed: false}
-                    - {userId: 104, name: Diego Sanz, jobRoleId: 2, removed: false}
-                    - {userId: 106, name: Pablo Ruiz, jobRoleId: 1, removed: false}
+                    - {userId: 103, name: Carlos Vega, jobRoleId: 3, removed: false, avatarUrl: null}
+                    - {userId: 104, name: Diego Sanz, jobRoleId: 2, removed: false, avatarUrl: null}
+                    - {userId: 106, name: Pablo Ruiz, jobRoleId: 1, removed: false, avatarUrl: null}
                   jobRoles:
                     - {id: 1, name: Sala}
                     - {id: 2, name: Cocina}
@@ -495,6 +501,7 @@ attendance:
                   - {date: "2026-11-01", closed: true, isToday: false}
                 people:
                   - userId: 106
+                    avatarUrl: null
                     name: Pablo Ruiz
                     cells:
                       - {date: "2026-10-26", state: ON_TIME, start: "2026-10-26T15:58:00+01:00", end: "2026-10-26T23:02:00+01:00", warningDot: false, attendanceCount: 1, detailRef: {date: "2026-10-26", userId: 106, scheduledShiftId: 886, attendanceMatchId: null}}
@@ -506,7 +513,7 @@ attendance:
                       - {date: "2026-11-01", state: "OFF", start: null, end: null, warningDot: false, attendanceCount: 0, detailRef: null}
                 filterOptions:
                   people:
-                    - {userId: 106, name: Pablo Ruiz, jobRoleId: 1, removed: false}
+                    - {userId: 106, name: Pablo Ruiz, jobRoleId: 1, removed: false, avatarUrl: null}
                   jobRoles:
                     - {id: 1, name: Sala}
         '400':

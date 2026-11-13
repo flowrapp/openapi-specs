@@ -792,6 +792,7 @@ components:
       example:
         actor:
           userId: 42
+          avatarUrl: null
           displayName: Luis Mora
         reason: No puedo ese miércoles
         rejectedAt: "2026-11-06T20:05:00+01:00"

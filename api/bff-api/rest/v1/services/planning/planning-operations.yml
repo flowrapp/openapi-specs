@@ -360,9 +360,9 @@ planning:
                   belowMinimum: false
                   memberCount: 3
                   members:
-                  - {userId: 52, name: Hugo Torres, contractedSeconds: 144000}
-                  - {userId: 51, name: Lucía Ramos, contractedSeconds: 144000}
-                  - {userId: 53, name: Álvaro Gil, contractedSeconds: 115200}
+                  - {userId: 52, name: Hugo Torres, contractedSeconds: 144000, avatarUrl: null}
+                  - {userId: 51, name: Lucía Ramos, contractedSeconds: 144000, avatarUrl: null}
+                  - {userId: 53, name: Álvaro Gil, contractedSeconds: 115200, avatarUrl: null}
                 - jobRoleId: 12
                   jobRole: {id: 12, code: COOK, name: Cocina, color: '#4C9F70', icon: kitchen, active: true}
                   requiredSeconds: 460800
@@ -374,9 +374,9 @@ planning:
                   belowMinimum: false
                   memberCount: 3
                   members:
-                  - {userId: 61, name: Carlos Vega, contractedSeconds: 144000}
-                  - {userId: 63, name: Carmen Rubio, contractedSeconds: 144000}
-                  - {userId: 62, name: Sofía Peña, contractedSeconds: 144000}
+                  - {userId: 61, name: Carlos Vega, contractedSeconds: 144000, avatarUrl: null}
+                  - {userId: 63, name: Carmen Rubio, contractedSeconds: 144000, avatarUrl: null}
+                  - {userId: 62, name: Sofía Peña, contractedSeconds: 144000, avatarUrl: null}
                 - jobRoleId: 10
                   jobRole: {id: 10, code: WAITER, name: Sala, color: '#3494FB', icon: front-of-house, active: true}
                   requiredSeconds: 489600
@@ -388,10 +388,10 @@ planning:
                   belowMinimum: false
                   memberCount: 4
                   members:
-                  - {userId: 44, name: Ana Gómez, contractedSeconds: 115200}
-                  - {userId: 42, name: Irene Navas, contractedSeconds: 144000}
-                  - {userId: 41, name: Javier Mora, contractedSeconds: 144000}
-                  - {userId: 43, name: Pablo Ruiz, contractedSeconds: 144000}
+                  - {userId: 44, name: Ana Gómez, contractedSeconds: 115200, avatarUrl: null}
+                  - {userId: 42, name: Irene Navas, contractedSeconds: 144000, avatarUrl: null}
+                  - {userId: 41, name: Javier Mora, contractedSeconds: 144000, avatarUrl: null}
+                  - {userId: 43, name: Pablo Ruiz, contractedSeconds: 144000, avatarUrl: null}
                 days:
                 - date: '2026-11-16'
                   dayOfWeek: MONDAY

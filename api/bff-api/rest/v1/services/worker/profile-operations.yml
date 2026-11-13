@@ -4,13 +4,17 @@ workerProfile:
       summary: Get the caller's profile in a business
       description: >
         Profile screen of the signed-in worker in one business. Active membership
-        required. An EMPLOYEE without a contract in force receives 403 1104.
+        is enough. An employee without a contract in force still receives 200,
+        with `jobRole: null`. This operation does not return 403 1104.
         The response is composed from Main API `getCurrentUser` (name, email,
         avatarUrl), `getCurrentUserPersonalData` (phone and identity document)
         and the caller's current contract (job role) and business name. The
         document number is complete; the app masks it. Own data does not require
-        `PERSONAL_DATA_VIEW`. The response sends `Cache-Control: no-store`.
-        There is no realtime refresh.
+        `PERSONAL_DATA_VIEW`. The worker uploads or removes their own photo with
+        the Clerk SDK (`user.setProfileImage`), not through the BFF. `avatarUrl`
+        then changes asynchronously when the webhook arrives. There is no
+        operation to force that refresh. The response sends
+        `Cache-Control: no-store`. There is no realtime refresh.
       tags:
         - Worker
       operationId: getWorkerProfile
@@ -56,9 +60,7 @@ workerProfile:
         '401':
           description: Missing or invalid bearer token
         '403':
-          description: >
-            The caller is not a member of the business (1015), or is an EMPLOYEE
-            without a contract in force (1104).
+          description: The caller is not a member of the business (1015).
           content:
             application/problem+json:
               schema:
@@ -69,11 +71,6 @@ workerProfile:
                   value:
                     status: 403
                     detail: "1015 - user is not member of business"
-                noContract:
-                  summary: "1104 - employee has no active contract in this business"
-                  value:
-                    status: 403
-                    detail: "1104 - employee has no active contract in this business"
         '404':
           description: Business not found (1006)
           content:
@@ -86,4 +83,4 @@ workerProfile:
                   value:
                     status: 404
                     detail: "1006 - business does not exist"
-      x-functional-errors: [1006, 1015, 1104]
+      x-functional-errors: [1006, 1015]

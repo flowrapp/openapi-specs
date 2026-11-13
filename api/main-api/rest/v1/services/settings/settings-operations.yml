@@ -147,16 +147,19 @@ settings:
                 policy: WARN
                 users:
                   - businessUserId: 101
+                    avatarUrl: null
                     name: Ana García
                     role: EMPLOYEE
                     policy: BLOCK
                     effectivePolicy: BLOCK
                   - businessUserId: 102
+                    avatarUrl: null
                     name: Luis Pérez
                     role: EMPLOYEE
                     policy: ALLOW
                     effectivePolicy: WARN
                   - businessUserId: 103
+                    avatarUrl: null
                     name: Marta Ruiz
                     role: OWNER
                     policy: WARN
@@ -369,16 +372,19 @@ settings:
                 enabled: true
                 users:
                   - businessUserId: 101
+                    avatarUrl: null
                     name: Ana García
                     role: EMPLOYEE
                     enabled: true
                     effectiveEnabled: true
                   - businessUserId: 102
+                    avatarUrl: null
                     name: Luis Pérez
                     role: EMPLOYEE
                     enabled: false
                     effectiveEnabled: false
                   - businessUserId: 103
+                    avatarUrl: null
                     name: Marta Ruiz
                     role: OWNER
                     enabled: true

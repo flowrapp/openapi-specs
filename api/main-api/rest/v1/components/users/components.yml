@@ -18,10 +18,11 @@ components:
           example: john.doe@example.com
         phone:
           type: [string, "null"]
-          pattern: '^\+[1-9][0-9]{6,14}$'
           description: >
-            Global phone in E.164, or null when unset. Not unique across users.
-            The same value as `MemberPersonalDataDTO.phone`.
+            Global phone as stored, or null when unset. Not unique across users.
+            The same value as `MemberPersonalDataDTO.phone`. New writes must be
+            E.164. A value already stored may not be E.164 until the data
+            normalization runs.
           example: "+34612345678"
         avatarUrl:
           $ref: '../personalData/components.yml#/components/schemas/AvatarUrl'
