@@ -78,12 +78,16 @@ components:
       description: >
         Restricts the screen to these users (`userIds=3&userIds=7`). Forwarded as `userIds`
         to every Main API call that returns attendance or hours, so the Main API filters;
-        the BFF never filters rows in memory. Omit it for the whole team. More than 50 ids
-        returns 400 1111. It does not narrow `filterOptions.people`: the filtered people are
-        always listed there (see `AttendanceFilterOptionsDTO`).
+        the BFF never filters rows in memory. Omit the parameter for the whole filtered
+        audience (still narrowed by `jobRoleId` when that parameter is sent). When present,
+        1 to 50 distinct ids (`uniqueItems`), the same rule as Main. An empty value
+        (`userIds=`), duplicates, or more than 50 return 400 1111. It does not narrow
+        `filterOptions.people`: the filtered people are always listed there (see
+        `AttendanceFilterOptionsDTO`).
       schema:
         type: array
         uniqueItems: true
+        minItems: 1
         maxItems: 50
         items:
           type: integer
@@ -147,6 +151,32 @@ components:
         pattern: '^[0-9]{4}-(0[1-9]|1[0-2])$'
         example: "2026-02"
 
+  headers:
+    XRateLimitRetryAfterSeconds:
+      description: >
+        Integer seconds until this user may call this business's attendance GET reads
+        again. Sent by the BFF limiter (bucket4j-spring-boot-starter) on 429. This is not
+        the standard `Retry-After` header. `Retry-After` is only forwarded when Main sends
+        it (for example 429 1119 or 503 1149) and this limiter does not set it. The BFF
+        implementation PR must verify this header with an integration test.
+      required: true
+      schema:
+        type: integer
+        format: int32
+        minimum: 0
+        example: 12
+    XRateLimitRemaining:
+      description: >
+        Requests this user may still make for this business in the current attendance
+        GET-read bucket. Sent by the BFF limiter on an allowed response. The BFF
+        implementation PR must verify this header with an integration test.
+      required: true
+      schema:
+        type: integer
+        format: int32
+        minimum: 0
+        example: 119
+
   responses:
     AttendanceReadsTooManyRequests:
       description: >
@@ -155,7 +185,14 @@ components:
         `getAttendanceDay`, `getAttendanceWeek`, `getAttendanceMonth`, `getAttendanceBadge`,
         `getAttendanceShiftDetail`, `getAttendanceMatchDetail`). Those reads share one
         bucket. POST review actions are not in it. No functional code; the body is the
-        rate limiter's default problem.
+        rate limiter's default problem. The limiter sets
+        `X-Rate-Limit-Retry-After-Seconds` (integer seconds) and does not set
+        `Retry-After`. An allowed response of these reads carries
+        `X-Rate-Limit-Remaining`. The BFF implementation PR must verify both headers with
+        an integration test.
+      headers:
+        X-Rate-Limit-Retry-After-Seconds:
+          $ref: "#/components/headers/XRateLimitRetryAfterSeconds"
       content:
         application/problem+json:
           schema:
@@ -808,15 +845,18 @@ components:
           description: >
             Filtered audience (`userIds` and `jobRoleId`) who have confirmed or pending
             seconds in the week, a published shift, or an unjustified incident. Ordered by
-            `needsReview` true first, then name, then userId. There is no people list on the
-            month screen. The BFF sorts; the client does not.
+            `needsReview` true first, then `name`, then `userId`. Name order is case- and
+            accent-insensitive Spanish locale collation (`es`); ties break by `userId`
+            ascending. Under that rule `irene` sorts before `Lucía`. There is no people list
+            on the month screen. The BFF sorts; the client does not.
           items:
             $ref: "#/components/schemas/AttendanceHoursPersonDTO"
         legend:
           type: array
           description: >
-            People with clocked or pending seconds in the week, in a stable order (name, then userId).
-            The front assigns colours by index.
+            People with clocked or pending seconds in the week, ordered by name, then userId.
+            Name order is the same case- and accent-insensitive Spanish locale collation as
+            `people`. The front assigns colours by index.
           items:
             $ref: "#/components/schemas/AttendanceWorkerDTO"
         selectedDay:
@@ -876,9 +916,10 @@ components:
         people:
           type: array
           description: >
-            Clocked seconds per person that day, in legend order (chart accessibility). One item
-            per person with clocked or pending seconds that day (BFF 0.0.106: a person with only
-            pending time has `clockedSeconds: 0`)
+            One item per person with clocked or pending seconds that day, in legend order
+            (chart accessibility; BFF 0.0.106: a person with only pending time has
+            `clockedSeconds: 0`). `plannedSeconds` and `unjustifiedIncidentCount` are that
+            person's figures for this date.
           items:
             type: object
             properties:
@@ -901,10 +942,28 @@ components:
                 format: int64
                 minimum: 0
                 description: >
-                  Pending of the person that day, apart from `clockedSeconds` (BFF 0.0.106).
-                  Absent from an older BFF
+                  Pending of the person that day, apart from `clockedSeconds`. Required
+                  (BFF 0.0.113; up to 0.0.112 it could be absent).
                 example: 0
-            required: [userId, name, clockedSeconds]
+              plannedSeconds:
+                type: [integer, "null"]
+                format: int64
+                minimum: 0
+                description: >
+                  This person's planned seconds on this date, from `getBusinessTeamSchedule`
+                  (v1.0.28). Null when the ISO week is not published. 0 when it is published
+                  and this person has no shift that day. A night shift counts in full on its
+                  start day. The same shift has this figure on Hours, Today and Month.
+                example: 19200
+              unjustifiedIncidentCount:
+                type: integer
+                format: int32
+                minimum: 0
+                description: >
+                  This person's OPEN incidents with justification null anchored on this date.
+                  Required and not nullable. 0 when none.
+                example: 0
+            required: [userId, name, clockedSeconds, pendingReviewSeconds, plannedSeconds, unjustifiedIncidentCount]
       required: [date, closed, isToday, clockedSeconds, pendingReviewSeconds, plannedSeconds, unjustifiedIncidentCount, people]
 
     AttendanceHoursSelectedDayDTO:
@@ -994,6 +1053,25 @@ components:
           minimum: 0
           description: Pending of the person that day, apart from `clockedSeconds`
           example: 3600
+        plannedSeconds:
+          type: [integer, "null"]
+          format: int64
+          minimum: 0
+          description: >
+            This person's planned seconds on the selected day, from
+            `getBusinessTeamSchedule` (v1.0.28). Null when the ISO week is not published.
+            0 when it is published and this person has no shift that day. A night shift
+            counts in full on its start day. The same shift has this figure on Hours, Today
+            and Month.
+          example: 19200
+        unjustifiedIncidentCount:
+          type: integer
+          format: int32
+          minimum: 0
+          description: >
+            This person's OPEN incidents with justification null anchored on the selected
+            day. Required and not nullable. 0 when none.
+          example: 1
         warnings:
           type: array
           description: Open incidents and alerts of the person's attendances that day
@@ -1006,7 +1084,7 @@ components:
           oneOf:
             - $ref: "#/components/schemas/AttendanceDetailRefDTO"
             - type: "null"
-      required: [userId, name, jobRole, firstClockIn, lastClockOut, open, clockedSeconds, pendingReviewSeconds, warnings, detailRef]
+      required: [userId, name, jobRole, firstClockIn, lastClockOut, open, clockedSeconds, pendingReviewSeconds, plannedSeconds, unjustifiedIncidentCount, warnings, detailRef]
 
     # ── Month ──────────────────────────────────────────────────────────────────
     AttendanceMonthDTO:
@@ -1380,11 +1458,14 @@ components:
     AttendancePlannedDTO:
       type: object
       description: >
-        Planned scheduled shift (Main API `ScheduledShiftResponseDTO` and
-        `metrics.plannedSeconds`). One object per shift, not per segment.
+        Planned scheduled shift. One object per shift, not per segment.
         `startAt` and `endAt` are the envelope. `segments` are the planned
         intervals and are not `clocked.segments`. `plannedSeconds`,
-        `durationSeconds` and `netSeconds` are the same net.
+        `durationSeconds` and `netSeconds` are the same net, taken from
+        `getBusinessTeamSchedule` (v1.0.28), not from `getDailyAttendance`
+        `metrics.plannedSeconds` and not by splitting the shift across the days
+        it overlaps. A night shift counts in full on its start day. The same
+        shift has this figure on Hours and Month.
       properties:
         shiftId:
           type: integer
@@ -1429,9 +1510,12 @@ components:
           minimum: 0
           readOnly: true
           description: >
-            Net planned seconds from the Main API: sum of the planned segment
-            durations minus `breakMinutes`, never negative. The unpaid gap is
-            not included. Same value as `durationSeconds` and `netSeconds`.
+            Net planned seconds of this shift from `getBusinessTeamSchedule`
+            (v1.0.28): sum of the planned segment durations minus `breakMinutes`,
+            never negative. The unpaid gap is not included. A night shift counts
+            in full on its start day. Same value as `durationSeconds` and
+            `netSeconds`, and the same figure Hours and Month use for this shift.
+            Not an overlap slice of the calendar day.
           example: 27000
         durationSeconds:
           type: integer
@@ -1513,7 +1597,8 @@ components:
           type: array
           description: >
             Every worker who appears in the 7 daily views (shift or unmatched worklog), ordered
-            by name, then userId.
+            by name, then userId. Name order is case- and accent-insensitive Spanish locale
+            collation (`es`); ties break by `userId` ascending.
           items:
             $ref: "#/components/schemas/AttendanceWeekPersonDTO"
         filterOptions:
@@ -1705,9 +1790,11 @@ components:
                   minimum: 0
                   readOnly: true
                   description: >
-                    Main API `metrics.plannedSeconds`: sum of the planned segment
-                    durations minus `breakMinutes`, never negative. Same value as
-                    `durationSeconds`. The unpaid gap is not included.
+                    Same figure as `AttendancePlannedDTO.plannedSeconds`: the
+                    shift's `getBusinessTeamSchedule` planned seconds (v1.0.28),
+                    sum of segments minus the break, a night shift in full on its
+                    start day. Not `getDailyAttendance` `metrics.plannedSeconds`
+                    and not an overlap slice. Same value as `durationSeconds`.
                   example: 27000
                 durationSeconds:
                   type: integer

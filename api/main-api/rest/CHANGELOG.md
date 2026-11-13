@@ -16,7 +16,7 @@ Owner attendance charts (Sergio and the Frontend Architect, 2026-11-13). The BFF
 
 ### Unchanged
 
-- `getCurrentUserAttendanceIncidentDailyCounts`, `getBusinessTeamSchedule` and every planned-seconds field. Worker history is unchanged.
+- `getCurrentUserAttendanceIncidentDailyCounts`, `getBusinessTeamSchedule` and every planned-seconds field. Worker history is unchanged. The BFF follow-up in 0.0.113 (rate-limit headers, per-person day fields, Spanish name order, `userIds` 1111, Today planned seconds read from team-schedules) does not change this API.
 
 ## 0.0.118
 

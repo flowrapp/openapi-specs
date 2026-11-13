@@ -40,7 +40,8 @@ attendance:
         When no member matches, the response has zeros, or null planned seconds when the week is not
         published, and no rows.
 
-        Planned seconds (`days[].plannedSeconds`, `totals.plannedSeconds`, `people[].plannedSeconds`)
+        Planned seconds (`days[].plannedSeconds`, `days[].people[].plannedSeconds`,
+        `totals.plannedSeconds`, `people[].plannedSeconds`, `selectedDay.rows[].plannedSeconds`)
         come from that team schedule (v1.0.28). A shift is the sum of its segments minus the break; the
         unpaid gap of a split shift is not included; a night shift counts entirely on its start day.
         PUBLISHED, or ARCHIVED that was previously published, counts as published. After stage 0, 404
@@ -53,7 +54,9 @@ attendance:
 
         `people` lists every person of the filtered audience who has confirmed or pending seconds in
         the week, a published shift, or an unjustified incident. Order is `needsReview` true first,
-        then name, then userId. There is no people list for the month.
+        then name, then userId. Name order is case- and accent-insensitive Spanish locale
+        collation (`es`); ties break by `userId` ascending (`irene` before `Lucía`). There is no
+        people list for the month.
 
         clocked = reportable (CONFIRMED + APPROVED), per person, day and week; pending apart in
         `pendingReviewSeconds` (BFF 0.0.106; up to 0.0.105 clocked = reportable + pending).
@@ -68,7 +71,10 @@ attendance:
 
         Rate limit: 120 requests per minute and 1200 per hour per authenticated user and business, one
         bucket shared with the other attendance GET reads (day, week, month, badge, shift detail and
-        match detail). 429 has no functional code. POST actions are not in this bucket.
+        match detail). 429 has no functional code. The limiter sets `X-Rate-Limit-Retry-After-Seconds`
+        on 429 and `X-Rate-Limit-Remaining` on an allowed response. It does not set `Retry-After`.
+        The BFF implementation PR must verify both headers with an integration test. POST actions
+        are not in this bucket.
 
         Concurrency: independent Main API calls of one stage run with Arrow `parZip`; fan-outs are bounded by `Semaphore(8)`, so at most 8 Main API calls are in flight per request. The BFF never filters rows in memory: every filter (date, week, users, job role) is a Main API parameter.
       tags:
@@ -85,6 +91,9 @@ attendance:
       responses:
         '200':
           description: Hours of the week, already filtered
+          headers:
+            X-Rate-Limit-Remaining:
+              $ref: '../../components/attendance/components.yml#/components/headers/XRateLimitRemaining'
           content:
             application/json:
               schema:
@@ -105,9 +114,9 @@ attendance:
                     plannedSeconds: 57600
                     unjustifiedIncidentCount: 1
                     people:
-                      - {userId: 102, name: Lucía Martín, clockedSeconds: 18180, pendingReviewSeconds: 0}
-                      - {userId: 103, name: Carlos Vega, clockedSeconds: 0, pendingReviewSeconds: 13440}
-                      - {userId: 109, name: irene.navas@example.com, clockedSeconds: 18780, pendingReviewSeconds: 0}
+                      - {userId: 102, name: Lucía Martín, clockedSeconds: 18180, pendingReviewSeconds: 0, plannedSeconds: 19200, unjustifiedIncidentCount: 0}
+                      - {userId: 103, name: Carlos Vega, clockedSeconds: 0, pendingReviewSeconds: 13440, plannedSeconds: 19200, unjustifiedIncidentCount: 1}
+                      - {userId: 109, name: irene.navas@example.com, clockedSeconds: 18780, pendingReviewSeconds: 0, plannedSeconds: 19200, unjustifiedIncidentCount: 0}
                   - {date: "2026-10-31", closed: false, isToday: false, clockedSeconds: 0, pendingReviewSeconds: 0, plannedSeconds: 0, unjustifiedIncidentCount: 0, people: []}
                   - {date: "2026-11-01", closed: false, isToday: false, clockedSeconds: 0, pendingReviewSeconds: 0, plannedSeconds: 0, unjustifiedIncidentCount: 0, people: []}
                 people:
@@ -157,6 +166,8 @@ attendance:
                       open: false
                       clockedSeconds: 18180
                       pendingReviewSeconds: 0
+                      plannedSeconds: 19200
+                      unjustifiedIncidentCount: 0
                       warnings: []
                       detailRef: {date: "2026-10-30", userId: 102, scheduledShiftId: 902, attendanceMatchId: null}
                     - userId: 103
@@ -167,6 +178,8 @@ attendance:
                       open: false
                       clockedSeconds: 0
                       pendingReviewSeconds: 13440
+                      plannedSeconds: 19200
+                      unjustifiedIncidentCount: 1
                       warnings:
                         - {type: LATE_ENTRY, severity: WARNING, seconds: 1080}
                       detailRef: {date: "2026-10-30", userId: 103, scheduledShiftId: 900, attendanceMatchId: null}
@@ -178,6 +191,8 @@ attendance:
                       open: false
                       clockedSeconds: 18780
                       pendingReviewSeconds: 0
+                      plannedSeconds: 19200
+                      unjustifiedIncidentCount: 0
                       warnings: []
                       detailRef: {date: "2026-10-30", userId: 109, scheduledShiftId: 909, attendanceMatchId: null}
                 filterOptions:
@@ -191,7 +206,7 @@ attendance:
                     - {id: 3, name: Barra}
         '400':
           description: >
-            Invalid `week` or `date`, or `date` outside `week` (1115); or more than 50 `userIds` (1111).
+            Invalid `week` or `date`, or `date` outside `week` (1115); or empty, duplicated or more than 50 `userIds` (1111).
           content:
             application/problem+json:
               schema:
@@ -245,10 +260,17 @@ attendance:
 
         Main API calls:
         1. Stage 0: `getUserBusinesses` (`GET /api/v1/businesses`), for ATTENDANCE_VIEW (otherwise 403 1020; not a member: 403 1015; ATTENDANCE unavailable: 403 1155) and the business time zone.
-        2. Stage 1, one `parZip` (5 calls):
+        2. Stage 1, one `parZip` (6 calls):
            - `getDailyAttendance` (`GET /api/v1/businesses/{businessId}/attendance?date&userIds`), the
              rows: `shiftAttendances` (kind SHIFT) and `unmatchedAttendances` (kind UNMATCHED), with
-             metrics, alerts, incidents and worklogs with breaks;
+             alerts, incidents and worklogs with breaks. Not the source of `planned.plannedSeconds`;
+           - one `getBusinessTeamSchedule`
+             (`GET /api/v1/businesses/{businessId}/team-schedules/{weekStart}`, `weekStart` the Monday
+             of the date), each published shift's planned seconds (v1.0.28: segments minus the break,
+             a night shift in full on its start day). The same shift has this figure on Hours and
+             Month. 404 1046 means the week is not published: the BFF does not copy
+             `metrics.plannedSeconds` and does not fail the day for that 404. Any other failure of
+             team-schedules fails the request;
            - `getPlanningGenerationInput`
              (`GET /api/v1/businesses/{businessId}/planning-generations/input?weekStart=`, the Monday of
              the date's ISO week), for `closed`;
@@ -258,12 +280,16 @@ attendance:
              `filterOptions.people`;
            - `getBusinessJobRoles` (`active=true`), for `filterOptions.jobRoles` (the Main API filters it).
 
-        `jobRoleId` is forwarded to `getDailyAttendance` (Main API 0.0.87), which filters it server-side with `userIds` (AND).
+        `jobRoleId` is forwarded to `getDailyAttendance` and `getBusinessTeamSchedule` (AND with `userIds`).
+        Team-schedules filters the role stored on the shift.
         Worklogs of a business without a published plan (NOT_APPLICABLE matches) are not part of the
         daily view, so they have no row here.
 
         Rate limit: 120 requests per minute and 1200 per hour per authenticated user and business, one
-        bucket shared with the other attendance GET reads. 429 has no functional code.
+        bucket shared with the other attendance GET reads. 429 has no functional code and sets
+        `X-Rate-Limit-Retry-After-Seconds`, not `Retry-After`. An allowed response sets
+        `X-Rate-Limit-Remaining`. The BFF implementation PR must verify both headers with an
+        integration test.
 
         Concurrency: independent Main API calls of one stage run with Arrow `parZip`; fan-outs are bounded by `Semaphore(8)`, so at most 8 Main API calls are in flight per request. The BFF never filters rows in memory: every filter (date, week, users) is a Main API parameter.
       tags:
@@ -279,6 +305,9 @@ attendance:
       responses:
         '200':
           description: Rows of the day, already filtered, ordered and counted
+          headers:
+            X-Rate-Limit-Remaining:
+              $ref: '../../components/attendance/components.yml#/components/headers/XRateLimitRemaining'
           content:
             application/json:
               schema:
@@ -361,7 +390,7 @@ attendance:
                     - {id: 3, name: Barra}
         '400':
           description: >
-            Invalid `date` (1115), or more than 50 `userIds` (1111).
+            Invalid `date` (1115), or empty, duplicated or more than 50 `userIds` (1111).
           content:
             application/problem+json:
               schema:
@@ -423,10 +452,14 @@ attendance:
            - `getBusinessJobRoles` (`active=true`), for `filterOptions.jobRoles`.
 
         `jobRoleId` is forwarded to each `getDailyAttendance` (Main API 0.0.87), filtered server-side with `userIds` (AND). There is no Main API range read; 7 daily calls are the
-        approved approach until metrics ask for one.
+        approved approach until metrics ask for one. This screen has no `plannedSeconds` field, so it
+        does not call `getBusinessTeamSchedule`. Cell start and end stay the attendance times.
 
         Rate limit: 120 requests per minute and 1200 per hour per authenticated user and business, one
-        bucket shared with the other attendance GET reads. 429 has no functional code.
+        bucket shared with the other attendance GET reads. 429 has no functional code and sets
+        `X-Rate-Limit-Retry-After-Seconds`, not `Retry-After`. An allowed response sets
+        `X-Rate-Limit-Remaining`. The BFF implementation PR must verify both headers with an
+        integration test.
 
         Concurrency: independent Main API calls of one stage run with Arrow `parZip`; fan-outs are bounded by `Semaphore(8)`, so at most 8 Main API calls are in flight per request. The BFF never filters rows in memory: every filter (date, week, users) is a Main API parameter.
       tags:
@@ -442,6 +475,9 @@ attendance:
       responses:
         '200':
           description: People × days of the week, already filtered
+          headers:
+            X-Rate-Limit-Remaining:
+              $ref: '../../components/attendance/components.yml#/components/headers/XRateLimitRemaining'
           content:
             application/json:
               schema:
@@ -475,7 +511,7 @@ attendance:
                     - {id: 1, name: Sala}
         '400':
           description: >
-            Invalid `week` (1115), or more than 50 `userIds` (1111).
+            Invalid `week` (1115), or empty, duplicated or more than 50 `userIds` (1111).
           content:
             application/problem+json:
               schema:
@@ -573,7 +609,10 @@ attendance:
 
         Rate limit: 120 requests per minute and 1200 per hour per authenticated user and business,
         one bucket shared with the other attendance GET reads (hours, day, week, badge, shift
-        detail and match detail). 429 has no functional code. POST actions are not in this bucket.
+        detail and match detail). 429 has no functional code and sets
+        `X-Rate-Limit-Retry-After-Seconds`, not `Retry-After`. An allowed response sets
+        `X-Rate-Limit-Remaining`. The BFF implementation PR must verify both headers with an
+        integration test. POST actions are not in this bucket.
 
         Concurrency: independent Main API calls of one stage run with Arrow `parZip`; fan-outs are bounded by `Semaphore(8)`, so at most 8 Main API calls are in flight per request. The BFF never filters rows in memory: every filter (month, users, job role) is a Main API parameter.
       tags:
@@ -589,6 +628,9 @@ attendance:
       responses:
         '200':
           description: Month already summed for the filtered audience
+          headers:
+            X-Rate-Limit-Remaining:
+              $ref: '../../components/attendance/components.yml#/components/headers/XRateLimitRemaining'
           content:
             application/json:
               schema:
@@ -642,7 +684,7 @@ attendance:
         '400':
           description: >
             Invalid `month` (1115; the message stays `attendance week or date is invalid`), or
-            more than 50 `userIds` (1111).
+            empty, duplicated or more than 50 `userIds` (1111).
           content:
             application/problem+json:
               schema:
@@ -695,7 +737,10 @@ attendance:
         `approvalBlocker`, forwarded unchanged.
 
         Rate limit: 120 requests per minute and 1200 per hour per authenticated user and business, one
-        bucket shared with the other attendance GET reads. 429 has no functional code.
+        bucket shared with the other attendance GET reads. 429 has no functional code and sets
+        `X-Rate-Limit-Retry-After-Seconds`, not `Retry-After`. An allowed response sets
+        `X-Rate-Limit-Remaining`. The BFF implementation PR must verify both headers with an
+        integration test.
 
         Main API calls:
         1. Stage 0: `getUserBusinesses` (`GET /api/v1/businesses`), for ATTENDANCE_VIEW (otherwise 403 1020; not a member: 403 1015; ATTENDANCE unavailable: 403 1155) and the business time zone.
@@ -716,6 +761,9 @@ attendance:
       responses:
         '200':
           description: Detail of the shift
+          headers:
+            X-Rate-Limit-Remaining:
+              $ref: '../../components/attendance/components.yml#/components/headers/XRateLimitRemaining'
           content:
             application/json:
               schema:
@@ -768,7 +816,10 @@ attendance:
         shift's detail (`kind: SHIFT`), read with `getShiftAttendance`.
 
         Rate limit: 120 requests per minute and 1200 per hour per authenticated user and business, one
-        bucket shared with the other attendance GET reads. 429 has no functional code.
+        bucket shared with the other attendance GET reads. 429 has no functional code and sets
+        `X-Rate-Limit-Retry-After-Seconds`, not `Retry-After`. An allowed response sets
+        `X-Rate-Limit-Remaining`. The BFF implementation PR must verify both headers with an
+        integration test.
 
         Main API calls:
         1. Stage 0: `getUserBusinesses` (`GET /api/v1/businesses`), for ATTENDANCE_VIEW (otherwise 403 1020; not a member: 403 1015; ATTENDANCE unavailable: 403 1155) and the business time zone.
@@ -790,6 +841,9 @@ attendance:
       responses:
         '200':
           description: Detail of the attendance
+          headers:
+            X-Rate-Limit-Remaining:
+              $ref: '../../components/attendance/components.yml#/components/headers/XRateLimitRemaining'
           content:
             application/json:
               schema:
@@ -849,7 +903,10 @@ attendance:
            `AttendanceSeverityDTO` for `attentionCount`. No other call.
 
         Rate limit: 120 requests per minute and 1200 per hour per authenticated user and business, one
-        bucket shared with the other attendance GET reads. 429 has no functional code.
+        bucket shared with the other attendance GET reads. 429 has no functional code and sets
+        `X-Rate-Limit-Retry-After-Seconds`, not `Retry-After`. An allowed response sets
+        `X-Rate-Limit-Remaining`. The BFF implementation PR must verify both headers with an
+        integration test.
 
         The BFF may cache the result per business for up to 60 seconds. Concurrency: independent Main API calls of one stage run with Arrow `parZip`; fan-outs are bounded by `Semaphore(8)`, so at most 8 Main API calls are in flight per request. The BFF never filters rows in memory: every filter (date, week, users) is a Main API parameter.
       tags:
@@ -862,6 +919,9 @@ attendance:
       responses:
         '200':
           description: Badge of today
+          headers:
+            X-Rate-Limit-Remaining:
+              $ref: '../../components/attendance/components.yml#/components/headers/XRateLimitRemaining'
           content:
             application/json:
               schema:
