@@ -197,7 +197,9 @@ components:
           type: string
           minLength: 1
           example: Ana Ruiz
-      required: [userId, displayName]
+        avatarUrl:
+          $ref: '../personalData/components.yml#/components/schemas/AvatarUrl'
+      required: [userId, displayName, avatarUrl]
 
     ShiftChangeJobRoleDTO:
       type: object
@@ -790,6 +792,7 @@ components:
       example:
         actor:
           userId: 42
+          avatarUrl: null
           displayName: Luis Mora
         reason: No puedo ese miércoles
         rejectedAt: "2026-11-06T20:05:00+01:00"

@@ -1,5 +1,44 @@
 # Changelog
 
+## 0.0.114
+
+Spec only. No BFF implementation in this change. Depends on Main API 0.0.120. Next repository tag: `v1.0.30` (after `v1.0.29`). This change does not create the tag. The published solver contract is unchanged.
+
+Worker profile for the mobile app (Sergio S1–S7 and the Frontend Architect, 2026-11-13). `personalData` is a nested block. `PUT /me/phone` uses E.164. `avatarUrl` is on every DTO that shows a person, including the people of `getWorkerTeamSchedule`. `getAttendanceMonth` has no `avatarUrl`. There is no realtime topic.
+
+### Added
+
+- `updateCurrentUserPhone` (`PUT /api/v1/me/phone`). Pass-through of Main `updateCurrentUserPhone`. Body `{phone}` required and nullable, pattern `^\+[1-9][0-9]{6,14}$`. Null clears the phone. 400 1161. `200` is `UserProfileResponseDTO` with `Cache-Control: no-store`.
+- `getWorkerProfile` (`GET /api/v1/worker/businesses/{businessId}/profile`). Active membership only. No contract check and no 403 1104. Without a contract in force, `jobRole` is null. `WorkerProfileDTO`: `userId`, `name`, `email`, nullable `phone` (stored value, no E.164 pattern), nullable `avatarUrl`, `businessId`, `businessName`, nullable `jobRole` `{id, name}`, nullable `identityDocument`. The number is complete; the app masks it. Own data, so `PERSONAL_DATA_VIEW` is not required. Composed from `getCurrentUser`, `getCurrentUserPersonalData` and the current contract. The worker uploads or removes their own photo with the Clerk SDK (`user.setProfileImage`), not through the BFF. `avatarUrl` changes asynchronously when the webhook arrives. There is no operation to force that refresh. `Cache-Control: no-store`.
+- `replaceManagerWorkerIdentityDocument` and `deleteManagerWorkerIdentityDocument` (`PUT` and `DELETE /api/v1/manager/businesses/{businessId}/workers/{userId}/identity-document`). OWNER only. Pass-through of the Main identity-document operations. `PUT` returns `MemberPersonalDataDTO` with `Cache-Control: no-store`. Errors 400 1158 and 1159, 409 1160, 403 1020 and 1015, 404 1006 and 1126. `DELETE` is 204.
+- `deleteManagerWorkerPhoto` (`DELETE /api/v1/manager/businesses/{businessId}/workers/{userId}/photo`). OWNER only. Pass-through of Main `deleteBusinessUserAvatar`. The photo is deleted in Clerk for every business of that user. After the 204, the next read returns `avatarUrl: null`. 502 1162 forwards `Retry-After` when Main sends it. The BFF does not hold `CLERK_SECRET_KEY`. The worker's own photo uses the Clerk SDK (`user.setProfileImage`), not this operation, and there is no operation to force the webhook refresh.
+- `receiveClerkWebhook` (`POST /api/v1/webhooks/clerk`, `x-internal: true`). The mobile app does not call it. Only Clerk does. Public (`security: []`). Forwards the raw body and `svix-id`, `svix-timestamp` and `svix-signature` to Main and returns that status. A body larger than 256 KiB is 413 and is not forwarded. Invalid signature is 401 1163. The BFF does not verify the signature and has no Clerk secret.
+- `PERSONAL_DATA_VIEW` in the BFF `BusinessPermission` enum, with the same implication (`TEAM_VIEW`) as Main. It is not added to existing access roles.
+- `MemberProfileDTO.personalData` (`MemberPersonalDataDTO` or null, required). Null when the caller is not the OWNER, does not have `PERSONAL_DATA_VIEW` and is not the subject. Inside the object, `phone` and `identityDocument` are nullable. Email stays on `email`. `actions.canEditIdentityDocument` is true for the OWNER. `actions.canRemovePhoto` is true for the OWNER when `avatarUrl` is not null. The BFF calls `getCurrentUserPersonalData` for the subject and `getBusinessUserPersonalData` otherwise, and skips both when `personalData` is null. `Cache-Control: no-store`.
+- `avatarUrl` (required, nullable) on `MemberSearchItemDTO`, `ManagerWorkerDTO`, `MemberProfileDTO`, `UserProfileResponseDTO`, `ManagerAttendanceTodayWorkerDTO`, `ManagerWorkingNowWorkerDTO`, `ManagerHomeAttentionRowDTO`, `AttendanceWorkerDTO`, `AttendanceHoursPersonDTO`, `AttendanceHoursRowDTO`, the people items of `AttendanceHoursDayDTO` and `AttendanceFilterOptionsDTO`, `AttendanceWeekPersonDTO`, `ManagerDayWorkerDTO`, `ManagerWeekDayWorkerDTO`, `ManagerHoursPersonDTO`, `ManagerWorkerPlanningDTO`, `WorkerTeamScheduleWorkerDTO`, `WeekCoverageMemberDTO`, `ShiftChangePersonDTO`, `ManagerAutoClockingUserSettingDTO` and `ManagerGeofencingUserSettingDTO`.
+- Optional `identityDocument` on manager `InvitationRequestDTO`. The response does not include the document. `InvitationResponseDTO.hasIdentityDocument` is required and nullable: `true` or `false` only when the caller is the OWNER, and `null` for everyone else. A non-owner who sends a document receives 403 1020. The document is deleted as soon as the invitation expires.
+- `registerUserFromInvitation` `phone` stays required: registration is when it is collected. It must be E.164 (400 1161). `maxLength` is 16. Existing stored phones are not rewritten here. Prefixing them with `+34` (Sergio S5) is a data migration and still needs an explicit order. Response phones do not enforce the E.164 pattern.
+
+### Changed
+
+- `getCurrentUserProfile`: required nullable `phone` (stored value, no E.164 pattern) and `avatarUrl`. `Cache-Control: no-store`. The worker changes their own photo with the Clerk SDK (`user.setProfileImage`). `avatarUrl` stays null until a Clerk webhook syncs it, asynchronously. There is no operation to force that refresh and no initial backfill.
+- `getBusinessMemberProfile` requires `TEAM_VIEW`. The previous operation text that said owner-only is aligned with the permission table. `personalData` is the only new restriction.
+- `managerCreateInvitation` requires `TEAM_INVITE`, and OWNER when `identityDocument` is present. Errors add 1158, 1159 and 1160.
+- `removeBusinessMember` keeps the identity document. It stops counting for uniqueness.
+
+### Unchanged
+
+- `getAttendanceMonth` and the `AttendanceMonth*` schemas. They do not show people and do not gain `avatarUrl`.
+- Phone and the identity document are not added to search, attendance, the schedule, the home lists or reports. `avatarUrl` on those person DTOs is the photo only.
+- Worked-hours PDF and CSV do not gain a document column. That is phase 2 and, when added, requires only `REPORTS_EXPORT`. Removed members keep the document.
+- No `SyncTopic` is added. The app refreshes photos and personal data on the next read.
+
+### Deployment
+
+- Main API 0.0.120 before the BFF routes that read or write the phone, the document or the photo. `avatarUrl` may be null until each user is touched by a Clerk webhook.
+- Current app builds drop `PERSONAL_DATA_VIEW` when an access role is edited. The app version that keeps that permission must be published before the permission is granted.
+- Registration with a phone that has no prefix now returns 400 1161. The app build that normalizes the phone to `+34` must ship before, or together with, Main API 0.0.120.
+
 ## 0.0.113
 
 Spec only. No BFF implementation in this change. Depends on Main API 0.0.119 (`getBusinessAttendanceIncidentDailyCounts`). Planned seconds of the owner attendance charts move to Main `getBusinessTeamSchedule` (the v1.0.28 semantics). Next repository tag: `v1.0.29` (after `v1.0.28`). This change does not create the tag. The published solver contract is unchanged.

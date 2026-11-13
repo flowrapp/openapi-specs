@@ -19,9 +19,14 @@ components:
           description: Email address of the user
           example: "john.doe@example.com"
         phone:
-          type: string
-          description: Phone number of the user
+          type: [string, "null"]
+          description: >
+            Global phone as stored, or null when unset. Not unique across users.
+            New writes must be E.164. A value already stored may not be E.164
+            until the data normalization runs.
           example: "+34612345678"
+        avatarUrl:
+          $ref: '../personalData/components.yml#/components/schemas/AvatarUrl'
         role:
           type: string
           description: Global role of the user in the system
@@ -31,6 +36,8 @@ components:
         - id
         - name
         - email
+        - phone
+        - avatarUrl
         - role
 
     UserInvitationResponseDTO:

@@ -340,6 +340,8 @@ components:
           type: string
           description: Display name with the PDF rule (`Persona #<id>` when the name is empty or looks like an email)
           example: Lucía Ruiz
+        avatarUrl:
+          $ref: '../personalData/components.yml#/components/schemas/AvatarUrl'
         jobRoleName:
           type:
             - string
@@ -360,4 +362,4 @@ components:
           format: date-time
           description: Instant the person was removed from the business; null for a current member. The app lists people with removedAt in the section «Ya no están en el negocio».
           example: null
-      required: [userId, name, jobRoleName, joinedAt, removedAt]
+      required: [userId, name, avatarUrl, jobRoleName, joinedAt, removedAt]

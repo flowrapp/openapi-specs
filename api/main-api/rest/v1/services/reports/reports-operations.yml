@@ -495,8 +495,8 @@ reports:
                 $ref: '../../components/reports/components.yml#/components/schemas/BusinessWorkedHoursPeopleResponseDTO'
               example:
                 people:
-                  - {userId: 104, name: "Ana Gil", jobRoleName: null, joinedAt: "2025-03-02T09:00:00Z", removedAt: "2026-06-30T18:00:00Z"}
-                  - {userId: 103, name: "Lucía Ruiz", jobRoleName: "Sala", joinedAt: "2026-07-01T07:00:00Z", removedAt: null}
+                  - {userId: 104, name: "Ana Gil", jobRoleName: null, joinedAt: "2025-03-02T09:00:00Z", removedAt: "2026-06-30T18:00:00Z", avatarUrl: null}
+                  - {userId: 103, name: "Lucía Ruiz", jobRoleName: "Sala", joinedAt: "2026-07-01T07:00:00Z", removedAt: null, avatarUrl: null}
         '401':
           description: Unauthorized
         '403':

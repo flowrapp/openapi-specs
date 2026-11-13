@@ -79,6 +79,7 @@ for (const [api, prefix] of [
     "role",
     "enabled",
     "effectiveEnabled",
+    "avatarUrl",
   ]);
   assert.deepEqual(user.value.properties.role.enum, [
     "OWNER",
@@ -146,6 +147,7 @@ for (const [api, prefix] of [
     "role",
     "policy",
     "effectivePolicy",
+    "avatarUrl",
   ]);
   assert.deepEqual(
     memberSettings.value.properties.role.enum,

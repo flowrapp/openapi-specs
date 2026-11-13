@@ -1022,9 +1022,12 @@ components:
         name:
           type: string
           example: Bob Wilson
+        avatarUrl:
+          $ref: "../personalData/components.yml#/components/schemas/AvatarUrl"
       required:
         - id
         - name
+        - avatarUrl
 
     WorkerTeamScheduleJobRoleDTO:
       type: object

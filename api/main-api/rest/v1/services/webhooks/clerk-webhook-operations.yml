@@ -1,0 +1,96 @@
+webhooks:
+  clerk:
+    post:
+      summary: Receive a Clerk user webhook
+      description: >
+        Public endpoint. No JWT (`security` is empty). The mobile app does not
+        call this operation. Only Clerk does. Clerk delivers
+        `user.created`, `user.updated` and `user.deleted` through Svix to the
+        BFF, which forwards the raw body and the `svix-id`, `svix-timestamp`
+        and `svix-signature` headers here. The signature is verified with
+        `CLERK_WEBHOOK_SIGNING_SECRET` over the exact bytes
+        `${svix-id}.${svix-timestamp}.${rawBody}`, with a timestamp tolerance of
+        five minutes. A bad or expired signature is 401 1163. The secret is not
+        configured on the BFF, and this operation does not accept a bearer token.
+
+        The body must be the unmodified Clerk JSON. An unreadable body is 400
+        with no functional code. There is no initial backfill: `clerk_user_id`
+        and `avatarUrl` stay empty until a webhook matches the user.
+        `clerk_user_id` is stored and is not returned by any operation.
+
+        The user is resolved by `clerk_user_id` and, if none is stored, by the
+        verified primary email (the same normalization as sign-in). The first
+        match stores `clerk_user_id`. An unknown user, or an event other than
+        the three above, returns 204 and is ignored so Svix does not retry.
+
+        Delivery is at least once and unordered. An event whose `data.updated_at`
+        is less than or equal to the last applied instant is ignored.
+        `user.created` and `user.updated` set `avatarUrl` to `image_url` when
+        `has_image` is true and the URL is `https`, and to null otherwise.
+        `user.deleted` sets `avatarUrl` to null and records the event timestamp,
+        which is later than any previous `updated_at`, so a late `user.updated`
+        does not restore the photo.
+
+        204 when the event is applied or ignored. A database failure is 5xx and
+        Svix retries. This operation does not emit a realtime signal.
+      tags:
+        - Webhooks
+      operationId: receiveClerkWebhook
+      x-internal: true
+      security: []
+      parameters:
+        - name: svix-id
+          in: header
+          required: true
+          description: Svix message id. Used to verify the signature and to ignore a duplicate delivery.
+          schema:
+            type: string
+        - name: svix-timestamp
+          in: header
+          required: true
+          description: Svix timestamp, in seconds. Rejected when it is outside five minutes of the server clock.
+          schema:
+            type: string
+        - name: svix-signature
+          in: header
+          required: true
+          description: Svix signature of the raw body. Never log this header.
+          schema:
+            type: string
+      requestBody:
+        required: true
+        description: >
+          Raw Clerk webhook JSON. The signature covers these exact bytes.
+          Do not re-serialize the body before verification.
+        content:
+          application/json:
+            schema:
+              description: >
+                Clerk user payload (`user.created`, `user.updated` or
+                `user.deleted`). Flowrapp does not publish a schema for it. A
+                body that is not JSON is 400 with no functional code.
+              type: object
+              additionalProperties: true
+      responses:
+        '204':
+          description: >
+            Event applied, or ignored (duplicate, out of order, unknown user,
+            or an event type other than user.created, user.updated and
+            user.deleted). No body.
+        '400':
+          description: The body is not valid JSON. No functional code.
+        '401':
+          description: >
+            The Svix signature is missing, invalid or outside the five-minute
+            tolerance (1163).
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+              examples:
+                invalidSignature:
+                  summary: "1163 - webhook signature is invalid"
+                  value:
+                    status: 401
+                    detail: "1163 - webhook signature is invalid"
+      x-functional-errors: [1163]

@@ -175,6 +175,7 @@ shiftExchangeRequests:
                     reason: Cambio de semana por una cita médica
                     createdBy:
                       userId: 41
+                      avatarUrl: null
                       displayName: Ana Ruiz
                     createdAt: "2026-11-06T18:30:00+01:00"
                     updatedAt: "2026-11-06T18:30:00+01:00"
@@ -187,7 +188,7 @@ shiftExchangeRequests:
                         planningVersion: 4
                         role: SOURCE
                         before:
-                          user: {userId: 41, displayName: Ana Ruiz}
+                          user: {userId: 41, displayName: Ana Ruiz, avatarUrl: null}
                           jobRole: {id: 10, name: Waiter}
                           shiftId: 20
                           shiftName: Morning service
@@ -196,7 +197,7 @@ shiftExchangeRequests:
                           endAt: "2026-11-09T17:00:00+01:00"
                           breakMinutes: 30
                         after:
-                          user: {userId: 42, displayName: Luis Mora}
+                          user: {userId: 42, displayName: Luis Mora, avatarUrl: null}
                           jobRole: {id: 10, name: Waiter}
                           shiftId: 20
                           shiftName: Morning service
@@ -209,7 +210,7 @@ shiftExchangeRequests:
                         planningVersion: 2
                         role: COUNTERPART
                         before:
-                          user: {userId: 42, displayName: Luis Mora}
+                          user: {userId: 42, displayName: Luis Mora, avatarUrl: null}
                           jobRole: {id: 11, name: Cook}
                           shiftId: 21
                           shiftName: Evening service
@@ -218,7 +219,7 @@ shiftExchangeRequests:
                           endAt: "2026-11-18T23:00:00+01:00"
                           breakMinutes: 20
                         after:
-                          user: {userId: 41, displayName: Ana Ruiz}
+                          user: {userId: 41, displayName: Ana Ruiz, avatarUrl: null}
                           jobRole: {id: 11, name: Cook}
                           shiftId: 21
                           shiftName: Evening service
@@ -228,7 +229,7 @@ shiftExchangeRequests:
                           breakMinutes: 20
                     acceptances:
                       - slot: PEER
-                        user: {userId: 42, displayName: Luis Mora}
+                        user: {userId: 42, displayName: Luis Mora, avatarUrl: null}
                         status: PENDING
                         decidedAt: null
         "400":
@@ -286,6 +287,7 @@ shiftExchangeRequests:
                     reason: Cambio de semana por una cita médica
                     createdBy:
                       userId: 41
+                      avatarUrl: null
                       displayName: Ana Ruiz
                     createdAt: "2026-11-06T18:30:00+01:00"
                     updatedAt: "2026-11-06T18:30:00+01:00"
@@ -298,7 +300,7 @@ shiftExchangeRequests:
                         planningVersion: 4
                         role: SOURCE
                         before:
-                          user: {userId: 41, displayName: Ana Ruiz}
+                          user: {userId: 41, displayName: Ana Ruiz, avatarUrl: null}
                           jobRole: {id: 10, name: Waiter}
                           shiftId: 20
                           shiftName: Morning service
@@ -307,7 +309,7 @@ shiftExchangeRequests:
                           endAt: "2026-11-09T17:00:00+01:00"
                           breakMinutes: 30
                         after:
-                          user: {userId: 42, displayName: Luis Mora}
+                          user: {userId: 42, displayName: Luis Mora, avatarUrl: null}
                           jobRole: {id: 10, name: Waiter}
                           shiftId: 20
                           shiftName: Morning service
@@ -320,7 +322,7 @@ shiftExchangeRequests:
                         planningVersion: 2
                         role: COUNTERPART
                         before:
-                          user: {userId: 42, displayName: Luis Mora}
+                          user: {userId: 42, displayName: Luis Mora, avatarUrl: null}
                           jobRole: {id: 11, name: Cook}
                           shiftId: 21
                           shiftName: Evening service
@@ -329,7 +331,7 @@ shiftExchangeRequests:
                           endAt: "2026-11-18T23:00:00+01:00"
                           breakMinutes: 20
                         after:
-                          user: {userId: 41, displayName: Ana Ruiz}
+                          user: {userId: 41, displayName: Ana Ruiz, avatarUrl: null}
                           jobRole: {id: 11, name: Cook}
                           shiftId: 21
                           shiftName: Evening service
@@ -339,7 +341,7 @@ shiftExchangeRequests:
                           breakMinutes: 20
                     acceptances:
                       - slot: PEER
-                        user: {userId: 42, displayName: Luis Mora}
+                        user: {userId: 42, displayName: Luis Mora, avatarUrl: null}
                         status: PENDING
                         decidedAt: null
                     warnings:

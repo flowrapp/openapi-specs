@@ -5,7 +5,9 @@ members:
       description: >
         Forwards to the Main API, which ends the user's membership in the business. Only the
         business OWNER may perform this operation; the MANAGER role is not sufficient. The
-        member's historical data (worklogs, contracts, reports) is preserved. An OWNER cannot
+        member's historical data (worklogs, contracts, reports) is preserved. The identity
+        document of the membership is kept and stops counting for uniqueness in the business.
+        An OWNER cannot
         be removed. The BFF propagates the Main API's functional errors.
       tags:
         - Members
@@ -204,6 +206,7 @@ members:
               example:
                 content:
                   - userId: 41
+                    avatarUrl: null
                     name: "Turín García"
                     role: EMPLOYEE
                     jobRole:
@@ -219,6 +222,7 @@ members:
                     contractEndingSoon: false
                     workingNow: true
                   - userId: 18
+                    avatarUrl: null
                     name: "Arturo López"
                     role: EMPLOYEE
                     jobRole:
@@ -234,6 +238,7 @@ members:
                     contractEndingSoon: true
                     workingNow: false
                   - userId: 27
+                    avatarUrl: null
                     name: "Saturnino Ruiz"
                     role: EMPLOYEE
                     jobRole: null
@@ -320,8 +325,11 @@ members:
     get:
       summary: Get the profile screen of one member («ficha de persona»)
       description: |
-        Everything the owner's «ficha de persona» (design A: header, Resumen, Contratos, Fichaje and
-        Ajustes) needs, in one response that is ready to paint: the front computes nothing. OWNER only.
+        Everything the «ficha de persona» (design A: header, Resumen, Contratos, Fichaje and
+        Ajustes) needs, in one response that is ready to paint: the front computes nothing.
+        Requires `TEAM_VIEW` (403 1020). `personalData` is a separate block and is null unless
+        the caller is the OWNER, has `PERSONAL_DATA_VIEW`, or is the subject. Email stays on
+        `email` and is not protected by `PERSONAL_DATA_VIEW`.
         Every value comes from Main API operations that already exist; the BFF only aggregates them
         and derives the fields described in each schema. All instants are returned with the business
         offset, and every local date (today, the week, contract states, seniority) is computed in
@@ -331,13 +339,18 @@ members:
         `userIds=<userId>` and the schedule with `userIds=<userId>` (or `employeeId`) for `week.from`.
 
         The caller's id (for `isSelf`) is the JWT `sub`, read before any Main API call, the same source
-        as the BFF `GET /api/v1/me`; the BFF does not call the Main API `getUser`. A `sub` that is not
+        as the BFF `GET /api/v1/me`. A `sub` that is not
         a numeric user id returns 401 1003 and makes no Main API call.
+
+        `avatarUrl` comes from `getBusinessUsers`. When the caller may see personal data, the BFF
+        adds one call: `getCurrentUserPersonalData` if the caller is the subject, otherwise
+        `getBusinessUserPersonalData`. Otherwise it does not call them and `personalData` is null.
+        The response sends `Cache-Control: no-store`. There is no realtime signal.
 
         Main API calls (11, with one page each of contracts and job roles; never one per contract, day
         or worklog; full lists are read and the member is picked in Kotlin; at most 8 in flight):
         1. Stage 0, one `parZip` (2 calls):
-           - `getUserBusinesses` (`GET /api/v1/businesses`): the caller's role (OWNER required, otherwise
+           - `getUserBusinesses` (`GET /api/v1/businesses`): `TEAM_VIEW` (otherwise
              403 1020; not a member: 403 1015), `zone`, `attendanceToleranceMinutes` and `location.area`;
            - `getBusinessUsers` (`GET /api/v1/businesses/{businessId}/users`, active members only): name,
              email and role of `userId`. When `userId` is not in the response, the BFF returns 404 1126 and
@@ -402,6 +415,13 @@ members:
       responses:
         '200':
           description: The member's profile, ready to paint
+          headers:
+            Cache-Control:
+              description: The profile may include personal data and must not be stored by caches.
+              required: true
+              schema:
+                type: string
+                enum: ["no-store"]
           content:
             application/json:
               schema:
@@ -414,6 +434,12 @@ members:
                     businessUserId: 41
                     name: "Lucía Ramos"
                     email: "lucia.ramos@example.com"
+                    avatarUrl: null
+                    personalData:
+                      phone: "+34612345678"
+                      identityDocument:
+                        documentType: DNI
+                        documentNumber: "12345678Z"
                     role: EMPLOYEE
                     accessRole: {id: 7, name: Encargado}
                     isSelf: false
@@ -481,6 +507,8 @@ members:
                       canRemove: true
                       removeBlockedReason: null
                       canChangeAccessRole: true
+                      canEditIdentityDocument: true
+                      canRemovePhoto: false
                 splitShiftBetweenShifts:
                   summary: Split shift, between the morning shift (worked) and the evening one (not started)
                   value:
@@ -488,6 +516,12 @@ members:
                     businessUserId: 41
                     name: "Lucía Ramos"
                     email: "lucia.ramos@example.com"
+                    avatarUrl: null
+                    personalData:
+                      phone: "+34612345678"
+                      identityDocument:
+                        documentType: DNI
+                        documentNumber: "12345678Z"
                     role: EMPLOYEE
                     accessRole: {id: 7, name: Encargado}
                     isSelf: false
@@ -558,19 +592,22 @@ members:
                       canRemove: true
                       removeBlockedReason: null
                       canChangeAccessRole: true
+                      canEditIdentityDocument: true
+                      canRemovePhoto: false
         '401':
           description: No authenticated session, or a JWT `sub` that is not a numeric user id (1003)
         '403':
           description: >
-            The caller is not the OWNER of the business (1020), or not a member of it (1015).
+            The caller lacks `TEAM_VIEW` (1020, `user lacks permission TEAM_VIEW in business`),
+            or is not a member of the business (1015).
           content:
             application/problem+json:
               schema:
                 $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
               examples:
-                notOwner:
-                  summary: "1020 - user is not the owner of business"
-                  value: {status: 403, detail: "1020 - user is not the owner of business"}
+                notAllowed:
+                  summary: "1020 - user lacks permission TEAM_VIEW in business"
+                  value: {status: 403, detail: "1020 - user lacks permission TEAM_VIEW in business"}
                 notMember:
                   summary: "1015 - user is not member of business"
                   value: {status: 403, detail: "1015 - user is not member of business"}

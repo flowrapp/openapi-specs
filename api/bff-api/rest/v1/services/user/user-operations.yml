@@ -4,7 +4,12 @@ user:
       summary: Get current user profile
       description: >
         Returns the profile of the currently authenticated user, including their name,
-        email, phone, and global system role.
+        email, phone, profile photo and global system role. The worker uploads or
+        removes their own photo with the Clerk SDK (`user.setProfileImage`), not
+        through the BFF. `avatarUrl` stays null until a Clerk webhook has synced
+        the photo, and then changes asynchronously. There is no operation to force
+        that refresh and no initial backfill. `phone` is the stored value and may
+        not be E.164 until the data normalization runs.
       tags:
         - User
       operationId: getCurrentUserProfile
@@ -13,12 +18,93 @@ user:
       responses:
         '200':
           description: User profile retrieved successfully
+          headers:
+            Cache-Control:
+              description: The profile includes the phone and must not be stored by caches.
+              required: true
+              schema:
+                type: string
+                enum: ["no-store"]
           content:
             application/json:
               schema:
                 $ref: '../../components/user/components.yml#/components/schemas/UserProfileResponseDTO'
+              example:
+                id: 1
+                name: John Doe
+                email: john.doe@example.com
+                phone: "+34612345678"
+                avatarUrl: null
+                role: USER
         '401':
           description: Unauthorized
+
+  phone:
+    put:
+      summary: Replace the current user's phone
+      description: >
+        Replaces the caller's global phone. Pass-through to Main API
+        `updateCurrentUserPhone`. `phone: null` clears it. The value must be
+        E.164 (`^\+[1-9][0-9]{6,14}$`) or null; otherwise 400 1161. The response
+        is the current profile and sends `Cache-Control: no-store`.
+      tags:
+        - User
+      operationId: updateCurrentUserPhone
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        description: New phone, or null to clear it
+        content:
+          application/json:
+            schema:
+              $ref: '../../components/personalData/components.yml#/components/schemas/UpdateCurrentUserPhoneRequestDTO'
+            examples:
+              set:
+                summary: Set an E.164 phone
+                value:
+                  phone: "+34612345678"
+              clear:
+                summary: Clear the phone
+                value:
+                  phone: null
+      responses:
+        '200':
+          description: Phone updated. Body is the current user profile.
+          headers:
+            Cache-Control:
+              description: The profile includes the phone and must not be stored by caches.
+              required: true
+              schema:
+                type: string
+                enum: ["no-store"]
+          content:
+            application/json:
+              schema:
+                $ref: '../../components/user/components.yml#/components/schemas/UserProfileResponseDTO'
+              example:
+                id: 1
+                name: John Doe
+                email: john.doe@example.com
+                phone: "+34612345678"
+                avatarUrl: null
+                role: USER
+        '400':
+          description: The phone is not E.164 (1161). The detail does not echo the value.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              examples:
+                invalidPhone:
+                  summary: "1161 - phone number is invalid"
+                  value:
+                    status: 400
+                    detail: "1161 - phone number is invalid"
+        '401':
+          description: Unauthorized
+      x-functional-errors:
+        - 1161
 
   invitations:
     get:

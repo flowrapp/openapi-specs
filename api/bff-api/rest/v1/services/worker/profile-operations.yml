@@ -1,0 +1,86 @@
+workerProfile:
+  profile:
+    get:
+      summary: Get the caller's profile in a business
+      description: >
+        Profile screen of the signed-in worker in one business. Active membership
+        is enough. An employee without a contract in force still receives 200,
+        with `jobRole: null`. This operation does not return 403 1104.
+        The response is composed from Main API `getCurrentUser` (name, email,
+        avatarUrl), `getCurrentUserPersonalData` (phone and identity document)
+        and the caller's current contract (job role) and business name. The
+        document number is complete; the app masks it. Own data does not require
+        `PERSONAL_DATA_VIEW`. The worker uploads or removes their own photo with
+        the Clerk SDK (`user.setProfileImage`), not through the BFF. `avatarUrl`
+        then changes asynchronously when the webhook arrives. There is no
+        operation to force that refresh. The response sends
+        `Cache-Control: no-store`. There is no realtime refresh.
+      tags:
+        - Worker
+      operationId: getWorkerProfile
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: businessId
+          in: path
+          required: true
+          description: Unique identifier of the business
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+      responses:
+        '200':
+          description: The caller's profile in this business
+          headers:
+            Cache-Control:
+              description: Personal data must not be stored by caches.
+              required: true
+              schema:
+                type: string
+                enum: ["no-store"]
+          content:
+            application/json:
+              schema:
+                $ref: '../../components/personalData/components.yml#/components/schemas/WorkerProfileDTO'
+              example:
+                userId: 41
+                name: Lucía Ramos
+                email: lucia.ramos@example.com
+                phone: "+34612345678"
+                avatarUrl: null
+                businessId: 101
+                businessName: Coffee Time
+                jobRole:
+                  id: 10
+                  name: Sala
+                identityDocument:
+                  documentType: DNI
+                  documentNumber: "12345678Z"
+        '401':
+          description: Missing or invalid bearer token
+        '403':
+          description: The caller is not a member of the business (1015).
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              examples:
+                notMember:
+                  summary: "1015 - user is not member of business"
+                  value:
+                    status: 403
+                    detail: "1015 - user is not member of business"
+        '404':
+          description: Business not found (1006)
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              examples:
+                businessNotFound:
+                  summary: "1006 - business does not exist"
+                  value:
+                    status: 404
+                    detail: "1006 - business does not exist"
+      x-functional-errors: [1006, 1015]

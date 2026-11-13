@@ -418,6 +418,8 @@ components:
           type: string
           minLength: 1
           example: Carlos Vega
+        avatarUrl:
+          $ref: "../personalData/components.yml#/components/schemas/AvatarUrl"
         jobRole:
           description: Job role of the row, or null when none
           oneOf:
@@ -454,6 +456,7 @@ components:
           scheduledShiftId,
           userId,
           name,
+          avatarUrl,
           jobRole,
           chipType,
           severity,
@@ -509,12 +512,14 @@ components:
         name:
           type: string
           example: Alex Morgan
+        avatarUrl:
+          $ref: "../personalData/components.yml#/components/schemas/AvatarUrl"
         clockIn:
           type: string
           format: date-time
           description: Start of the currently open worklog, with the business-local offset
           example: "2026-09-24T08:30:00-04:00"
-      required: [userId, name, clockIn]
+      required: [userId, name, avatarUrl, clockIn]
 
     ManagerAttendanceTodayWorkerDTO:
       type: object
@@ -526,6 +531,8 @@ components:
         name:
           type: string
           example: Sam Rivera
+        avatarUrl:
+          $ref: "../personalData/components.yml#/components/schemas/AvatarUrl"
         firstClockIn:
           type: string
           format: date-time
@@ -542,7 +549,7 @@ components:
           minimum: 0
           description: Seconds worked during today's local date up to asOf, including open worklogs
           example: 7200
-      required: [userId, name, firstClockIn, lastClockOut, totalSeconds]
+      required: [userId, name, avatarUrl, firstClockIn, lastClockOut, totalSeconds]
 
     ManagerTeamHoursDayDTO:
       type: object
@@ -640,6 +647,8 @@ components:
           format: email
           description: Email address of the worker
           example: "john.doe@example.com"
+        avatarUrl:
+          $ref: "../personalData/components.yml#/components/schemas/AvatarUrl"
         role:
           type: string
           description: Role of the user in the business
@@ -654,6 +663,7 @@ components:
         - userId
         - name
         - email
+        - avatarUrl
         - role
         - currentContract
 
@@ -722,6 +732,8 @@ components:
           type: string
           description: Display name of the worker
           example: "John Doe"
+        avatarUrl:
+          $ref: "../personalData/components.yml#/components/schemas/AvatarUrl"
         totalSeconds:
           type: integer
           format: int64
@@ -751,6 +763,7 @@ components:
       required:
         - userId
         - name
+        - avatarUrl
         - totalSeconds
         - sessions
 
@@ -840,6 +853,8 @@ components:
           type: string
           description: Display name of the worker
           example: "John Doe"
+        avatarUrl:
+          $ref: "../personalData/components.yml#/components/schemas/AvatarUrl"
         totalSeconds:
           type: integer
           format: int64
@@ -858,6 +873,7 @@ components:
       required:
         - userId
         - name
+        - avatarUrl
         - totalSeconds
 
     ManagerMonthHistoryResponseDTO:
@@ -1003,13 +1019,26 @@ components:
             - $ref: "#/components/schemas/InvitationContractDTO"
             - type: "null"
           description: Optional contract proposal. When absent, acceptance creates a 40-hour GENERAL job contract.
+        identityDocument:
+          description: >
+            Optional identity document, passed through to the Main API. Omit it
+            or send null to invite without one. Only the OWNER may send a
+            document: a non-owner who sends one receives 403 1020 even with
+            `TEAM_INVITE`. The response never includes the document. It is
+            deleted as soon as the invitation expires, with no retention period.
+            A resend after expiry comes back without it. A resend before expiry
+            keeps it. Decline clears it. Revoke deletes the row. Accept copies
+            it onto the membership and then clears it on the invitation.
+          oneOf:
+            - $ref: "../personalData/components.yml#/components/schemas/IdentityDocumentRequestDTO"
+            - type: "null"
       required:
         - email
         - role
 
     InvitationResponseDTO:
       type: object
-      description: Invitation details
+      description: Invitation details. The identity document is never included.
       properties:
         id:
           type: integer
@@ -1046,6 +1075,14 @@ components:
           format: date-time
           description: When the invitation expires
           example: "2025-06-22T14:30:00+00:00"
+        hasIdentityDocument:
+          type: [boolean, "null"]
+          description: >
+            Whether this invitation currently stores an identity document.
+            `true` or `false` only when the caller is the OWNER of the business.
+            `null` for everyone else. The document itself is never returned.
+            Forwarded from the Main API `InvitationResponseDTO`.
+          example: false
       required:
         - id
         - email
@@ -1054,6 +1091,7 @@ components:
         - status
         - createdAt
         - expiresAt
+        - hasIdentityDocument
 
     ManagerLocalMinuteTimeDTO:
       type: string
@@ -2242,6 +2280,8 @@ components:
         name:
           type: string
           example: Bob Wilson
+        avatarUrl:
+          $ref: "../personalData/components.yml#/components/schemas/AvatarUrl"
         contractedSeconds:
           type: integer
           format: int64
@@ -2261,7 +2301,7 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/ManagerWorkerDayDTO"
-      required: [userId, name, contractedSeconds, scheduledSeconds, days]
+      required: [userId, name, avatarUrl, contractedSeconds, scheduledSeconds, days]
 
     ManagerPlanningDayDTO:
       type: object
@@ -2660,6 +2700,8 @@ components:
           type: string
           description: Display name with the PDF rule (`Persona #<id>` when the name is empty or looks like an email)
           example: Lucía Ruiz
+        avatarUrl:
+          $ref: "../personalData/components.yml#/components/schemas/AvatarUrl"
         jobRoleName:
           type:
             - string
@@ -2680,4 +2722,4 @@ components:
           format: date-time
           description: Instant the person was removed from the business; null for a current member. The app lists people with removedAt in «Ya no están en el negocio».
           example: null
-      required: [userId, name, jobRoleName, joinedAt, removedAt]
+      required: [userId, name, avatarUrl, jobRoleName, joinedAt, removedAt]

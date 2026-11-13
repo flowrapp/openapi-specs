@@ -19,6 +19,9 @@ info:
     |---|---|
     | getManagerBusinessDashboard | any permission; each block needs the permission of its data and is omitted otherwise |
     | getManagerBusinessWorkers, searchBusinessMembers, getBusinessMemberProfile, getManagerWorkerContracts, getManagerJobRoles | TEAM_VIEW |
+    | getBusinessMemberProfile personalData | PERSONAL_DATA_VIEW, the OWNER, or the subject. The profile itself stays TEAM_VIEW. Email is not inside personalData and stays visible with TEAM_VIEW |
+    | managerCreateInvitation when identityDocument is present | OWNER, in addition to TEAM_INVITE. A non-owner who sends it receives 403 1020 |
+    | replaceManagerWorkerIdentityDocument, deleteManagerWorkerIdentityDocument, deleteManagerWorkerPhoto | OWNER |
     | managerCreateInvitation, managerGetBusinessInvitations, managerDeleteInvitation, managerResendInvitation | TEAM_INVITE |
     | createManagerWorkerContract, updateManagerWorkerContract, deleteManagerWorkerContract | CONTRACTS_MANAGE |
     | getManagerDayHistory, getManagerWeekHistory, getManagerMonthHistory | WORKLOGS_VIEW |
@@ -33,6 +36,9 @@ info:
     | updateManagerBusinessProfile, updateManagerBusinessGeofence | BUSINESS_EDIT |
     | removeBusinessMember, getAccessRoles, createAccessRole, replaceAccessRole, deleteAccessRole, updateMemberAccessRole | OWNER |
     | getWorkerHoursMonths, getWorkerWorkedHoursReportPdf | current or past membership (no contract check); always the caller's own data (never REPORTS_EXPORT, no user parameter) |
+    | getWorkerProfile | active membership. Own phone and document, no PERSONAL_DATA_VIEW. No contract check and no 1104; jobRole is null without a contract in force |
+    | updateCurrentUserPhone | authenticated session. Global phone, not a business permission |
+    | receiveClerkWebhook | public. Forwards the raw body and Svix headers. The Main API verifies the signature |
     | worker, me and team-schedule operations | membership only |
 
     ## Business plans and features
@@ -44,7 +50,12 @@ info:
     self-service operations below; ADVANCED_PLANNING is checked separately on the advanced operations.
     Aggregated responses (dashboard, clock view, history, member
     profile) omit data of an unavailable feature exactly as they omit data the caller lacks the
-    permission for. On worker week and month history, `plannedSeconds` is null without SCHEDULING
+    permission for. `PERSONAL_DATA_VIEW` is core: it belongs to no feature, implies `TEAM_VIEW`,
+    and is not added to existing access roles. Without it, `MemberProfileDTO.personalData` is
+    null unless the caller is the OWNER or the subject. Phone and the identity document are the
+    only fields it protects. Email is not one of them.
+
+    On worker week and month history, `plannedSeconds` is null without SCHEDULING
     and `unjustifiedIncidentCount` is null without ATTENDANCE; the history request itself stays
     available on every plan. `null` planned seconds are no data and must not be interpolated.
 
@@ -53,7 +64,7 @@ info:
     | SCHEDULING | manual shift catalog, draft creation, assignment and publication; operations requiring SCHEDULE_VIEW, SCHEDULE_MANAGE or SHIFT_CHANGES_APPROVE; getWorkerTeamSchedule; every shift exchange and schedule change operation. Included in ESSENTIAL and PROFESSIONAL. |
     | ATTENDANCE | every Attendance operation; getWorkerAttendanceIncidents, getWorkerAttendanceMatch, getWorkerAttendanceIncidentGroups, getWorkerAttendanceIncidentGroup, justifyWorkerAttendanceIncidentGroup |
     | ADVANCED_PLANNING | requestPlanGeneration, getPlanGeneration, getWeekCoverage, getManagerPlanningGenerationSettings, replaceManagerPlanningGenerationSettings, deleteManagerPlanningGenerationSettings. Requires SCHEDULING; included in PROFESSIONAL. |
-  version: 0.0.113
+  version: 0.0.114
   contact:
     name: Flowrapp Team
     url: https://flowrapp.github.io
@@ -69,6 +80,10 @@ servers:
 tags:
   - name: System
     description: System utility endpoints for health checks.
+  - name: Webhooks
+    description: >-
+      Public callbacks. The BFF forwards the raw body and signature headers to
+      the Main API and does not hold a Clerk secret.
   - name: User
     description: Current user profile and account management.
   - name: Invitations
@@ -127,6 +142,8 @@ paths:
   # ── System ──────────────────────────────────────────────────────────────
   "/api/v1/ping":
     $ref: "v1/services/system/system-operations.yml#/system/ping"
+  "/api/v1/webhooks/clerk":
+    $ref: "v1/services/webhooks/clerk-webhook-operations.yml#/webhooks/clerk"
 
   # ── Invitations ─────────────────────────────────────────────────────────
   "/api/v1/invitations/register":
@@ -135,6 +152,8 @@ paths:
   # ── User (shared, authenticated) ────────────────────────────────────────
   "/api/v1/me":
     $ref: "v1/services/user/user-operations.yml#/user/profile"
+  "/api/v1/me/phone":
+    $ref: "v1/services/user/user-operations.yml#/user/phone"
   "/api/v1/me/settings/geofencing":
     $ref: "v1/services/settings/settings-operations.yml#/settings/current-user-geofencing"
   "/api/v1/worker/geofencing/device-credential":
@@ -157,6 +176,8 @@ paths:
   # ── Worker ──────────────────────────────────────────────────────────────
   "/api/v1/worker/businesses":
     $ref: "v1/services/worker/worker-operations.yml#/worker/businesses"
+  "/api/v1/worker/businesses/{businessId}/profile":
+    $ref: "v1/services/worker/profile-operations.yml#/workerProfile/profile"
   "/api/v1/worker/businesses/{businessId}/settings/auto-clocking":
     $ref: "v1/services/settings/settings-operations.yml#/settings/worker-auto-clocking"
   "/api/v1/worker/businesses/{businessId}/settings/geofencing":
@@ -332,6 +353,10 @@ paths:
     $ref: "v1/services/contracts/contracts-operations.yml#/contracts/worker-contracts"
   "/api/v1/manager/businesses/{businessId}/workers/{userId}/contracts/{contractId}":
     $ref: "v1/services/contracts/contracts-operations.yml#/contracts/worker-contract"
+  "/api/v1/manager/businesses/{businessId}/workers/{userId}/identity-document":
+    $ref: "v1/services/manager/personal-data-operations.yml#/managerPersonalData/identity-document"
+  "/api/v1/manager/businesses/{businessId}/workers/{userId}/photo":
+    $ref: "v1/services/manager/personal-data-operations.yml#/managerPersonalData/photo"
   "/api/v1/manager/businesses/{businessId}/schedule/recurring":
     $ref: "v1/services/manager/manager-operations.yml#/manager/recurring-sch\
       edule"

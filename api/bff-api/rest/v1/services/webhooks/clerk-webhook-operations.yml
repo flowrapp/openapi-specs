@@ -1,0 +1,75 @@
+webhooks:
+  clerk:
+    post:
+      summary: Receive a Clerk user webhook
+      description: >
+        Public route (`permitAll`, `security` is empty), same idea as the device
+        geofence route. The mobile app does not call this operation. Only Clerk
+        does. Clerk sends `user.created`, `user.updated` and
+        `user.deleted` here. The BFF does not parse the body and does not verify
+        the signature. It forwards the raw bytes and the `svix-id`,
+        `svix-timestamp` and `svix-signature` headers to Main API
+        `receiveClerkWebhook` and returns that response unchanged, including
+        204, 400, 401 1163 and 5xx. A body larger than 256 KiB is rejected with
+        413 and is not forwarded. The BFF has no Clerk secret. There is no
+        realtime signal.
+      tags:
+        - Webhooks
+      operationId: receiveClerkWebhook
+      x-internal: true
+      security: []
+      parameters:
+        - name: svix-id
+          in: header
+          required: true
+          description: Forwarded unchanged to the Main API. Never log it together with the body.
+          schema:
+            type: string
+        - name: svix-timestamp
+          in: header
+          required: true
+          description: Forwarded unchanged to the Main API.
+          schema:
+            type: string
+        - name: svix-signature
+          in: header
+          required: true
+          description: Forwarded unchanged to the Main API. Never log this header.
+          schema:
+            type: string
+      requestBody:
+        required: true
+        description: >
+          Raw Clerk JSON. Forward these exact bytes. Do not re-serialize.
+        content:
+          application/json:
+            schema:
+              description: >
+                Unmodified Clerk webhook body. The BFF does not validate it.
+              type: object
+              additionalProperties: true
+      responses:
+        '204':
+          description: Main API applied or ignored the event. No body.
+        '400':
+          description: Main API could not read the JSON. No functional code. Forwarded.
+        '401':
+          description: Main API rejected the Svix signature (1163). Forwarded.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              examples:
+                invalidSignature:
+                  summary: "1163 - webhook signature is invalid"
+                  value:
+                    status: 401
+                    detail: "1163 - webhook signature is invalid"
+        '413':
+          description: >
+            The body is larger than 256 KiB. The BFF does not call the Main API.
+            No functional code.
+        '500':
+          description: >
+            Main API or the forward failed. Svix retries a 5xx. No functional code.
+      x-functional-errors: [1163]

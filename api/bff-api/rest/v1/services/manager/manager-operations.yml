@@ -86,8 +86,8 @@ manager:
                       workingNow:
                         count: 2
                         workers:
-                          - {userId: 11, name: "Alex Morgan", clockIn: '2026-09-24T08:30:00-04:00'}
-                          - {userId: 12, name: "Jordan Lee", clockIn: '2026-09-24T09:00:00-04:00'}
+                          - {userId: 11, name: "Alex Morgan", clockIn: '2026-09-24T08:30:00-04:00', avatarUrl: null}
+                          - {userId: 12, name: "Jordan Lee", clockIn: '2026-09-24T09:00:00-04:00', avatarUrl: null}
                         byJobRole:
                           - {jobRole: {id: 10, name: "Sala", color: "#1A2B3C"}, working: 1, scheduledNow: 1}
                           - {jobRole: {id: 3, name: "Barra", color: "#4C9F70"}, working: 1, scheduledNow: 1}
@@ -96,9 +96,9 @@ manager:
                         missing: 1
                         upcoming: 4
                         workers:
-                          - {userId: 13, name: "Sam Rivera", firstClockIn: '2026-09-24T06:00:00-04:00', lastClockOut: '2026-09-24T08:00:00-04:00', totalSeconds: 7200}
-                          - {userId: 11, name: "Alex Morgan", firstClockIn: '2026-09-24T08:30:00-04:00', lastClockOut: null, totalSeconds: 7200}
-                          - {userId: 12, name: "Jordan Lee", firstClockIn: '2026-09-24T09:00:00-04:00', lastClockOut: null, totalSeconds: 5400}
+                          - {userId: 13, name: "Sam Rivera", firstClockIn: '2026-09-24T06:00:00-04:00', lastClockOut: '2026-09-24T08:00:00-04:00', totalSeconds: 7200, avatarUrl: null}
+                          - {userId: 11, name: "Alex Morgan", firstClockIn: '2026-09-24T08:30:00-04:00', lastClockOut: null, totalSeconds: 7200, avatarUrl: null}
+                          - {userId: 12, name: "Jordan Lee", firstClockIn: '2026-09-24T09:00:00-04:00', lastClockOut: null, totalSeconds: 5400, avatarUrl: null}
                       teamHours:
                         week: 2026-W39
                         totalSeconds: 99000
@@ -142,6 +142,7 @@ manager:
                         incidentCount: 4
                         rows:
                           - attendanceMatchId: null
+                            avatarUrl: null
                             scheduledShiftId: 900
                             userId: 103
                             name: Carlos Vega
@@ -151,6 +152,7 @@ manager:
                             plannedStartAt: '2026-09-24T08:00:00-04:00'
                             clockInNotice: null
                           - attendanceMatchId: null
+                            avatarUrl: null
                             scheduledShiftId: 901
                             userId: 104
                             name: Ana Ruiz
@@ -160,6 +162,7 @@ manager:
                             plannedStartAt: '2026-09-24T09:00:00-04:00'
                             clockInNotice: null
                           - attendanceMatchId: 712
+                            avatarUrl: null
                             scheduledShiftId: null
                             userId: 110
                             name: Pat Gómez
@@ -377,16 +380,19 @@ manager:
                 totalWorkers: 3
                 workers:
                   - userId: 1
+                    avatarUrl: null
                     name: "John Doe"
                     email: "john.doe@example.com"
                     role: "OWNER"
                     currentContract: null
                   - userId: 2
+                    avatarUrl: null
                     name: "Jane Smith"
                     email: "jane.smith@example.com"
                     role: "EMPLOYEE"
                     currentContract: null
                   - userId: 3
+                    avatarUrl: null
                     name: "Bob Wilson"
                     email: "bob.wilson@example.com"
                     role: "EMPLOYEE"
@@ -599,8 +605,10 @@ manager:
       description: >
         Creates a new invitation for a person to join a business with a specified role
         and an optional proposed contract. Without a contract, acceptance creates a
-        40-hour GENERAL job contract.
-        Requires an OWNER membership in the business. An email will be sent to the invitee.
+        40-hour GENERAL job contract. Requires `TEAM_INVITE`. An optional
+        `identityDocument` may be sent only by the OWNER; a non-owner who sends one
+        receives 403 1020. The response does not include the document. It is deleted
+        as soon as the invitation expires, with no retention period.
         Pass-through to the main API.
       tags:
         - Manager
@@ -639,6 +647,7 @@ manager:
                 $ref: '../../components/manager/components.yml#/components/schemas/InvitationResponseDTO'
               example:
                 id: 123
+                hasIdentityDocument: false
                 email: "newworker@example.com"
                 role: "EMPLOYEE"
                 contract:
@@ -650,15 +659,82 @@ manager:
                 createdAt: "2026-09-26T14:30:00+00:00"
                 expiresAt: "2026-10-03T14:30:00+00:00"
         '400':
-          description: Invalid request
+          description: >
+            Invalid request, or an identity document that fails format (1158) or
+            check letter (1159). The number is not included.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              examples:
+                invalidFormat:
+                  summary: "1158 - identity document format is invalid"
+                  value:
+                    status: 400
+                    detail: "1158 - identity document format is invalid"
+                invalidLetter:
+                  summary: "1159 - identity document check letter is invalid"
+                  value:
+                    status: 400
+                    detail: "1159 - identity document check letter is invalid"
         '401':
           description: Unauthorized
         '403':
-          description: Forbidden - User is not an owner of this business
+          description: >
+            The caller lacks `TEAM_INVITE` (1020), or is not the owner and sent
+            an identity document (1020).
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              examples:
+                notOwner:
+                  summary: "1020 - user is not the owner of business"
+                  value:
+                    status: 403
+                    detail: "1020 - user is not the owner of business"
+                lacksInvite:
+                  summary: "1020 - user lacks permission TEAM_INVITE in business"
+                  value:
+                    status: 403
+                    detail: "1020 - user lacks permission TEAM_INVITE in business"
         '404':
-          description: Business not found
+          description: Business not found (1006)
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              examples:
+                businessNotFound:
+                  summary: "1006 - business does not exist"
+                  value:
+                    status: 404
+                    detail: "1006 - business does not exist"
         '409':
-          description: Conflict - User already invited or already a member
+          description: >
+            The user is already a member (1007), already invited (1008), or the
+            identity document is already used in this business (1160).
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              examples:
+                alreadyMember:
+                  summary: "1007 - user already member of business"
+                  value:
+                    status: 409
+                    detail: "1007 - user already member of business"
+                alreadyInvited:
+                  summary: "1008 - user is already invited to this business"
+                  value:
+                    status: 409
+                    detail: "1008 - user is already invited to this business"
+                documentInUse:
+                  summary: "1160 - identity document is already used in this business"
+                  value:
+                    status: 409
+                    detail: "1160 - identity document is already used in this business"
+      x-functional-errors: [1006, 1007, 1008, 1020, 1158, 1159, 1160]
 
     get:
       summary: List business invitations
@@ -798,6 +874,7 @@ manager:
                 $ref: '../../components/manager/components.yml#/components/schemas/InvitationResponseDTO'
               example:
                 id: 123
+                hasIdentityDocument: false
                 email: "newworker@example.com"
                 role: "EMPLOYEE"
                 contract:
@@ -1191,8 +1268,8 @@ manager:
                 $ref: '../../components/manager/components.yml#/components/schemas/ManagerHoursPeopleResponseDTO'
               example:
                 people:
-                  - {userId: 104, name: "Ana Gil", jobRoleName: null, joinedAt: "2025-03-02T09:00:00Z", removedAt: "2026-06-30T18:00:00Z"}
-                  - {userId: 103, name: "Lucía Ruiz", jobRoleName: "Sala", joinedAt: "2026-07-01T07:00:00Z", removedAt: null}
+                  - {userId: 104, name: "Ana Gil", jobRoleName: null, joinedAt: "2025-03-02T09:00:00Z", removedAt: "2026-06-30T18:00:00Z", avatarUrl: null}
+                  - {userId: 103, name: "Lucía Ruiz", jobRoleName: "Sala", joinedAt: "2026-07-01T07:00:00Z", removedAt: null, avatarUrl: null}
         '401':
           description: Unauthorized
         '403':
@@ -2424,6 +2501,7 @@ manager:
                         scheduledSeconds: 12600
                     workers:
                       - userId: 3
+                        avatarUrl: null
                         name: Bob Wilson
                         contractedSeconds: 144000
                         scheduledSeconds: 0
@@ -2432,11 +2510,13 @@ manager:
                             scheduledSeconds: 0
                             assignments: []
                       - userId: 5
+                        avatarUrl: null
                         name: Chris Martin
                         contractedSeconds: 92571
                         scheduledSeconds: 0
                         days: []
                       - userId: 4
+                        avatarUrl: null
                         name: Alice Brown
                         contractedSeconds: 0
                         scheduledSeconds: 12600
@@ -2507,6 +2587,7 @@ manager:
                         scheduledSeconds: 28800
                     workers:
                       - userId: 3
+                        avatarUrl: null
                         name: Bob Wilson
                         contractedSeconds: 144000
                         scheduledSeconds: 28800
@@ -2788,6 +2869,7 @@ manager:
                   - {date: "2026-10-05", requiredSeconds: 0, scheduledSeconds: 27000}
                 workers:
                   - userId: 42
+                    avatarUrl: null
                     name: Alex Rivera
                     contractedSeconds: 0
                     scheduledSeconds: 27000

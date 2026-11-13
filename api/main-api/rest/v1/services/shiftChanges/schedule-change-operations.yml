@@ -215,6 +215,7 @@ scheduleChangeRequests:
                     reason: Luis cubre el mediodía del lunes
                     createdBy:
                       userId: 1
+                      avatarUrl: null
                       displayName: Carmen Ortiz
                     createdAt: "2026-11-06T19:00:00+01:00"
                     updatedAt: "2026-11-06T19:00:00+01:00"
@@ -227,7 +228,7 @@ scheduleChangeRequests:
                         planningVersion: 4
                         role: SOURCE
                         before:
-                          user: {userId: 41, displayName: Ana Ruiz}
+                          user: {userId: 41, displayName: Ana Ruiz, avatarUrl: null}
                           jobRole: {id: 10, name: Waiter}
                           shiftId: 20
                           shiftName: Morning service
@@ -236,7 +237,7 @@ scheduleChangeRequests:
                           endAt: "2026-11-09T17:00:00+01:00"
                           breakMinutes: 30
                         after:
-                          user: {userId: 42, displayName: Luis Mora}
+                          user: {userId: 42, displayName: Luis Mora, avatarUrl: null}
                           jobRole: {id: 10, name: Waiter}
                           shiftId: 22
                           shiftName: Midday service
@@ -246,11 +247,11 @@ scheduleChangeRequests:
                           breakMinutes: 30
                     acceptances:
                       - slot: INCOMING
-                        user: {userId: 42, displayName: Luis Mora}
+                        user: {userId: 42, displayName: Luis Mora, avatarUrl: null}
                         status: PENDING
                         decidedAt: null
                       - slot: CURRENT
-                        user: {userId: 41, displayName: Ana Ruiz}
+                        user: {userId: 41, displayName: Ana Ruiz, avatarUrl: null}
                         status: PENDING
                         decidedAt: null
                     warnings: []
@@ -313,6 +314,7 @@ scheduleChangeRequests:
                     reason: Luis cubre el mediodía del lunes
                     createdBy:
                       userId: 1
+                      avatarUrl: null
                       displayName: Carmen Ortiz
                     createdAt: "2026-11-06T19:00:00+01:00"
                     updatedAt: "2026-11-06T19:40:00+01:00"
@@ -325,7 +327,7 @@ scheduleChangeRequests:
                         planningVersion: 4
                         role: SOURCE
                         before:
-                          user: {userId: 41, displayName: Ana Ruiz}
+                          user: {userId: 41, displayName: Ana Ruiz, avatarUrl: null}
                           jobRole: {id: 10, name: Waiter}
                           shiftId: 20
                           shiftName: Morning service
@@ -334,7 +336,7 @@ scheduleChangeRequests:
                           endAt: "2026-11-09T17:00:00+01:00"
                           breakMinutes: 30
                         after:
-                          user: {userId: 42, displayName: Luis Mora}
+                          user: {userId: 42, displayName: Luis Mora, avatarUrl: null}
                           jobRole: {id: 10, name: Waiter}
                           shiftId: 22
                           shiftName: Midday service
@@ -344,11 +346,11 @@ scheduleChangeRequests:
                           breakMinutes: 30
                     acceptances:
                       - slot: INCOMING
-                        user: {userId: 42, displayName: Luis Mora}
+                        user: {userId: 42, displayName: Luis Mora, avatarUrl: null}
                         status: ACCEPTED
                         decidedAt: "2026-11-06T19:25:00+01:00"
                       - slot: CURRENT
-                        user: {userId: 41, displayName: Ana Ruiz}
+                        user: {userId: 41, displayName: Ana Ruiz, avatarUrl: null}
                         status: ACCEPTED
                         decidedAt: "2026-11-06T19:40:00+01:00"
                     warnings:
@@ -374,6 +376,7 @@ scheduleChangeRequests:
                     reason: Luis cubre el mediodía del lunes
                     createdBy:
                       userId: 1
+                      avatarUrl: null
                       displayName: Carmen Ortiz
                     createdAt: "2026-11-06T19:00:00+01:00"
                     updatedAt: "2026-11-06T19:40:00+01:00"
@@ -386,7 +389,7 @@ scheduleChangeRequests:
                         planningVersion: 4
                         role: SOURCE
                         before:
-                          user: {userId: 41, displayName: Ana Ruiz}
+                          user: {userId: 41, displayName: Ana Ruiz, avatarUrl: null}
                           jobRole: {id: 10, name: Waiter}
                           shiftId: 20
                           shiftName: Morning service
@@ -395,7 +398,7 @@ scheduleChangeRequests:
                           endAt: "2026-11-09T17:00:00+01:00"
                           breakMinutes: 30
                         after:
-                          user: {userId: 42, displayName: Luis Mora}
+                          user: {userId: 42, displayName: Luis Mora, avatarUrl: null}
                           jobRole: {id: 10, name: Waiter}
                           shiftId: 22
                           shiftName: Midday service
@@ -405,11 +408,11 @@ scheduleChangeRequests:
                           breakMinutes: 30
                     acceptances:
                       - slot: INCOMING
-                        user: {userId: 42, displayName: Luis Mora}
+                        user: {userId: 42, displayName: Luis Mora, avatarUrl: null}
                         status: ACCEPTED
                         decidedAt: "2026-11-06T19:25:00+01:00"
                       - slot: CURRENT
-                        user: {userId: 41, displayName: Ana Ruiz}
+                        user: {userId: 41, displayName: Ana Ruiz, avatarUrl: null}
                         status: ACCEPTED
                         decidedAt: "2026-11-06T19:40:00+01:00"
         "401":
@@ -545,6 +548,7 @@ scheduleChangeRequests:
                     reason: Luis cubre el mediodía del lunes
                     createdBy:
                       userId: 1
+                      avatarUrl: null
                       displayName: Carmen Ortiz
                     createdAt: "2026-11-06T19:00:00+01:00"
                     updatedAt: "2026-11-06T19:45:00+01:00"
@@ -557,7 +561,7 @@ scheduleChangeRequests:
                         planningVersion: 4
                         role: SOURCE
                         before:
-                          user: {userId: 41, displayName: Ana Ruiz}
+                          user: {userId: 41, displayName: Ana Ruiz, avatarUrl: null}
                           jobRole: {id: 10, name: Waiter}
                           shiftId: 20
                           shiftName: Morning service
@@ -566,7 +570,7 @@ scheduleChangeRequests:
                           endAt: "2026-11-09T17:00:00+01:00"
                           breakMinutes: 30
                         after:
-                          user: {userId: 42, displayName: Luis Mora}
+                          user: {userId: 42, displayName: Luis Mora, avatarUrl: null}
                           jobRole: {id: 10, name: Waiter}
                           shiftId: 22
                           shiftName: Midday service
@@ -576,11 +580,11 @@ scheduleChangeRequests:
                           breakMinutes: 30
                     acceptances:
                       - slot: INCOMING
-                        user: {userId: 42, displayName: Luis Mora}
+                        user: {userId: 42, displayName: Luis Mora, avatarUrl: null}
                         status: ACCEPTED
                         decidedAt: "2026-11-06T19:25:00+01:00"
                       - slot: CURRENT
-                        user: {userId: 41, displayName: Ana Ruiz}
+                        user: {userId: 41, displayName: Ana Ruiz, avatarUrl: null}
                         status: ACCEPTED
                         decidedAt: "2026-11-06T19:40:00+01:00"
                     warnings:
@@ -596,6 +600,7 @@ scheduleChangeRequests:
                       warningsFingerprint: fp-7c2a
                       decidedBy:
                         userId: 1
+                        avatarUrl: null
                         displayName: Carmen Ortiz
                       decidedAt: "2026-11-06T19:45:00+01:00"
         "400":

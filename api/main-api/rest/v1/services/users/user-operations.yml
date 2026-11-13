@@ -1,50 +1,13 @@
 users:
-  byName:
-    post:
-      summary: Find a user by name
-      description: Searches for and retrieves a user profile based on the provided name.
-      tags:
-        - Users
-      operationId: getUser
-      security:
-        - basicAuth: []
-        - bearerAuth: []
-      requestBody:
-        description: User information to search for
-        content:
-          application/json:
-            schema:
-              "$ref": '../../components/users/components.yml#/components/schemas/UserRequestDTO'
-        required: true
-      responses:
-        '200':
-          description: User found
-          content:
-            application/json:
-              schema:
-                "$ref": "../../components/users/components.yml#/components/schemas/UserResponseDTO"
-        '404':
-          description: User not found
-          content:
-            application/problem+json:
-              schema:
-                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
-              examples:
-                USER_NOT_FOUND:
-                  summary: "1000 - user not found"
-                  value:
-                    status: 404
-                    detail: "1000 - user not found"
-      x-functional-errors:
-        - 1000
-
   me:
     get:
       summary: Get the current user
-      description: >-
+      description: >
         Returns the Flowrapp profile of the authenticated caller, resolved from the
-        mail claim of the bearer token. Used by the BFF when the token subject is not
-        a Flowrapp user id (Clerk session tokens).
+        mail claim of the bearer token. `avatarUrl` is the Clerk photo synced by
+        the webhook, or null until that webhook arrives. There is no initial
+        backfill. `phone` is the global E.164 number or null. The response sends
+        `Cache-Control: no-store` because it includes the phone.
       tags:
         - Users
       operationId: getCurrentUser
@@ -53,10 +16,24 @@ users:
       responses:
         '200':
           description: Current user profile
+          headers:
+            Cache-Control:
+              description: The profile includes the phone and must not be stored by caches.
+              required: true
+              schema:
+                type: string
+                enum: ["no-store"]
           content:
             application/json:
               schema:
                 "$ref": "../../components/users/components.yml#/components/schemas/CurrentUserResponseDTO"
+              example:
+                id: 1
+                name: John Doe
+                email: john.doe@example.com
+                phone: "+34612345678"
+                avatarUrl: null
+                role: USER
         '401':
           description: Missing or invalid bearer token
         '403':
@@ -75,3 +52,86 @@ users:
                     detail: "1016 - Current user not found"
       x-functional-errors:
         - 1016
+
+  phone:
+    put:
+      summary: Replace the current user's phone
+      description: >
+        Replaces the caller's global phone. `phone: null` clears it. The value
+        must be E.164 (`^\+[1-9][0-9]{6,14}$`) or null; otherwise 400 1161. The
+        phone is not unique. The change is audited with a boolean that says
+        whether it was cleared, never with the number. The response is the
+        current user profile and sends `Cache-Control: no-store`.
+      tags:
+        - Users
+      operationId: updateCurrentUserPhone
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        description: New phone, or null to clear it
+        content:
+          application/json:
+            schema:
+              $ref: '../../components/personalData/components.yml#/components/schemas/UpdateCurrentUserPhoneRequestDTO'
+            examples:
+              set:
+                summary: Set an E.164 phone
+                value:
+                  phone: "+34612345678"
+              clear:
+                summary: Clear the phone
+                value:
+                  phone: null
+      responses:
+        '200':
+          description: Phone updated. Body is the current user profile.
+          headers:
+            Cache-Control:
+              description: The profile includes the phone and must not be stored by caches.
+              required: true
+              schema:
+                type: string
+                enum: ["no-store"]
+          content:
+            application/json:
+              schema:
+                "$ref": "../../components/users/components.yml#/components/schemas/CurrentUserResponseDTO"
+              example:
+                id: 1
+                name: John Doe
+                email: john.doe@example.com
+                phone: "+34612345678"
+                avatarUrl: null
+                role: USER
+        '400':
+          description: The phone is not E.164 (1161). The detail does not echo the value.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+              examples:
+                invalidPhone:
+                  summary: "1161 - phone number is invalid"
+                  value:
+                    status: 400
+                    detail: "1161 - phone number is invalid"
+        '401':
+          description: Missing or invalid bearer token
+        '403':
+          description: >-
+            The token mail does not match any Flowrapp user (1016), or the user is
+            not enabled yet (plain 403 without functional code)
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+              examples:
+                CURRENT_USER_NOT_FOUND:
+                  summary: "1016 - Current user not found"
+                  value:
+                    status: 403
+                    detail: "1016 - Current user not found"
+      x-functional-errors:
+        - 1016
+        - 1161
