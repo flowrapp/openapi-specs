@@ -48,11 +48,15 @@ components:
           is the last day of the same month).
         - YEAR: from and to must cover exactly one complete calendar year (from is January 1 and
           to is December 31 of the same year). Fiscal or rolling 12-month years are not supported.
-        - RANGE: any from and to with from on or before to, exactly as before this field existed.
-        For every period type, the period may end after today: send the full period (for example
-        MONTH 2026-11-01 to 2026-11-30, or YEAR 2026-01-01 to 2026-12-31) and the server truncates
-        the effective end to today in the business time zone. A period whose from is after today
-        is rejected with 400.
+        - RANGE: any from and to with from on or before to. On exportBusinessWorkedHoursReportPdf, to
+          must be today at the latest (400 1166).
+        MONTH and YEAR may end after today: send the full period (for example MONTH 2026-11-01 to
+        2026-11-30, or YEAR 2026-01-01 to 2026-12-31) and the server truncates the effective end to
+        today in the business time zone. A period whose from is after today is rejected with 400 (1025).
+        On exportBusinessWorkedHoursReportPdf every period type must also start inside the 48-month
+        window (400 1165) and fit the cap of the format, PDF 366 days and CSV 1461 days (400 1164).
+        The deprecated requestBusinessWorkedHoursReport keeps the previous rules: RANGE may end after
+        today and is truncated, with no window and no cap.
         When omitted, RANGE is used. Nothing is inferred from the dates.
         If from and to do not match the period type, the request fails with 400 and functional code 1114 (REPORT_PERIOD_TYPE_MISMATCH).
       enum: [MONTH, YEAR, RANGE]
@@ -152,7 +156,7 @@ components:
           - Encoding UTF-8 with a byte order mark (EF BB BF), so Excel detects it. Separator `;`. Line endings CRLF.
             Decimal comma.
           - The first line is the header, in Spanish and in this order:
-            `Persona;ID persona;Puesto;Fecha;Entrada;Salida;Salida día siguiente;Pausas (min);Horas netas;Duración;Estado;Cuenta en el total`
+            `Persona;ID persona;Puesto;Fecha;Entrada;Salida;Salida día siguiente;Pausas (min);Horas netas;Duración;Estado;Cuenta en el total;Baja`
           - One row per closed worklog (clock-out set) of the people in scope whose clock-in falls in the period
             (business time zone), in CONFIRMED, APPROVED, PENDING_REVIEW or PENDING_RECONCILIATION. REJECTED and
             open worklogs are not listed. No total or subtotal rows. A period without such worklogs returns the
@@ -175,6 +179,10 @@ components:
             wording).
           - Cuenta en el total: `Sí` for CONFIRMED and APPROVED, `No` for PENDING_REVIEW and
             PENDING_RECONCILIATION.
+          - Baja: business-local date (`dd/MM/yyyy`) of the person's removal from the business when the
+            membership is removed at generation time, the same date as the «Baja» column of the PDF summary;
+            empty for a current member. Repeated on every row of the person. Last column, so the previous
+            columns keep their position.
           - Quoting (RFC 4180): a field is enclosed in double quotes only when it contains `;`, `"`, CR or LF;
             an inner double quote is doubled.
           - Formula protection (CSV injection): a text field (Persona, Puesto) that starts with `=`, `+`, `-`,
@@ -284,6 +292,145 @@ components:
         archive:
           $ref: '#/components/schemas/WorkedHoursMonthArchiveDTO'
       required: [month, inProgress, effectiveTo, confirmedSeconds, pendingSeconds, pendingCount, hasWorklogs, peopleCount]
+
+    BusinessWorkedHoursRangeResponseDTO:
+      type: object
+      description: |
+        Worked-hours totals of one custom date range for the people in scope (the whole business or the requested
+        people), with a breakdown by calendar month clipped to the range (getBusinessWorkedHoursRange).
+      properties:
+        zone:
+          type: string
+          description: IANA time zone of the business. Days and today are calendar values in this zone.
+          example: Europe/Madrid
+        today:
+          type: string
+          format: date
+          description: Today in the business time zone, from the server clock
+          example: "2026-11-14"
+        from:
+          type: string
+          format: date
+          description: First day of the range, as requested
+          example: "2026-09-15"
+        to:
+          type: string
+          format: date
+          description: Last day of the range, as requested (today at the latest)
+          example: "2026-11-14"
+        effectiveTo:
+          type: string
+          format: date
+          description: Last day covered by the figures and by the RANGE export of the same dates. Equals to, because to cannot be after today.
+          example: "2026-11-14"
+        days:
+          type: integer
+          format: int32
+          minimum: 1
+          description: Inclusive number of days from from to effectiveTo. The PDF of the range is available up to 366 days and the CSV up to 1461.
+          example: 61
+        provisional:
+          type: boolean
+          description: True when effectiveTo is today. The figures and the files of the range can still change.
+          example: true
+        confirmedSeconds:
+          type: integer
+          format: int64
+          minimum: 0
+          description: |
+            Closed worklogs whose reviewStatus is CONFIRMED or APPROVED. Equals the total of
+            exportBusinessWorkedHoursReportPdf with periodType RANGE for the same from, to and userIds.
+          example: 10522800
+        pendingSeconds:
+          type: integer
+          format: int64
+          minimum: 0
+          description: Closed worklogs whose reviewStatus is PENDING_REVIEW or PENDING_RECONCILIATION. Not included in confirmedSeconds. Always present; 0 when nothing is pending.
+          example: 138300
+        pendingCount:
+          type: integer
+          format: int32
+          minimum: 0
+          description: Number of the closed worklogs counted in pendingSeconds
+          example: 15
+        hasWorklogs:
+          type: boolean
+          description: True when someone in scope has at least one worklog with its clock-in in the range, in any review status, open ones included. Equals peopleCount > 0.
+          example: true
+        peopleCount:
+          type: integer
+          format: int32
+          minimum: 0
+          description: Number of distinct people in scope with at least one worklog whose clock-in is in the range, in any review status, open ones included
+          example: 8
+        months:
+          type: array
+          description: |
+            Every calendar month that intersects the range, oldest first, with no gaps: the first and the last are
+            clipped to from and effectiveTo. A month without worklogs is listed with hasWorklogs false and zeros.
+            Each figure summed over the months equals the range figure, except peopleCount (distinct per month).
+          items:
+            $ref: '#/components/schemas/BusinessWorkedHoursRangeMonthDTO'
+          example:
+            - {month: "2026-09", from: "2026-09-15", to: "2026-09-30", inProgress: false, confirmedSeconds: 2408400, pendingSeconds: 0, pendingCount: 0, hasWorklogs: true, peopleCount: 7}
+            - {month: "2026-10", from: "2026-10-01", to: "2026-10-31", inProgress: false, confirmedSeconds: 5212800, pendingSeconds: 7800, pendingCount: 1, hasWorklogs: true, peopleCount: 8}
+            - {month: "2026-11", from: "2026-11-01", to: "2026-11-14", inProgress: true, confirmedSeconds: 2901600, pendingSeconds: 130500, pendingCount: 14, hasWorklogs: true, peopleCount: 8}
+      required: [zone, today, from, to, effectiveTo, days, provisional, confirmedSeconds, pendingSeconds, pendingCount, hasWorklogs, peopleCount, months]
+
+    BusinessWorkedHoursRangeMonthDTO:
+      type: object
+      description: Totals of one calendar month clipped to the range, summed over the people in scope. Same rules as BusinessWorkedHoursMonthDTO.
+      properties:
+        month:
+          type: string
+          pattern: '^\d{4}-(0[1-9]|1[0-2])$'
+          description: Calendar month (YYYY-MM)
+          example: "2026-10"
+        from:
+          type: string
+          format: date
+          description: First day of the month inside the range (the range from for the first month, otherwise day 1)
+          example: "2026-10-01"
+        to:
+          type: string
+          format: date
+          description: Last day of the month inside the range (effectiveTo for the last month, otherwise the last day of the month)
+          example: "2026-10-31"
+        inProgress:
+          type: boolean
+          description: >
+            True for the current month in the business time zone. Its to is effectiveTo, which may be before
+            today; only when to equals today does the month run «hasta hoy».
+          example: false
+        confirmedSeconds:
+          type: integer
+          format: int64
+          minimum: 0
+          description: Closed CONFIRMED and APPROVED worklogs of the clipped month
+          example: 5212800
+        pendingSeconds:
+          type: integer
+          format: int64
+          minimum: 0
+          description: Closed PENDING_REVIEW and PENDING_RECONCILIATION worklogs of the clipped month. Not included in confirmedSeconds.
+          example: 7800
+        pendingCount:
+          type: integer
+          format: int32
+          minimum: 0
+          description: Number of the closed worklogs counted in pendingSeconds
+          example: 1
+        hasWorklogs:
+          type: boolean
+          description: True when someone in scope has a worklog with its clock-in in the clipped month, in any review status, open ones included
+          example: true
+        peopleCount:
+          type: integer
+          format: int32
+          minimum: 0
+          description: Number of the people in scope with at least one worklog whose clock-in is in the clipped month, in any review status, open ones included
+          example: 8
+      required: [month, from, to, inProgress, confirmedSeconds, pendingSeconds, pendingCount, hasWorklogs, peopleCount]
 
     WorkedHoursMonthArchiveDTO:
       type: object

@@ -2572,6 +2572,159 @@ components:
           example: "2025-11"
       required: [zone, today, oldestMonth, months, nextBefore]
 
+    ManagerHoursRangeResponseDTO:
+      type: object
+      description: >
+        Worked-hours totals of one custom date range for the owner reports screen («Exportar fechas»), for the whole
+        business or the requested people, with a breakdown by calendar month clipped to the range. Forwarded from
+        the Main API getBusinessWorkedHoursRange, plus `report`.
+      properties:
+        zone:
+          type: string
+          description: IANA time zone of the business. Days and today are calendar values in this zone.
+          example: Europe/Madrid
+        today:
+          type: string
+          format: date
+          description: Today in the business time zone, from the server clock
+          example: "2026-11-14"
+        from:
+          type: string
+          format: date
+          description: First day of the range, as requested
+          example: "2026-09-15"
+        to:
+          type: string
+          format: date
+          description: Last day of the range, as requested (today at the latest)
+          example: "2026-11-14"
+        effectiveTo:
+          type: string
+          format: date
+          description: Last day covered by the figures and the files. Equals to, because to cannot be after today.
+          example: "2026-11-14"
+        days:
+          type: integer
+          format: int32
+          minimum: 1
+          description: Inclusive number of days from from to effectiveTo
+          example: 61
+        provisional:
+          type: boolean
+          description: True when effectiveTo is today. The app shows «Provisional» and «Ver informe hasta hoy».
+          example: true
+        confirmedSeconds:
+          type: integer
+          format: int64
+          minimum: 0
+          description: Closed CONFIRMED and APPROVED worklogs. Equals the total of the RANGE PDF and CSV for the same dates and people.
+          example: 10522800
+        pendingSeconds:
+          type: integer
+          format: int64
+          minimum: 0
+          description: Closed PENDING_REVIEW and PENDING_RECONCILIATION worklogs, not included in confirmedSeconds. Always present; 0 when nothing is pending.
+          example: 138300
+        pendingCount:
+          type: integer
+          format: int32
+          minimum: 0
+          description: Number of the closed worklogs counted in pendingSeconds
+          example: 15
+        hasWorklogs:
+          type: boolean
+          description: True when someone in scope has a worklog with its clock-in in the range, in any review status, open ones included. Equals peopleCount > 0.
+          example: true
+        peopleCount:
+          type: integer
+          format: int32
+          minimum: 0
+          description: Number of distinct people in scope with at least one worklog whose clock-in is in the range, in any review status, open ones included
+          example: 8
+        report:
+          $ref: '#/components/schemas/ManagerHoursRangeReportDTO'
+        months:
+          type: array
+          description: >
+            Every calendar month that intersects the range, oldest first, with no gaps; the first and the last are
+            clipped to from and effectiveTo. A month without worklogs has hasWorklogs false and zeros.
+          items:
+            $ref: '#/components/schemas/ManagerHoursRangeMonthDTO'
+          example:
+            - {month: "2026-09", from: "2026-09-15", to: "2026-09-30", inProgress: false, confirmedSeconds: 2408400, pendingSeconds: 0, pendingCount: 0, hasWorklogs: true, peopleCount: 7}
+            - {month: "2026-10", from: "2026-10-01", to: "2026-10-31", inProgress: false, confirmedSeconds: 5212800, pendingSeconds: 7800, pendingCount: 1, hasWorklogs: true, peopleCount: 8}
+            - {month: "2026-11", from: "2026-11-01", to: "2026-11-14", inProgress: true, confirmedSeconds: 2901600, pendingSeconds: 130500, pendingCount: 14, hasWorklogs: true, peopleCount: 8}
+      required: [zone, today, from, to, effectiveTo, days, provisional, confirmedSeconds, pendingSeconds, pendingCount, hasWorklogs, peopleCount, report, months]
+
+    ManagerHoursRangeReportDTO:
+      type: object
+      description: Which files of the range the app offers (exportManagerWorkedHoursReportPdf with periodType=RANGE). Computed by the BFF from days.
+      properties:
+        pdfAvailable:
+          type: boolean
+          description: True when days is at most 366. Beyond it the download answers 400 1164 and the app offers the CSV or a shorter range.
+          example: true
+        csvAvailable:
+          type: boolean
+          description: True when days is at most 1461. The 48-month window spans at most 1461 days (from day 1 of its oldest month to the last day of the current month, when those 48 months include a 29 February), so a range accepted by this operation always has days of at most 1461 and csvAvailable is true today; it is computed from days anyway, in case the window or the cap changes.
+          example: true
+      required: [pdfAvailable, csvAvailable]
+
+    ManagerHoursRangeMonthDTO:
+      type: object
+      description: Totals of one calendar month clipped to the range, summed over the people in scope. Same rules as ManagerHoursMonthDTO.
+      properties:
+        month:
+          type: string
+          pattern: '^\d{4}-(0[1-9]|1[0-2])$'
+          description: Calendar month (YYYY-MM)
+          example: "2026-10"
+        from:
+          type: string
+          format: date
+          description: First day of the month inside the range
+          example: "2026-10-01"
+        to:
+          type: string
+          format: date
+          description: Last day of the month inside the range
+          example: "2026-10-31"
+        inProgress:
+          type: boolean
+          description: >
+            True for the current month in the business time zone. Its to is effectiveTo, which may be before
+            today; only when to equals today does the month run «hasta hoy».
+          example: false
+        confirmedSeconds:
+          type: integer
+          format: int64
+          minimum: 0
+          description: Closed CONFIRMED and APPROVED worklogs of the clipped month
+          example: 5212800
+        pendingSeconds:
+          type: integer
+          format: int64
+          minimum: 0
+          description: Closed PENDING_REVIEW and PENDING_RECONCILIATION worklogs of the clipped month, not included in confirmedSeconds
+          example: 7800
+        pendingCount:
+          type: integer
+          format: int32
+          minimum: 0
+          description: Number of the closed worklogs counted in pendingSeconds
+          example: 1
+        hasWorklogs:
+          type: boolean
+          description: True when someone in scope has a worklog with its clock-in in the clipped month, in any review status, open ones included
+          example: true
+        peopleCount:
+          type: integer
+          format: int32
+          minimum: 0
+          description: Number of the people in scope with at least one worklog whose clock-in is in the clipped month, in any review status, open ones included
+          example: 8
+      required: [month, from, to, inProgress, confirmedSeconds, pendingSeconds, pendingCount, hasWorklogs, peopleCount]
+
     ManagerHoursMonthDTO:
       type: object
       description: >
