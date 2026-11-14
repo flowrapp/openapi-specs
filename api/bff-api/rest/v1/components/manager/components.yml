@@ -2651,7 +2651,9 @@ components:
           items:
             $ref: '#/components/schemas/ManagerHoursRangeMonthDTO'
           example:
+            - {month: "2026-09", from: "2026-09-15", to: "2026-09-30", inProgress: false, confirmedSeconds: 2408400, pendingSeconds: 0, pendingCount: 0, hasWorklogs: true, peopleCount: 7}
             - {month: "2026-10", from: "2026-10-01", to: "2026-10-31", inProgress: false, confirmedSeconds: 5212800, pendingSeconds: 7800, pendingCount: 1, hasWorklogs: true, peopleCount: 8}
+            - {month: "2026-11", from: "2026-11-01", to: "2026-11-14", inProgress: true, confirmedSeconds: 2901600, pendingSeconds: 130500, pendingCount: 14, hasWorklogs: true, peopleCount: 8}
       required: [zone, today, from, to, effectiveTo, days, provisional, confirmedSeconds, pendingSeconds, pendingCount, hasWorklogs, peopleCount, report, months]
 
     ManagerHoursRangeReportDTO:
@@ -2664,7 +2666,7 @@ components:
           example: true
         csvAvailable:
           type: boolean
-          description: True when days is at most 1461. Always true for a range accepted by this operation, because the 48-month window is shorter.
+          description: True when days is at most 1461. The 48-month window spans at most 1461 days (from day 1 of its oldest month to the last day of the current month, when those 48 months include a 29 February), so a range accepted by this operation always has days of at most 1461 and csvAvailable is true today; it is computed from days anyway, in case the window or the cap changes.
           example: true
       required: [pdfAvailable, csvAvailable]
 
@@ -2689,7 +2691,9 @@ components:
           example: "2026-10-31"
         inProgress:
           type: boolean
-          description: True for the current month in the business time zone (the app labels it «hasta hoy»)
+          description: >
+            True for the current month in the business time zone. Its to is effectiveTo, which may be before
+            today; only when to equals today does the month run «hasta hoy».
           example: false
         confirmedSeconds:
           type: integer

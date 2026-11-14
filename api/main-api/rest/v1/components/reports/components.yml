@@ -372,7 +372,9 @@ components:
           items:
             $ref: '#/components/schemas/BusinessWorkedHoursRangeMonthDTO'
           example:
+            - {month: "2026-09", from: "2026-09-15", to: "2026-09-30", inProgress: false, confirmedSeconds: 2408400, pendingSeconds: 0, pendingCount: 0, hasWorklogs: true, peopleCount: 7}
             - {month: "2026-10", from: "2026-10-01", to: "2026-10-31", inProgress: false, confirmedSeconds: 5212800, pendingSeconds: 7800, pendingCount: 1, hasWorklogs: true, peopleCount: 8}
+            - {month: "2026-11", from: "2026-11-01", to: "2026-11-14", inProgress: true, confirmedSeconds: 2901600, pendingSeconds: 130500, pendingCount: 14, hasWorklogs: true, peopleCount: 8}
       required: [zone, today, from, to, effectiveTo, days, provisional, confirmedSeconds, pendingSeconds, pendingCount, hasWorklogs, peopleCount, months]
 
     BusinessWorkedHoursRangeMonthDTO:
@@ -396,7 +398,9 @@ components:
           example: "2026-10-31"
         inProgress:
           type: boolean
-          description: True for the current month in the business time zone
+          description: >
+            True for the current month in the business time zone. Its to is effectiveTo, which may be before
+            today; only when to equals today does the month run «hasta hoy».
           example: false
         confirmedSeconds:
           type: integer

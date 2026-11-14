@@ -954,7 +954,7 @@ manager:
         and truncated to today (provisional: the PDF says so and the filename carries the date). For the custom
         date range export («Exportar fechas») it calls it with periodType=RANGE and the from and to shown by
         getManagerHoursRange. When periodType is omitted the request behaves as RANGE.
-        Date rules (Main API, business time zone), in this order: from after to or after today: 400 (1025);
+        Date rules (Main API, business time zone), in this order: from after to, or from after today: 400 (1025);
         from and to do not match periodType: 400 (1114); only for periodType=RANGE (the custom date range), a to
         after today: 400 (1166), so a RANGE is never truncated (MONTH and YEAR in progress are still accepted and
         truncated to today, never 1166); from before the first day of the 48-month window of getManagerHoursMonths: 400
@@ -1265,7 +1265,7 @@ manager:
         and userIds: without userIds, members active at some point of the range (joined on or before to, not
         removed before from); with userIds, current or former members (400 1101 for an id without a membership
         row), at most 50 distinct ids (400 1111).
-        Dates: from after to or after today, 400 (1025); to after today, 400 (1166): the app's calendar ends today;
+        Dates: from after to, or from after today, 400 (1025); to after today, 400 (1166): the app's calendar ends today;
         from before the first day of the 48-month window (oldestMonth of getManagerHoursMonths without userIds is
         never earlier), 400 (1165). No per-format cap here: `report` says whether the PDF (up to 366 days) and the
         CSV (up to 1461 days) can be downloaded, and the download answers 1164 beyond them.
@@ -1346,7 +1346,7 @@ manager:
                   - {month: "2026-10", from: "2026-10-01", to: "2026-10-31", inProgress: false, confirmedSeconds: 5212800, pendingSeconds: 7800, pendingCount: 1, hasWorklogs: true, peopleCount: 8}
                   - {month: "2026-11", from: "2026-11-01", to: "2026-11-14", inProgress: true, confirmedSeconds: 2901600, pendingSeconds: 130500, pendingCount: 14, hasWorklogs: true, peopleCount: 8}
         '400':
-          description: from after to or after today (1025), to after today (1166), from before the 48-month window (1165), an id without membership in the business (1101), or more than 50 userIds (1111)
+          description: from after to, or from after today (1025), to after today (1166), from before the 48-month window (1165), an id without membership in the business (1101), or more than 50 userIds (1111)
           content:
             application/problem+json:
               schema:

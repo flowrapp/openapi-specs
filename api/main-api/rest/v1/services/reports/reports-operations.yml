@@ -581,7 +581,7 @@ reports:
                   - {month: "2026-10", from: "2026-10-01", to: "2026-10-31", inProgress: false, confirmedSeconds: 5212800, pendingSeconds: 7800, pendingCount: 1, hasWorklogs: true, peopleCount: 8}
                   - {month: "2026-11", from: "2026-11-01", to: "2026-11-14", inProgress: true, confirmedSeconds: 2901600, pendingSeconds: 130500, pendingCount: 14, hasWorklogs: true, peopleCount: 8}
         '400':
-          description: from after to or after today (1025), to after today (1166), from before the 48-month window (1165), an id without membership in the business (1101), or more than 50 userIds (1111)
+          description: from after to, or from after today (1025), to after today (1166), from before the 48-month window (1165), an id without membership in the business (1101), or more than 50 userIds (1111)
           content:
             application/problem+json:
               schema:
