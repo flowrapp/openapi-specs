@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.0.115
+
+Spec only. No BFF implementation in this change. Depends on Main API 0.0.121. Next repository tag: `v1.0.32` (after `v1.0.31`). This change does not create the tag.
+
+Owner reports: custom date range export, entry B (a button in the header) of the Frontend Architect's sketch (Sergio cards t143s683 and t144s692, 2026-11-14).
+
+### Added
+
+- `getManagerHoursRange` (`GET /api/v1/manager/businesses/{businessId}/hours/range?from&to&userIds`). Forwards Main `getBusinessWorkedHoursRange` and adds `report` `{pdfAvailable (days <= 366), csvAvailable (days <= 1461)}`. `REPORTS_EXPORT`. Rate limit shared with `getManagerHoursMonths` and `getManagerHoursPeople` (20/min, 200/h per user and business). Errors 1006, 1020, 1025, 1101, 1104, 1111, 1165, 1166 and 429.
+
+### Changed
+
+- `exportManagerWorkedHoursReportPdf`: used with `periodType=RANGE` by the custom range export; forwards 1164, 1165 and 1166 from the Main API. The BFF waits up to 60 seconds (read timeout) for the Main API file on this operation only. People who joined after the period are left out of the whole-business file. The rate limit is unchanged (6/min, 30/h, PDF and CSV together).
+- CSV: new last column `Baja` (see `WorkedHoursReportTypeDTO`).
+- Order: Main API 0.0.121 before the BFF; BFF before the app. The app must not call `hours/range` against an older BFF.
+
 ## 0.0.114
 
 Spec only. No BFF implementation in this change. Depends on Main API 0.0.120. `info.version` stays 0.0.114 because that version is not published. Next repository tag: `v1.0.31` (after `v1.0.30`). This change does not create the tag. The published solver contract is unchanged.

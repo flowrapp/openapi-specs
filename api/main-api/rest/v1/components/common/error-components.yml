@@ -198,6 +198,9 @@ components:
         | 1161 | 400 | INVALID_PHONE_NUMBER | phone number is invalid |
         | 1162 | 502 | IDENTITY_PROVIDER_UNAVAILABLE | identity provider is unavailable |
         | 1163 | 401 | INVALID_WEBHOOK_SIGNATURE | webhook signature is invalid |
+        | 1164 | 400 | REPORT_RANGE_TOO_LONG | report range is longer than the maximum for this format |
+        | 1165 | 400 | REPORT_RANGE_OUT_OF_WINDOW | report range starts before the 48-month window |
+        | 1166 | 400 | REPORT_RANGE_IN_FUTURE | report range ends after today |
 
         Codes 1087 and 1088 are the backend enum: PLANNING_ALREADY_EXISTS and PLANNING_VERSION_MISMATCH. Code 1086 (`SESSION_EXPIRED`) belonged to legacy in-house sessions and is removed with those routes; it is not free and must not be reused. Codes 1004, 1023, 1024, 1026 and 1027 belonged to legacy login, token refresh, OAuth and password reset and are removed with those routes; they are not free and must not be reused. Code 1003 (`INVALID_CREDENTIALS`) stays in the enum and must not be reused. No operation returns it: `getBusinessMemberProfile` takes the caller's id from Main `getCurrentUser`, because the Clerk session `sub` is not a numeric Flowrapp user id. Codes 1089–1092 belonged to weekly attendance periods, which were never implemented, and are removed with those routes. Code 1095 remains a separate PLANNING_ALREADY_EXISTS entry and is unchanged here. Code 1115 is raised by the BFF attendance screens (invalid `week`, `date` or `month`, or a `date` outside `week`). The message stays `attendance week or date is invalid`; no new code is allocated for an invalid month. No Main API operation returns it.
 
@@ -220,6 +223,8 @@ components:
         Code 1157 (`INVALID_ATTENDANCE_INCIDENT_DATE_RANGE`, 400, `attendance incident date range is invalid`) belongs to `getCurrentUserAttendanceIncidentDailyCounts` (Main API 0.0.118) and `getBusinessAttendanceIncidentDailyCounts` (Main API 0.0.119). It is returned when `from` is after `to` or the inclusive range is longer than 42 dates. A missing or syntactically invalid date stays a plain 400 without this code. 1115 stays the BFF attendance-screen week, date or month code (the message is unchanged) and is not reused here; 1025, 1057 and 1120 stay the worklog, contract and planning-generation range codes.
 
         Codes 1158–1163 belong to the worker profile (Main API 0.0.120, BFF API 0.0.114). 1158 (`INVALID_IDENTITY_DOCUMENT_FORMAT`) is a document that does not match its type, a missing part, or an unknown type. 1159 (`INVALID_IDENTITY_DOCUMENT_CHECK_LETTER`) is a DNI or NIE whose pattern matches and whose letter does not. 1158 is evaluated before 1159. 1160 (`IDENTITY_DOCUMENT_ALREADY_IN_USE`) is a document already held by an active member or a pending invitation of the same business. 1161 (`INVALID_PHONE_NUMBER`) is a phone that is not E.164. 1162 (`IDENTITY_PROVIDER_UNAVAILABLE`) is a failed call to the identity provider while removing a profile photo; the 502 may include `Retry-After`. 1163 (`INVALID_WEBHOOK_SIGNATURE`) is a Clerk webhook whose Svix signature does not verify. The messages of 1158, 1159 and 1161 never include the submitted value.
+
+        Codes 1164–1166 belong to the worked-hours report custom range (Main API 0.0.121, BFF API 0.0.115). 1164 (`REPORT_RANGE_TOO_LONG`) is an export longer than the cap of its format: PDF 366 days, CSV 1461 days, inclusive, up to the effective end. 1165 (`REPORT_RANGE_OUT_OF_WINDOW`) is an export or a range summary whose from is before the first day of the 48-month window of getBusinessWorkedHoursMonths. 1166 (`REPORT_RANGE_IN_FUTURE`) applies only to an export with periodType RANGE (the custom date range) and to the range summary (getBusinessWorkedHoursRange), when to is after today in the business time zone. It never applies to MONTH or YEAR: the current month or year is still accepted and truncated to today. They are checked after 1025 and 1114, in the order 1166, 1165, 1164. The deprecated requestBusinessWorkedHoursReport returns none of them. 1025 stays the generic date-range code and is not reused for these cases, so the app can show a specific text for each.
 
         Code 1126 (`BUSINESS_MEMBER_NOT_FOUND`) is also returned by Main API `getBusinessUserPersonalData`, `replaceBusinessUserIdentityDocument`, `deleteBusinessUserIdentityDocument` and `deleteBusinessUserAvatar` when the target is not an active member. The BFF member profile and the manager personal-data routes forward it. It is no longer BFF-only.
       enum:
@@ -375,3 +380,6 @@ components:
         - 1161
         - 1162
         - 1163
+        - 1164
+        - 1165
+        - 1166

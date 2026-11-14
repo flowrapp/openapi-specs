@@ -945,13 +945,23 @@ manager:
         Content-Disposition unchanged. No email, nothing stored, no server cache.
         Authorization: REPORTS_EXPORT (see the API description), not only the OWNER: 403 (1020, `user lacks
         permission REPORTS_EXPORT in business`) without it; 403 (1104) for an EMPLOYEE without a contract in force.
-        People: omit userIds for the whole business; with userIds, current or former members (an id without a
-        membership row returns 400 1101), at most 50 distinct ids (400 1111). Several people produce one single
-        PDF (a section per person and a centre summary page) or one CSV, never a ZIP.
+        People: omit userIds for the whole business (members active at some point of the period: joined on or
+        before its last day and not removed before its first day); with userIds, current or former members (an id
+        without a membership row returns 400 1101), at most 50 distinct ids (400 1111). Several people produce one
+        single PDF (a section per person and a centre summary page) or one CSV, never a ZIP.
         The owner reports screen calls it with periodType=MONTH, from the first and to the last day of the month,
         for the PDF viewer and the CSV of each month row of getManagerHoursMonths. A month in progress is accepted
-        and truncated to today (provisional: the PDF says so and the filename carries the date). A period whose
-        from is after today returns 400 (1025). When periodType is omitted the request behaves as RANGE.
+        and truncated to today (provisional: the PDF says so and the filename carries the date). For the custom
+        date range export («Exportar fechas») it calls it with periodType=RANGE and the from and to shown by
+        getManagerHoursRange. When periodType is omitted the request behaves as RANGE.
+        Date rules (Main API, business time zone), in this order: from after to or after today: 400 (1025);
+        from and to do not match periodType: 400 (1114); only for periodType=RANGE (the custom date range), a to
+        after today: 400 (1166), so a RANGE is never truncated (MONTH and YEAR in progress are still accepted and
+        truncated to today, never 1166); from before the first day of the 48-month window of getManagerHoursMonths: 400
+        (1165), for every periodType; more inclusive days than the cap of the format, PDF 366 and CSV 1461: 400
+        (1164). The BFF forwards these codes unchanged.
+        Timeout: the BFF waits up to 60 seconds for the Main API file on this operation only (read timeout); the
+        other BFF calls keep their default timeouts.
         Totals include only closed CONFIRMED and APPROVED worklogs; pending ones are listed apart (annex B of the
         PDF, CSV rows with «Cuenta en el total» = No); REJECTED and open worklogs count nowhere. See
         WorkedHoursReportTypeDTO for the CSV columns and format.
@@ -1031,7 +1041,7 @@ manager:
               description: >
                 Forwarded from the Main API: `attachment; filename="registro-jornada-<period>-<scope>.<pdf|csv>"`.
                 period is `YYYY-MM` for MONTH (`YYYY` for YEAR, `<from>-<to>` for RANGE), followed by
-                `-hasta-<YYYY-MM-DD>` when the period is truncated to today; scope is `todo-el-negocio`, the person's
+                `-hasta-<YYYY-MM-DD>` when a MONTH or YEAR is truncated to today (never for RANGE); scope is `todo-el-negocio`, the person's
                 name in ASCII lowercase with dashes (`persona-<id>` without a name) or `<N>-personas`. Examples:
                 `registro-jornada-2026-10-todo-el-negocio.pdf`, `registro-jornada-2026-10-lucia-ruiz.csv`,
                 `registro-jornada-2026-11-hasta-2026-11-12-3-personas.pdf`.
@@ -1039,7 +1049,7 @@ manager:
                 type: string
                 example: 'attachment; filename="registro-jornada-2026-10-todo-el-negocio.pdf"'
         '400':
-          description: Invalid date range or from after today (1025), period type mismatch (1114), report type (1103), an id without membership in the business (1101) or more than 50 userIds (1111)
+          description: Invalid date range or from after today (1025), period type mismatch (1114), RANGE ending after today (1166), from before the 48-month window (1165), more days than the cap of the format (1164), report type (1103), an id without membership in the business (1101) or more than 50 userIds (1111)
           content:
             application/problem+json:
               schema:
@@ -1048,6 +1058,15 @@ manager:
                 periodType:
                   summary: "1114 - from and to do not match periodType"
                   value: {status: 400, detail: "1114 - from and to do not match periodType"}
+                rangeInFuture:
+                  summary: "1166 - report range ends after today"
+                  value: {status: 400, detail: "1166 - report range ends after today"}
+                rangeOutOfWindow:
+                  summary: "1165 - report range starts before the 48-month window"
+                  value: {status: 400, detail: "1165 - report range starts before the 48-month window"}
+                rangeTooLong:
+                  summary: "1164 - report range is longer than the maximum for this format"
+                  value: {status: 400, detail: "1164 - report range is longer than the maximum for this format"}
                 userIds:
                   summary: "1111 - userIds must contain between 1 and 50 identifiers"
                   value: {status: 400, detail: "1111 - userIds must contain between 1 and 50 identifiers"}
@@ -1074,7 +1093,7 @@ manager:
               schema:
                 $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
               example: {title: Too Many Requests, status: 429, detail: "Too many requests. Retry later."}
-      x-functional-errors: [1006, 1020, 1025, 1101, 1103, 1104, 1111, 1114]
+      x-functional-errors: [1006, 1020, 1025, 1101, 1103, 1104, 1111, 1114, 1164, 1165, 1166]
 
   hours-months:
     get:
@@ -1224,13 +1243,160 @@ manager:
                 $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
               example: {status: 404, detail: "1006 - business does not exist"}
         '429':
-          description: More than 20 requests in a minute or 200 in an hour from this user for this business (month list and people together). Retry later. No functional code.
+          description: More than 20 requests in a minute or 200 in an hour from this user for this business (month list, range summary and people together). Retry later. No functional code.
           content:
             application/problem+json:
               schema:
                 $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
               example: {title: Too Many Requests, status: 429, detail: "Too many requests. Retry later."}
       x-functional-errors: [1006, 1020, 1025, 1101, 1104, 1111]
+
+  hours-range:
+    get:
+      summary: Summarize the worked hours of a custom date range for the owner reports screen
+      description: >
+        Totals of the business for one custom date range (from and to, inclusive, business time zone), for the
+        whole business or one or several people, with a breakdown by calendar month clipped to the range, for the
+        «Exportar fechas» sheet of the owner reports screen. Forwards from, to and userIds to the Main API
+        getBusinessWorkedHoursRange and adds `report` (which files the app offers for the range).
+        Authorization: REPORTS_EXPORT, the permission of getManagerHoursMonths and of the download (403 1020; 403
+        1104 for an EMPLOYEE without a contract in force). Every plan.
+        Scope: exactly the people of exportManagerWorkedHoursReportPdf with periodType=RANGE and the same from, to
+        and userIds: without userIds, members active at some point of the range (joined on or before to, not
+        removed before from); with userIds, current or former members (400 1101 for an id without a membership
+        row), at most 50 distinct ids (400 1111).
+        Dates: from after to or after today, 400 (1025); to after today, 400 (1166): the app's calendar ends today;
+        from before the first day of the 48-month window (oldestMonth of getManagerHoursMonths without userIds is
+        never earlier), 400 (1165). No per-format cap here: `report` says whether the PDF (up to 366 days) and the
+        CSV (up to 1461 days) can be downloaded, and the download answers 1164 beyond them.
+        Option B: confirmedSeconds is CONFIRMED + APPROVED and equals the total of the RANGE PDF and CSV for the
+        same dates and people; pendingSeconds is apart and always present; REJECTED and open worklogs count in
+        neither. The months add up to the range figures (peopleCount is distinct per month).
+        provisional is true when to is today: the app shows «Provisional» and «Ver informe hasta hoy».
+        Rate limit: 20 requests per minute and 200 per hour per authenticated user and business, shared with
+        getManagerHoursMonths and getManagerHoursPeople. 429 without a functional code.
+        If the Main API call fails the request fails (5xx); no field is omitted or replaced by 0.
+      tags:
+        - Manager
+      operationId: getManagerHoursRange
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: businessId
+          in: path
+          required: true
+          description: ID of the business
+          schema:
+            type: integer
+            format: int64
+        - name: from
+          in: query
+          required: true
+          description: First day of the range, inclusive (YYYY-MM-DD, business time zone)
+          schema:
+            type: string
+            format: date
+            example: "2026-09-15"
+        - name: to
+          in: query
+          required: true
+          description: Last day of the range, inclusive (YYYY-MM-DD, business time zone). Today at the latest (400 1166 otherwise).
+          schema:
+            type: string
+            format: date
+            example: "2026-11-14"
+        - name: userIds
+          in: query
+          required: false
+          style: form
+          explode: true
+          description: People in scope, current or former members. Repeat the parameter for several ids (userIds=12&userIds=34). Omit it for the whole business. At most 50 distinct ids.
+          schema:
+            type: array
+            uniqueItems: true
+            maxItems: 50
+            items:
+              type: integer
+              format: int64
+              minimum: 1
+            example: [12, 34]
+      responses:
+        '200':
+          description: Totals of the range, their breakdown by month and the files the app offers
+          content:
+            application/json:
+              schema:
+                $ref: '../../components/manager/components.yml#/components/schemas/ManagerHoursRangeResponseDTO'
+              example:
+                zone: Europe/Madrid
+                today: "2026-11-14"
+                from: "2026-09-15"
+                to: "2026-11-14"
+                effectiveTo: "2026-11-14"
+                days: 61
+                provisional: true
+                confirmedSeconds: 10522800
+                pendingSeconds: 138300
+                pendingCount: 15
+                hasWorklogs: true
+                peopleCount: 8
+                report: {pdfAvailable: true, csvAvailable: true}
+                months:
+                  - {month: "2026-09", from: "2026-09-15", to: "2026-09-30", inProgress: false, confirmedSeconds: 2408400, pendingSeconds: 0, pendingCount: 0, hasWorklogs: true, peopleCount: 7}
+                  - {month: "2026-10", from: "2026-10-01", to: "2026-10-31", inProgress: false, confirmedSeconds: 5212800, pendingSeconds: 7800, pendingCount: 1, hasWorklogs: true, peopleCount: 8}
+                  - {month: "2026-11", from: "2026-11-01", to: "2026-11-14", inProgress: true, confirmedSeconds: 2901600, pendingSeconds: 130500, pendingCount: 14, hasWorklogs: true, peopleCount: 8}
+        '400':
+          description: from after to or after today (1025), to after today (1166), from before the 48-month window (1165), an id without membership in the business (1101), or more than 50 userIds (1111)
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              examples:
+                dates:
+                  summary: "1025 - from date must be before or equal to to date"
+                  value: {status: 400, detail: "1025 - from date must be before or equal to to date"}
+                rangeInFuture:
+                  summary: "1166 - report range ends after today"
+                  value: {status: 400, detail: "1166 - report range ends after today"}
+                rangeOutOfWindow:
+                  summary: "1165 - report range starts before the 48-month window"
+                  value: {status: 400, detail: "1165 - report range starts before the 48-month window"}
+                userIds:
+                  summary: "1101 - report user IDs must belong to the business"
+                  value: {status: 400, detail: "1101 - report user IDs must belong to the business"}
+                tooManyUserIds:
+                  summary: "1111 - userIds must contain between 1 and 50 identifiers"
+                  value: {status: 400, detail: "1111 - userIds must contain between 1 and 50 identifiers"}
+        '401':
+          description: Unauthorized
+        '403':
+          description: The caller lacks REPORTS_EXPORT in the business, or is an EMPLOYEE without a contract in force
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              examples:
+                missingPermission:
+                  summary: "1020 - user lacks permission REPORTS_EXPORT in business"
+                  value: {status: 403, detail: "1020 - user lacks permission REPORTS_EXPORT in business"}
+                noActiveContract:
+                  summary: "1104 - employee has no active contract in this business"
+                  value: {status: 403, detail: "1104 - employee has no active contract in this business"}
+        '404':
+          description: Business not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              example: {status: 404, detail: "1006 - business does not exist"}
+        '429':
+          description: More than 20 requests in a minute or 200 in an hour from this user for this business (month list, range summary and people together). Retry later. No functional code.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              example: {title: Too Many Requests, status: 429, detail: "Too many requests. Retry later."}
+      x-functional-errors: [1006, 1020, 1025, 1101, 1104, 1111, 1165, 1166]
 
   hours-people:
     get:
@@ -1239,13 +1405,13 @@ manager:
         People the reports selector offers, forwarded from the Main API getBusinessWorkedHoursPeople: every
         membership of the business, active or removed (removals inside the 48-month window), except platform
         administrators, ordered by name and then userId. removedAt tells former members apart; the app shows them
-        in «Ya no están en el negocio». Every userId is accepted by getManagerHoursMonths and
+        in «Ya no están en el negocio». Every userId is accepted by getManagerHoursMonths, getManagerHoursRange and
         exportManagerWorkedHoursReportPdf.
         Authorization: REPORTS_EXPORT (403 1020; 403 1104 for an EMPLOYEE without a contract in force), not
         TEAM_VIEW, so a reports user without TEAM_VIEW still fills the selector; getManagerBusinessWorkers is not
         used. No email, no contract detail. Not paginated; the app's search filters locally.
-        Rate limit: shared with getManagerHoursMonths (20 per minute, 200 per hour per user and business). 429
-        without a functional code.
+        Rate limit: shared with getManagerHoursMonths and getManagerHoursRange (20 per minute, 200 per hour per user
+        and business). 429 without a functional code.
       tags:
         - Manager
       operationId: getManagerHoursPeople
@@ -1287,7 +1453,7 @@ manager:
                 $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
               example: {status: 404, detail: "1006 - business does not exist"}
         '429':
-          description: More than 20 requests in a minute or 200 in an hour from this user for this business (month list and people together). Retry later. No functional code.
+          description: More than 20 requests in a minute or 200 in an hour from this user for this business (month list, range summary and people together). Retry later. No functional code.
           content:
             application/problem+json:
               schema:

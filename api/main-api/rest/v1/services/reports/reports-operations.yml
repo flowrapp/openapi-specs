@@ -142,17 +142,32 @@ reports:
         EMPLOYEE holds it through its access role. Without it: 403 (1020, `user lacks permission REPORTS_EXPORT
         in business`); an EMPLOYEE without a contract in force: 403 (1104). REPORTS_EXPORT belongs to no business
         feature: every plan.
-        People: if userIds is omitted or empty, every member of the business active at some point of the period
-        (removed members included until their removal). With userIds, exactly those people, current or former
+        People: if userIds is omitted or empty, every member of the business active at some point of the period:
+        joined on or before the last day of the period and not removed before its first day (removed members
+        included until their removal; people who joined after the period are not listed). With userIds, exactly those people, current or former
         members (a removed membership is still valid); an id without a membership row in the business returns 400
         (1101). At most 50 distinct ids: 400 (1111). Several people produce one single file (one PDF with a
         section per person and a centre summary page, or one CSV), never a ZIP.
         The range is day-based and inclusive. periodType (MONTH, YEAR or RANGE, default RANGE) selects the
         layout and how from and to are validated (400 1114 when they do not match). The owner reports screen
-        uses MONTH only.
-        A period that ends after today is accepted and truncated by the server to today in the business time
-        zone (provisional report: the PDF says so and the filename carries the date); a period whose from is after
-        today returns 400 (1025).
+        uses MONTH for each month row and RANGE for its custom date range export.
+        Date rules, checked in this order, all in the business time zone:
+        - from after to, or from after today: 400 (1025).
+        - from and to do not match periodType: 400 (1114).
+        - Only for periodType RANGE (the custom date range): a to after today is 400 (1166). A custom range ends
+          today at the latest, so RANGE is never truncated. 1166 never applies to MONTH or YEAR: the current month
+          or year may still end after today and is accepted and truncated to today (provisional report: the PDF
+          says so and the filename carries the date).
+        - from before the first day of the 48-month window (the first day of the oldest calendar month of the
+          window of getBusinessWorkedHoursMonths, without looking at the first worklog of the scope): 400 (1165),
+          for every periodType.
+        - More inclusive days than the cap of the format, counted from from to the effective end (to, or today
+          when a MONTH or YEAR is truncated): 400 (1164). Caps: PDF 366 days, CSV 1461 days. A MONTH or a YEAR
+          never exceeds them.
+        These checks run before any worklog is loaded. The deprecated requestBusinessWorkedHoursReport keeps its
+        previous validation (no 1164, 1165 or 1166).
+        A RANGE that ends today is provisional for the app (getBusinessWorkedHoursRange.provisional); its file
+        and filename are those of any RANGE, without `-hasta-`.
         Totals include only closed worklogs whose reviewStatus is CONFIRMED or APPROVED. PENDING_REVIEW and
         PENDING_RECONCILIATION do not count until reviewed or reconciled; in the PDF they are listed in annex B,
         in the CSV they are rows with «Cuenta en el total» = No. REJECTED and open worklogs count nowhere.
@@ -234,9 +249,10 @@ reports:
               description: |
                 `attachment; filename="registro-jornada-<period>-<scope>.<pdf|csv>"`, ASCII only. The PDF and the
                 CSV of the same request differ only in the extension.
-                - period: `YYYY-MM` for MONTH; `YYYY` for YEAR; `<from>-<to>` (YYYY-MM-DD) for RANGE. When the
-                  period is truncated to today (provisional), `-hasta-<today YYYY-MM-DD>` is appended, e.g.
-                  `2026-11-hasta-2026-11-12`.
+                - period: `YYYY-MM` for MONTH; `YYYY` for YEAR; `<from>-<to>` (YYYY-MM-DD) for RANGE. When a
+                  MONTH or YEAR is truncated to today (provisional), `-hasta-<today YYYY-MM-DD>` is appended, e.g.
+                  `2026-11-hasta-2026-11-12`. A RANGE never carries it (its to is today at the latest), e.g.
+                  `2026-01-01-2026-11-14`.
                 - scope: `todo-el-negocio` without userIds; with one id, the person's display name lowercased,
                   accents removed, every run of other characters replaced by `-`, at most 40 characters (`persona-<id>`
                   when the PDF rule gives no name); with two or more distinct ids, `<N>-personas`.
@@ -252,7 +268,7 @@ reports:
                 format: int64
                 example: 83995
         '400':
-          description: Invalid date range or from after today (1025), period type mismatch (1114), report type (1103), an id without membership in the business (1101) or more than 50 userIds (1111)
+          description: Invalid date range or from after today (1025), period type mismatch (1114), RANGE ending after today (1166), from before the 48-month window (1165), more days than the cap of the format (1164), report type (1103), an id without membership in the business (1101) or more than 50 userIds (1111)
           content:
             application/problem+json:
               schema:
@@ -264,6 +280,15 @@ reports:
                 REPORT_PERIOD_TYPE_MISMATCH:
                   summary: "1114 - from and to do not match periodType"
                   value: {status: 400, detail: "1114 - from and to do not match periodType"}
+                REPORT_RANGE_IN_FUTURE:
+                  summary: "1166 - report range ends after today"
+                  value: {status: 400, detail: "1166 - report range ends after today"}
+                REPORT_RANGE_OUT_OF_WINDOW:
+                  summary: "1165 - report range starts before the 48-month window"
+                  value: {status: 400, detail: "1165 - report range starts before the 48-month window"}
+                REPORT_RANGE_TOO_LONG:
+                  summary: "1164 - report range is longer than the maximum for this format"
+                  value: {status: 400, detail: "1164 - report range is longer than the maximum for this format"}
                 INVALID_REPORT_TYPE:
                   summary: "1103 - worked-hours report type is not supported"
                   value: {status: 400, detail: "1103 - worked-hours report type is not supported"}
@@ -309,6 +334,9 @@ reports:
         - 1104
         - 1111
         - 1114
+        - 1164
+        - 1165
+        - 1166
 
   business-worked-hours-months:
     get:
@@ -458,6 +486,157 @@ reports:
         - 1104
         - 1111
 
+  business-worked-hours-range:
+    get:
+      summary: Summarize the worked hours of a custom date range for the owner reports screen
+      description: |
+        Returns the worked-hours totals of the business for one custom date range (from and to, both inclusive,
+        business time zone), for the whole business or the requested people, with a breakdown by calendar month
+        clipped to the range. The owner reports screen shows it before offering the PDF and CSV of the same range
+        (exportBusinessWorkedHoursReportPdf with periodType RANGE).
+        Authorization: REPORTS_EXPORT, the same as getBusinessWorkedHoursMonths and the export. Without it: 403
+        (1020); an EMPLOYEE without a contract in force: 403 (1104). Every plan.
+        Scope: exactly the people of the RANGE export with the same from, to and userIds. Without userIds, every
+        member active at some point of the range (joined on or before to and not removed before from; removed
+        members included). With userIds, those people only, current or former members; an id without a membership
+        row returns 400 (1101); at most 50 distinct ids, 400 (1111).
+        Date rules, in this order: from after to, or from after today: 400 (1025); to after today: 400 (1166), as
+        for a RANGE export (MONTH and YEAR exports keep truncating the current month or year to today); from
+        before the first day of the 48-month window of getBusinessWorkedHoursMonths: 400 (1165). There is no
+        per-format cap here (no 1164): nothing is generated, and the window already bounds the range. The client
+        decides from `days` whether to offer the PDF (at most 366 days) and the CSV (at most 1461 days).
+        Totals (option B): confirmedSeconds counts closed CONFIRMED and APPROVED worklogs and equals the total of
+        the RANGE export (PDF and CSV) for the same from, to and userIds; pendingSeconds counts closed PENDING_REVIEW
+        and PENDING_RECONCILIATION apart; REJECTED and open worklogs count in neither. The sum of each figure over
+        months equals the range figure. Same worklog queries and domain rule as the PDF; the materialized reports
+        table is not read. Nothing is stored.
+      tags:
+        - Reports
+      operationId: getBusinessWorkedHoursRange
+      security:
+        - basicAuth: []
+        - bearerAuth: []
+      parameters:
+        - name: businessId
+          in: path
+          required: true
+          description: ID of the business
+          schema:
+            type: integer
+            format: int64
+            example: 123
+        - name: from
+          in: query
+          required: true
+          description: First day of the range, inclusive (YYYY-MM-DD, business time zone)
+          schema:
+            type: string
+            format: date
+            example: "2026-09-15"
+        - name: to
+          in: query
+          required: true
+          description: Last day of the range, inclusive (YYYY-MM-DD, business time zone). Today at the latest (400 1166 otherwise).
+          schema:
+            type: string
+            format: date
+            example: "2026-11-14"
+        - name: userIds
+          in: query
+          required: false
+          style: form
+          explode: true
+          description: People in scope, current or former members of this business. Repeat the parameter for several ids (userIds=12&userIds=34). Omit it for the whole business. At most 50 distinct ids.
+          schema:
+            type: array
+            uniqueItems: true
+            maxItems: 50
+            items:
+              type: integer
+              format: int64
+              minimum: 1
+            example: [12, 34]
+      responses:
+        '200':
+          description: Totals of the range and their breakdown by month
+          content:
+            application/json:
+              schema:
+                $ref: '../../components/reports/components.yml#/components/schemas/BusinessWorkedHoursRangeResponseDTO'
+              example:
+                zone: Europe/Madrid
+                today: "2026-11-14"
+                from: "2026-09-15"
+                to: "2026-11-14"
+                effectiveTo: "2026-11-14"
+                days: 61
+                provisional: true
+                confirmedSeconds: 10522800
+                pendingSeconds: 138300
+                pendingCount: 15
+                hasWorklogs: true
+                peopleCount: 8
+                months:
+                  - {month: "2026-09", from: "2026-09-15", to: "2026-09-30", inProgress: false, confirmedSeconds: 2408400, pendingSeconds: 0, pendingCount: 0, hasWorklogs: true, peopleCount: 7}
+                  - {month: "2026-10", from: "2026-10-01", to: "2026-10-31", inProgress: false, confirmedSeconds: 5212800, pendingSeconds: 7800, pendingCount: 1, hasWorklogs: true, peopleCount: 8}
+                  - {month: "2026-11", from: "2026-11-01", to: "2026-11-14", inProgress: true, confirmedSeconds: 2901600, pendingSeconds: 130500, pendingCount: 14, hasWorklogs: true, peopleCount: 8}
+        '400':
+          description: from after to or after today (1025), to after today (1166), from before the 48-month window (1165), an id without membership in the business (1101), or more than 50 userIds (1111)
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+              examples:
+                INVALID_DATE_RANGE:
+                  summary: "1025 - from date must be before or equal to to date"
+                  value: {status: 400, detail: "1025 - from date must be before or equal to to date"}
+                REPORT_RANGE_IN_FUTURE:
+                  summary: "1166 - report range ends after today"
+                  value: {status: 400, detail: "1166 - report range ends after today"}
+                REPORT_RANGE_OUT_OF_WINDOW:
+                  summary: "1165 - report range starts before the 48-month window"
+                  value: {status: 400, detail: "1165 - report range starts before the 48-month window"}
+                INVALID_REPORT_USER_IDS:
+                  summary: "1101 - report user IDs must belong to the business"
+                  value: {status: 400, detail: "1101 - report user IDs must belong to the business"}
+                INVALID_USER_IDS:
+                  summary: "1111 - userIds must contain between 1 and 50 identifiers"
+                  value: {status: 400, detail: "1111 - userIds must contain between 1 and 50 identifiers"}
+        '401':
+          description: Unauthorized
+        '403':
+          description: The caller lacks REPORTS_EXPORT in the business, or is an EMPLOYEE without a contract in force
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+              examples:
+                MISSING_PERMISSION:
+                  summary: "1020 - user lacks permission REPORTS_EXPORT in business"
+                  value: {status: 403, detail: "1020 - user lacks permission REPORTS_EXPORT in business"}
+                EMPLOYEE_WITHOUT_ACTIVE_CONTRACT:
+                  summary: "1104 - employee has no active contract in this business"
+                  value: {status: 403, detail: "1104 - employee has no active contract in this business"}
+        '404':
+          description: Business not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+              examples:
+                BUSINESS_NOT_FOUND:
+                  summary: "1006 - business does not exist"
+                  value: {status: 404, detail: "1006 - business does not exist"}
+      x-functional-errors:
+        - 1006
+        - 1020
+        - 1025
+        - 1101
+        - 1104
+        - 1111
+        - 1165
+        - 1166
+
   business-worked-hours-people:
     get:
       summary: List the people of the owner reports selector, current and former members
@@ -467,7 +646,7 @@ reports:
         A removed membership is listed when it was removed on or after the first day of the oldest month of the
         48-month window of getBusinessWorkedHoursMonths, so every person whose record is still inside the window
         can be picked; older removals are not listed. removedAt tells former members apart. Every listed userId is
-        accepted by getBusinessWorkedHoursMonths and exportBusinessWorkedHoursReportPdf.
+        accepted by getBusinessWorkedHoursMonths, getBusinessWorkedHoursRange and exportBusinessWorkedHoursReportPdf.
         Authorization: REPORTS_EXPORT (403 1020; an EMPLOYEE without a contract in force 403 1104), not
         TEAM_VIEW: getBusinessUsers needs TEAM_VIEW, which a reports user may lack. It returns only what the
         selector shows: no email, no contract detail. Not paginated (a business roster).

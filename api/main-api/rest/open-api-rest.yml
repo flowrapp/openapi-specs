@@ -35,7 +35,7 @@ info:
     | recurring schedule, schedule exception, shift, job role and planning settings writes; createDraftPlanning, replacePlanningScheduledShifts, publishPlanning, requestPlanningGeneration | SCHEDULE_MANAGE |
     | approveShiftExchangeRequest, approveScheduleChangeRequest, createScheduleChangeRequest, cancelScheduleChangeRequest, reviewer view and reviewer rejection of shift-change requests | SHIFT_CHANGES_APPROVE |
     | getBusinessReports, getWeeklyHoursReport | REPORTS_VIEW |
-    | exportBusinessWorkedHoursReportPdf, requestBusinessWorkedHoursReport, getBusinessWorkedHoursMonths, getBusinessWorkedHoursPeople | REPORTS_EXPORT |
+    | exportBusinessWorkedHoursReportPdf, requestBusinessWorkedHoursReport, getBusinessWorkedHoursMonths, getBusinessWorkedHoursRange, getBusinessWorkedHoursPeople | REPORTS_EXPORT |
     | business and per-member auto-clocking and geofencing settings (read and write), updateBusinessWorklogSettings, updateAttendanceTolerance | CLOCKING_SETTINGS_MANAGE |
     | updateBusinessProfile, updateBusinessGeofence | BUSINESS_EDIT |
     | removeBusinessUser, access-role operations, updateBusinessUserAccessRole | OWNER |
@@ -68,7 +68,7 @@ info:
     existing permission requirements; authorised users can access their underlying business data.
 
     `updateBusinessPlan` (platform admin) changes the plan and emits a `PERMISSIONS` sync signal.
-  version: 0.0.120
+  version: 0.0.121
   contact:
     name: Flowrapp Team
     url: https://flowrapp.github.io
@@ -274,6 +274,8 @@ paths:
       ed-hours-report-pdf"
   "/api/v1/businesses/{businessId}/reports/worked-hours/months":
     $ref: "v1/services/reports/reports-operations.yml#/reports/business-worked-hours-months"
+  "/api/v1/businesses/{businessId}/reports/worked-hours/range":
+    $ref: "v1/services/reports/reports-operations.yml#/reports/business-worked-hours-range"
   "/api/v1/businesses/{businessId}/reports/worked-hours/people":
     $ref: "v1/services/reports/reports-operations.yml#/reports/business-worked-hours-people"
   "/api/v1/businesses/{businessId}/reports/worked-hours/users/me/months":
