@@ -1,0 +1,19 @@
+openspec/changes/live-clock-activity/.openspec.yaml
+  s_bbb83517c79d84::t_3fac5570b44fe1 1-2
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.6",
+  "base_commit_sha": "43d736047a0b958424e17f779ccb82dc9a6535d4",
+  "prompts": {},
+  "sessions": {
+    "s_bbb83517c79d84": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_e201406caffeYBWrkILoAreWb5",
+        "model": "gpt-6.1-terra"
+      },
+      "human_author": "sergiobpa <sergiobpa@ext.inditex.com>"
+    }
+  }
+}
