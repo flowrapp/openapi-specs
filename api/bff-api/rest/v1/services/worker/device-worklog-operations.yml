@@ -1,0 +1,104 @@
+deviceWorklogs:
+  clock-out:
+    put:
+      summary: Clock out from a device
+      description: >-
+        Uses only X-Geofence-Credential, not bearer authentication, for a worklog owned by
+        the credential user, who must be a business member. The BFF forwards the header to
+        Main and never logs the credential header or value. Same workerClockOut command,
+        response and idempotency: retry with the same idempotencyId and command content.
+        BLOCK rejects outside or missing location with 403 1100; WARN allows and records the
+        check. An open break ends at clock-out.
+      operationId: deviceClockOut
+      tags: [Worker]
+      security:
+        - geofenceDeviceCredential: []
+      parameters:
+        - $ref: './worker-operations.yml#/worker/clock-out/put/parameters/0'
+        - $ref: './worker-operations.yml#/worker/clock-out/put/parameters/1'
+      requestBody:
+        $ref: './worker-operations.yml#/worker/clock-out/put/requestBody'
+      responses:
+        '200':
+          $ref: './worker-operations.yml#/worker/clock-out/put/responses/200'
+        '400':
+          $ref: './worker-operations.yml#/worker/clock-out/put/responses/400'
+        '401':
+          description: Missing, invalid, expired or revoked geofence credential
+        '403':
+          $ref: './worker-operations.yml#/worker/clock-out/put/responses/403'
+          description: Worklog ownership or closure, membership, or BLOCK geofencing policy (1100).
+        '404':
+          $ref: './worker-operations.yml#/worker/clock-out/put/responses/404'
+        '409':
+          description: Worklog overlap, idempotency conflict or concurrent modification, propagated from Main.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+      x-functional-errors: [1022, 1049, 1064]
+  start-break:
+    post:
+      summary: Start a break from a device
+      description: >-
+        Uses only X-Geofence-Credential, not bearer authentication, for a worklog owned by
+        the credential user, who must be a business member. The BFF forwards the header to
+        Main and never logs the credential header or value. Same startWorkerBreak command,
+        response, errors and idempotency: retry with the same idempotencyId and startedAt.
+        As for the worker command, no geofence check or location applies to breaks.
+      operationId: startDeviceWorklogBreak
+      tags: [Worker]
+      security:
+        - geofenceDeviceCredential: []
+      parameters:
+        - $ref: './worker-operations.yml#/worker/break-start/post/parameters/0'
+        - $ref: './worker-operations.yml#/worker/break-start/post/parameters/1'
+      requestBody:
+        $ref: './worker-operations.yml#/worker/break-start/post/requestBody'
+      responses:
+        '200':
+          $ref: './worker-operations.yml#/worker/break-start/post/responses/200'
+        '400':
+          $ref: './worker-operations.yml#/worker/break-start/post/responses/400'
+        '401':
+          description: Missing, invalid, expired or revoked geofence credential
+        '403':
+          $ref: './worker-operations.yml#/worker/break-start/post/responses/403'
+        '404':
+          $ref: './worker-operations.yml#/worker/break-start/post/responses/404'
+        '409':
+          $ref: './worker-operations.yml#/worker/break-start/post/responses/409'
+      x-functional-errors: [1017, 1018, 1019, 1049, 1065, 1070, 1072, 1073]
+  end-break:
+    put:
+      summary: End a break from a device
+      description: >-
+        Uses only X-Geofence-Credential, not bearer authentication, for a worklog owned by
+        the credential user, who must be a business member. The BFF forwards the header to
+        Main and never logs the credential header or value. Same endWorkerBreak command,
+        response, errors and idempotency: retry with the same idempotencyId and endedAt.
+        As for the worker command, no geofence check or location applies to breaks.
+      operationId: endDeviceWorklogBreak
+      tags: [Worker]
+      security:
+        - geofenceDeviceCredential: []
+      parameters:
+        - $ref: './worker-operations.yml#/worker/break-end/put/parameters/0'
+        - $ref: './worker-operations.yml#/worker/break-end/put/parameters/1'
+        - $ref: './worker-operations.yml#/worker/break-end/put/parameters/2'
+      requestBody:
+        $ref: './worker-operations.yml#/worker/break-end/put/requestBody'
+      responses:
+        '200':
+          $ref: './worker-operations.yml#/worker/break-end/put/responses/200'
+        '400':
+          $ref: './worker-operations.yml#/worker/break-end/put/responses/400'
+        '401':
+          description: Missing, invalid, expired or revoked geofence credential
+        '403':
+          $ref: './worker-operations.yml#/worker/break-end/put/responses/403'
+        '404':
+          $ref: './worker-operations.yml#/worker/break-end/put/responses/404'
+        '409':
+          $ref: './worker-operations.yml#/worker/break-end/put/responses/409'
+      x-functional-errors: [1017, 1018, 1019, 1049, 1065, 1069, 1071, 1072, 1073]

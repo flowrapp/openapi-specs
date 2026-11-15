@@ -68,7 +68,7 @@ info:
     existing permission requirements; authorised users can access their underlying business data.
 
     `updateBusinessPlan` (platform admin) changes the plan and emits a `PERMISSIONS` sync signal.
-  version: 0.0.121
+  version: 0.0.122
   contact:
     name: Flowrapp Team
     url: https://flowrapp.github.io
@@ -158,6 +158,12 @@ paths:
     $ref: "v1/services/users/user-operations.yml#/users/phone"
   "/api/v1/users/me/geofence-device-credentials":
     $ref: "v1/services/geofenceEvents/geofence-device-credential-operations.yml#/geofenceDeviceCredentials/collection"
+  "/api/v1/users/me/live-clock/devices/{deviceId}":
+    $ref: "v1/services/liveClock/live-clock-operations.yml#/liveClock/device"
+  "/api/v1/users/me/live-clock/devices/{deviceId}/push-to-start-token":
+    $ref: "v1/services/liveClock/live-clock-operations.yml#/liveClock/start-token"
+  "/api/v1/users/me/live-clock/devices/{deviceId}/worklogs/{worklogId}/update-token":
+    $ref: "v1/services/liveClock/live-clock-operations.yml#/liveClock/update-token"
   "/api/v1/admin/register":
     $ref: "v1/services/admin/admin-operations.yml#/admin/register"
   "/api/v1/admin/businesses/{businessId}/plan":
@@ -212,6 +218,12 @@ paths:
       ceEvents/upsert-geofence-event"
   "/api/v1/device/businesses/{businessId}/geofence-events/{eventId}":
     $ref: "v1/services/geofenceEvents/geofence-device-credential-operations.yml#/geofenceDeviceCredentials/device-event"
+  "/api/v1/device/businesses/{businessId}/worklogs/{worklogId}/clock-out":
+    $ref: "v1/services/worklogs/device-worklog-operations.yml#/deviceWorklogs/clock-out"
+  "/api/v1/device/businesses/{businessId}/worklogs/{worklogId}/breaks":
+    $ref: "v1/services/worklogs/device-worklog-operations.yml#/deviceWorklogs/start-break"
+  "/api/v1/device/businesses/{businessId}/worklogs/{worklogId}/breaks/{breakId}/end":
+    $ref: "v1/services/worklogs/device-worklog-operations.yml#/deviceWorklogs/end-break"
   "/api/v1/businesses/{businessId}/worklogs/open":
     $ref: "v1/services/worklogs/worklogs-operations.yml#/worklogs/open-worklogs"
   "/api/v1/businesses/{businessId}/worklogs/clock-in":
@@ -457,6 +469,8 @@ paths:
 
 components:
   schemas:
+    LiveClockState:
+      $ref: "v1/components/liveClock/components.yml#/components/schemas/LiveClockState"
     AttendanceMatch:
       $ref: "v1/components/attendance/components.yml#/components/schemas/Atten\
         danceMatchDTO"
@@ -586,5 +600,5 @@ components:
       in: header
       name: X-Geofence-Credential
       description: >-
-        Device-scoped credential for the geofence event endpoint only. Never log
-        this header or its value.
+        Device-scoped credential for geofence events and the three device worklog
+        commands only. Never log this header or its value.

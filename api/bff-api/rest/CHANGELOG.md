@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.0.116
+
+Spec only. No BFF implementation in this change. Depends on Main 0.0.122. Next repository tag: `v1.0.33` (after `v1.0.32`); this change does not create it.
+
+### Added
+
+- Device-credential clock-out and break commands, forwarded to Main without bearer authentication. Clock-out applies BLOCK/WARN; breaks have no geofence check.
+- Bearer-authenticated iOS Live Activity push-to-start and per-worklog update token replacement/deletion and device-wide logout cleanup, forwarded to Main. Android reuses existing FCM token registration.
+- `LiveClockState` and platform push envelopes, with net worked seconds and epoch-second instants; see `docs/live-clock-push.md`.
+
+### Changed
+
+- The geofence device credential also authorizes the three own-worklog device commands; the BFF must never log the credential or its value.
+
 ## 0.0.115
 
 Spec only. No BFF implementation in this change. Depends on Main API 0.0.121. Next repository tag: `v1.0.32` (after `v1.0.31`). This change does not create the tag.

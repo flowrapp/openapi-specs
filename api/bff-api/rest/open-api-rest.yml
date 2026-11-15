@@ -64,7 +64,7 @@ info:
     | SCHEDULING | manual shift catalog, draft creation, assignment and publication; operations requiring SCHEDULE_VIEW, SCHEDULE_MANAGE or SHIFT_CHANGES_APPROVE; getWorkerTeamSchedule; every shift exchange and schedule change operation. Included in ESSENTIAL and PROFESSIONAL. |
     | ATTENDANCE | every Attendance operation; getWorkerAttendanceIncidents, getWorkerAttendanceMatch, getWorkerAttendanceIncidentGroups, getWorkerAttendanceIncidentGroup, justifyWorkerAttendanceIncidentGroup |
     | ADVANCED_PLANNING | requestPlanGeneration, getPlanGeneration, getWeekCoverage, getManagerPlanningGenerationSettings, replaceManagerPlanningGenerationSettings, deleteManagerPlanningGenerationSettings. Requires SCHEDULING; included in PROFESSIONAL. |
-  version: 0.0.115
+  version: 0.0.116
   contact:
     name: Flowrapp Team
     url: https://flowrapp.github.io
@@ -158,6 +158,12 @@ paths:
     $ref: "v1/services/settings/settings-operations.yml#/settings/current-user-geofencing"
   "/api/v1/worker/geofencing/device-credential":
     $ref: "v1/services/worker/geofence-device-credential-operations.yml#/geofenceDeviceCredentials/collection"
+  "/api/v1/worker/live-clock/devices/{deviceId}":
+    $ref: "v1/services/liveClock/live-clock-operations.yml#/liveClock/device"
+  "/api/v1/worker/live-clock/devices/{deviceId}/push-to-start-token":
+    $ref: "v1/services/liveClock/live-clock-operations.yml#/liveClock/start-token"
+  "/api/v1/worker/live-clock/devices/{deviceId}/worklogs/{worklogId}/update-token":
+    $ref: "v1/services/liveClock/live-clock-operations.yml#/liveClock/update-token"
   "/api/v1/me/invitations":
     $ref: "v1/services/user/user-operations.yml#/user/invitations"
   "/api/v1/me/invitations/{invitationId}/accept":
@@ -192,6 +198,12 @@ paths:
     $ref: "v1/services/worker/worker-operations.yml#/worker/geofence-event"
   "/api/v1/device/businesses/{businessId}/geofence-events/{eventId}":
     $ref: "v1/services/worker/geofence-device-credential-operations.yml#/geofenceDeviceCredentials/device-event"
+  "/api/v1/device/businesses/{businessId}/worklogs/{worklogId}/clock-out":
+    $ref: "v1/services/worker/device-worklog-operations.yml#/deviceWorklogs/clock-out"
+  "/api/v1/device/businesses/{businessId}/worklogs/{worklogId}/breaks":
+    $ref: "v1/services/worker/device-worklog-operations.yml#/deviceWorklogs/start-break"
+  "/api/v1/device/businesses/{businessId}/worklogs/{worklogId}/breaks/{breakId}/end":
+    $ref: "v1/services/worker/device-worklog-operations.yml#/deviceWorklogs/end-break"
   "/api/v1/worker/businesses/{businessId}/worklogs/{worklogId}/clock-out":
     $ref: "v1/services/worker/worker-operations.yml#/worker/clock-out"
   "/api/v1/worker/businesses/{businessId}/worklogs/{worklogId}/breaks":
@@ -415,6 +427,8 @@ paths:
 
 components:
   schemas:
+    LiveClockState:
+      $ref: "v1/components/liveClock/components.yml#/components/schemas/LiveClockState"
     SyncReadyEvent:
       $ref: "v1/components/realtime/components.yml#/components/schemas/SyncReadyEvent"
     SyncEvent:
@@ -435,5 +449,5 @@ components:
       in: header
       name: X-Geofence-Credential
       description: >-
-        Device-scoped credential for the geofence event endpoint only. Never log
-        this header or its value.
+        Device-scoped credential for geofence events and the three device worklog
+        commands only. Never log this header or its value.

@@ -1,0 +1,223 @@
+deviceWorklogs:
+  clock-out:
+    put:
+      summary: Clock out from a device
+      description: >-
+        Uses only X-Geofence-Credential, not bearer authentication, for a worklog owned by
+        the credential user, who must be a business member. Never log the credential header
+        or value. Same clock-out command, response and idempotency as clockOut: retry with the
+        same idempotencyId and command content. BLOCK rejects outside or missing location with
+        403 1100; WARN allows and records the check. An open break ends at clock-out.
+      operationId: deviceClockOut
+      tags: [Worklogs]
+      security:
+        - geofenceDeviceCredential: []
+      parameters:
+        - name: businessId
+          in: path
+          required: true
+          description: ID of the business
+          schema: {type: integer, format: int64}
+        - name: worklogId
+          in: path
+          required: true
+          description: ID of the worklog to close
+          schema: {type: integer, format: int64}
+      requestBody:
+        description: Clock-out information, including optional device location
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '../../components/worklogs/components.yml#/components/schemas/ClockOutRequestDTO'
+      responses:
+        '200':
+          description: Clock-out successful
+          content:
+            application/json:
+              schema:
+                $ref: '../../components/worklogs/components.yml#/components/schemas/WorkLogResponseDTO'
+        '400':
+          description: Worklog times or location are invalid (e.g. clock-out before clock-in)
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+              examples:
+                WORKLOG_NOT_VALID:
+                  summary: "1025 - worklog is not valid"
+                  value: {status: 400, detail: "1025 - worklog is not valid"}
+        '401':
+          description: Missing, invalid, expired or revoked geofence credential
+        '403':
+          description: Worklog ownership or closure, membership, or BLOCK geofencing policy (1100).
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+              examples:
+                WORKLOG_NOT_OWNER:
+                  summary: "1019 - user is not the owner of worklog"
+                  value: {status: 403, detail: "1019 - user is not the owner of worklog"}
+                WORKLOG_CLOSED:
+                  summary: "1018 - worklog already closed"
+                  value: {status: 403, detail: "1018 - worklog already closed"}
+        '404':
+          description: Worklog not found or is not available through the route business
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+              examples:
+                WORKLOG_NOT_FOUND:
+                  summary: "1017 - worklog not found"
+                  value: {status: 404, detail: "1017 - worklog not found"}
+                WORKLOG_BUSINESS_MISMATCH:
+                  summary: "1065 - worklog is not available through this business"
+                  value: {status: 404, detail: "1065 - worklog is not available through this business"}
+        '409':
+          description: Worklog overlaps with an existing worklog, the idempotency identifier conflicts, or the row was modified concurrently
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+              examples:
+                WORKLOG_OVERLAP:
+                  summary: "1022 - worklog overlaps with existing worklog"
+                  value: {status: 409, detail: "1022 - worklog overlaps with existing worklog"}
+      x-functional-errors: [1017, 1018, 1019, 1022, 1025, 1049, 1064, 1065]
+  start-break:
+    post:
+      summary: Start a break from a device
+      description: >-
+        Uses only X-Geofence-Credential, not bearer authentication, for a worklog owned by
+        the credential user, who must be a business member. Never log the credential header
+        or value. Same startWorklogBreak command, response, errors and idempotency: retry with
+        the same idempotencyId and startedAt. As for the worker command, no geofence check or
+        location applies to breaks.
+      operationId: startDeviceWorklogBreak
+      tags: [Worklogs]
+      security:
+        - geofenceDeviceCredential: []
+      parameters:
+        - name: businessId
+          in: path
+          required: true
+          description: ID of the business
+          schema: {type: integer, format: int64}
+        - name: worklogId
+          in: path
+          required: true
+          description: ID of the open worklog
+          schema: {type: integer, format: int64}
+      requestBody:
+        required: true
+        description: Idempotent break-start command
+        content:
+          application/json:
+            schema:
+              $ref: '../../components/worklogs/components.yml#/components/schemas/StartWorklogBreakRequestDTO'
+      responses:
+        '200':
+          description: Break started successfully
+          content:
+            application/json:
+              schema:
+                $ref: '../../components/worklogs/components.yml#/components/schemas/WorklogBreakDTO'
+        '400':
+          description: Break start timestamp is invalid
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+        '401':
+          description: Missing, invalid, expired or revoked geofence credential
+        '403':
+          description: The authenticated user does not own the worklog or the worklog is closed
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+        '404':
+          description: Worklog not found or is not available through the route business
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+        '409':
+          description: The worklog already has an open break, the idempotency identifier conflicts, or the worklog was modified concurrently
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+      x-functional-errors: [1017, 1018, 1019, 1049, 1065, 1070, 1072, 1073]
+  end-break:
+    put:
+      summary: End a break from a device
+      description: >-
+        Uses only X-Geofence-Credential, not bearer authentication, for a worklog owned by
+        the credential user, who must be a business member. Never log the credential header
+        or value. Same endWorklogBreak command, response, errors and idempotency: retry with
+        the same idempotencyId and endedAt. As for the worker command, no geofence check or
+        location applies to breaks.
+      operationId: endDeviceWorklogBreak
+      tags: [Worklogs]
+      security:
+        - geofenceDeviceCredential: []
+      parameters:
+        - name: businessId
+          in: path
+          required: true
+          description: ID of the business
+          schema: {type: integer, format: int64}
+        - name: worklogId
+          in: path
+          required: true
+          description: ID of the open worklog
+          schema: {type: integer, format: int64}
+        - name: breakId
+          in: path
+          required: true
+          description: ID of the break to end
+          schema: {type: integer, format: int64}
+      requestBody:
+        required: true
+        description: Idempotent break-end command
+        content:
+          application/json:
+            schema:
+              $ref: '../../components/worklogs/components.yml#/components/schemas/EndWorklogBreakRequestDTO'
+      responses:
+        '200':
+          description: Break ended successfully
+          content:
+            application/json:
+              schema:
+                $ref: '../../components/worklogs/components.yml#/components/schemas/WorklogBreakDTO'
+        '400':
+          description: Break end timestamp is invalid
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+        '401':
+          description: Missing, invalid, expired or revoked geofence credential
+        '403':
+          description: The authenticated user does not own the worklog or the worklog is closed
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+        '404':
+          description: Worklog or break not found, or the break is not available through the route business
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+        '409':
+          description: There is no open break, the idempotency identifier conflicts, or the worklog was modified concurrently
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+      x-functional-errors: [1017, 1018, 1019, 1049, 1065, 1069, 1071, 1072, 1073]

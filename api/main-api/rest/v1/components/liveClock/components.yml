@@ -1,0 +1,90 @@
+components:
+  schemas:
+    LiveClockTokenRequestDTO:
+      type: object
+      description: ActivityKit token, stored securely and never logged or returned.
+      required: [token]
+      properties:
+        token:
+          type: string
+          minLength: 1
+          description: Push-to-start or activity update token, encoded as a string.
+          example: "abcdef123456"
+    LiveClockState:
+      type: object
+      description: >-
+        Snapshot built locally by the app or sent by the backend on worklog changes.
+        Instants are integer Unix epoch seconds. At the snapshot, timerStartEpochSeconds
+        equals asOfEpochSeconds minus workedSeconds. While WORKING display current time
+        minus timerStartEpochSeconds; while ON_BREAK or CLOCKED_OUT display the frozen
+        workedSeconds. See docs/live-clock-push.md for the platform push envelopes.
+      required: [status, businessId, worklogId, businessName, jobRoleName, clockInEpochSeconds, timerStartEpochSeconds, workedSeconds, asOfEpochSeconds, breakId, breakStartEpochSeconds, shiftStartEpochSeconds, shiftEndEpochSeconds, plannedBreakMinutes, clockOutEpochSeconds]
+      properties:
+        status:
+          type: string
+          enum: [WORKING, ON_BREAK, CLOCKED_OUT]
+        businessId:
+          type: integer
+          format: int64
+        worklogId:
+          type: integer
+          format: int64
+        businessName:
+          type: string
+        jobRoleName:
+          type: [string, 'null']
+        clockInEpochSeconds:
+          type: integer
+          format: int64
+        timerStartEpochSeconds:
+          type: integer
+          format: int64
+          description: Effective timer origin at the snapshot, including completed breaks.
+        workedSeconds:
+          type: integer
+          format: int64
+          minimum: 0
+          description: Net worked time excluding breaks at asOfEpochSeconds; frozen on break or after clock-out.
+        asOfEpochSeconds:
+          type: integer
+          format: int64
+        breakId:
+          type: [integer, 'null']
+          format: int64
+          description: Active break ID when ON_BREAK, null otherwise.
+        breakStartEpochSeconds:
+          type: [integer, 'null']
+          format: int64
+          description: Active break start when ON_BREAK, null otherwise.
+        shiftStartEpochSeconds:
+          type: [integer, 'null']
+          format: int64
+          description: Planned shift start, null when unavailable.
+        shiftEndEpochSeconds:
+          type: [integer, 'null']
+          format: int64
+          description: Planned shift end, null when unavailable.
+        plannedBreakMinutes:
+          type: [integer, 'null']
+          minimum: 0
+          description: Planned break duration in minutes, null when unavailable.
+        clockOutEpochSeconds:
+          type: [integer, 'null']
+          format: int64
+          description: Clock-out instant when CLOCKED_OUT, null otherwise.
+      example:
+        status: ON_BREAK
+        businessId: 12
+        worklogId: 123
+        businessName: Example Cafe
+        jobRoleName: Barista
+        clockInEpochSeconds: 1794211200
+        timerStartEpochSeconds: 1794211200
+        workedSeconds: 7200
+        asOfEpochSeconds: 1794218400
+        breakId: 457
+        breakStartEpochSeconds: 1794218400
+        shiftStartEpochSeconds: 1794211200
+        shiftEndEpochSeconds: 1794240000
+        plannedBreakMinutes: 30
+        clockOutEpochSeconds: null

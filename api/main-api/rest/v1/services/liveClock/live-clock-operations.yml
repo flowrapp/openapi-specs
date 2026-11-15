@@ -1,0 +1,108 @@
+liveClock:
+  device:
+    parameters:
+      - &deviceId
+        name: deviceId
+        in: path
+        required: true
+        description: Stable installation ID, the same as the device credential.
+        schema: {type: string, format: uuid}
+        example: "7c9e6679-7425-40de-944b-e07fc1f90ae7"
+    delete:
+      summary: Delete all Live Clock tokens for a device
+      description: >-
+        Deletes the caller's push-to-start and all update tokens for this device, including
+        on logout. Idempotent when already absent. Does not delete the FCM registration.
+      operationId: deleteLiveClockDeviceTokens
+      tags: [Push Tokens]
+      security:
+        - bearerAuth: []
+      responses:
+        '204':
+          description: Tokens deleted or already absent
+        '401':
+          description: Missing or invalid bearer token
+  start-token:
+    parameters:
+      - *deviceId
+    put:
+      summary: Register an iOS Live Activity push-to-start token
+      description: >-
+        Replaces the caller's push-to-start token for this device. Use the same deviceId
+        as the geofence credential and FCM registration. Store securely; never log tokens.
+        A token cannot remain associated with a different user. Returns no token value.
+      operationId: putLiveClockPushToStartToken
+      tags: [Push Tokens]
+      security:
+        - bearerAuth: []
+      requestBody: &token
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '../../components/liveClock/components.yml#/components/schemas/LiveClockTokenRequestDTO'
+            example:
+              token: "abcdef123456"
+      responses:
+        '204':
+          description: Token registered or replaced
+        '400':
+          description: Invalid device ID or token
+        '401':
+          description: Missing or invalid bearer token
+    delete:
+      summary: Delete an iOS Live Activity push-to-start token
+      description: Deletes only the caller's push-to-start token for this device; idempotent when absent.
+      operationId: deleteLiveClockPushToStartToken
+      tags: [Push Tokens]
+      security:
+        - bearerAuth: []
+      responses:
+        '204':
+          description: Token deleted or already absent
+        '401':
+          description: Missing or invalid bearer token
+  update-token:
+    parameters:
+      - *deviceId
+      - name: worklogId
+        in: path
+        required: true
+        description: ID of the caller's worklog associated with the activity.
+        schema: {type: integer, format: int64}
+    put:
+      summary: Register an iOS Live Activity update token
+      description: >-
+        Replaces the update token for the caller's own worklog on this device. One token is
+        stored per user, device and worklog; register again on rotation. A token cannot remain
+        associated with another user. Store securely and never log or return the token.
+      operationId: putLiveClockUpdateToken
+      tags: [Push Tokens]
+      security:
+        - bearerAuth: []
+      requestBody: *token
+      responses:
+        '204':
+          description: Token registered or replaced
+        '400':
+          description: Invalid device ID or token
+        '401':
+          description: Missing or invalid bearer token
+        '403':
+          description: Worklog belongs to another user
+        '404':
+          description: Worklog not found
+    delete:
+      summary: Delete an iOS Live Activity update token
+      description: >-
+        Deletes the caller's update token for this device and worklog after the activity ends;
+        idempotent when absent. Never deletes another user's tokens.
+      operationId: deleteLiveClockUpdateToken
+      tags: [Push Tokens]
+      security:
+        - bearerAuth: []
+      responses:
+        '204':
+          description: Token deleted or already absent
+        '401':
+          description: Missing or invalid bearer token
