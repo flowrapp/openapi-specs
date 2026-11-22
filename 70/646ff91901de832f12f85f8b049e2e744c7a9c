@@ -1,0 +1,23 @@
+api/bff-api/rest/v1/services/contracts/contracts-operations.yml
+  s_4f7c118e78f336::t_0f5e3fc1357ee1 346-520
+api/main-api/rest/v1/components/common/error-components.yml
+  s_4f7c118e78f336::t_88375e06fc1c99 204
+api/main-api/rest/v1/components/contracts/components.yml
+  s_4f7c118e78f336::t_122c7d2229912f 68,71,76,88-95,97,100-103,105,107-109,112-134
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.6",
+  "base_commit_sha": "70646ff91901de832f12f85f8b049e2e744c7a9c",
+  "prompts": {},
+  "sessions": {
+    "s_4f7c118e78f336": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "e8ca6347-f3c0-4ca9-9032-b7b8ed3f4109",
+        "model": "gemini-3.8-flash"
+      },
+      "human_author": "sergiobpa <sergiobpa@ext.inditex.com>"
+    }
+  }
+}
