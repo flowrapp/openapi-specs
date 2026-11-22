@@ -65,6 +65,180 @@ components:
           example: "2025-07-31"
       required: [endDate]
 
+    ContractAmendmentRequestDTO:
+      type: object
+      additionalProperties: false
+      description: >
+        Terms to change from `effectiveDate`. At least one of `totalWeekHours` or `jobRoleId` is required.
+        The previous contract closes the day before `effectiveDate`; the new one starts on `effectiveDate`.
+      properties:
+        effectiveDate:
+          type: string
+          format: date
+          description: Business-local day the new terms start; the previous contract ends the day before
+          example: "2026-12-01"
+        totalWeekHours:
+          type: number
+          format: double
+          exclusiveMinimum: 0
+          description: Hours agreed for a working week from `effectiveDate`; omit to keep the current hours
+          example: 32.0
+        jobRoleId:
+          type: integer
+          format: int64
+          minimum: 1
+          description: Active job role of the business from `effectiveDate`; omit to keep the current role
+          example: 10
+      required: [effectiveDate]
+
+    ContractAmendmentApplyRequestDTO:
+      type: object
+      additionalProperties: false
+      description: The same terms as the preview, plus the fingerprint of that preview and one decision per affected shift.
+      properties:
+        effectiveDate:
+          type: string
+          format: date
+          example: "2026-12-01"
+        totalWeekHours:
+          type: number
+          format: double
+          exclusiveMinimum: 0
+          example: 32.0
+        jobRoleId:
+          type: integer
+          format: int64
+          minimum: 1
+          example: 10
+        previewFingerprint:
+          type: string
+          description: Fingerprint returned by the preview of the same request
+          example: "3f9c1a0e"
+        shiftDecisions:
+          type: array
+          description: Exactly one decision for each shift listed by the preview
+          items:
+            $ref: '#/components/schemas/ContractAmendmentShiftDecisionDTO'
+      required: [effectiveDate, previewFingerprint, shiftDecisions]
+
+    ContractAmendmentShiftDecisionDTO:
+      type: object
+      additionalProperties: false
+      properties:
+        shiftId:
+          type: integer
+          format: int64
+          minimum: 1
+          example: 501
+        action:
+          type: string
+          enum: [KEEP_AND_NOTIFY, UNASSIGN, ADJUST_DRAFT]
+          description: >
+            KEEP_AND_NOTIFY keeps a shift (any status) and notifies the person. UNASSIGN removes this person
+            from the shift so it can be reassigned; allowed for PUBLISHED and DRAFT shifts. ADJUST_DRAFT applies
+            to DRAFT shifts only.
+          example: KEEP_AND_NOTIFY
+      required: [shiftId, action]
+
+    ContractAmendmentTermsDTO:
+      type: object
+      description: Contract terms as they would be (proposed) or are (current)
+      properties:
+        jobRoleId:
+          type: integer
+          format: int64
+          example: 10
+        jobRoleName:
+          type: ["string", "null"]
+          example: Cocina
+        totalWeekHours:
+          type: number
+          format: double
+          example: 40.0
+      required: [jobRoleId, jobRoleName, totalWeekHours]
+
+    ContractAmendmentAffectedShiftDTO:
+      type: object
+      description: A scheduled shift of this person on or after the effective date
+      properties:
+        shiftId:
+          type: integer
+          format: int64
+          example: 501
+        planningId:
+          type: integer
+          format: int64
+          example: 77
+        date:
+          type: string
+          format: date
+          example: "2026-12-02"
+        startAt:
+          type: string
+          format: date-time
+          example: "2026-12-02T09:00:00+01:00"
+        endAt:
+          type: string
+          format: date-time
+          example: "2026-12-02T17:00:00+01:00"
+        status:
+          type: string
+          enum: [PUBLISHED, DRAFT]
+        jobRoleId:
+          type: integer
+          format: int64
+          example: 10
+      required: [shiftId, planningId, date, startAt, endAt, status, jobRoleId]
+
+    ContractAmendmentPreviewDTO:
+      type: object
+      description: Impact of an amendment. Read-only; nothing is saved.
+      properties:
+        effectiveDate:
+          type: string
+          format: date
+          example: "2026-12-01"
+        previousContractEndDate:
+          type: string
+          format: date
+          example: "2026-11-30"
+        current:
+          $ref: '#/components/schemas/ContractAmendmentTermsDTO'
+        proposed:
+          $ref: '#/components/schemas/ContractAmendmentTermsDTO'
+        affectedShifts:
+          type: array
+          items:
+            $ref: '#/components/schemas/ContractAmendmentAffectedShiftDTO'
+        exceedsPlannedHours:
+          type: boolean
+          description: True when the proposed weekly hours are below the hours already planned for some week from the effective date. Informational only.
+          example: false
+        previewFingerprint:
+          type: string
+          description: Changes when the contract or any affected planning changes. Send it back when applying.
+          example: "3f9c1a0e"
+        expiresAt:
+          type: string
+          format: date-time
+          description: After this instant the preview must be recalculated
+          example: "2026-11-22T20:00:00Z"
+      required: [effectiveDate, previousContractEndDate, current, proposed, affectedShifts, exceedsPlannedHours, previewFingerprint, expiresAt]
+
+    ContractAmendmentResultDTO:
+      type: object
+      description: The contract closed by the amendment and the one that replaces it
+      properties:
+        closedContract:
+          $ref: '#/components/schemas/ContractResponseDTO'
+        newContract:
+          $ref: '#/components/schemas/ContractResponseDTO'
+        appliedShiftCount:
+          type: integer
+          minimum: 0
+          example: 2
+      required: [closedContract, newContract, appliedShiftCount]
+
     BusinessContractResponseDTO:
       type: object
       description: Contract projection for a business date-range query. Validity is inclusive and periods do not overlap per user and business.
