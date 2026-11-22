@@ -1,0 +1,27 @@
+api/main-api/rest/CHANGELOG.md
+  s_4f7c118e78f336::t_669e322067624a 3-16
+api/main-api/rest/open-api-rest.yml
+  s_4f7c118e78f336::t_e800d530663622 335-338
+api/main-api/rest/v1/components/common/error-components.yml
+  s_4f7c118e78f336::t_1397df9e8e6297 204-205,388-389
+api/main-api/rest/v1/components/contracts/components.yml
+  s_4f7c118e78f336::t_f6a318761ee628 68-241
+api/main-api/rest/v1/services/contracts/contracts-operations.yml
+  s_4f7c118e78f336::t_79bc1e941f39ae 700-922
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.6",
+  "base_commit_sha": "7e8a87843e5eb3025fb5740c42d5762dfd6b92cb",
+  "prompts": {},
+  "sessions": {
+    "s_4f7c118e78f336": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "e8ca6347-f3c0-4ca9-9032-b7b8ed3f4109",
+        "model": "gemini-3.8-flash"
+      },
+      "human_author": "sergiobpa <sergiobpa@ext.inditex.com>"
+    }
+  }
+}
