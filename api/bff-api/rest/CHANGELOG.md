@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.0.118 (proposal, pending approval)
+
+Spec only. Depends on Main API 0.0.124 (proposal). This change does not create a repository tag.
+
+### Added
+
+- `previewManagerWorkerContractAmendment` (`POST /api/v1/manager/businesses/{businessId}/workers/{userId}/contracts/{contractId}/amendment-preview`): read-only preview of a contract amendment from `effectiveDate`, composed from existing Main API reads, with no new business rules. Returns the current contract, the proposed terms, the plannings and shifts of the worker from that date, and `expectedState`, which the apply operation must receive back unchanged. Draft shifts are informational; published shifts require `KEEP_AND_NOTIFY` or `UNASSIGN`. `CONTRACTS_MANAGE` in the active business.
+- `applyManagerWorkerContractAmendment` (`POST /api/v1/manager/businesses/{businessId}/workers/{userId}/contracts/{contractId}/amendments`): forwards to Main `applyContractAmendment`. Returns 1167 with no effects if the expected state changed since the preview; the client must preview again and ask the user to confirm. Returns 1168 for missing or unmatched shift decisions.
+
 ## 0.0.117
 
 Spec only. No BFF implementation in this change. Depends on Main API 0.0.123. This change does not create a repository tag.

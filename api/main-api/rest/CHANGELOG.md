@@ -6,9 +6,10 @@ Spec only. Main implementation pending approval of this contract. No repository 
 
 ### Added
 
-- `previewContractAmendment` (`POST /api/v1/businesses/{businessId}/users/{userId}/contracts/{contractId}/amendment-preview`): read-only impact of changing weekly hours and/or job role from `effectiveDate`. Lists this person's scheduled shifts from that date in `publishedShifts` and `draftShifts` and returns `previewFingerprint` and `expiresAt`. `exceedsPlannedHours` is informational. `CONTRACTS_MANAGE`.
-- `applyContractAmendment` (`POST /api/v1/businesses/{businessId}/users/{userId}/contracts/{contractId}/amendments`): applies a previewed amendment in one transaction. `effectiveDate` is today or later (1057 otherwise). The previous contract ends the day before `effectiveDate`; the new one starts on it. One `shiftDecisions` entry per published shift (`KEEP_AND_NOTIFY` keeps the current job role; `UNASSIGN` releases it for reassignment). Draft shifts are never changed by this operation. Returns 201 with `closedContract`, `newContract`, and `appliedShiftCount`. `CONTRACTS_MANAGE`.
-- Functional codes 1167 `CONTRACT_AMENDMENT_PREVIEW_STALE` (409) and 1168 `CONTRACT_AMENDMENT_DECISIONS_INVALID` (400).
+- `applyContractAmendment` (`POST /api/v1/businesses/{businessId}/users/{userId}/contracts/{contractId}/amendments`): applies an amendment in one transaction. The request carries `expectedState` (contract `updatedAt`, `version` of each affected planning, ids of this person's scheduled shifts from `effectiveDate`), taken from the preview. The operation recalculates that state inside the transaction; any difference is rejected with 1167 and nothing is written. `effectiveDate` is today or later (1057 otherwise). The previous contract ends the day before `effectiveDate`; the new one starts on it. One `shiftDecisions` entry per published shift in `expectedState` (`KEEP_AND_NOTIFY` keeps the current job role; `UNASSIGN` releases it for reassignment). Draft shifts are never changed. Returns 201 with `closedContract`, `newContract`, and `appliedShiftCount`. `CONTRACTS_MANAGE`.
+- Functional codes 1167 `CONTRACT_AMENDMENT_EXPECTED_STATE_CHANGED` (409) and 1168 `CONTRACT_AMENDMENT_DECISIONS_INVALID` (400).
+
+The preview is not a Main API operation. It is composed by the BFF from existing reads (see BFF 0.0.118).
 
 ### Unchanged
 
