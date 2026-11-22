@@ -703,25 +703,33 @@ contracts:
       summary: Apply an amendment to a contract's hours or job role from a date
       description: >
         Applies an amendment in one database transaction, only if the state the user saw still holds.
-        `expectedState` carries the contract `updatedAt`, the `version` of every affected planning, and
-        the ids of the scheduled shifts of this person from `effectiveDate`. The operation recalculates
-        that state inside the transaction and compares it; any difference is rejected with 1167 and
-        Applies an amendment in one database transaction, only if the state the user saw still holds.
         `expectedState` carries the contract `updatedAt`, the `version` of every affected planning, and the
         data of every scheduled shift of this person from `effectiveDate` (id, planning, job role, catalog
         shift, start, end, break and `updatedAt`). The planning `version` alone is not enough, because editing
         a shift is not guaranteed to change it. The operation recalculates all of that inside the transaction
         under the planning locks and compares it; any added, removed or modified shift, or any other difference,
         is rejected with 1167 and nothing is written. The client then recalculates the preview (BFF) and asks the user again.
-        Closes the previous contract the day before `effectiveDate`, creates the new contract starting on
-        `effectiveDate`, and records one explicit decision for every affected published shift.
-        Either all changes are saved or none is. Every published shift in the expected state needs exactly
-        one decision in `shiftDecisions`; a missing decision, or one for a shift that is not published, is
-        rejected with 1168. Published shifts are never deleted silently: `KEEP_AND_NOTIFY` keeps them,
-        `UNASSIGN` removes this person from them so they can be reassigned. Draft shifts are informational
-        only and are not changed by this operation. `effectiveDate` must be today or later in the business
-        time zone (1057 otherwise). Fichajes already registered are never touched. Only roles that manage
-        the business team (`CONTRACTS_MANAGE`) can call this operation.
+
+        Effective date (business time zone): it must be today or later (1169 otherwise, also when it is the
+        first day of the contract) and within the validity of the contract, from its `startDate` to its `endDate`
+        inclusive (1170 otherwise). At least one of `totalWeekHours` or `jobRoleId` must differ from the current
+        contract (1171 otherwise). When `effectiveDate` is after the contract `startDate`, the previous contract is
+        closed the day before and the new contract starts on `effectiveDate`. When `effectiveDate` equals the
+        contract `startDate` (today or future), the contract is corrected from its first day: the start date is
+        kept and no earlier segment is created, so `closedContract` is null. The new contract keeps the previous
+        `endDate`.
+
+        Scheduled shifts are never deleted, unassigned, shortened or reassigned, and no shift without a person is
+        created. Planned hours are never trimmed when they exceed the new `totalWeekHours`. Only one planning
+        write exists: when the job role changes and the current week (the week of today in the business time zone)
+        is a DRAFT planning, the job role of this person's shifts of that planning from `effectiveDate` is changed
+        to the new one; their hours, assignment and the rest of the draft stay as they are. PUBLISHED plannings
+        (the current week and later weeks) are not written: their shifts keep assignment, job role, schedule and
+        break, and the person is not notified. When the current week is published, with or without affected
+        shifts, only the contract is written. Later weeks that are DRAFT are not written either; the new terms
+        apply when they are planned, never before `effectiveDate`. Fichajes already registered are never touched.
+        Either all changes are saved or none is. Only roles that manage the business team (`CONTRACTS_MANAGE`)
+        in the business can call this operation.
       tags:
         - Contracts
       operationId: applyContractAmendment
@@ -758,6 +766,7 @@ contracts:
             example:
               effectiveDate: "2026-12-01"
               totalWeekHours: 32.0
+              jobRoleId: 10
               expectedState:
                 contractUpdatedAt: "2026-11-20T10:00:00Z"
                 plannings:
@@ -772,33 +781,32 @@ contracts:
                     endAt: "2026-12-08T16:00:00Z"
                     breakMinutes: 30
                     updatedAt: "2026-11-20T09:15:00Z"
-              shiftDecisions:
-                - shiftId: 501
-                  action: KEEP_AND_NOTIFY
-                - shiftId: 502
-                  action: UNASSIGN
       responses:
         '201':
-          description: Amendment applied. The previous contract is closed and the new one is active from `effectiveDate`.
+          description: Amendment applied. The new contract is active from `effectiveDate`; the previous one is closed the day before, or not created when `effectiveDate` is the first day of the contract.
           content:
             application/json:
               schema:
                 $ref: '../../components/contracts/components.yml#/components/schemas/ContractAmendmentResultDTO'
         '400':
-          description: Effective date, hours, job role, or shift decisions are invalid
+          description: Effective date in the past, effective date outside the contract validity, or no change in hours and job role
           content:
             application/problem+json:
               schema:
                 $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
               examples:
-                decisionsMissing:
+                datePast:
                   value:
                     status: 400
-                    detail: "1168 - shift decisions are missing or do not match the affected shifts"
-                rangeInvalid:
+                    detail: "1169 - contract amendment effective date is in the past"
+                dateOutOfRange:
                   value:
                     status: 400
-                    detail: "1057 - contract date range is invalid"
+                    detail: "1170 - contract amendment effective date is outside the contract validity"
+                noChanges:
+                  value:
+                    status: 400
+                    detail: "1171 - contract amendment changes neither hours nor job role"
         '401':
           description: Unauthorized
         '403':
@@ -841,6 +849,7 @@ contracts:
         - 1029
         - 1034
         - 1049
-        - 1057
         - 1167
-        - 1168
+        - 1169
+        - 1170
+        - 1171

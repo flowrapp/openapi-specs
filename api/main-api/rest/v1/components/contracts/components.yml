@@ -68,12 +68,18 @@ components:
     ContractAmendmentApplyRequestDTO:
       type: object
       additionalProperties: false
-      description: Terms and decisions for an amendment. `expectedState` is the state the user saw in the preview; the operation rejects any difference.
+      description: >
+        Terms of an amendment. At least one of `totalWeekHours` or `jobRoleId` must differ from the current contract
+        (1171). `expectedState` is the state the user saw in the preview; the operation rejects any difference.
+        There are no per-shift decisions: published shifts are never changed.
       properties:
         effectiveDate:
           type: string
           format: date
-          description: Business-local day the new terms start, today or later
+          description: >
+            Business-local day the new terms start. Today or later (1169) and within the contract validity, from
+            its start date to its end date inclusive (1170). Equal to the contract start date means correcting the
+            contract from its first day, keeping the start date.
           example: "2026-12-01"
         totalWeekHours:
           type: number
@@ -87,12 +93,7 @@ components:
           example: 10
         expectedState:
           $ref: '#/components/schemas/ContractAmendmentExpectedStateDTO'
-        shiftDecisions:
-          type: array
-          description: Exactly one decision for each published shift listed in `expectedState.shifts`
-          items:
-            $ref: '#/components/schemas/ContractAmendmentShiftDecisionDTO'
-      required: [effectiveDate, expectedState, shiftDecisions]
+      required: [effectiveDate, expectedState]
 
     ContractAmendmentExpectedStateDTO:
       type: object
@@ -180,38 +181,23 @@ components:
           example: 4
       required: [planningId, version]
 
-    ContractAmendmentShiftDecisionDTO:
-      type: object
-      additionalProperties: false
-      properties:
-        shiftId:
-          type: integer
-          format: int64
-          minimum: 1
-          example: 501
-        action:
-          type: string
-          enum: [KEEP_AND_NOTIFY, UNASSIGN]
-          description: >
-            Only for PUBLISHED shifts. KEEP_AND_NOTIFY keeps the shift with its current job role and notifies the
-            person; the job role of a published shift is never changed automatically. UNASSIGN removes this person
-            from the shift so it can be reassigned.
-          example: KEEP_AND_NOTIFY
-      required: [shiftId, action]
-
     ContractAmendmentResultDTO:
       type: object
-      description: The contract closed by the amendment and the one that replaces it
+      description: The contract closed by the amendment, when there is one, and the contract with the new terms
       properties:
         closedContract:
-          $ref: '#/components/schemas/ContractResponseDTO'
+          description: Null when `effectiveDate` is the first day of the contract (no earlier segment is created)
+          oneOf:
+            - $ref: '#/components/schemas/ContractResponseDTO'
+            - type: 'null'
         newContract:
           $ref: '#/components/schemas/ContractResponseDTO'
-        appliedShiftCount:
+        updatedShiftCount:
           type: integer
           minimum: 0
+          description: Number of scheduled shifts whose job role was changed in the DRAFT current week. Zero when the planning was not written.
           example: 2
-      required: [closedContract, newContract, appliedShiftCount]
+      required: [closedContract, newContract, updatedShiftCount]
 
     BusinessContractResponseDTO:
       type: object

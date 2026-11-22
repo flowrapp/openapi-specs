@@ -115,12 +115,16 @@ components:
     ManagerContractAmendmentPreviewRequestDTO:
       type: object
       additionalProperties: false
-      description: Proposed terms. The preview is informational until the apply operation runs.
+      description: >
+        Proposed terms. At least one of `totalWeekHours` or `jobRoleId` must differ from the current contract
+        (1171). The preview is informational until the apply operation runs.
       properties:
         effectiveDate:
           type: string
           format: date
-          description: Business-local day the new terms start; today or later in the business time zone
+          description: >
+            Business-local day the new terms start. Today or later (1169) and within the contract validity (1170);
+            equal to the contract start date means correcting the contract from its first day.
           example: "2026-12-01"
         totalWeekHours:
           type: number
@@ -206,7 +210,10 @@ components:
 
     ManagerContractAmendmentPreviewDTO:
       type: object
-      description: Read-only preview. Draft shifts are informational; published shifts require a decision.
+      description: >
+        Read-only preview of the impact. Shows which shifts of the worker change and which are preserved, whether
+        planned hours exceed the new contract hours, and from which week the new terms are taken into account when
+        planning. No decision is requested: published shifts are never changed.
       properties:
         currentContract:
           type: object
@@ -288,19 +295,64 @@ components:
               jobRoleId:
                 type: integer
                 format: int64
+                description: Job role the shift has now
                 example: 10
-              decisionRequired:
+              newJobRoleId:
+                type: ["integer", "null"]
+                format: int64
+                description: Job role the shift will have after the amendment; only for `impact` JOB_ROLE_CHANGES
+                example: 11
+              impact:
+                type: string
+                enum: [JOB_ROLE_CHANGES, PRESERVED]
+                description: >
+                  JOB_ROLE_CHANGES: shift of the DRAFT current week from the effective date, when the job role
+                  changes; only its job role is updated. PRESERVED: it keeps person, job role, schedule and break
+                  (every PUBLISHED shift, in the current week or in later weeks, and the shifts of drafts that are
+                  not written). The apply operation sends no notification.
+                example: PRESERVED
+            required: [shiftId, planningId, planningStatus, date, jobRoleId, impact]
+        hoursSummary:
+          type: array
+          description: Planned hours per week of the plannings read, against the proposed contract hours. Planned hours are never trimmed.
+          items:
+            type: object
+            properties:
+              planningId:
+                type: integer
+                format: int64
+                example: 77
+              weekStart:
+                type: string
+                format: date
+                example: "2026-12-07"
+              plannedHours:
+                type: number
+                format: double
+                description: Hours of this worker planned in that week from the effective date, breaks excluded
+                example: 38.5
+              contractWeekHours:
+                type: number
+                format: double
+                description: Weekly hours of the proposed terms
+                example: 32.0
+              exceedsContractHours:
                 type: boolean
-                description: True for published shifts, which need KEEP_AND_NOTIFY or UNASSIGN; false for drafts (informational only)
                 example: true
-              allowedActions:
-                type: array
-                items:
-                  type: string
-                  enum: [KEEP_AND_NOTIFY, UNASSIGN]
-                example: [KEEP_AND_NOTIFY, UNASSIGN]
-            required: [shiftId, planningId, planningStatus, date, decisionRequired, allowedActions]
-      required: [currentContract, proposedTerms, expectedState, plannings, shifts]
+            required: [planningId, weekStart, plannedHours, contractWeekHours, exceedsContractHours]
+        correctsFromFirstDay:
+          type: boolean
+          description: True when the effective date is the contract start date; the contract is corrected in place, with the same start date and no earlier segment
+          example: false
+        newTermsPlanningFrom:
+          type: string
+          format: date
+          description: >
+            First day from which the new terms are taken into account when planning: the effective date, or the
+            start of the week after the current one when the current week is published with affected shifts. Never
+            before the effective date.
+          example: "2026-12-14"
+      required: [currentContract, proposedTerms, expectedState, plannings, shifts, hoursSummary, correctsFromFirstDay, newTermsPlanningFrom]
 
     ManagerContractAmendmentApplyRequestDTO:
       type: object
@@ -322,31 +374,14 @@ components:
           example: 10
         expectedState:
           $ref: '#/components/schemas/ManagerContractAmendmentExpectedStateDTO'
-        shiftDecisions:
-          type: array
-          description: Exactly one decision per published shift in the expected state
-          items:
-            type: object
-            additionalProperties: false
-            properties:
-              shiftId:
-                type: integer
-                format: int64
-                minimum: 1
-                example: 501
-              action:
-                type: string
-                enum: [KEEP_AND_NOTIFY, UNASSIGN]
-                example: KEEP_AND_NOTIFY
-            required: [shiftId, action]
-      required: [effectiveDate, expectedState, shiftDecisions]
+      required: [effectiveDate, expectedState]
 
     ManagerContractAmendmentResultDTO:
       type: object
       properties:
         closedContract:
-          type: object
-          description: Contract closed by the amendment
+          type: ["object", "null"]
+          description: Contract closed by the amendment. Null when the effective date is the first day of the contract (no earlier segment is created).
           properties:
             id:
               type: integer
@@ -378,8 +413,9 @@ components:
               format: double
               example: 32.0
           required: [id, startDate, jobRoleId, totalWeekHours]
-        appliedShiftCount:
+        updatedShiftCount:
           type: integer
           minimum: 0
+          description: Shifts whose job role was changed in the DRAFT current week. Zero when the planning was not written.
           example: 2
-      required: [closedContract, newContract, appliedShiftCount]
+      required: [closedContract, newContract, updatedShiftCount]

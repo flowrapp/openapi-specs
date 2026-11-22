@@ -2,12 +2,13 @@
 
 ## 0.0.118 (proposal, pending approval)
 
-Spec only. Depends on Main API 0.0.124 (proposal). This change does not create a repository tag.
+Spec only. Depends on Main API 0.0.124 (proposal). This change does not create a repository tag. It revises the proposal of `v1.0.35`, which was never implemented or integrated.
 
 ### Added
 
-- `previewManagerWorkerContractAmendment` (`POST /api/v1/manager/businesses/{businessId}/workers/{userId}/contracts/{contractId}/amendment-preview`): read-only preview of a contract amendment from `effectiveDate`, composed from existing Main API reads, with no new business rules. Returns the current contract, the proposed terms, the plannings and shifts of the worker from that date, and `expectedState`, which the apply operation must receive back unchanged. Draft shifts are informational; published shifts require `KEEP_AND_NOTIFY` or `UNASSIGN`. `CONTRACTS_MANAGE` in the active business.
-- `applyManagerWorkerContractAmendment` (`POST /api/v1/manager/businesses/{businessId}/workers/{userId}/contracts/{contractId}/amendments`): forwards to Main `applyContractAmendment`. `expectedState` carries the contract `updatedAt`, planning versions and the shift data read from `getPlanning` (job role, catalog shift, window, break, `updatedAt`). Returns 1167 with no effects if any of it changed since the preview, including a shift edited with the same id; the client must preview again and ask the user to confirm. Returns 1168 for missing or unmatched shift decisions.
+- `previewManagerWorkerContractAmendment` (`POST /api/v1/manager/businesses/{businessId}/workers/{userId}/contracts/{contractId}/amendment-preview`): read-only preview composed from existing Main API reads. It applies the same effective-date and no-change checks as the apply operation (1169, 1170, 1171). Returns the current contract, the proposed terms, the plannings and shifts of the worker from the effective date with `impact` (`JOB_ROLE_CHANGES` for the DRAFT current week, `PRESERVED` for every published shift, current or later weeks), `hoursSummary` (planned hours per week against the new contract hours, never trimmed), `correctsFromFirstDay`, `newTermsPlanningFrom` and `expectedState`. `CONTRACTS_MANAGE` in the active business.
+- `applyManagerWorkerContractAmendment` (`POST /api/v1/manager/businesses/{businessId}/workers/{userId}/contracts/{contractId}/amendments`): forwards to Main `applyContractAmendment`. 1167 with no effects if the expected state changed since the preview. Result: `closedContract` (nullable), `newContract`, `updatedShiftCount`.
+- No per-shift decisions: `shiftDecisions`, `KEEP_AND_NOTIFY`, `UNASSIGN`, `decisionRequired`, `allowedActions`, `appliedShiftCount` and code 1168 are gone from the BFF contract. 1057 is no longer returned by these operations.
 
 ## 0.0.117
 
