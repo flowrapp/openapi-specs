@@ -730,8 +730,10 @@ contracts:
         - Same hours and job role as the current contract: 1171.
 
         Correction from the first day (`effectiveDate` equals `startDate`, today or future): the existing contract
-        is updated in place, keeping its id, so references to it stay valid; the previous values of hours and job
-        role are not kept as a separate record.
+        is updated in place, keeping its id, so references to it stay valid. In the same transaction the previous
+        `totalWeekHours` and `jobRoleId` are recorded in the audit trail (an audit event that carries the contract
+        id, the previous and the new hours and job role, the effective date and the acting user). They are internal
+        to audit: no operation of this API returns that history and the app shows none.
 
         Scheduled shifts are never deleted, unassigned, shortened or reassigned, and no shift without a person is
         created. Planned hours are never trimmed when they exceed the new `totalWeekHours`. Only one planning

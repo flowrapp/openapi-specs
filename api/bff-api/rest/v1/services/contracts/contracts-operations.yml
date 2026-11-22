@@ -359,7 +359,8 @@ contracts:
         planner, and every PUBLISHED shift, in the current or in later weeks, is preserved and can only be edited
         from the planner. No decision per shift is requested and no notification is sent automatically to the
         employee. Contracts of a single day are valid; effective dates and examples follow the Main API operation.
-        Requires the CONTRACTS_MANAGE permission in the active business.
+        Requires CONTRACTS_MANAGE and SCHEDULE_VIEW in the same active business (the plannings are read with
+        SCHEDULE_VIEW): without either of them the preview is denied with 403 and 1020, and nothing is returned.
       tags:
         - Contracts
       operationId: previewManagerWorkerContractAmendment
@@ -416,12 +417,16 @@ contracts:
         '401':
           description: Unauthorized
         '403':
-          description: Missing CONTRACTS_MANAGE permission in the active business, or the target user is not a business member
+          description: Missing CONTRACTS_MANAGE or SCHEDULE_VIEW permission in the active business, or the target user is not a business member
           content:
             application/problem+json:
               schema:
                 $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
               examples:
+                missingContractsManage:
+                  value: {status: 403, detail: "1020 - user lacks permission CONTRACTS_MANAGE in business"}
+                missingScheduleView:
+                  value: {status: 403, detail: "1020 - user lacks permission SCHEDULE_VIEW in business"}
                 notMember:
                   value: {status: 403, detail: "1015 - user is not member of business"}
         '404':
