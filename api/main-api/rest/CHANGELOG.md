@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.0.123
+
+Spec only. No Main API implementation in this change. Coordinate with BFF API 0.0.117. This change does not create a repository tag.
+
+### Added
+
+- Optional `scope` query parameter on `getBusinessUsersV2` (`GET /api/v2/businesses/{businessId}/users`). Enum `TEAM`. Omitted: unchanged behaviour. `TEAM`: an OWNER caller sees the other owners but not themselves; any other caller sees no owner. Evaluated per business and combined with `search`, `jobRoleId`, and `accessRoleId` (AND) before the page limit. `getBusinessUsers` (v1) is unchanged.
+
 ## 0.0.122
 
 Spec only. No Main implementation in this change. Coordinate with BFF 0.0.116. Next repository tag: `v1.0.33` (after `v1.0.32`); this change does not create it.

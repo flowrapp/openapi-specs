@@ -166,6 +166,20 @@ members:
             format: int64
             minimum: 1
             example: 7
+        - name: scope
+          in: query
+          required: false
+          description: >
+            Optional visibility scope for the Equipo list, forwarded unchanged to Main
+            `getBusinessUsersV2` as `scope`. Omitted keeps the current behaviour. `TEAM` applies
+            the team rule for the caller: an OWNER sees the other owners but not themselves,
+            and any other caller sees no owner. Used by Equipo only; search and role holders do
+            not send it.
+          schema:
+            type: string
+            enum:
+              - TEAM
+            example: TEAM
         - name: limit
           in: query
           required: false

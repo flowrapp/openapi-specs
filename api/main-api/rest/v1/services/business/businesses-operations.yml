@@ -488,6 +488,21 @@ businesses:
             format: int64
             minimum: 1
             example: 7
+        - name: scope
+          in: query
+          required: false
+          description: >
+            Optional visibility scope for the Equipo list. Omitted keeps the current
+            behaviour: every active membership matching the other filters. `TEAM` applies the
+            team rule for the caller: an OWNER sees the other owners but not themselves, and any
+            other caller sees no owner. The rule is evaluated per business. Combined with
+            `search`, `jobRoleId`, and `accessRoleId` (AND) before the page limit. Other
+            consumers of this operation must not send it.
+          schema:
+            type: string
+            enum:
+              - TEAM
+            example: TEAM
         - name: limit
           in: query
           required: false

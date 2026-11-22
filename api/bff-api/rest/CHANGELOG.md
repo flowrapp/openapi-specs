@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.0.117
+
+Spec only. No BFF implementation in this change. Depends on Main API 0.0.123. This change does not create a repository tag.
+
+### Added
+
+- Optional `scope` query parameter on `searchBusinessMembers` (`GET /api/v1/businesses/{businessId}/members/search`), forwarded unchanged to Main `getBusinessUsersV2` as `scope`. Enum `TEAM`; omitted keeps the current behaviour. Only Equipo sends it.
+
 ## 0.0.116
 
 Spec only. No BFF implementation in this change. Depends on Main 0.0.122. Next repository tag: `v1.0.33` (after `v1.0.32`); this change does not create it.
