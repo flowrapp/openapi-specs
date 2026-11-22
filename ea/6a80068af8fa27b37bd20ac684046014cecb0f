@@ -1,0 +1,29 @@
+api/bff-api/rest/CHANGELOG.md
+  s_4f7c118e78f336::t_c2b1df9863954d 10
+api/bff-api/rest/v1/components/contracts/components.yml
+  s_4f7c118e78f336::t_f8c9d9ae466ee1 141-144,165,168-205
+api/bff-api/rest/v1/services/contracts/contracts-operations.yml
+  s_4f7c118e78f336::t_4ea205f432920f 443-445
+api/main-api/rest/CHANGELOG.md
+  s_4f7c118e78f336::t_a569a2af00170e 9
+api/main-api/rest/v1/components/contracts/components.yml
+  s_4f7c118e78f336::t_4d61ca7f25dfb9 92,101-108,118,120,122-167
+api/main-api/rest/v1/services/contracts/contracts-operations.yml
+  s_4f7c118e78f336::t_0e8ad5f2da976f 710-715,766-774
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.6",
+  "base_commit_sha": "ea6a80068af8fa27b37bd20ac684046014cecb0f",
+  "prompts": {},
+  "sessions": {
+    "s_4f7c118e78f336": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "e8ca6347-f3c0-4ca9-9032-b7b8ed3f4109",
+        "model": "gemini-3.8-flash"
+      },
+      "human_author": "sergiobpa <sergiobpa@ext.inditex.com>"
+    }
+  }
+}
