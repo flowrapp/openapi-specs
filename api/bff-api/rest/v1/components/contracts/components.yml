@@ -111,3 +111,275 @@ components:
           description: Whether another slice is available
           example: false
       required: [content, page, size, hasNext]
+
+    ManagerContractAmendmentPreviewRequestDTO:
+      type: object
+      additionalProperties: false
+      description: Proposed terms. The preview is informational until the apply operation runs.
+      properties:
+        effectiveDate:
+          type: string
+          format: date
+          description: Business-local day the new terms start; today or later in the business time zone
+          example: "2026-12-01"
+        totalWeekHours:
+          type: number
+          format: double
+          exclusiveMinimum: 0
+          example: 32.0
+        jobRoleId:
+          type: integer
+          format: int64
+          minimum: 1
+          example: 10
+      required: [effectiveDate]
+
+    ManagerContractAmendmentExpectedStateDTO:
+      type: object
+      additionalProperties: false
+      description: >
+        State shown in the preview. Send it back unchanged to the apply operation. It carries the contract
+        `updatedAt`, the planning `version`s and the data of every shift of the worker from the effective date,
+        all read through existing Main API reads (`getPlanning`). The planning `version` is not trusted alone:
+        the Main API compares the shift data too and rejects any difference with 1167 and no effects.
+      properties:
+        contractUpdatedAt:
+          type: string
+          format: date-time
+          example: "2026-11-20T10:00:00Z"
+        plannings:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            properties:
+              planningId:
+                type: integer
+                format: int64
+                example: 77
+              version:
+                type: integer
+                format: int64
+                example: 4
+            required: [planningId, version]
+        shifts:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            properties:
+              shiftId:
+                type: integer
+                format: int64
+                minimum: 1
+                example: 501
+              planningId:
+                type: integer
+                format: int64
+                example: 77
+              jobRoleId:
+                type: integer
+                format: int64
+                example: 10
+              catalogShiftId:
+                type: integer
+                format: int64
+                example: 4
+              startAt:
+                type: string
+                format: date-time
+                example: "2026-12-08T08:00:00Z"
+              endAt:
+                type: string
+                format: date-time
+                example: "2026-12-08T16:00:00Z"
+              breakMinutes:
+                type: integer
+                minimum: 0
+                example: 30
+              updatedAt:
+                type: string
+                format: date-time
+                example: "2026-11-20T09:15:00Z"
+            required: [shiftId, planningId, jobRoleId, catalogShiftId, startAt, endAt, breakMinutes, updatedAt]
+      required: [contractUpdatedAt, plannings, shifts]
+
+    ManagerContractAmendmentPreviewDTO:
+      type: object
+      description: Read-only preview. Draft shifts are informational; published shifts require a decision.
+      properties:
+        currentContract:
+          type: object
+          properties:
+            id:
+              type: integer
+              format: int64
+              example: 123
+            startDate:
+              type: string
+              format: date
+              example: "2026-01-01"
+            endDate:
+              type: string
+              format: date
+              description: Empty when the contract is open-ended
+              example: "2026-11-30"
+            jobRoleId:
+              type: integer
+              format: int64
+              example: 10
+            totalWeekHours:
+              type: number
+              format: double
+              example: 40.0
+          required: [id, startDate, jobRoleId, totalWeekHours]
+        proposedTerms:
+          $ref: '#/components/schemas/ManagerContractAmendmentPreviewRequestDTO'
+        expectedState:
+          $ref: '#/components/schemas/ManagerContractAmendmentExpectedStateDTO'
+        plannings:
+          type: array
+          items:
+            type: object
+            properties:
+              planningId:
+                type: integer
+                format: int64
+                example: 77
+              weekStart:
+                type: string
+                format: date
+                example: "2026-12-07"
+              weekEnd:
+                type: string
+                format: date
+                example: "2026-12-13"
+              status:
+                type: string
+                enum: [CREATED, FAILED, SOLVING, DRAFT, PUBLISHED, ARCHIVED]
+                example: PUBLISHED
+              version:
+                type: integer
+                format: int64
+                example: 4
+            required: [planningId, weekStart, weekEnd, status, version]
+        shifts:
+          type: array
+          description: Shifts of this person from the effective date
+          items:
+            type: object
+            properties:
+              shiftId:
+                type: integer
+                format: int64
+                example: 501
+              planningId:
+                type: integer
+                format: int64
+                example: 77
+              planningStatus:
+                type: string
+                enum: [DRAFT, PUBLISHED]
+                example: PUBLISHED
+              date:
+                type: string
+                format: date
+                example: "2026-12-08"
+              jobRoleId:
+                type: integer
+                format: int64
+                example: 10
+              decisionRequired:
+                type: boolean
+                description: True for published shifts, which need KEEP_AND_NOTIFY or UNASSIGN; false for drafts (informational only)
+                example: true
+              allowedActions:
+                type: array
+                items:
+                  type: string
+                  enum: [KEEP_AND_NOTIFY, UNASSIGN]
+                example: [KEEP_AND_NOTIFY, UNASSIGN]
+            required: [shiftId, planningId, planningStatus, date, decisionRequired, allowedActions]
+      required: [currentContract, proposedTerms, expectedState, plannings, shifts]
+
+    ManagerContractAmendmentApplyRequestDTO:
+      type: object
+      additionalProperties: false
+      properties:
+        effectiveDate:
+          type: string
+          format: date
+          example: "2026-12-01"
+        totalWeekHours:
+          type: number
+          format: double
+          exclusiveMinimum: 0
+          example: 32.0
+        jobRoleId:
+          type: integer
+          format: int64
+          minimum: 1
+          example: 10
+        expectedState:
+          $ref: '#/components/schemas/ManagerContractAmendmentExpectedStateDTO'
+        shiftDecisions:
+          type: array
+          description: Exactly one decision per published shift in the expected state
+          items:
+            type: object
+            additionalProperties: false
+            properties:
+              shiftId:
+                type: integer
+                format: int64
+                minimum: 1
+                example: 501
+              action:
+                type: string
+                enum: [KEEP_AND_NOTIFY, UNASSIGN]
+                example: KEEP_AND_NOTIFY
+            required: [shiftId, action]
+      required: [effectiveDate, expectedState, shiftDecisions]
+
+    ManagerContractAmendmentResultDTO:
+      type: object
+      properties:
+        closedContract:
+          type: object
+          description: Contract closed by the amendment
+          properties:
+            id:
+              type: integer
+              format: int64
+              example: 123
+            endDate:
+              type: string
+              format: date
+              example: "2026-11-30"
+          required: [id, endDate]
+        newContract:
+          type: object
+          description: Contract that replaces it
+          properties:
+            id:
+              type: integer
+              format: int64
+              example: 124
+            startDate:
+              type: string
+              format: date
+              example: "2026-12-01"
+            jobRoleId:
+              type: integer
+              format: int64
+              example: 10
+            totalWeekHours:
+              type: number
+              format: double
+              example: 32.0
+          required: [id, startDate, jobRoleId, totalWeekHours]
+        appliedShiftCount:
+          type: integer
+          minimum: 0
+          example: 2
+      required: [closedContract, newContract, appliedShiftCount]

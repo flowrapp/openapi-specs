@@ -697,3 +697,150 @@ contracts:
                 detail: "1016 - Current user not found"
       x-functional-errors:
         - 1016
+
+  contract-amendments:
+    post:
+      summary: Apply an amendment to a contract's hours or job role from a date
+      description: >
+        Applies an amendment in one database transaction, only if the state the user saw still holds.
+        `expectedState` carries the contract `updatedAt`, the `version` of every affected planning, and
+        the ids of the scheduled shifts of this person from `effectiveDate`. The operation recalculates
+        that state inside the transaction and compares it; any difference is rejected with 1167 and
+        Applies an amendment in one database transaction, only if the state the user saw still holds.
+        `expectedState` carries the contract `updatedAt`, the `version` of every affected planning, and the
+        data of every scheduled shift of this person from `effectiveDate` (id, planning, job role, catalog
+        shift, start, end, break and `updatedAt`). The planning `version` alone is not enough, because editing
+        a shift is not guaranteed to change it. The operation recalculates all of that inside the transaction
+        under the planning locks and compares it; any added, removed or modified shift, or any other difference,
+        is rejected with 1167 and nothing is written. The client then recalculates the preview (BFF) and asks the user again.
+        Closes the previous contract the day before `effectiveDate`, creates the new contract starting on
+        `effectiveDate`, and records one explicit decision for every affected published shift.
+        Either all changes are saved or none is. Every published shift in the expected state needs exactly
+        one decision in `shiftDecisions`; a missing decision, or one for a shift that is not published, is
+        rejected with 1168. Published shifts are never deleted silently: `KEEP_AND_NOTIFY` keeps them,
+        `UNASSIGN` removes this person from them so they can be reassigned. Draft shifts are informational
+        only and are not changed by this operation. `effectiveDate` must be today or later in the business
+        time zone (1057 otherwise). Fichajes already registered are never touched. Only roles that manage
+        the business team (`CONTRACTS_MANAGE`) can call this operation.
+      tags:
+        - Contracts
+      operationId: applyContractAmendment
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: businessId
+          in: path
+          required: true
+          description: Unique identifier of the business
+          schema:
+            type: integer
+            format: int64
+        - name: userId
+          in: path
+          required: true
+          description: Unique identifier of the user whose contract is amended
+          schema:
+            type: integer
+            format: int64
+        - name: contractId
+          in: path
+          required: true
+          description: Unique identifier of the contract to amend
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '../../components/contracts/components.yml#/components/schemas/ContractAmendmentApplyRequestDTO'
+            example:
+              effectiveDate: "2026-12-01"
+              totalWeekHours: 32.0
+              expectedState:
+                contractUpdatedAt: "2026-11-20T10:00:00Z"
+                plannings:
+                  - planningId: 77
+                    version: 4
+                shifts:
+                  - shiftId: 501
+                    planningId: 77
+                    jobRoleId: 10
+                    catalogShiftId: 4
+                    startAt: "2026-12-08T08:00:00Z"
+                    endAt: "2026-12-08T16:00:00Z"
+                    breakMinutes: 30
+                    updatedAt: "2026-11-20T09:15:00Z"
+              shiftDecisions:
+                - shiftId: 501
+                  action: KEEP_AND_NOTIFY
+                - shiftId: 502
+                  action: UNASSIGN
+      responses:
+        '201':
+          description: Amendment applied. The previous contract is closed and the new one is active from `effectiveDate`.
+          content:
+            application/json:
+              schema:
+                $ref: '../../components/contracts/components.yml#/components/schemas/ContractAmendmentResultDTO'
+        '400':
+          description: Effective date, hours, job role, or shift decisions are invalid
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+              examples:
+                decisionsMissing:
+                  value:
+                    status: 400
+                    detail: "1168 - shift decisions are missing or do not match the affected shifts"
+                rangeInvalid:
+                  value:
+                    status: 400
+                    detail: "1057 - contract date range is invalid"
+        '401':
+          description: Unauthorized
+        '403':
+          description: Current user cannot manage the business team
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+              example:
+                status: 403
+                detail: "1020 - user is not the owner of business"
+        '404':
+          description: Business, user, contract, or job role not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+        '409':
+          description: The expected state changed since the preview, the effective date overlaps another contract, or the contract changed concurrently
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+              examples:
+                expectedStateChanged:
+                  value:
+                    status: 409
+                    detail: "1167 - contract amendment expected state changed; recalculate the preview"
+                contractOverlap:
+                  value:
+                    status: 409
+                    detail: "1029 - contract overlaps another contract for the same user and business"
+                concurrentModification:
+                  value:
+                    status: 409
+                    detail: "1049 - resource was modified concurrently"
+      x-functional-errors:
+        - 1006
+        - 1020
+        - 1029
+        - 1034
+        - 1049
+        - 1057
+        - 1167
+        - 1168

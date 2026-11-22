@@ -343,3 +343,180 @@ contracts:
                 planningStateConflict:
                   value: {status: 409, detail: "1058 - contract update is blocked by planning state"}
       x-functional-errors: [1000, 1006, 1015, 1020, 1029, 1057, 1058]
+
+  worker-contract-amendment-preview:
+    post:
+      summary: Preview a contract amendment for a worker
+      description: >
+        Composes the amendment preview from existing Main API reads for the business and user in the path. It adds
+        no business rules: the Main API decides validity when the amendment is applied. Returns the current
+        contract, the proposed terms, the plannings and published shifts of the worker from the effective date,
+        and an `expectedState` that the apply operation must receive back unchanged. Requires the CONTRACTS_MANAGE
+        permission in the active business. Draft shifts are listed for information only; the app never changes them.
+        Published shifts are never changed automatically: each needs a decision (KEEP_AND_NOTIFY or UNASSIGN).
+        The effective date must be today or later in the business time zone.
+      tags:
+        - Contracts
+      operationId: previewManagerWorkerContractAmendment
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: businessId
+          in: path
+          required: true
+          description: ID of the business
+          schema:
+            type: integer
+            format: int64
+        - name: userId
+          in: path
+          required: true
+          description: User ID of the worker, not the business membership ID
+          schema:
+            type: integer
+            format: int64
+        - name: contractId
+          in: path
+          required: true
+          description: ID of the contract to amend
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '../../components/contracts/components.yml#/components/schemas/ManagerContractAmendmentPreviewRequestDTO'
+      responses:
+        '200':
+          description: Amendment preview computed
+          content:
+            application/json:
+              schema:
+                $ref: '../../components/contracts/components.yml#/components/schemas/ManagerContractAmendmentPreviewDTO'
+        '400':
+          description: Invalid request body
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+        '401':
+          description: Unauthorized
+        '403':
+          description: Missing CONTRACTS_MANAGE permission in the active business, or the target user is not a business member
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              examples:
+                notMember:
+                  value: {status: 403, detail: "1015 - user is not member of business"}
+        '404':
+          description: Business, user or contract not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              examples:
+                contractNotFound:
+                  value: {status: 404, detail: "1030 - Contract not found"}
+        '409':
+          description: Effective date is in the past in the business time zone, or the effective date overlaps another contract
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              examples:
+                pastEffectiveDate:
+                  value: {status: 409, detail: "1057 - effective date must be today or later"}
+                overlap:
+                  value: {status: 409, detail: "1029 - contract overlaps another contract for the same user and business"}
+      x-functional-errors: [1000, 1006, 1015, 1020, 1029, 1030, 1057]
+
+  worker-contract-amendments:
+    post:
+      summary: Apply a contract amendment for a worker
+      description: >
+        Forwards to the Main API, which applies the amendment atomically. The request carries `expectedState` from
+        the preview. The Main API recalculates that state inside the same transaction; if the contract, a planning
+        version, or any shift of the worker from the effective date was added, removed or modified (time window, job
+        role, catalog shift, break or `updatedAt`, even when the shift id is the same), it rejects with 1167 and
+        writes nothing. The client must then
+        call the preview again and ask the user to confirm. Shift decisions must match the published shifts of the
+        expected state exactly. Requires the CONTRACTS_MANAGE permission in the active business.
+      tags:
+        - Contracts
+      operationId: applyManagerWorkerContractAmendment
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: businessId
+          in: path
+          required: true
+          description: ID of the business
+          schema:
+            type: integer
+            format: int64
+        - name: userId
+          in: path
+          required: true
+          description: User ID of the worker, not the business membership ID
+          schema:
+            type: integer
+            format: int64
+        - name: contractId
+          in: path
+          required: true
+          description: ID of the contract to amend
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '../../components/contracts/components.yml#/components/schemas/ManagerContractAmendmentApplyRequestDTO'
+      responses:
+        '200':
+          description: Amendment applied; the response describes the new contract and the shifts changed
+          content:
+            application/json:
+              schema:
+                $ref: '../../components/contracts/components.yml#/components/schemas/ManagerContractAmendmentResultDTO'
+        '400':
+          description: Invalid request body or shift decisions do not match the published shifts
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              examples:
+                decisionsInvalid:
+                  value: {status: 400, detail: "1168 - shift decisions are missing or do not match the affected shifts"}
+        '401':
+          description: Unauthorized
+        '403':
+          description: Missing CONTRACTS_MANAGE permission in the active business
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+        '404':
+          description: Business, user or contract not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+        '409':
+          description: Expected state changed since the preview (no effects), effective date in the past, or effective date overlaps another contract
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              examples:
+                expectedStateChanged:
+                  value: {status: 409, detail: "1167 - contract amendment expected state changed; recalculate the preview"}
+                pastEffectiveDate:
+                  value: {status: 409, detail: "1057 - effective date must be today or later"}
+      x-functional-errors: [1000, 1006, 1015, 1020, 1029, 1030, 1057, 1058, 1167, 1168]

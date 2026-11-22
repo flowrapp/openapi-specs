@@ -65,6 +65,154 @@ components:
           example: "2025-07-31"
       required: [endDate]
 
+    ContractAmendmentApplyRequestDTO:
+      type: object
+      additionalProperties: false
+      description: Terms and decisions for an amendment. `expectedState` is the state the user saw in the preview; the operation rejects any difference.
+      properties:
+        effectiveDate:
+          type: string
+          format: date
+          description: Business-local day the new terms start, today or later
+          example: "2026-12-01"
+        totalWeekHours:
+          type: number
+          format: double
+          exclusiveMinimum: 0
+          example: 32.0
+        jobRoleId:
+          type: integer
+          format: int64
+          minimum: 1
+          example: 10
+        expectedState:
+          $ref: '#/components/schemas/ContractAmendmentExpectedStateDTO'
+        shiftDecisions:
+          type: array
+          description: Exactly one decision for each published shift listed in `expectedState.shifts`
+          items:
+            $ref: '#/components/schemas/ContractAmendmentShiftDecisionDTO'
+      required: [effectiveDate, expectedState, shiftDecisions]
+
+    ContractAmendmentExpectedStateDTO:
+      type: object
+      additionalProperties: false
+      description: >
+        What the preview showed. Planning `version` is NOT a sufficient guarantee: in the current Main API only
+        shift-change operations bump it explicitly, and editing shifts of a planning does not guarantee a bump.
+        Therefore the state also carries the readable data of every shift of this person from the effective date
+        (`shifts`, including `updatedAt`). On apply, the Main API recalculates the contract `updatedAt`, the planning
+        `version`s and the full shift set inside the same transaction and compares all of it: any added, removed or
+        modified shift, or a changed planning version or contract, is rejected with 1167 and nothing is written.
+        Requirement for the Main API implementation: bump the planning `version` on every shift write that affects a
+        PUBLISHED or DRAFT planning; the shift comparison stays as the authoritative check.
+      properties:
+        contractUpdatedAt:
+          type: string
+          format: date-time
+          example: "2026-11-20T10:00:00Z"
+        plannings:
+          type: array
+          items:
+            $ref: '#/components/schemas/ContractAmendmentExpectedPlanningDTO'
+        shifts:
+          type: array
+          description: All scheduled shifts of this person from `effectiveDate` in plannings of any status the preview read
+          items:
+            $ref: '#/components/schemas/ContractAmendmentExpectedShiftDTO'
+      required: [contractUpdatedAt, plannings, shifts]
+
+    ContractAmendmentExpectedShiftDTO:
+      type: object
+      additionalProperties: false
+      description: >
+        Data of one scheduled shift of this person as the preview read it from `getPlanning`. Every field is
+        compared on apply, so an edit that keeps the id (time window, job role, catalog shift, break or holder) is
+        detected even if the planning `version` did not change.
+      properties:
+        shiftId:
+          type: integer
+          format: int64
+          minimum: 1
+          example: 501
+        planningId:
+          type: integer
+          format: int64
+          example: 77
+        jobRoleId:
+          type: integer
+          format: int64
+          example: 10
+        catalogShiftId:
+          type: integer
+          format: int64
+          description: Catalog shift (`ScheduledShiftResponseDTO.shiftId`)
+          example: 4
+        startAt:
+          type: string
+          format: date-time
+          example: "2026-12-08T08:00:00Z"
+        endAt:
+          type: string
+          format: date-time
+          example: "2026-12-08T16:00:00Z"
+        breakMinutes:
+          type: integer
+          minimum: 0
+          example: 30
+        updatedAt:
+          type: string
+          format: date-time
+          example: "2026-11-20T09:15:00Z"
+      required: [shiftId, planningId, jobRoleId, catalogShiftId, startAt, endAt, breakMinutes, updatedAt]
+
+    ContractAmendmentExpectedPlanningDTO:
+      type: object
+      additionalProperties: false
+      properties:
+        planningId:
+          type: integer
+          format: int64
+          example: 77
+        version:
+          type: integer
+          format: int64
+          example: 4
+      required: [planningId, version]
+
+    ContractAmendmentShiftDecisionDTO:
+      type: object
+      additionalProperties: false
+      properties:
+        shiftId:
+          type: integer
+          format: int64
+          minimum: 1
+          example: 501
+        action:
+          type: string
+          enum: [KEEP_AND_NOTIFY, UNASSIGN]
+          description: >
+            Only for PUBLISHED shifts. KEEP_AND_NOTIFY keeps the shift with its current job role and notifies the
+            person; the job role of a published shift is never changed automatically. UNASSIGN removes this person
+            from the shift so it can be reassigned.
+          example: KEEP_AND_NOTIFY
+      required: [shiftId, action]
+
+    ContractAmendmentResultDTO:
+      type: object
+      description: The contract closed by the amendment and the one that replaces it
+      properties:
+        closedContract:
+          $ref: '#/components/schemas/ContractResponseDTO'
+        newContract:
+          $ref: '#/components/schemas/ContractResponseDTO'
+        appliedShiftCount:
+          type: integer
+          minimum: 0
+          example: 2
+      required: [closedContract, newContract, appliedShiftCount]
+
     BusinessContractResponseDTO:
       type: object
       description: Contract projection for a business date-range query. Validity is inclusive and periods do not overlap per user and business.

@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.0.124 (proposal, pending approval)
+
+Spec only. Main implementation pending approval of this contract. No repository tag is created by this change. Next repository tag would be `v1.0.35` after `v1.0.34`.
+
+### Added
+
+- `applyContractAmendment` (`POST /api/v1/businesses/{businessId}/users/{userId}/contracts/{contractId}/amendments`): applies an amendment in one transaction. The request carries `expectedState` (contract `updatedAt`, `version` of each affected planning, and the data of each of this person's scheduled shifts from `effectiveDate`: id, planning, job role, catalog shift, start, end, break, `updatedAt`), taken from the preview. The planning `version` is not trusted alone: it is bumped explicitly only by shift-change operations, so editing a shift may not change it. The shift data is compared too. Implementation requirement: bump the planning `version` on every shift write. The operation recalculates that state inside the transaction; any difference is rejected with 1167 and nothing is written. `effectiveDate` is today or later (1057 otherwise). The previous contract ends the day before `effectiveDate`; the new one starts on it. One `shiftDecisions` entry per published shift in `expectedState` (`KEEP_AND_NOTIFY` keeps the current job role; `UNASSIGN` releases it for reassignment). Draft shifts are never changed. Returns 201 with `closedContract`, `newContract`, and `appliedShiftCount`. `CONTRACTS_MANAGE`.
+- Functional codes 1167 `CONTRACT_AMENDMENT_EXPECTED_STATE_CHANGED` (409) and 1168 `CONTRACT_AMENDMENT_DECISIONS_INVALID` (400).
+
+The preview is not a Main API operation. It is composed by the BFF from existing reads (see BFF 0.0.118).
+
+### Unchanged
+
+- `updateUserContract` (end date only) keeps its behaviour, including 1058 for planning state.
+
 ## 0.0.123
 
 Spec only. No Main API implementation in this change. Coordinate with BFF API 0.0.117. This change does not create a repository tag.
