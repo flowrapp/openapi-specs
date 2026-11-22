@@ -712,24 +712,39 @@ contracts:
 
         Effective date (business time zone): it must be today or later (1169 otherwise, also when it is the
         first day of the contract) and within the validity of the contract, from its `startDate` to its `endDate`
-        inclusive (1170 otherwise). At least one of `totalWeekHours` or `jobRoleId` must differ from the current
-        contract (1171 otherwise). When `effectiveDate` is after the contract `startDate`, the previous contract is
-        closed the day before and the new contract starts on `effectiveDate`. When `effectiveDate` equals the
-        contract `startDate` (today or future), the contract is corrected from its first day: the start date is
-        kept and no earlier segment is created, so `closedContract` is null. The new contract keeps the previous
+        inclusive (1170 otherwise); contracts of a single day are valid. At least one of `totalWeekHours` or
+        `jobRoleId` must differ from the current contract (1171 otherwise). The new contract keeps the previous
         `endDate`.
+
+        Examples, with today = 2026-11-23 and a contract from 2026-12-01 to 2026-12-31 (hours 40, job role 10):
+        - `effectiveDate` 2026-12-01 (first day): the contract is corrected in place, same id and start date,
+          `closedContract` null, no earlier segment.
+        - `effectiveDate` 2026-12-02 (start + 1): the previous contract becomes 2026-12-01 to 2026-12-01 (one day)
+          and the new one runs 2026-12-02 to 2026-12-31.
+        - `effectiveDate` 2026-12-15: previous 2026-12-01 to 2026-12-14, new 2026-12-15 to 2026-12-31.
+        - `effectiveDate` 2026-12-31 (end date): previous 2026-12-01 to 2026-12-30, new 2026-12-31 to 2026-12-31
+          (one day).
+        - `effectiveDate` 2026-11-22 (past): 1169. 2026-11-30 (today or later but before the start) and 2027-01-01
+          (after the end): 1170. The past check comes first, so a contract that started on 2026-11-01 rejects
+          `effectiveDate` 2026-11-01 with 1169.
+        - Same hours and job role as the current contract: 1171.
+
+        Correction from the first day (`effectiveDate` equals `startDate`, today or future): the existing contract
+        is updated in place, keeping its id, so references to it stay valid; the previous values of hours and job
+        role are not kept as a separate record.
 
         Scheduled shifts are never deleted, unassigned, shortened or reassigned, and no shift without a person is
         created. Planned hours are never trimmed when they exceed the new `totalWeekHours`. Only one planning
-        write exists: when the job role changes and the current week (the week of today in the business time zone)
-        is a DRAFT planning, the job role of this person's shifts of that planning from `effectiveDate` is changed
-        to the new one; their hours, assignment and the rest of the draft stay as they are. PUBLISHED plannings
-        (the current week and later weeks) are not written: their shifts keep assignment, job role, schedule and
-        break, and the person is not notified. When the current week is published, with or without affected
-        shifts, only the contract is written. Later weeks that are DRAFT are not written either; the new terms
-        apply when they are planned, never before `effectiveDate`. Fichajes already registered are never touched.
-        Either all changes are saved or none is. Only roles that manage the business team (`CONTRACTS_MANAGE`)
-        in the business can call this operation.
+        write exists: when the job role changes and the planning of the current week (the week that contains
+        today in the business time zone) is a DRAFT, the job role of this person's shifts of that planning from
+        `effectiveDate` is changed to the new one; their hours, assignment and the rest of the draft stay as they
+        are. DRAFT plannings of later weeks are not modified; they are left to the planner. PUBLISHED plannings
+        (the current week and later weeks) are not written either: their shifts keep assignment, job role,
+        schedule and break. When the current week is published, with or without affected shifts, only the
+        contract is written. The new terms are taken into account when later weeks are planned, never before
+        `effectiveDate`. No notification is sent automatically to the employee. Fichajes already registered are
+        never touched. Either all changes are saved or none is. Only roles that manage the business team
+        (`CONTRACTS_MANAGE`) in the business can call this operation.
       tags:
         - Contracts
       operationId: applyContractAmendment
