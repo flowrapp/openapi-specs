@@ -2,12 +2,20 @@
 
 ## 0.0.124 (proposal, pending approval)
 
-Spec only. Main implementation pending approval of this contract. No repository tag is created by this change. Next repository tag would be `v1.0.35` after `v1.0.34`.
+Spec only. Main implementation pending approval of this contract. No repository tag is created by this change. It revises the proposal of `v1.0.35`, which was never implemented or integrated: `v1.0.35` required `KEEP_AND_NOTIFY` / `UNASSIGN` per published shift and did not adjust drafts.
 
 ### Added
 
-- `applyContractAmendment` (`POST /api/v1/businesses/{businessId}/users/{userId}/contracts/{contractId}/amendments`): applies an amendment in one transaction. The request carries `expectedState` (contract `updatedAt`, `version` of each affected planning, and the data of each of this person's scheduled shifts from `effectiveDate`: id, planning, job role, catalog shift, start, end, break, `updatedAt`), taken from the preview. The planning `version` is not trusted alone: it is bumped explicitly only by shift-change operations, so editing a shift may not change it. The shift data is compared too. Implementation requirement: bump the planning `version` on every shift write. The operation recalculates that state inside the transaction; any difference is rejected with 1167 and nothing is written. `effectiveDate` is today or later (1057 otherwise). The previous contract ends the day before `effectiveDate`; the new one starts on it. One `shiftDecisions` entry per published shift in `expectedState` (`KEEP_AND_NOTIFY` keeps the current job role; `UNASSIGN` releases it for reassignment). Draft shifts are never changed. Returns 201 with `closedContract`, `newContract`, and `appliedShiftCount`. `CONTRACTS_MANAGE`.
-- Functional codes 1167 `CONTRACT_AMENDMENT_EXPECTED_STATE_CHANGED` (409) and 1168 `CONTRACT_AMENDMENT_DECISIONS_INVALID` (400).
+- `applyContractAmendment` (`POST /api/v1/businesses/{businessId}/users/{userId}/contracts/{contractId}/amendments`): applies an amendment in one transaction. The request carries `expectedState` (contract `updatedAt`, `version` of each affected planning, and the data of each of this person's scheduled shifts from `effectiveDate`: id, planning, job role, catalog shift, start, end, break, `updatedAt`), taken from the preview. Any difference is rejected with 1167 and nothing is written. Implementation requirement: bump the planning `version` on every shift write.
+- Effective date: today or later in the business time zone (1169, also when it is the first day of the contract) and within the contract validity, start to end inclusive (1170). Single-day contracts are valid: `effectiveDate` start + 1 leaves a one-day previous contract and `effectiveDate` equal to the end leaves a one-day new contract. At least one of hours or job role must change (1171). On the start date the existing contract is corrected in place (same id, same start date), no earlier segment is created and `closedContract` is null. The previous hours and job role are recorded in the audit trail in the same transaction (internal; not exposed by the API or the app). The new contract keeps the previous `endDate`. The operation description lists examples.
+- Shifts: no shift is deleted, unassigned, shortened or reassigned, no shift without a person is created, and planned hours are never trimmed. Only when the job role changes and the planning of the week that contains today (business time zone) is a DRAFT is the job role of this person's shifts of that planning from `effectiveDate` changed. DRAFT plannings of later weeks are left to the planner. PUBLISHED plannings (current and later weeks) are not written. A published current week with or without affected shifts writes only the contract. No automatic notification to the employee. Fichajes are never touched. `CONTRACTS_MANAGE`.
+- Result: 201 with `closedContract` (nullable), `newContract` and `updatedShiftCount`.
+- Functional codes 1169 `CONTRACT_AMENDMENT_DATE_IN_PAST`, 1170 `CONTRACT_AMENDMENT_DATE_OUT_OF_RANGE` and 1171 `CONTRACT_AMENDMENT_NO_CHANGES` (all 400). 1057 is no longer returned by this operation.
+- Functional code 1167 `CONTRACT_AMENDMENT_EXPECTED_STATE_CHANGED` (409).
+
+### Removed from the v1.0.35 proposal
+
+- `shiftDecisions`, `ContractAmendmentShiftDecisionDTO` (`KEEP_AND_NOTIFY`, `UNASSIGN`) and `appliedShiftCount` (replaced by `updatedShiftCount`). Code 1168 stays in the catalog as retired and is not emitted; its number is not reused.
 
 The preview is not a Main API operation. It is composed by the BFF from existing reads (see BFF 0.0.118).
 

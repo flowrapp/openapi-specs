@@ -348,13 +348,19 @@ contracts:
     post:
       summary: Preview a contract amendment for a worker
       description: >
-        Composes the amendment preview from existing Main API reads for the business and user in the path. It adds
-        no business rules: the Main API decides validity when the amendment is applied. Returns the current
-        contract, the proposed terms, the plannings and published shifts of the worker from the effective date,
-        and an `expectedState` that the apply operation must receive back unchanged. Requires the CONTRACTS_MANAGE
-        permission in the active business. Draft shifts are listed for information only; the app never changes them.
-        Published shifts are never changed automatically: each needs a decision (KEEP_AND_NOTIFY or UNASSIGN).
-        The effective date must be today or later in the business time zone.
+        Composes the amendment preview from existing Main API reads for the business and user in the path, and
+        applies the same effective-date and no-change checks as the apply operation (1169, 1170, 1171), so an
+        invalid proposal is rejected before the user confirms. Returns the current contract, the proposed terms,
+        the plannings and shifts of the worker from the effective date, each marked as changed or preserved, the
+        planned hours per week against the new contract hours (never trimmed), the first day from which the new
+        terms are taken into account when planning, and an `expectedState` that the apply operation must receive
+        back unchanged. Only the job role of the worker's shifts in the DRAFT planning of the current week (the week
+        that contains today in the business time zone) changes; DRAFT plannings of later weeks are left to the
+        planner, and every PUBLISHED shift, in the current or in later weeks, is preserved and can only be edited
+        from the planner. No decision per shift is requested and no notification is sent automatically to the
+        employee. Contracts of a single day are valid; effective dates and examples follow the Main API operation.
+        Requires CONTRACTS_MANAGE and SCHEDULE_VIEW in the same active business (the plannings are read with
+        SCHEDULE_VIEW): without either of them the preview is denied with 403 and 1020, and nothing is returned.
       tags:
         - Contracts
       operationId: previewManagerWorkerContractAmendment
@@ -396,20 +402,31 @@ contracts:
               schema:
                 $ref: '../../components/contracts/components.yml#/components/schemas/ManagerContractAmendmentPreviewDTO'
         '400':
-          description: Invalid request body
-          content:
-            application/problem+json:
-              schema:
-                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
-        '401':
-          description: Unauthorized
-        '403':
-          description: Missing CONTRACTS_MANAGE permission in the active business, or the target user is not a business member
+          description: Invalid request body, effective date in the past, effective date outside the contract validity, or no change in hours and job role
           content:
             application/problem+json:
               schema:
                 $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
               examples:
+                datePast:
+                  value: {status: 400, detail: "1169 - contract amendment effective date is in the past"}
+                dateOutOfRange:
+                  value: {status: 400, detail: "1170 - contract amendment effective date is outside the contract validity"}
+                noChanges:
+                  value: {status: 400, detail: "1171 - contract amendment changes neither hours nor job role"}
+        '401':
+          description: Unauthorized
+        '403':
+          description: Missing CONTRACTS_MANAGE or SCHEDULE_VIEW permission in the active business, or the target user is not a business member
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              examples:
+                missingContractsManage:
+                  value: {status: 403, detail: "1020 - user lacks permission CONTRACTS_MANAGE in business"}
+                missingScheduleView:
+                  value: {status: 403, detail: "1020 - user lacks permission SCHEDULE_VIEW in business"}
                 notMember:
                   value: {status: 403, detail: "1015 - user is not member of business"}
         '404':
@@ -422,17 +439,15 @@ contracts:
                 contractNotFound:
                   value: {status: 404, detail: "1030 - Contract not found"}
         '409':
-          description: Effective date is in the past in the business time zone, or the effective date overlaps another contract
+          description: The effective date overlaps another contract
           content:
             application/problem+json:
               schema:
                 $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
               examples:
-                pastEffectiveDate:
-                  value: {status: 409, detail: "1057 - effective date must be today or later"}
                 overlap:
                   value: {status: 409, detail: "1029 - contract overlaps another contract for the same user and business"}
-      x-functional-errors: [1000, 1006, 1015, 1020, 1029, 1030, 1057]
+      x-functional-errors: [1000, 1006, 1015, 1020, 1029, 1030, 1169, 1170, 1171]
 
   worker-contract-amendments:
     post:
@@ -443,8 +458,13 @@ contracts:
         version, or any shift of the worker from the effective date was added, removed or modified (time window, job
         role, catalog shift, break or `updatedAt`, even when the shift id is the same), it rejects with 1167 and
         writes nothing. The client must then
-        call the preview again and ask the user to confirm. Shift decisions must match the published shifts of the
-        expected state exactly. Requires the CONTRACTS_MANAGE permission in the active business.
+        call the preview again and ask the user to confirm. Effective date and no-change rules are those of the
+        preview (1169, 1170, 1171). No per-shift decisions exist: published shifts are never changed, and only the
+        job role of the worker's shifts in the DRAFT planning of the current week (the week that contains today in the
+        business time zone) is updated; DRAFT plannings of later weeks are left to the planner. No notification is
+        sent automatically to the employee. `closedContract` is null and `newContract` keeps the id of the amended
+        contract when the effective date is the first day of the contract (see the Main API operation for examples,
+        including single-day contracts). Requires the CONTRACTS_MANAGE permission in the active business.
       tags:
         - Contracts
       operationId: applyManagerWorkerContractAmendment
@@ -486,14 +506,18 @@ contracts:
               schema:
                 $ref: '../../components/contracts/components.yml#/components/schemas/ManagerContractAmendmentResultDTO'
         '400':
-          description: Invalid request body or shift decisions do not match the published shifts
+          description: Invalid request body, effective date in the past, effective date outside the contract validity, or no change in hours and job role
           content:
             application/problem+json:
               schema:
                 $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
               examples:
-                decisionsInvalid:
-                  value: {status: 400, detail: "1168 - shift decisions are missing or do not match the affected shifts"}
+                datePast:
+                  value: {status: 400, detail: "1169 - contract amendment effective date is in the past"}
+                dateOutOfRange:
+                  value: {status: 400, detail: "1170 - contract amendment effective date is outside the contract validity"}
+                noChanges:
+                  value: {status: 400, detail: "1171 - contract amendment changes neither hours nor job role"}
         '401':
           description: Unauthorized
         '403':
@@ -509,7 +533,7 @@ contracts:
               schema:
                 $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
         '409':
-          description: Expected state changed since the preview (no effects), effective date in the past, or effective date overlaps another contract
+          description: Expected state changed since the preview (no effects), or the effective date overlaps another contract
           content:
             application/problem+json:
               schema:
@@ -517,6 +541,4 @@ contracts:
               examples:
                 expectedStateChanged:
                   value: {status: 409, detail: "1167 - contract amendment expected state changed; recalculate the preview"}
-                pastEffectiveDate:
-                  value: {status: 409, detail: "1057 - effective date must be today or later"}
-      x-functional-errors: [1000, 1006, 1015, 1020, 1029, 1030, 1057, 1058, 1167, 1168]
+      x-functional-errors: [1000, 1006, 1015, 1020, 1029, 1030, 1167, 1169, 1170, 1171]
