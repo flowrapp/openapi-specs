@@ -1,0 +1,19 @@
+api/main-api/rest/v1/services/business/businesses-operations.yml
+  s_4f7c118e78f336::t_1d3fef73b70b3f 491-505
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.6",
+  "base_commit_sha": "d645e46f62166457bb8f6622c816d9d6b04ae898",
+  "prompts": {},
+  "sessions": {
+    "s_4f7c118e78f336": {
+      "agent_id": {
+        "tool": "github-copilot-cli",
+        "id": "e8ca6347-f3c0-4ca9-9032-b7b8ed3f4109",
+        "model": "gemini-3.8-flash"
+      },
+      "human_author": "sergiobpa <sergiobpa@ext.inditex.com>"
+    }
+  }
+}
