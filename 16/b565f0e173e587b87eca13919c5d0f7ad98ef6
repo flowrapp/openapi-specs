@@ -1,0 +1,14 @@
+.oasdiff-err-ignore.md
+  h_a041df4244d543 188-197
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.6",
+  "base_commit_sha": "16b565f0e173e587b87eca13919c5d0f7ad98ef6",
+  "prompts": {},
+  "humans": {
+    "h_a041df4244d543": {
+      "author": "sergiobpa <sergiobpa@ext.inditex.com>"
+    }
+  }
+}
