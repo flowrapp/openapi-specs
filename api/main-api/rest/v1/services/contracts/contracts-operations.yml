@@ -707,10 +707,12 @@ contracts:
         the ids of the scheduled shifts of this person from `effectiveDate`. The operation recalculates
         that state inside the transaction and compares it; any difference is rejected with 1167 and
         Applies an amendment in one database transaction, only if the state the user saw still holds.
-        `expectedState` carries the contract `updatedAt`, the `version` of every affected planning, and
-        the ids of the scheduled shifts of this person from `effectiveDate`. The operation recalculates
-        that state inside the transaction and compares it; any difference is rejected with 1167 and
-        nothing is written. The client then recalculates the preview (BFF) and asks the user again.
+        `expectedState` carries the contract `updatedAt`, the `version` of every affected planning, and the
+        data of every scheduled shift of this person from `effectiveDate` (id, planning, job role, catalog
+        shift, start, end, break and `updatedAt`). The planning `version` alone is not enough, because editing
+        a shift is not guaranteed to change it. The operation recalculates all of that inside the transaction
+        under the planning locks and compares it; any added, removed or modified shift, or any other difference,
+        is rejected with 1167 and nothing is written. The client then recalculates the preview (BFF) and asks the user again.
         Closes the previous contract the day before `effectiveDate`, creates the new contract starting on
         `effectiveDate`, and records one explicit decision for every affected published shift.
         Either all changes are saved or none is. Every published shift in the expected state needs exactly
@@ -761,7 +763,15 @@ contracts:
                 plannings:
                   - planningId: 77
                     version: 4
-                shiftIds: [501, 502]
+                shifts:
+                  - shiftId: 501
+                    planningId: 77
+                    jobRoleId: 10
+                    catalogShiftId: 4
+                    startAt: "2026-12-08T08:00:00Z"
+                    endAt: "2026-12-08T16:00:00Z"
+                    breakMinutes: 30
+                    updatedAt: "2026-11-20T09:15:00Z"
               shiftDecisions:
                 - shiftId: 501
                   action: KEEP_AND_NOTIFY

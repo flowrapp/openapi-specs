@@ -440,7 +440,9 @@ contracts:
       description: >
         Forwards to the Main API, which applies the amendment atomically. The request carries `expectedState` from
         the preview. The Main API recalculates that state inside the same transaction; if the contract, a planning
-        version, or the set of affected shifts changed, it rejects with 1167 and writes nothing. The client must then
+        version, or any shift of the worker from the effective date was added, removed or modified (time window, job
+        role, catalog shift, break or `updatedAt`, even when the shift id is the same), it rejects with 1167 and
+        writes nothing. The client must then
         call the preview again and ask the user to confirm. Shift decisions must match the published shifts of the
         expected state exactly. Requires the CONTRACTS_MANAGE permission in the active business.
       tags:

@@ -138,8 +138,10 @@ components:
       type: object
       additionalProperties: false
       description: >
-        State shown in the preview. Send it back unchanged to the apply operation; any difference recalculated by
-        the Main API is rejected with 1167 and nothing is written.
+        State shown in the preview. Send it back unchanged to the apply operation. It carries the contract
+        `updatedAt`, the planning `version`s and the data of every shift of the worker from the effective date,
+        all read through existing Main API reads (`getPlanning`). The planning `version` is not trusted alone:
+        the Main API compares the shift data too and rejects any difference with 1167 and no effects.
       properties:
         contractUpdatedAt:
           type: string
@@ -160,14 +162,47 @@ components:
                 format: int64
                 example: 4
             required: [planningId, version]
-        shiftIds:
+        shifts:
           type: array
           items:
-            type: integer
-            format: int64
-            minimum: 1
-          example: [501, 502]
-      required: [contractUpdatedAt, plannings, shiftIds]
+            type: object
+            additionalProperties: false
+            properties:
+              shiftId:
+                type: integer
+                format: int64
+                minimum: 1
+                example: 501
+              planningId:
+                type: integer
+                format: int64
+                example: 77
+              jobRoleId:
+                type: integer
+                format: int64
+                example: 10
+              catalogShiftId:
+                type: integer
+                format: int64
+                example: 4
+              startAt:
+                type: string
+                format: date-time
+                example: "2026-12-08T08:00:00Z"
+              endAt:
+                type: string
+                format: date-time
+                example: "2026-12-08T16:00:00Z"
+              breakMinutes:
+                type: integer
+                minimum: 0
+                example: 30
+              updatedAt:
+                type: string
+                format: date-time
+                example: "2026-11-20T09:15:00Z"
+            required: [shiftId, planningId, jobRoleId, catalogShiftId, startAt, endAt, breakMinutes, updatedAt]
+      required: [contractUpdatedAt, plannings, shifts]
 
     ManagerContractAmendmentPreviewDTO:
       type: object
