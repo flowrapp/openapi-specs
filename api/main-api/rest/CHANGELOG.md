@@ -6,8 +6,8 @@ Spec only. Main implementation pending approval of this contract. No repository 
 
 ### Added
 
-- `previewContractAmendment` (`POST /api/v1/businesses/{businessId}/users/{userId}/contracts/{contractId}/amendment-preview`): read-only impact of changing weekly hours and/or job role from `effectiveDate`. Lists this person's scheduled shifts from that date with status PUBLISHED or DRAFT and returns `previewFingerprint` and `expiresAt`. `exceedsPlannedHours` is informational. `CONTRACTS_MANAGE`.
-- `applyContractAmendment` (`POST /api/v1/businesses/{businessId}/users/{userId}/contracts/{contractId}/amendments`): applies a previewed amendment in one transaction. The previous contract ends the day before `effectiveDate`; the new one starts on it. One `shiftDecisions` entry per affected shift (`KEEP_AND_NOTIFY`, `UNASSIGN`, `ADJUST_DRAFT`). Returns 201 with `closedContract`, `newContract`, and `appliedShiftCount`. `CONTRACTS_MANAGE`.
+- `previewContractAmendment` (`POST /api/v1/businesses/{businessId}/users/{userId}/contracts/{contractId}/amendment-preview`): read-only impact of changing weekly hours and/or job role from `effectiveDate`. Lists this person's scheduled shifts from that date in `publishedShifts` and `draftShifts` and returns `previewFingerprint` and `expiresAt`. `exceedsPlannedHours` is informational. `CONTRACTS_MANAGE`.
+- `applyContractAmendment` (`POST /api/v1/businesses/{businessId}/users/{userId}/contracts/{contractId}/amendments`): applies a previewed amendment in one transaction. `effectiveDate` is today or later (1057 otherwise). The previous contract ends the day before `effectiveDate`; the new one starts on it. One `shiftDecisions` entry per published shift (`KEEP_AND_NOTIFY` keeps the current job role; `UNASSIGN` releases it for reassignment). Draft shifts are never changed by this operation. Returns 201 with `closedContract`, `newContract`, and `appliedShiftCount`. `CONTRACTS_MANAGE`.
 - Functional codes 1167 `CONTRACT_AMENDMENT_PREVIEW_STALE` (409) and 1168 `CONTRACT_AMENDMENT_DECISIONS_INVALID` (400).
 
 ### Unchanged

@@ -705,8 +705,10 @@ contracts:
         Read-only. Shows what an amendment would do before anything is saved: the previous
         contract closes the day before `effectiveDate`, a new contract starts on `effectiveDate`
         with the proposed terms, and every scheduled shift of this person from `effectiveDate`
-        onward is listed with its status (PUBLISHED or DRAFT). Published shifts are never removed
-        silently. `exceedsPlannedHours` is informational and does not block the amendment.
+        onward is listed in `publishedShifts` or `draftShifts`. Published shifts are never removed
+        silently and their job role is never changed automatically. Draft shifts are only listed: the
+        manager adjusts them manually. `effectiveDate` must be today or later in the business time zone;
+        a past date is rejected with 1057. `exceedsPlannedHours` is informational and does not block the amendment.
         Nothing is written. The response carries `previewFingerprint`, which the apply operation
         must send back; it changes when the contract or any affected planning changes, so a stale
         preview is rejected instead of applied silently. Only roles that manage the business team
@@ -805,10 +807,12 @@ contracts:
         contract the day before `effectiveDate`, creates the new contract starting on `effectiveDate`,
         and records one explicit decision for every affected shift. Either all changes are saved or
         none is. `previewFingerprint` must match a fresh preview; otherwise the request is rejected
-        with 1167 and nothing changes. Every affected shift needs exactly one decision in
-        `shiftDecisions`; a missing or extra decision is rejected with 1168. Published shifts are
+        with 1167 and nothing changes. Every published shift listed by the preview needs exactly one
+        decision in `shiftDecisions`; a missing decision, or one for a shift that is not published, is
+        rejected with 1168. Published shifts are
         never deleted silently: `KEEP_AND_NOTIFY` keeps them, `UNASSIGN` removes this person from them
-        so they can be reassigned. `ADJUST_DRAFT` applies to DRAFT shifts only. Fichajes already
+        so they can be reassigned. Decisions apply to PUBLISHED shifts only; draft shifts are not changed
+        by this operation. `effectiveDate` must be today or later in the business time zone (1057 otherwise). Fichajes already
         registered are never touched. Only roles that manage the business team (`CONTRACTS_MANAGE`)
         can call this operation.
       tags:

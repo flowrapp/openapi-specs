@@ -75,7 +75,7 @@ components:
         effectiveDate:
           type: string
           format: date
-          description: Business-local day the new terms start; the previous contract ends the day before
+          description: Business-local day the new terms start, today or later (never a past date). The previous contract ends the day before
           example: "2026-12-01"
         totalWeekHours:
           type: number
@@ -132,11 +132,11 @@ components:
           example: 501
         action:
           type: string
-          enum: [KEEP_AND_NOTIFY, UNASSIGN, ADJUST_DRAFT]
+          enum: [KEEP_AND_NOTIFY, UNASSIGN]
           description: >
-            KEEP_AND_NOTIFY keeps a shift (any status) and notifies the person. UNASSIGN removes this person
-            from the shift so it can be reassigned; allowed for PUBLISHED and DRAFT shifts. ADJUST_DRAFT applies
-            to DRAFT shifts only.
+            Only for PUBLISHED shifts. KEEP_AND_NOTIFY keeps the shift with its current job role and notifies the
+            person; the job role of a published shift is never changed automatically. UNASSIGN removes this person
+            from the shift so it can be reassigned.
           example: KEEP_AND_NOTIFY
       required: [shiftId, action]
 
@@ -206,8 +206,14 @@ components:
           $ref: '#/components/schemas/ContractAmendmentTermsDTO'
         proposed:
           $ref: '#/components/schemas/ContractAmendmentTermsDTO'
-        affectedShifts:
+        publishedShifts:
           type: array
+          description: Published shifts from the effective date. Each one needs exactly one decision in the apply request.
+          items:
+            $ref: '#/components/schemas/ContractAmendmentAffectedShiftDTO'
+        draftShifts:
+          type: array
+          description: "Draft shifts from the effective date. Informational: the apply operation never changes them; the manager adjusts them manually."
           items:
             $ref: '#/components/schemas/ContractAmendmentAffectedShiftDTO'
         exceedsPlannedHours:
@@ -223,7 +229,7 @@ components:
           format: date-time
           description: After this instant the preview must be recalculated
           example: "2026-11-22T20:00:00Z"
-      required: [effectiveDate, previousContractEndDate, current, proposed, affectedShifts, exceedsPlannedHours, previewFingerprint, expiresAt]
+      required: [effectiveDate, previousContractEndDate, current, proposed, publishedShifts, draftShifts, exceedsPlannedHours, previewFingerprint, expiresAt]
 
     ContractAmendmentResultDTO:
       type: object
