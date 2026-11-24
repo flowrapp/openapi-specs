@@ -6,7 +6,7 @@ Spec only. Depends on Main API 0.0.127 (proposal). No repository tag is created 
 
 ### Changed
 
-- `previewManagerWorkerContractAmendmentV2` marks `JOB_ROLE_CHANGES` in the DRAFT planning of the current week and in every later week, DRAFT or PUBLISHED, and `PRESERVED` for a PUBLISHED current week; the preview always sends optional `expectedState.currentWeekStart`. `applyManagerWorkerContractAmendmentV2` sends the state back unchanged; a state without it or from another local week is rejected with 1167 and no effects.
+- `previewManagerWorkerContractAmendmentV2` marks `JOB_ROLE_CHANGES` in the DRAFT planning of the current week and in every later week, DRAFT or PUBLISHED, and `PRESERVED` for a PUBLISHED current week; the preview always adds the rule marker (a `plannings` entry with `planningId` 0 and the epoch day of the current local Monday) to `expectedState`. `applyManagerWorkerContractAmendmentV2` sends the state back unchanged; a state without it or from another local week is rejected with 1167 and no effects. No new field. Open shift-change requests are invalidated only when they reference a shift whose job role changed.
 - Deployment: same order and rollback conditions as Main API 0.0.127.
 
 ## 0.0.120 (proposal, pending approval)

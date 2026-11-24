@@ -853,7 +853,7 @@ contracts:
         of this person from `effectiveDate` change job role in the DRAFT planning of the current week and in every
         later week, DRAFT or PUBLISHED alike; the current week is conserved when it is PUBLISHED. The status of a
         planning (including its publication) never changes. This replaces the rule that v2 had until 0.0.126
-        (only DRAFT plannings): a preview of that rule is never confirmed with this one, see `currentWeekStart`.
+        (only DRAFT plannings): a preview of that rule is never confirmed with this one, see the rule marker of `expectedState`.
 
         Applies an amendment in one database transaction, only if the state the user saw still holds.
         `expectedState` carries the contract `updatedAt`, the `version` of every affected planning, and the
@@ -863,13 +863,13 @@ contracts:
         under the planning locks and compares it; any added, removed or modified shift, or any other difference,
         is rejected with 1167 and nothing is written. The client then recalculates the preview (BFF) and asks the user again.
 
-        `expectedState.currentWeekStart` is the Monday of the week that contained today, in the business time zone,
-        when the preview was taken. Inside the same transaction the operation computes that Monday again and rejects
-        with 1167, writing nothing, when it differs (the local week changed between preview and confirmation, so the
-        applicable set would be another) and also when the field is absent: a state issued before this rule, which
-        showed the previous one, is not confirmed. The same 1167 applies to any concurrent change that alters the
-        applicable set (a shift added, removed or edited keeping its id, a planning version moved, a DRAFT
-        published or the reverse). The recovery is always a new preview.
+        The state must carry the rule marker described in `expectedState` (a `plannings` entry with `planningId` 0 and
+        the epoch day of the Monday of the current local week at preview time). Inside the same transaction the
+        operation computes that Monday again and rejects with 1167, writing nothing, when it differs (the local week
+        changed between preview and confirmation, so the applicable set would be another) and when the marker is
+        absent (a state issued by a preview of the previous rule, which showed the previous one). The same 1167
+        applies to any concurrent change that alters the applicable set (a shift added, removed or edited keeping its
+        id, a planning version moved, a DRAFT published or the reverse). The recovery is always a new preview.
 
         Effective date (business time zone): it must be today or later (1169 otherwise, also when it is the
         first day of the contract) and within the validity of the contract, from its `startDate` to its `endDate`
@@ -912,10 +912,11 @@ contracts:
         With both weeks PUBLISHED, 2026-11-27 keeps General (current week conserved) and 2026-12-01, 02 and 04
         change to Security, the week staying PUBLISHED. With 2026-11-23 to 2026-11-29 in DRAFT, 2026-11-27 also
         changes. With a PUBLISHED current week and several later PUBLISHED weeks, all later weeks change from the
-        effective date; a date in the middle of a week changes only that day onwards. A request to exchange or
-        change a shift that is still open and belongs to a planning written here is no longer valid because the
-        planning version changes, and a new request must be made; the version is per weekly planning, so this
-        reaches every open request that includes a shift of that week, not only a shift whose job role changed.
+        effective date; a date in the middle of a week changes only that day onwards. An open request to exchange or
+        change shifts stays valid unless it references a shift whose job role changed: that request can no longer
+        be approved and a new one must be made. Requests that reference only other shifts, including other shifts of
+        the same week, are not invalidated; every other write that moves the planning keeps invalidating the
+        requests of that planning as before.
         No notification is sent automatically to the employee. Fichajes already registered are
         never touched. Either all changes are saved or none is. Only roles that manage the business team
         (`CONTRACTS_MANAGE`) in the business can call this operation.
@@ -958,8 +959,9 @@ contracts:
               jobRoleId: 10
               expectedState:
                 contractUpdatedAt: "2026-11-20T10:00:00Z"
-                currentWeekStart: "2026-11-30"
                 plannings:
+                  - planningId: 0
+                    version: 20787
                   - planningId: 77
                     version: 4
                 shifts:

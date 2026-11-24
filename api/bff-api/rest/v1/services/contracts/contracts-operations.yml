@@ -464,7 +464,7 @@ contracts:
         zone) and in every later week, DRAFT or PUBLISHED, which keeps its status; a PUBLISHED current week is
         preserved. This is the rule of Main API 0.0.127 and replaces the one this version had until 0.0.120
         (DRAFT plannings only): a preview of that rule is never confirmed with this one. The preview always sends
-        `expectedState.currentWeekStart` (Monday of the current local week) and lists
+        the rule marker in `expectedState.plannings` (see `ManagerContractAmendmentExpectedStateDTO`) and lists
         the shifts that the apply operation compares to detect changes since the preview (the worker's shifts from
         the effective date in every DRAFT and PUBLISHED planning, kept ones included) and marks the subset that
         apply writes (only those with `impact` JOB_ROLE_CHANGES). It needs no permission beyond the ones below. No decision per shift is requested and no notification is sent automatically to the
@@ -669,10 +669,10 @@ contracts:
         preview (1169, 1170, 1171). No per-shift decisions exist: only the job role of the worker's shifts from the
         effective date changes, in the DRAFT planning of the current week and in every later week, DRAFT or
         PUBLISHED (status unchanged); a PUBLISHED current week is preserved. The state must be sent back unchanged,
-        `currentWeekStart` included: a state without it (a preview of the previous rule) or from another local week
-        is rejected with 1167 and nothing is written, and the client asks for a new preview. Open shift-change
-        requests of an affected weekly planning are invalidated by the version change and must be made again. No
-        notification is sent automatically to the employee. `closedContract` is null and `newContract` keeps the id of the amended
+        rule marker included: a state without it (a preview of the previous rule) or from another local week is
+        rejected with 1167 and nothing is written, and the client asks for a new preview. Open shift-change requests
+        are invalidated only when they reference a shift whose job role changed; they must be made again. Requests
+        for other shifts, also of the same week, stay valid. No notification is sent automatically to the employee. `closedContract` is null and `newContract` keeps the id of the amended
         contract when the effective date is the first day of the contract (see the Main API operation for examples,
         including single-day contracts). Requires the CONTRACTS_MANAGE permission in the active business.
       tags:
