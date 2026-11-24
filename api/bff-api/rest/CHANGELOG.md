@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.0.122 (proposal, pending approval)
+
+Spec only. Depends on Main API 0.0.128 (proposal). No repository tag is created by this change (planned tag: `v1.0.40`).
+
+### Added
+
+- `deleteManagerDraftPlanning` (`DELETE /api/v1/manager/businesses/{businessId}/schedule/{planningId}`, tag Manager): forwards to Main `deleteDraftPlanning`; `204` without body, `401`, `403` `1020`, `404` `1046`, `409` `1173`. Same rules as the Main API operation. The app shows the action only for a DRAFT and to who has `SCHEDULE_MANAGE`, with an irreversible confirmation; the API enforces the status and the permission.
+
 ## 0.0.121 (proposal, pending approval)
 
 Spec only. Depends on Main API 0.0.127 (proposal). No repository tag is created by this change (planned tag: `v1.0.39`). Reuses the version 2 preview and confirmation paths with the new rule; version 1 stays withdrawn.

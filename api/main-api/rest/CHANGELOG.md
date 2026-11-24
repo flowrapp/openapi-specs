@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.0.128 (proposal, pending approval)
+
+Spec only. No repository tag is created by this change (planned tag: `v1.0.40`). Main implementation pending approval of this contract.
+
+### Added
+
+- `deleteDraftPlanning` (`DELETE /api/v1/businesses/{businessId}/plannings/{planningId}/draft`, tag Planning): permanently deletes a DRAFT planning and its draft shifts; `204` without body. Requires `SCHEDULE_MANAGE` in the business (403 `1020`) and the SCHEDULING feature. `404` `1046` for an unknown planning, an already deleted one and one of another business (not distinguishable); `409` `1173` for any status other than DRAFT. The status is checked when the delete runs, under the planning lock shared with `publishPlanning`. Afterwards the week can be created or generated again. Worklogs, other plannings and every other resource are untouched; no notification. Not idempotent.
+- Functional code `1173` `PLANNING_NOT_DELETABLE` (409). Not a reused code: 1168 stays retired and 1099 stays reserved for the backend enum.
+- The path carries the `draft` segment because `/plannings/{planningId}` and `/plannings/{weekStart}` would be identical templated paths.
+
+### Unchanged
+
+- `publishPlanning`, `createDraftPlanning`, `requestPlanningGeneration` and every other operation keep their behaviour; the only visible effect on them is that a week without a planning (after a delete) is accepted again.
+
 ## 0.0.127 (proposal, pending approval)
 
 Spec only. No repository tag is created by this change (planned tag: `v1.0.39`). Reuses `applyContractAmendmentV2` (same path, request and response shapes) with a new rule; version 1 stays withdrawn.

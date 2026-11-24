@@ -407,6 +407,8 @@ paths:
       duled-shifts"
   "/api/v1/manager/businesses/{businessId}/schedule/{planningId}/publish":
     $ref: "v1/services/manager/manager-operations.yml#/manager/publish-planning"
+  "/api/v1/manager/businesses/{businessId}/schedule/{planningId}":
+    $ref: "v1/services/manager/manager-operations.yml#/manager/delete-draft-planning"
   "/api/v1/manager/businesses/{businessId}/history/day":
     $ref: "v1/services/manager/manager-operations.yml#/manager/history-day"
   "/api/v1/manager/businesses/{businessId}/history/week":

@@ -1121,6 +1121,63 @@ planning:
               example: {status: 404, detail: "1046 - planning not found"}
         '409': {$ref: '../../components/scheduling/components.yml#/components/responses/Conflict'}
       x-functional-errors: [1006, 1020, 1046, 1048]
+  draft:
+    delete:
+      tags: [Planning]
+      operationId: deleteDraftPlanning
+      summary: Permanently delete a DRAFT planning and its draft shifts
+      description: >
+        Permanently deletes the planning addressed by its stable `planningId` within the route `businessId`,
+        only while it is a DRAFT, manual or solver-generated, together with its scheduled shifts, which are
+        draft shifts. There is no recycle bin and no recovery. Afterwards the business has no planning for
+        that week, so `createDraftPlanning` and `requestPlanningGeneration` accept it again without the
+        "planning already exists" conflict. Nothing else is changed: recorded worklogs (fichajes), attendance
+        records, other plannings of the business, the shift catalog, contracts and settings are not touched,
+        and no notification is sent (a draft is not visible to the team).
+
+        The status is checked when the delete runs, under the same planning lock that `publishPlanning`
+        takes, not when the client decided to show the action: a planning that is no longer a DRAFT is never
+        deleted. If publish and delete run at the same time, exactly one wins: when publish wins the delete
+        answers 409 `1173` and the planning stays published; when delete wins publish answers 404 `1046`.
+        A PUBLISHED, ARCHIVED, CREATED, SOLVING or FAILED planning answers 409 `1173` and nothing is deleted.
+
+        The path has the extra `draft` segment because `/plannings/{planningId}` cannot coexist with
+        `/plannings/{weekStart}` (identical templated paths). It is not idempotent: repeating a successful
+        delete answers 404 `1046`. A planning that does not exist, or that belongs to another business than the
+        route `businessId`, answers 404 `1046` in the same way, so a caller cannot tell the two apart and
+        learns nothing about plannings of other businesses. Requires `SCHEDULE_MANAGE` in the route business
+        (403 `1020` without it) and the SCHEDULING feature, like the other planning writes.
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - $ref: '../../components/scheduling/components.yml#/components/parameters/BusinessId'
+        - $ref: '../../components/scheduling/components.yml#/components/parameters/PlanningId'
+      responses:
+        '204':
+          description: The DRAFT planning and its draft shifts were permanently deleted; no body
+        '401':
+          description: Authentication is required
+        '403':
+          description: Current user does not have SCHEDULE_MANAGE in the business
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+              example: {status: 403, detail: "1020 - user is not the owner of business"}
+        '404':
+          description: Business not found, or planning ID does not exist in the business or belongs to another business (not distinguishable); nothing is deleted
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+              example: {status: 404, detail: "1046 - planning not found"}
+        '409':
+          description: The planning is not a DRAFT (published, archived or being generated, or published meanwhile); nothing is deleted
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/error-components.yml#/components/schemas/ProblemDetail'
+              example: {status: 409, detail: "1173 - planning can only be deleted while it is a draft"}
+      x-functional-errors: [1006, 1020, 1046, 1173]
   currentUserScheduledShifts:
     get:
       tags: [Planning]

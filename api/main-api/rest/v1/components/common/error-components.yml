@@ -207,6 +207,7 @@ components:
         | 1170 | 400 | CONTRACT_AMENDMENT_DATE_OUT_OF_RANGE | contract amendment effective date is outside the contract validity |
         | 1171 | 400 | CONTRACT_AMENDMENT_NO_CHANGES | contract amendment changes neither hours nor job role |
         | 1172 | 410 | CONTRACT_AMENDMENT_VERSION_WITHDRAWN | this version of the contract amendment operation is withdrawn; use version 2 (recalculating with the same version does not help) |
+        | 1173 | 409 | PLANNING_NOT_DELETABLE | planning can only be deleted while it is a draft |
 
         Codes 1087 and 1088 are the backend enum: PLANNING_ALREADY_EXISTS and PLANNING_VERSION_MISMATCH. Code 1086 (`SESSION_EXPIRED`) belonged to legacy in-house sessions and is removed with those routes; it is not free and must not be reused. Codes 1004, 1023, 1024, 1026 and 1027 belonged to legacy login, token refresh, OAuth and password reset and are removed with those routes; they are not free and must not be reused. Code 1003 (`INVALID_CREDENTIALS`) stays in the enum and must not be reused. No operation returns it: `getBusinessMemberProfile` takes the caller's id from Main `getCurrentUser`, because the Clerk session `sub` is not a numeric Flowrapp user id. Codes 1089–1092 belonged to weekly attendance periods, which were never implemented, and are removed with those routes. Code 1095 remains a separate PLANNING_ALREADY_EXISTS entry and is unchanged here. Code 1115 is raised by the BFF attendance screens (invalid `week`, `date` or `month`, or a `date` outside `week`). The message stays `attendance week or date is invalid`; no new code is allocated for an invalid month. No Main API operation returns it.
 
@@ -395,3 +396,4 @@ components:
         - 1170
         - 1171
         - 1172
+        - 1173
