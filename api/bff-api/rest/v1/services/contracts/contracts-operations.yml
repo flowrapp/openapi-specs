@@ -357,8 +357,10 @@ contracts:
         back unchanged. When the job role changes, only the job role of the worker's shifts from the effective
         date in every DRAFT planning, the current week (the week that contains today in the business time zone)
         and later weeks, changes, even when the current week is published; every PUBLISHED shift, in the
-        current or in later weeks, is preserved and can only be edited from the planner. The preview lists the
-        same set of shifts that the apply operation compares and writes, and needs no permission beyond the ones below. No decision per shift is requested and no notification is sent automatically to the
+        current or in later weeks, is preserved and can only be edited from the planner. The preview lists
+        the shifts that the apply operation compares to detect changes since the preview (the worker's shifts from
+        the effective date in every DRAFT and PUBLISHED planning, kept ones included) and marks the subset that
+        apply writes (only those with `impact` JOB_ROLE_CHANGES). It needs no permission beyond the ones below. No decision per shift is requested and no notification is sent automatically to the
         employee. Contracts of a single day are valid; effective dates and examples follow the Main API operation.
         Requires CONTRACTS_MANAGE and SCHEDULE_VIEW in the same active business (the plannings are read with
         SCHEDULE_VIEW): without either of them the preview is denied with 403 and 1020, and nothing is returned.

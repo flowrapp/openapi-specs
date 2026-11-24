@@ -348,9 +348,10 @@ components:
           type: string
           format: date
           description: >
-            First day from which the new terms are taken into account when planning: the effective date, or the
-            start of the week after the current one when the current week is published with affected shifts. Never
-            before the effective date.
+            Informs from which day the new terms are taken into account when planning. It does not change the
+            effective date of the contract and does not replace it when selecting the DRAFT shifts to update. When
+            the current week is published with affected shifts it is the later of the effective date and the start
+            of the week after the current one; otherwise it is the effective date. Never before the effective date.
           example: "2026-12-14"
       required: [currentContract, proposedTerms, expectedState, plannings, shifts, hoursSummary, correctsFromFirstDay, newTermsPlanningFrom]
 

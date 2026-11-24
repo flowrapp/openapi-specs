@@ -2,7 +2,7 @@
 
 ## 0.0.125 (proposal, pending approval)
 
-Spec only. Main implementation pending approval. No repository tag is created by this change (planned tag: `v1.0.37`). Revises the scope of `applyContractAmendment` released in `v1.0.36`, which no service has integrated.
+Spec only. Main implementation pending approval. No repository tag is created by this change (planned tag: `v1.0.37`). Revises the scope of `applyContractAmendment` released in `v1.0.36`.
 
 ### Changed
 
