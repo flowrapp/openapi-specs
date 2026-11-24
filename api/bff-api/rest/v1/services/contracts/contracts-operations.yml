@@ -354,7 +354,7 @@ contracts:
         the plannings and shifts of the worker from the effective date, each marked as changed or preserved, the
         planned hours per week against the new contract hours (never trimmed), the first day from which the new
         terms are taken into account when planning, and an `expectedState` that the apply operation must receive
-        back unchanged. Deprecated, superseded by `previewManagerWorkerContractAmendmentV2`. This version applies the rule of `v1.0.36`: when the job role changes, only the worker's shifts in the DRAFT planning of the week that contains today in the business time zone are marked `JOB_ROLE_CHANGES`; the rest is `PRESERVED`. A result of this operation cannot be confirmed: the apply operation of this version is withdrawn and always rejects with 1167. No decision per shift is requested and no notification is sent automatically to the
+        back unchanged. Deprecated, superseded by `previewManagerWorkerContractAmendmentV2`. This version applies the rule of `v1.0.36`: when the job role changes, only the worker's shifts in the DRAFT planning of the week that contains today in the business time zone are marked `JOB_ROLE_CHANGES`; the rest is `PRESERVED`. A result of this operation cannot be confirmed: the apply operation of this version is withdrawn and always rejects with 410 and 1172, so a result of this operation cannot be confirmed by any client. No decision per shift is requested and no notification is sent automatically to the
         employee. Contracts of a single day are valid; effective dates and examples follow the Main API operation.
         Requires CONTRACTS_MANAGE and SCHEDULE_VIEW in the same active business (the plannings are read with
         SCHEDULE_VIEW): without either of them the preview is denied with 403 and 1020, and nothing is returned.
@@ -562,9 +562,10 @@ contracts:
       summary: Apply a contract amendment for a worker
       description: >
         Withdrawn, superseded by `applyManagerWorkerContractAmendmentV2`. It does not call the Main API and writes
-        nothing: it always rejects with 409 and 1167, so a preview taken with the version 1 operation, or one
-        opened before the version 2 operations existed, must be recalculated with the version 2 preview. Request
-        and responses keep their shape for compatibility.
+        nothing: it always rejects with 410 and 1172. This is not a stale state that the same client can resolve
+        (1167 is): a preview taken with the version 1 operation, or one opened before the version 2 operations
+        existed, can only be recalculated and confirmed by a client that uses the version 2 operations. Request and
+        responses keep their documented shape for compatibility, but no 2xx is ever returned.
       tags:
         - Contracts
       operationId: applyManagerWorkerContractAmendment
@@ -601,7 +602,7 @@ contracts:
               $ref: '../../components/contracts/components.yml#/components/schemas/ManagerContractAmendmentApplyRequestDTO'
       responses:
         '200':
-          description: Amendment applied; the response describes the new contract and the shifts changed
+          description: Historic shape only. This withdrawn version never returns it (it always answers 410 with 1172); see `applyManagerWorkerContractAmendmentV2`.
           content:
             application/json:
               schema:
@@ -633,6 +634,13 @@ contracts:
             application/problem+json:
               schema:
                 $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+        '410':
+          description: This version is withdrawn and nothing was written. Use `applyManagerWorkerContractAmendmentV2`
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              example: {status: 410, detail: "1172 - this version of the contract amendment operation is withdrawn; use version 2"}
         '409':
           description: Expected state changed since the preview (no effects), or the effective date overlaps another contract
           content:
@@ -642,7 +650,7 @@ contracts:
               examples:
                 expectedStateChanged:
                   value: {status: 409, detail: "1167 - contract amendment expected state changed; recalculate the preview"}
-      x-functional-errors: [1000, 1006, 1015, 1020, 1029, 1030, 1167, 1169, 1170, 1171]
+      x-functional-errors: [1000, 1006, 1015, 1020, 1029, 1030, 1167, 1169, 1170, 1171, 1172]
 
   worker-contract-amendments-v2:
     post:

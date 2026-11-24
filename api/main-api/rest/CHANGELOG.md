@@ -10,7 +10,14 @@ Spec only. No repository tag is created by this change (planned tag: `v1.0.38`).
 
 ### Changed
 
-- `applyContractAmendment` (`.../amendments`) is deprecated and withdrawn: it writes nothing and always rejects with 409 and 1167. Shapes unchanged.
+- `applyContractAmendment` (`.../amendments`) is deprecated and withdrawn: it writes nothing and always rejects with 410 and the new code 1172 `CONTRACT_AMENDMENT_VERSION_WITHDRAWN` (not 1167, which a client can resolve by recalculating). Its 2xx response is historic and never returned. Shapes unchanged.
+
+### Deployment conditions
+
+- Order: Main first, then BFF, then the app. Rollback: app, then BFF, then Main.
+- Do not roll Main below the first build that withdraws `.../amendments`: older builds write with the v1.0.36 rule, which depends on the day (a preview on Sunday with effective date Monday is confirmed on Monday and rewrites that draft). If a rollback below that build cannot be avoided, `POST .../amendments` must be blocked at the edge for the duration; that cannot be guaranteed from this repository.
+- A client must never fall back to a withdrawn path when v2 is absent (404): it must fail and ask to retry.
+- Evidence of consumers of the v1 operations (read-only): none in the default branches of flowrapp_frontend, flowrapp_backend (only its controller), wsc_flowrapp (only its implementation), flow-time-designer, dummy_landing_page, timefold_scheduling_solver and hotel_presentation; the app only in draft PRs #128 and #129. Whether the v1 build is deployed and whether other clients exist is not verified.
 
 ## 0.0.125 (proposal, pending approval)
 
