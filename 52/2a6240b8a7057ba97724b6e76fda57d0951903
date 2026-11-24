@@ -1,0 +1,29 @@
+api/bff-api/rest/CHANGELOG.md
+  s_59f63417666412::t_a2d49e2fe2cfbe 3-11
+api/bff-api/rest/v1/components/contracts/components.yml
+  s_59f63417666412::t_4bd8a4eea22832 209-217,318-321,323
+api/bff-api/rest/v1/services/contracts/contracts-operations.yml
+  s_59f63417666412::t_311aff9a66cd64 463-467,669-675
+api/main-api/rest/CHANGELOG.md
+  s_59f63417666412::t_f6072a6f73a9e3 3-16
+api/main-api/rest/v1/components/contracts/components.yml
+  s_59f63417666412::t_517c5216dd564b 124-132
+api/main-api/rest/v1/services/contracts/contracts-operations.yml
+  s_59f63417666412::t_038a9719f032a2 852-856,866-873,901-909,912-919,961
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.6",
+  "base_commit_sha": "522a6240b8a7057ba97724b6e76fda57d0951903",
+  "prompts": {},
+  "sessions": {
+    "s_59f63417666412": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_df0c06d71ffd9XwEzUuNyRigdO",
+        "model": "claude-haiku-5.5"
+      },
+      "human_author": "sergiobpa <sergiobpa@ext.inditex.com>"
+    }
+  }
+}
