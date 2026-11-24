@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.0.120 (proposal, pending approval)
+
+Spec only. Depends on Main API 0.0.126 (proposal). No repository tag is created by this change (planned tag: `v1.0.38`).
+
+### Added
+
+- `previewManagerWorkerContractAmendmentV2` (`POST /api/v2/manager/businesses/{businessId}/workers/{userId}/contracts/{contractId}/amendment-preview`) and `applyManagerWorkerContractAmendmentV2` (`POST /api/v2/manager/businesses/{businessId}/workers/{userId}/contracts/{contractId}/amendments`): the preview and confirmation of the rule of `v1.0.37` (every DRAFT planning from the effective date). The apply forwards to Main `applyContractAmendmentV2` with no fallback. A BFF that predates these paths answers 404 and writes nothing.
+
+### Changed
+
+- `previewManagerWorkerContractAmendment` is deprecated (rule of `v1.0.36`, current week only) and its result cannot be confirmed. `applyManagerWorkerContractAmendment` is deprecated and withdrawn: it writes nothing and always rejects with 410 and 1172 (not 1167, which a client can resolve by recalculating); its 2xx is historic and never returned. Shapes unchanged.
+
+### Deployment conditions
+
+- Same order and rollback as Main API 0.0.126. Do not roll the BFF below the first build that withdraws the v1 apply: older builds forward to Main `.../amendments`. A client must never fall back to v1 when a v2 path answers 404. Availability of confirmations in v1 clients ends with the withdrawal; a v1 client must be updated to v2 to continue.
+
 ## 0.0.119 (proposal, pending approval)
 
 Spec only. Depends on Main API 0.0.125 (proposal). No repository tag is created by this change (planned tag: `v1.0.37`). Revises the scope released in `v1.0.36`.

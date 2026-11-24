@@ -1,5 +1,26 @@
 # Changelog
 
+## 0.0.126 (proposal, pending approval)
+
+Spec only. No repository tag is created by this change (planned tag: `v1.0.38`). Makes the write fail closed across separately deployed versions.
+
+### Added
+
+- `applyContractAmendmentV2` (`POST /api/v2/businesses/{businessId}/users/{userId}/contracts/{contractId}/amendments`): the amendment that writes, with the rule of `v1.0.37` (every DRAFT planning from `effectiveDate`, independent of the day). Same request and response shapes. A Main API that predates it answers 404 and writes nothing; callers must not fall back.
+
+### Changed
+
+- `applyContractAmendment` (`.../amendments`) is deprecated and withdrawn: it writes nothing and always rejects with 410 and the new code 1172 `CONTRACT_AMENDMENT_VERSION_WITHDRAWN` (not 1167, which a client can resolve by recalculating). Its 2xx response is historic and never returned. Shapes unchanged.
+
+### Deployment conditions
+
+- Order: Main first, then BFF, then the app. Rollback: app, then BFF, then Main.
+- Do not roll Main below the first build that withdraws `.../amendments`: older builds write with the v1.0.36 rule, which depends on the day (a preview on Sunday with effective date Monday is confirmed on Monday and rewrites that draft). If a rollback below that build cannot be avoided, `POST .../amendments` must be blocked at the edge for the duration; that cannot be guaranteed from this repository.
+- A client must never fall back to a withdrawn path when v2 is absent (404): it must fail and ask to retry.
+- Evidence of consumers of the v1 operations (read-only): none in the default branches of flowrapp_frontend, flowrapp_backend (only its controller), wsc_flowrapp (only its implementation), flow-time-designer, dummy_landing_page, timefold_scheduling_solver and hotel_presentation; the app only in draft PRs #128 and #129. Whether the v1 build is deployed and whether other clients exist is not verified.
+- Owner statement (Sergio), recorded as such and not as a technical verification: "nada se desplegó, no pasa nada" about the v1 save on the server. No platform or telemetry check was possible. Any intermediate FLO-3 build that enabled the v1 write must stay excluded from deployment and from rollback targets.
+- Product confirmation (Sergio): nobody uses, and the app never integrated, the first mobile confirmation screen of FLO-3, so no migration of users of that screen is assumed. It does not cover internal backend merges (MIC #257, BFF #82 on develop) nor API consumers other than the app.
+
 ## 0.0.125 (proposal, pending approval)
 
 Spec only. Main implementation pending approval. No repository tag is created by this change (planned tag: `v1.0.37`). Revises the scope of `applyContractAmendment` released in `v1.0.36`.
