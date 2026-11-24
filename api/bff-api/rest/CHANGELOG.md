@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.0.120 (proposal, pending approval)
+
+Spec only. Depends on Main API 0.0.126 (proposal). No repository tag is created by this change (planned tag: `v1.0.38`).
+
+### Added
+
+- `previewManagerWorkerContractAmendmentV2` (`.../amendment-preview/v2`) and `applyManagerWorkerContractAmendmentV2` (`.../amendments/v2`): the preview and confirmation of the rule of `v1.0.37` (every DRAFT planning from the effective date). The apply forwards to Main `applyContractAmendmentV2` with no fallback. A BFF that predates these paths answers 404 and writes nothing.
+
+### Changed
+
+- `previewManagerWorkerContractAmendment` is deprecated (rule of `v1.0.36`, current week only) and its result cannot be confirmed. `applyManagerWorkerContractAmendment` is deprecated and withdrawn: it writes nothing and always rejects with 409 and 1167. Shapes unchanged.
+
 ## 0.0.119 (proposal, pending approval)
 
 Spec only. Depends on Main API 0.0.125 (proposal). No repository tag is created by this change (planned tag: `v1.0.37`). Revises the scope released in `v1.0.36`.

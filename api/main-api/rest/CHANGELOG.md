@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.0.126 (proposal, pending approval)
+
+Spec only. No repository tag is created by this change (planned tag: `v1.0.38`). Makes the write fail closed across separately deployed versions.
+
+### Added
+
+- `applyContractAmendmentV2` (`POST .../contracts/{contractId}/amendments/v2`): the amendment that writes, with the rule of `v1.0.37` (every DRAFT planning from `effectiveDate`, independent of the day). Same request and response shapes. A Main API that predates it answers 404 and writes nothing; callers must not fall back.
+
+### Changed
+
+- `applyContractAmendment` (`.../amendments`) is deprecated and withdrawn: it writes nothing and always rejects with 409 and 1167. Shapes unchanged.
+
 ## 0.0.125 (proposal, pending approval)
 
 Spec only. Main implementation pending approval. No repository tag is created by this change (planned tag: `v1.0.37`). Revises the scope of `applyContractAmendment` released in `v1.0.36`.

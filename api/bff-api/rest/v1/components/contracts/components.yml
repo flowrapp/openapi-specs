@@ -306,10 +306,11 @@ components:
                 type: string
                 enum: [JOB_ROLE_CHANGES, PRESERVED]
                 description: >
-                  JOB_ROLE_CHANGES: shift of this worker in a DRAFT planning (current or later week) from the
-                  effective date, when the job role changes; only its job role is updated. PRESERVED: it keeps
-                  person, job role, schedule and break (every PUBLISHED shift, in the current week or in later
-                  weeks, and every shift when only the hours change). The apply operation sends no notification.
+                  JOB_ROLE_CHANGES: shift whose job role the apply operation of the same version writes: this
+                  worker's shift from the effective date in a DRAFT planning (version 2: current and later weeks;
+                  the deprecated version 1: only the current week), when the job role changes; only its job role is
+                  updated. PRESERVED: it keeps person, job role, schedule and break (every PUBLISHED shift and
+                  every shift when only the hours change). The apply operation sends no notification.
                 example: PRESERVED
             required: [shiftId, planningId, planningStatus, date, jobRoleId, impact]
         hoursSummary:
