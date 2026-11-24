@@ -1,0 +1,16 @@
+api/main-api/rest/CHANGELOG.md
+  h_a041df4244d543 11,15-16
+api/main-api/rest/v1/services/contracts/contracts-operations.yml
+  h_a041df4244d543 915-923,968
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.6",
+  "base_commit_sha": "69b90f38d8f4ba6ecd314291fc3d047aaee3315f",
+  "prompts": {},
+  "humans": {
+    "h_a041df4244d543": {
+      "author": "sergiobpa <sergiobpa@ext.inditex.com>"
+    }
+  }
+}
