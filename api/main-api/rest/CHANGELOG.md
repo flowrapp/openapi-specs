@@ -12,7 +12,7 @@ Spec only. No repository tag is created by this change (planned tag: `v1.0.40`).
 
 ### Unchanged
 
-- `publishPlanning`, `createDraftPlanning`, `requestPlanningGeneration` and every other operation keep their behaviour; the only visible effect on them is that a week without a planning (after a delete) is accepted again.
+- `publishPlanning`, `createDraftPlanning`, `requestPlanningGeneration` and every other operation keep their behaviour; the visible effects on them are that a week without a planning (after a delete) is accepted again, and that `getPlanningGeneration.weeks[]` has no entry for a deleted week (`PlanningGenerationDTO.weeks` description updated; the schema is unchanged).
 
 ## 0.0.127 (proposal, pending approval)
 

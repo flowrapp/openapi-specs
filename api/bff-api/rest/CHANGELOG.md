@@ -6,7 +6,7 @@ Spec only. Depends on Main API 0.0.128 (proposal). No repository tag is created 
 
 ### Added
 
-- `deleteManagerDraftPlanning` (`DELETE /api/v1/manager/businesses/{businessId}/schedule/{planningId}`, tag Manager): forwards to Main `deleteDraftPlanning`; `204` without body, `401`, `403` `1020`, `404` `1046`, `409` `1173`. Same rules as the Main API operation. The app shows the action only for a DRAFT and to who has `SCHEDULE_MANAGE`, with an irreversible confirmation; the API enforces the status and the permission.
+- `deleteManagerDraftPlanning` (`DELETE /api/v1/manager/businesses/{businessId}/schedule/{planningId}`, tag Manager): forwards to Main `deleteDraftPlanning`; `204` without body, `401`, `403` `1020`, `404` `1046`, `409` `1173`. Same rules as the Main API operation; a deleted week has no entry in the `weeks[]` of `requestPlanGeneration`'s job (forwarded unchanged). The app shows the action only for a DRAFT and to who has `SCHEDULE_MANAGE`, with an irreversible confirmation; the API enforces the status and the permission.
 
 ## 0.0.121 (proposal, pending approval)
 

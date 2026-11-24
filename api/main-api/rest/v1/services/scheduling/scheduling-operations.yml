@@ -1132,7 +1132,8 @@ planning:
         draft shifts. There is no recycle bin and no recovery. Afterwards the business has no planning for
         that week, so `createDraftPlanning` and `requestPlanningGeneration` accept it again without the
         "planning already exists" conflict. Recorded worklogs (fichajes) and the other plannings of the
-        business are not touched.
+        business are not touched. The generation run history of the deleted planning is kept, detached from it:
+        the week no longer appears in `getPlanningGeneration.weeks[]` of its job.
 
         The critical guarantee is that a planning that is already PUBLISHED is never deleted. The status is
         checked when the delete runs, under the same planning lock that `publishPlanning` takes, not when the
@@ -1531,8 +1532,9 @@ planning:
       operationId: getPlanningGeneration
       summary: Get the status of a planning generation
       description: >
-        Returns one generation job of the business with the current status of each week. OWNER
-        only; a MANAGER receives 403 (1020). A job id of another business returns 404 1125.
+        Returns one generation job of the business with the current status of each week. A week whose
+        planning was deleted with `deleteDraftPlanning` has no entry in `weeks[]`. OWNER only; a MANAGER
+        receives 403 (1020). A job id of another business returns 404 1125.
       security: [{ bearerAuth: [] }]
       parameters:
         - $ref: '../../components/scheduling/components.yml#/components/parameters/BusinessId'

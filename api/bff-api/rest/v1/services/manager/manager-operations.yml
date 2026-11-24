@@ -3186,7 +3186,8 @@ manager:
         Forwards to the Main API `deleteDraftPlanning`. Permanently deletes the planning addressed by its
         `planningId` within the requested business, only while it is a DRAFT (manual or solver-generated),
         with its draft scheduled shifts. There is no recovery. Afterwards the week has no planning, so
-        `createManagerDraftPlanning` and `requestPlanGeneration` accept it again. Recorded worklogs (fichajes)
+        `createManagerDraftPlanning` and `requestPlanGeneration` accept it again, and the week has no entry in
+        the `weeks[]` of its generation job (forwarded unchanged). Recorded worklogs (fichajes)
         and the other plannings of the business are not touched.
 
         The critical guarantee is that a planning that is already PUBLISHED is never deleted: the Main API
