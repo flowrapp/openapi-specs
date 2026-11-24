@@ -306,10 +306,10 @@ components:
                 type: string
                 enum: [JOB_ROLE_CHANGES, PRESERVED]
                 description: >
-                  JOB_ROLE_CHANGES: shift of the DRAFT current week from the effective date, when the job role
-                  changes; only its job role is updated. PRESERVED: it keeps person, job role, schedule and break
-                  (every PUBLISHED shift, in the current week or in later weeks, and the shifts of drafts that are
-                  not written). The apply operation sends no notification.
+                  JOB_ROLE_CHANGES: shift of this worker in a DRAFT planning (current or later week) from the
+                  effective date, when the job role changes; only its job role is updated. PRESERVED: it keeps
+                  person, job role, schedule and break (every PUBLISHED shift, in the current week or in later
+                  weeks, and every shift when only the hours change). The apply operation sends no notification.
                 example: PRESERVED
             required: [shiftId, planningId, planningStatus, date, jobRoleId, impact]
         hoursSummary:
@@ -348,9 +348,10 @@ components:
           type: string
           format: date
           description: >
-            First day from which the new terms are taken into account when planning: the effective date, or the
-            start of the week after the current one when the current week is published with affected shifts. Never
-            before the effective date.
+            Informs from which day the new terms are taken into account when planning. It does not change the
+            effective date of the contract and does not replace it when selecting the DRAFT shifts to update. When
+            the current week is published with affected shifts it is the later of the effective date and the start
+            of the week after the current one; otherwise it is the effective date. Never before the effective date.
           example: "2026-12-14"
       required: [currentContract, proposedTerms, expectedState, plannings, shifts, hoursSummary, correctsFromFirstDay, newTermsPlanningFrom]
 
@@ -416,6 +417,6 @@ components:
         updatedShiftCount:
           type: integer
           minimum: 0
-          description: Shifts whose job role was changed in the DRAFT current week. Zero when the planning was not written.
+          description: Shifts whose job role was changed, across all DRAFT plannings from the effective date (current and later weeks). Zero when no planning was written.
           example: 2
       required: [closedContract, newContract, updatedShiftCount]

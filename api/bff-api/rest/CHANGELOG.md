@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.0.119 (proposal, pending approval)
+
+Spec only. Depends on Main API 0.0.125 (proposal). No repository tag is created by this change (planned tag: `v1.0.37`). Revises the scope released in `v1.0.36`.
+
+### Changed
+
+- Semantics only, no schema change: `previewManagerWorkerContractAmendment` marks `JOB_ROLE_CHANGES` for this worker's shifts from the effective date in every DRAFT planning (current and later weeks), also when the current week is published, and `PRESERVED` for every PUBLISHED shift. Apply updates the same set. The preview already reads all plannings from the effective date, so no new read or permission is needed (still CONTRACTS_MANAGE and SCHEDULE_VIEW).
+- `newTermsPlanningFrom` is unchanged and documented: it only informs when the new terms count when planning (the later of the effective date and the start of the week after the current one when the current week is published with affected shifts, otherwise the effective date); it does not change the contract effective date nor the date used to select DRAFT shifts. The preview marks the compared subset vs the written subset (`JOB_ROLE_CHANGES`) explicitly.
+
 ## 0.0.118 (proposal, pending approval)
 
 Spec only. Depends on Main API 0.0.124 (proposal). This change does not create a repository tag. It revises the proposal of `v1.0.35`, which was never implemented or integrated.
