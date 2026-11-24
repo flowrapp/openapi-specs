@@ -6,7 +6,7 @@ Spec only. Depends on Main API 0.0.126 (proposal). No repository tag is created 
 
 ### Added
 
-- `previewManagerWorkerContractAmendmentV2` (`.../amendment-preview/v2`) and `applyManagerWorkerContractAmendmentV2` (`.../amendments/v2`): the preview and confirmation of the rule of `v1.0.37` (every DRAFT planning from the effective date). The apply forwards to Main `applyContractAmendmentV2` with no fallback. A BFF that predates these paths answers 404 and writes nothing.
+- `previewManagerWorkerContractAmendmentV2` (`POST /api/v2/manager/businesses/{businessId}/workers/{userId}/contracts/{contractId}/amendment-preview`) and `applyManagerWorkerContractAmendmentV2` (`POST /api/v2/manager/businesses/{businessId}/workers/{userId}/contracts/{contractId}/amendments`): the preview and confirmation of the rule of `v1.0.37` (every DRAFT planning from the effective date). The apply forwards to Main `applyContractAmendmentV2` with no fallback. A BFF that predates these paths answers 404 and writes nothing.
 
 ### Changed
 

@@ -367,11 +367,11 @@ paths:
     $ref: "v1/services/contracts/contracts-operations.yml#/contracts/worker-contract"
   "/api/v1/manager/businesses/{businessId}/workers/{userId}/contracts/{contractId}/amendment-preview":
     $ref: "v1/services/contracts/contracts-operations.yml#/contracts/worker-contract-amendment-preview"
-  "/api/v1/manager/businesses/{businessId}/workers/{userId}/contracts/{contractId}/amendment-preview/v2":
+  "/api/v2/manager/businesses/{businessId}/workers/{userId}/contracts/{contractId}/amendment-preview":
     $ref: "v1/services/contracts/contracts-operations.yml#/contracts/worker-contract-amendment-preview-v2"
   "/api/v1/manager/businesses/{businessId}/workers/{userId}/contracts/{contractId}/amendments":
     $ref: "v1/services/contracts/contracts-operations.yml#/contracts/worker-contract-amendments"
-  "/api/v1/manager/businesses/{businessId}/workers/{userId}/contracts/{contractId}/amendments/v2":
+  "/api/v2/manager/businesses/{businessId}/workers/{userId}/contracts/{contractId}/amendments":
     $ref: "v1/services/contracts/contracts-operations.yml#/contracts/worker-contract-amendments-v2"
   "/api/v1/manager/businesses/{businessId}/workers/{userId}/identity-document":
     $ref: "v1/services/manager/personal-data-operations.yml#/managerPersonalData/identity-document"

@@ -6,7 +6,7 @@ Spec only. No repository tag is created by this change (planned tag: `v1.0.38`).
 
 ### Added
 
-- `applyContractAmendmentV2` (`POST .../contracts/{contractId}/amendments/v2`): the amendment that writes, with the rule of `v1.0.37` (every DRAFT planning from `effectiveDate`, independent of the day). Same request and response shapes. A Main API that predates it answers 404 and writes nothing; callers must not fall back.
+- `applyContractAmendmentV2` (`POST /api/v2/businesses/{businessId}/users/{userId}/contracts/{contractId}/amendments`): the amendment that writes, with the rule of `v1.0.37` (every DRAFT planning from `effectiveDate`, independent of the day). Same request and response shapes. A Main API that predates it answers 404 and writes nothing; callers must not fall back.
 
 ### Changed
 

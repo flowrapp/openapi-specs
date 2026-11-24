@@ -702,7 +702,7 @@ contracts:
     post:
       summary: Apply an amendment to a contract's hours or job role from a date
       description: >
-        Withdrawn, superseded by `applyContractAmendmentV2` (`.../amendments/v2`). This version applied the rule of
+        Withdrawn, superseded by `applyContractAmendmentV2` (`POST /api/v2/businesses/{businessId}/users/{userId}/contracts/{contractId}/amendments`). This version applied the rule of
         `v1.0.36` (job role change only in the DRAFT planning of the current week, evaluated on the day of the
         confirmation), which can differ from what a preview taken on another day showed. It writes nothing: it
         always rejects with 410 and 1172, before reading or writing anything. This is not a stale state that the

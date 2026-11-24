@@ -334,7 +334,7 @@ paths:
       s-user-contract"
   "/api/v1/businesses/{businessId}/users/{userId}/contracts/{contractId}/amendments":
     $ref: "v1/services/contracts/contracts-operations.yml#/contracts/contract-amendments"
-  "/api/v1/businesses/{businessId}/users/{userId}/contracts/{contractId}/amendments/v2":
+  "/api/v2/businesses/{businessId}/users/{userId}/contracts/{contractId}/amendments":
     $ref: "v1/services/contracts/contracts-operations.yml#/contracts/contract-amendments-v2"
   "/api/v1/contracts":
     $ref: "v1/services/contracts/contracts-operations.yml#/contracts/current\
