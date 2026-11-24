@@ -3186,17 +3186,21 @@ manager:
         Forwards to the Main API `deleteDraftPlanning`. Permanently deletes the planning addressed by its
         `planningId` within the requested business, only while it is a DRAFT (manual or solver-generated),
         with its draft scheduled shifts. There is no recovery. Afterwards the week has no planning, so
-        `createManagerDraftPlanning` and `requestPlanGeneration` accept it again. Recorded worklogs (fichajes),
-        other plannings and every other resource are not touched, and no notification is sent.
+        `createManagerDraftPlanning` and `requestPlanGeneration` accept it again. Recorded worklogs (fichajes)
+        and the other plannings of the business are not touched.
 
-        The Main API checks the status when the delete runs (under the planning lock that publication also
-        takes), not when the app showed the action: a planning that is not a DRAFT answers 409 `1173` and is
-        not deleted, also when it was published after the screen loaded; if publication and delete race,
-        exactly one wins. A missing planning, one that was already deleted and one of another business answer
-        the same 404 `1046`, so nothing is revealed about plannings of other businesses. Not idempotent.
-        Requires SCHEDULE_MANAGE in the active business (403 `1020` otherwise). The app shows the action only
-        for a DRAFT, only to who holds the permission, and asks for an irreversible-action confirmation first;
-        those are app rules, the API enforces the status and the permission.
+        The critical guarantee is that a planning that is already PUBLISHED is never deleted: the Main API
+        checks the status when the delete runs (under the planning lock that publication also takes), not when
+        the app showed the action. A planning that is not a DRAFT answers 409 `1173` and is not deleted, also
+        when it was published after the screen loaded. When a publish and a delete that otherwise meet their
+        requirements run at the same time they are serialized: whichever completes first decides, and the
+        other answers 409 `1173` (delete) or 404 `1046` (publish). A successful delete answers 204; repeating
+        it answers 404 `1046`: the response changes, the effect stays the same. A missing planning, one that
+        was already deleted and one of another business answer the same 404 `1046`, so nothing is revealed
+        about plannings of other businesses. Requires SCHEDULE_MANAGE in the active business (403 `1020`
+        otherwise). The app shows the action only for a DRAFT, only to who holds the permission, and asks for an
+        irreversible-action confirmation first; those are app rules, the API enforces the status and the
+        permission.
       tags: [Manager]
       operationId: deleteManagerDraftPlanning
       security: [{ bearerAuth: [] }]

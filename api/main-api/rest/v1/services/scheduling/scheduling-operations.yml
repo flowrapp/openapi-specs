@@ -1131,22 +1131,24 @@ planning:
         only while it is a DRAFT, manual or solver-generated, together with its scheduled shifts, which are
         draft shifts. There is no recycle bin and no recovery. Afterwards the business has no planning for
         that week, so `createDraftPlanning` and `requestPlanningGeneration` accept it again without the
-        "planning already exists" conflict. Nothing else is changed: recorded worklogs (fichajes), attendance
-        records, other plannings of the business, the shift catalog, contracts and settings are not touched,
-        and no notification is sent (a draft is not visible to the team).
+        "planning already exists" conflict. Recorded worklogs (fichajes) and the other plannings of the
+        business are not touched.
 
-        The status is checked when the delete runs, under the same planning lock that `publishPlanning`
-        takes, not when the client decided to show the action: a planning that is no longer a DRAFT is never
-        deleted. If publish and delete run at the same time, exactly one wins: when publish wins the delete
-        answers 409 `1173` and the planning stays published; when delete wins publish answers 404 `1046`.
-        A PUBLISHED, ARCHIVED, CREATED, SOLVING or FAILED planning answers 409 `1173` and nothing is deleted.
+        The critical guarantee is that a planning that is already PUBLISHED is never deleted. The status is
+        checked when the delete runs, under the same planning lock that `publishPlanning` takes, not when the
+        client decided to show the action. When a publish and a delete that otherwise meet their requirements
+        (permission, DRAFT) run at the same time they are serialized: if publish completes first the delete
+        answers 409 `1173` and the planning stays published; if the delete completes first publish answers
+        404 `1046`. A PUBLISHED, ARCHIVED, CREATED, SOLVING or FAILED planning answers 409 `1173` and nothing is
+        deleted.
 
         The path has the extra `draft` segment because `/plannings/{planningId}` cannot coexist with
-        `/plannings/{weekStart}` (identical templated paths). It is not idempotent: repeating a successful
-        delete answers 404 `1046`. A planning that does not exist, or that belongs to another business than the
-        route `businessId`, answers 404 `1046` in the same way, so a caller cannot tell the two apart and
-        learns nothing about plannings of other businesses. Requires `SCHEDULE_MANAGE` in the route business
-        (403 `1020` without it) and the SCHEDULING feature, like the other planning writes.
+        `/plannings/{weekStart}` (identical templated paths). A successful delete answers 204; repeating it
+        answers 404 `1046`: the response changes, the effect stays the same. A planning that does not exist,
+        or that belongs to another business than the route `businessId`, answers 404 `1046` in the same way,
+        so a caller cannot tell the two apart and learns nothing about plannings of other businesses. Requires
+        `SCHEDULE_MANAGE` in the route business (403 `1020` without it) and the SCHEDULING feature, like the
+        other planning writes.
       security: [{ bearerAuth: [] }]
       parameters:
         - $ref: '../../components/scheduling/components.yml#/components/parameters/BusinessId'
