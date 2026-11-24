@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.0.121 (proposal, pending approval)
+
+Spec only. Depends on Main API 0.0.127 (proposal). No repository tag is created by this change (planned tag: `v1.0.39`). Reuses the version 2 preview and confirmation paths with the new rule; version 1 stays withdrawn.
+
+### Changed
+
+- `previewManagerWorkerContractAmendmentV2` marks `JOB_ROLE_CHANGES` in the DRAFT planning of the current week and in every later week, DRAFT or PUBLISHED, and `PRESERVED` for a PUBLISHED current week; the preview always sends optional `expectedState.currentWeekStart`. `applyManagerWorkerContractAmendmentV2` sends the state back unchanged; a state without it or from another local week is rejected with 1167 and no effects.
+- Deployment: same order and rollback conditions as Main API 0.0.127.
+
 ## 0.0.120 (proposal, pending approval)
 
 Spec only. Depends on Main API 0.0.126 (proposal). No repository tag is created by this change (planned tag: `v1.0.38`).

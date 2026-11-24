@@ -206,6 +206,15 @@ components:
                 format: date-time
                 example: "2026-11-20T09:15:00Z"
             required: [shiftId, planningId, jobRoleId, catalogShiftId, startAt, endAt, breakMinutes, updatedAt]
+        currentWeekStart:
+          type: string
+          format: date
+          description: >
+            Monday of the week that contained today in the business time zone when the preview was taken. The version 2
+            preview always sends it and the confirmation must send the state back unchanged: the Main API rejects with
+            1167, writing nothing, a state without it (a preview of the previous rule) or whose week is no longer the
+            current one. Optional in the schema only to keep the request compatible.
+          example: "2026-11-23"
       required: [contractUpdatedAt, plannings, shifts]
 
     ManagerContractAmendmentPreviewDTO:
@@ -306,11 +315,12 @@ components:
                 type: string
                 enum: [JOB_ROLE_CHANGES, PRESERVED]
                 description: >
-                  JOB_ROLE_CHANGES: shift whose job role `applyManagerWorkerContractAmendmentV2` writes: this
-                  worker's shift from the effective date in a DRAFT planning (current and later weeks), when the
-                  job role changes; only its job role is updated. The deprecated version 1 preview marks only the
+                  JOB_ROLE_CHANGES: shift whose job role `applyManagerWorkerContractAmendmentV2` writes, when the
+                  job role changes: this worker's shift from the effective date in the DRAFT planning of the
+                  current week or in any later week, DRAFT or PUBLISHED (the planning keeps its status); only its
+                  job role is updated. The deprecated version 1 preview marks only the
                   current-week DRAFT, informationally: no operation confirms it. PRESERVED: it keeps person, job
-                  role, schedule and break (every PUBLISHED shift and every shift when only the hours change). The apply operation sends no notification.
+                  role, schedule and break (every shift of a PUBLISHED current week and every shift when only the hours change). The apply operation sends no notification.
                 example: PRESERVED
             required: [shiftId, planningId, planningStatus, date, jobRoleId, impact]
         hoursSummary:

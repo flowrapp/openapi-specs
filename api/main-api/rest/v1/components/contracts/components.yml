@@ -121,6 +121,15 @@ components:
           description: All scheduled shifts of this person from `effectiveDate` in plannings of any status the preview read
           items:
             $ref: '#/components/schemas/ContractAmendmentExpectedShiftDTO'
+        currentWeekStart:
+          type: string
+          format: date
+          description: >
+            Monday of the week that contained today in the business time zone when the preview was taken. Optional in
+            the schema so that the request keeps its shape, but required by the version 2 rule: the operation
+            rejects with 1167, writing nothing, a state that lacks it (issued by a preview of the previous rule) or
+            whose week is not the current one when it is confirmed.
+          example: "2026-11-23"
       required: [contractUpdatedAt, plannings, shifts]
 
     ContractAmendmentExpectedShiftDTO:

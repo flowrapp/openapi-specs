@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.0.127 (proposal, pending approval)
+
+Spec only. No repository tag is created by this change (planned tag: `v1.0.39`). Reuses `applyContractAmendmentV2` (same path, request and response shapes) with a new rule; version 1 stays withdrawn.
+
+### Changed
+
+- Rule of `applyContractAmendmentV2` for a job role change: from `effectiveDate`, the person's shifts change job role in the DRAFT planning of the current local week and in every later week, DRAFT or PUBLISHED; a PUBLISHED current week is conserved and no planning changes status. Before 0.0.127 only DRAFT plannings were written and PUBLISHED never. Hours only: no planning is written. No notification, fichajes untouched.
+- Optional `expectedState.currentWeekStart`: the operation rejects with 1167, writing nothing, a state without it or whose week is not the current local week at confirmation, so a preview of the previous rule (or taken in another week) is never confirmed with this rule.
+- Open shift-change requests of a planning written here become invalid because the version is weekly, and must be made again; this reaches every open request with a shift of that week.
+
+### Deployment conditions
+
+- The old rule has no marker: a Main API of 0.0.126 or earlier ignores `currentWeekStart` (unknown properties are ignored by the deployed builds, tested on 72c3fff/d7d416d), so the field is NOT a protection for them. Safe order: Main API first, verified active, then the BFF, then the app. With the new Main API, a BFF of the previous rule sends no `currentWeekStart` and every confirmation is rejected (fail closed). Never run a new BFF over an old Main API (it would show later PUBLISHED weeks changing while the old Main API writes DRAFT only), and never roll the Main API back below the first build of this rule while a new BFF or an open new preview exists: roll back the BFF first. A full rollback of both leaves the old rule with open new previews: block `POST /api/v2/.../amendments` at the edge meanwhile.
+
 ## 0.0.126 (proposal, pending approval)
 
 Spec only. No repository tag is created by this change (planned tag: `v1.0.38`). Makes the write fail closed across separately deployed versions.
