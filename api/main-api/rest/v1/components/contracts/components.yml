@@ -195,7 +195,7 @@ components:
         updatedShiftCount:
           type: integer
           minimum: 0
-          description: Number of scheduled shifts whose job role was changed in the DRAFT current week. Zero when the planning was not written.
+          description: Number of scheduled shifts whose job role was changed, across all DRAFT plannings from the effective date (current and later weeks). Zero when no planning was written.
           example: 2
       required: [closedContract, newContract, updatedShiftCount]
 

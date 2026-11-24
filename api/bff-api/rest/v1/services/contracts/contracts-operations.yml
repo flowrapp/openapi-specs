@@ -354,10 +354,11 @@ contracts:
         the plannings and shifts of the worker from the effective date, each marked as changed or preserved, the
         planned hours per week against the new contract hours (never trimmed), the first day from which the new
         terms are taken into account when planning, and an `expectedState` that the apply operation must receive
-        back unchanged. Only the job role of the worker's shifts in the DRAFT planning of the current week (the week
-        that contains today in the business time zone) changes; DRAFT plannings of later weeks are left to the
-        planner, and every PUBLISHED shift, in the current or in later weeks, is preserved and can only be edited
-        from the planner. No decision per shift is requested and no notification is sent automatically to the
+        back unchanged. When the job role changes, only the job role of the worker's shifts from the effective
+        date in every DRAFT planning, the current week (the week that contains today in the business time zone)
+        and later weeks, changes, even when the current week is published; every PUBLISHED shift, in the
+        current or in later weeks, is preserved and can only be edited from the planner. The preview lists the
+        same set of shifts that the apply operation compares and writes, and needs no permission beyond the ones below. No decision per shift is requested and no notification is sent automatically to the
         employee. Contracts of a single day are valid; effective dates and examples follow the Main API operation.
         Requires CONTRACTS_MANAGE and SCHEDULE_VIEW in the same active business (the plannings are read with
         SCHEDULE_VIEW): without either of them the preview is denied with 403 and 1020, and nothing is returned.
@@ -460,8 +461,8 @@ contracts:
         writes nothing. The client must then
         call the preview again and ask the user to confirm. Effective date and no-change rules are those of the
         preview (1169, 1170, 1171). No per-shift decisions exist: published shifts are never changed, and only the
-        job role of the worker's shifts in the DRAFT planning of the current week (the week that contains today in the
-        business time zone) is updated; DRAFT plannings of later weeks are left to the planner. No notification is
+        job role of the worker's shifts from the effective date in every DRAFT planning (the current week and later
+        weeks) is updated, even when the current week is published; published shifts are never changed. No notification is
         sent automatically to the employee. `closedContract` is null and `newContract` keeps the id of the amended
         contract when the effective date is the first day of the contract (see the Main API operation for examples,
         including single-day contracts). Requires the CONTRACTS_MANAGE permission in the active business.

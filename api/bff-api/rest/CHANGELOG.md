@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.0.119 (proposal, pending approval)
+
+Spec only. Depends on Main API 0.0.125 (proposal). No repository tag is created by this change (planned tag: `v1.0.37`). Revises the scope released in `v1.0.36`, which no service has integrated.
+
+### Changed
+
+- Semantics only, no schema change: `previewManagerWorkerContractAmendment` marks `JOB_ROLE_CHANGES` for this worker's shifts from the effective date in every DRAFT planning (current and later weeks), also when the current week is published, and `PRESERVED` for every PUBLISHED shift. Apply updates the same set. The preview already reads all plannings from the effective date, so no new read or permission is needed (still CONTRACTS_MANAGE and SCHEDULE_VIEW).
+- `newTermsPlanningFrom` is unchanged.
+
 ## 0.0.118 (proposal, pending approval)
 
 Spec only. Depends on Main API 0.0.124 (proposal). This change does not create a repository tag. It revises the proposal of `v1.0.35`, which was never implemented or integrated.

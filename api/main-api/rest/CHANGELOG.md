@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.0.125 (proposal, pending approval)
+
+Spec only. Main implementation pending approval. No repository tag is created by this change (planned tag: `v1.0.37`). Revises the scope of `applyContractAmendment` released in `v1.0.36`, which no service has integrated.
+
+### Changed
+
+- Semantics only, no schema change: when the job role changes, the job role of this person's shifts from `effectiveDate` is updated in every DRAFT planning of the business, the current week and later weeks, also when the current week is PUBLISHED. Before, only the DRAFT of the current week was written and later drafts were left to the planner.
+- Unchanged: PUBLISHED plannings are never written; shifts before `effectiveDate`, shifts of other people, hours, assignment, schedule, break and fichajes are never touched; an hours-only amendment writes no planning. `expectedState` already covers this person's shifts of all plannings from `effectiveDate`, so the 1167 check covers future weeks without schema or permission changes.
+- `updatedShiftCount` now counts the shifts changed across all DRAFT plannings.
+
 ## 0.0.124 (proposal, pending approval)
 
 Spec only. Main implementation pending approval of this contract. No repository tag is created by this change. It revises the proposal of `v1.0.35`, which was never implemented or integrated: `v1.0.35` required `KEEP_AND_NOTIFY` / `UNASSIGN` per published shift and did not adjust drafts.

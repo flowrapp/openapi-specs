@@ -306,10 +306,10 @@ components:
                 type: string
                 enum: [JOB_ROLE_CHANGES, PRESERVED]
                 description: >
-                  JOB_ROLE_CHANGES: shift of the DRAFT current week from the effective date, when the job role
-                  changes; only its job role is updated. PRESERVED: it keeps person, job role, schedule and break
-                  (every PUBLISHED shift, in the current week or in later weeks, and the shifts of drafts that are
-                  not written). The apply operation sends no notification.
+                  JOB_ROLE_CHANGES: shift of this worker in a DRAFT planning (current or later week) from the
+                  effective date, when the job role changes; only its job role is updated. PRESERVED: it keeps
+                  person, job role, schedule and break (every PUBLISHED shift, in the current week or in later
+                  weeks, and every shift when only the hours change). The apply operation sends no notification.
                 example: PRESERVED
             required: [shiftId, planningId, planningStatus, date, jobRoleId, impact]
         hoursSummary:
@@ -416,6 +416,6 @@ components:
         updatedShiftCount:
           type: integer
           minimum: 0
-          description: Shifts whose job role was changed in the DRAFT current week. Zero when the planning was not written.
+          description: Shifts whose job role was changed, across all DRAFT plannings from the effective date (current and later weeks). Zero when no planning was written.
           example: 2
       required: [closedContract, newContract, updatedShiftCount]
