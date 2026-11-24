@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.0.127 (proposal, pending approval)
+
+Spec only. No repository tag is created by this change (planned tag: `v1.0.39`). Reuses `applyContractAmendmentV2` (same path, request and response shapes) with a new rule; version 1 stays withdrawn.
+
+### Changed
+
+- Rule of `applyContractAmendmentV2` for a job role change: from `effectiveDate`, the person's shifts change job role in the DRAFT planning of the current local week and in every later week, DRAFT or PUBLISHED; a PUBLISHED current week is conserved and no planning changes status. Before 0.0.127 only DRAFT plannings were written and PUBLISHED never. Hours only: no planning is written. No notification, fichajes untouched.
+- Rule marker in `expectedState.plannings`: exactly one entry with `planningId` 0 whose `version` is the epoch day of the Monday of the current local week at preview time. The operation removes it before the strict comparison and rejects with 1167, writing nothing, a state without it, with more than one, or from another local week, so a preview of the previous rule (or taken in another week) is never confirmed with this rule. Same request and response shapes, no new field (no schema change).
+- Open shift-change requests: only one that references a shift whose job role changed is invalidated, and it cannot become valid again if the role later returns to its previous value (A to B to A); a concurrent approval cannot succeed on it; a request already obsolete is not reopened; requests for other shifts, also of the same week, stay valid and approvable; every other write keeps invalidating the requests of its planning, and the planning `version` and the fields the app consumes keep their meaning. Required behavior; the implementation is a proposal (see Deployment conditions).
+
+### Deployment conditions
+
+- Guarantee: the Main API saves exactly what the preview showed or rejects without writing and asks for a new preview. The marker is part of the compared state, not a new field. Tested on the exact old revisions (fictitious data): MIC 72c3fff rejects a state that carries the marker (409 1167, nothing written) and accepts the same state without it; MIC 72c3fff and BFF d7d416d ignore an unknown extra field (so a field would not protect); BFF d7d416d forwards the marker entry unchanged. Design only, not executed (the new rule is not implemented): a new Main API rejects a state without the marker, with several, or from another local week (a preview of the previous rule, a BFF of the previous rule, a preview taken in another week); a NEW preview forwarded by an OLD BFF keeps the marker, so the new Main API saves exactly what was shown if the state is still current and rejects it otherwise; a NEW BFF over an OLD Main API is rejected by the old Main API (tested at the Main API side). Not verifiable: other clients of the v2 paths (only the app draft #129 is known) and the real deployment platform.
+- Dependency for the requests behavior (proposal, not verified): the preferred design is local to the amendment transaction: under the planning locks, requests that reference a changed shift are closed as superseded, and the captured planning version of the still-valid requests of the written plannings (those whose captured version equals the version before the write) is moved to the new version; already obsolete requests are left as they are and the meaning of `planningVersion` does not change. Lock order with approvals (request, then shifts, then planning version) must be validated. Alternative (a second counter and a trigger) was set aside: it changes what the app-visible request version means and cannot stop A to B to A from reviving a request by itself.
+
 ## 0.0.126 (proposal, pending approval)
 
 Spec only. No repository tag is created by this change (planned tag: `v1.0.38`). Makes the write fail closed across separately deployed versions.

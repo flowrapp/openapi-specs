@@ -146,6 +146,13 @@ components:
         `updatedAt`, the planning `version`s and the data of every shift of the worker from the effective date,
         all read through existing Main API reads (`getPlanning`). The planning `version` is not trusted alone:
         the Main API compares the shift data too and rejects any difference with 1167 and no effects.
+
+        Rule marker (version 2 rule of Main API 0.0.127): the preview adds to `plannings` exactly one entry with
+        `planningId` 0, a value no planning has, whose `version` is the epoch day (days since 1970-01-01) of the Monday
+        of the week that contained today, in the business time zone, when it was taken. Send the state back unchanged,
+        marker included: the Main API rejects with 1167, writing nothing, a state without it, or from another local
+        week. The marker travels inside the compared state because services of the previous rule ignore a new field
+        but reject a state with an unknown planning entry.
       properties:
         contractUpdatedAt:
           type: string
@@ -306,11 +313,12 @@ components:
                 type: string
                 enum: [JOB_ROLE_CHANGES, PRESERVED]
                 description: >
-                  JOB_ROLE_CHANGES: shift whose job role `applyManagerWorkerContractAmendmentV2` writes: this
-                  worker's shift from the effective date in a DRAFT planning (current and later weeks), when the
-                  job role changes; only its job role is updated. The deprecated version 1 preview marks only the
+                  JOB_ROLE_CHANGES: shift whose job role `applyManagerWorkerContractAmendmentV2` writes, when the
+                  job role changes: this worker's shift from the effective date in the DRAFT planning of the
+                  current week or in any later week, DRAFT or PUBLISHED (the planning keeps its status); only its
+                  job role is updated. The deprecated version 1 preview marks only the
                   current-week DRAFT, informationally: no operation confirms it. PRESERVED: it keeps person, job
-                  role, schedule and break (every PUBLISHED shift and every shift when only the hours change). The apply operation sends no notification.
+                  role, schedule and break (every shift of a PUBLISHED current week and every shift when only the hours change). The apply operation sends no notification.
                 example: PRESERVED
             required: [shiftId, planningId, planningStatus, date, jobRoleId, impact]
         hoursSummary:

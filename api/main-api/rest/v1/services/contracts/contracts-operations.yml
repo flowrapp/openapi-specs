@@ -849,9 +849,11 @@ contracts:
       description: >
         Version 2 of the amendment, the only one that writes. Its path does not exist in a Main API that predates it,
         so a client that calls it is rejected before any write by such a service (404) and must not fall back to
-        `/amendments`. The set of plannings written depends only on `effectiveDate` and on the status of each
-        planning (every DRAFT planning from `effectiveDate`), not on the day the preview or the confirmation is
-        made, so a confirmation on another day writes what the preview showed.
+        `/amendments`. Rule of this version (from Main API 0.0.127): when the job role changes, the planned shifts
+        of this person from `effectiveDate` change job role in the DRAFT planning of the current week and in every
+        later week, DRAFT or PUBLISHED alike; the current week is conserved when it is PUBLISHED. The status of a
+        planning (including its publication) never changes. This replaces the rule that v2 had until 0.0.126
+        (only DRAFT plannings): a preview of that rule is never confirmed with this one, see the rule marker of `expectedState`.
 
         Applies an amendment in one database transaction, only if the state the user saw still holds.
         `expectedState` carries the contract `updatedAt`, the `version` of every affected planning, and the
@@ -860,6 +862,14 @@ contracts:
         a shift is not guaranteed to change it. The operation recalculates all of that inside the transaction
         under the planning locks and compares it; any added, removed or modified shift, or any other difference,
         is rejected with 1167 and nothing is written. The client then recalculates the preview (BFF) and asks the user again.
+
+        The state must carry the rule marker described in `expectedState` (a `plannings` entry with `planningId` 0 and
+        the epoch day of the Monday of the current local week at preview time). Inside the same transaction the
+        operation computes that Monday again and rejects with 1167, writing nothing, when it differs (the local week
+        changed between preview and confirmation, so the applicable set would be another) and when the marker is
+        absent (a state issued by a preview of the previous rule, which showed the previous one). The same 1167
+        applies to any concurrent change that alters the applicable set (a shift added, removed or edited keeping its
+        id, a planning version moved, a DRAFT published or the reverse). The recovery is always a new preview.
 
         Effective date (business time zone): it must be today or later (1169 otherwise, also when it is the
         first day of the contract) and within the validity of the contract, from its `startDate` to its `endDate`
@@ -888,21 +898,30 @@ contracts:
 
         Scheduled shifts are never deleted, unassigned, shortened or reassigned, and no shift without a person is
         created. Planned hours are never trimmed when they exceed the new `totalWeekHours`. Only one planning
-        write exists: when the job role changes, the job role of this person's shifts from `effectiveDate` in
-        every DRAFT planning of the business, the current week and later weeks alike (the current week is the
-        week that contains today in the business time zone), is changed to the new one; their hours, assignment,
-        schedule and break stay as they are, and so does the rest of each draft. This holds even when the
-        current week is PUBLISHED. PUBLISHED plannings are never written: their shifts keep assignment, job
-        role, schedule and break. Shifts before `effectiveDate` and shifts of other people are not touched. An
-        amendment of hours only writes no planning. When no shift of this person qualifies, only the contract
-        is written. The new terms are taken into account when later weeks are planned, never before
-        `effectiveDate`. A business has one planning per week, so its status applies to all the shifts of that week.
+        write exists: when the job role changes, the job role of this person's shifts from `effectiveDate` changes
+        to the new one (a) in the DRAFT planning of the current week (the week that contains today in the business
+        time zone) and (b) in every later week, whether its planning is DRAFT or PUBLISHED. A PUBLISHED current
+        week is conserved. Their hours, assignment, schedule and break stay as they are, and a PUBLISHED planning
+        stays PUBLISHED (not republished). Shifts before `effectiveDate`, shifts of other people and ARCHIVED
+        plannings are not touched. An amendment of hours only writes no planning. When no shift of this person
+        qualifies, only the contract is written. The new terms are taken into account when later weeks are
+        planned, never before `effectiveDate`. A business has one planning per week, so its status applies to
+        all the shifts of that week.
         Example: job role General to Security from 2026-11-27, today 2026-11-24, with this person's shifts on
         2026-11-27 (week 2026-11-23 to 2026-11-29) and 2026-12-01, 02 and 04 (week 2026-11-30 to 2026-12-06).
-        With both weeks in DRAFT, the four shifts change job role. With 2026-11-23 to 2026-11-29 PUBLISHED and
-        2026-11-30 to 2026-12-06 in DRAFT, the shift of 2026-11-27 keeps General and the shifts of 2026-12-01, 02
-        and 04 change to Security. No notification is sent
-        automatically to the employee. Fichajes already registered are
+        With both weeks PUBLISHED, 2026-11-27 keeps General (current week conserved) and 2026-12-01, 02 and 04
+        change to Security, the week staying PUBLISHED. With 2026-11-23 to 2026-11-29 in DRAFT, 2026-11-27 also
+        changes. With a PUBLISHED current week and several later PUBLISHED weeks, all later weeks change from the
+        effective date; a date in the middle of a week changes only that day onwards. Open requests to exchange or
+        change shifts: one that references a shift whose job role changed can no longer be approved and a new one
+        must be made, and it does not become valid again if the job role later returns to its previous value; an
+        approval that runs concurrently with the amendment cannot succeed on such a request; one that was already
+        obsolete is not reopened. Requests that reference only other shifts, including other shifts of the same
+        week, are not invalidated and can still be approved; every other write that moves the planning keeps
+        invalidating the requests of that planning as before, and the planning `version` keeps its meaning.
+        In the request example below the state was taken during the week of 2026-11-23, so the marker is the
+        epoch day 20780 (2026-11-23), consistent with the examples above that use today = 2026-11-23 or 2026-11-24.
+        No notification is sent automatically to the employee. Fichajes already registered are
         never touched. Either all changes are saved or none is. Only roles that manage the business team
         (`CONTRACTS_MANAGE`) in the business can call this operation.
       tags:
@@ -945,6 +964,8 @@ contracts:
               expectedState:
                 contractUpdatedAt: "2026-11-20T10:00:00Z"
                 plannings:
+                  - planningId: 0
+                    version: 20780
                   - planningId: 77
                     version: 4
                 shifts:

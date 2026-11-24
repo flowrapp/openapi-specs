@@ -107,6 +107,14 @@ components:
         modified shift, or a changed planning version or contract, is rejected with 1167 and nothing is written.
         Requirement for the Main API implementation: bump the planning `version` on every shift write that affects a
         PUBLISHED or DRAFT planning; the shift comparison stays as the authoritative check.
+
+        Rule marker (version 2 rule of Main API 0.0.127): `plannings` must also contain exactly one entry with
+        `planningId` 0, a value no planning has, whose `version` is the epoch day (days since 1970-01-01) of the Monday
+        of the week that contained today, in the business time zone, when the preview was taken. The Main API removes
+        it before the comparison above and rejects with 1167, writing nothing, a state without it (a preview of the
+        previous rule), with more than one, or whose Monday is not the current local week at confirmation. It is a
+        value inside the compared state on purpose: a Main API that predates this rule compares `plannings` strictly,
+        so it rejects every state that carries it (tested on 72c3fff), instead of ignoring a new field.
       properties:
         contractUpdatedAt:
           type: string
