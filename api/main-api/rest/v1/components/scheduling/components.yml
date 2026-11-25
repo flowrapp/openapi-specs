@@ -1905,7 +1905,7 @@ components:
         weeks:
           type: array
           maxItems: 4
-          description: One entry per week of the period, ordered by weekStart.
+          description: One entry per week of the period that still has a planning, ordered by weekStart. A week whose planning was deleted with deleteDraftPlanning has no entry.
           items:
             $ref: "#/components/schemas/PlanningGenerationWeekDTO"
       required: [id, businessId, from, to, status, requestedBy, requestedAt, finishedAt, failureReason, weeks]

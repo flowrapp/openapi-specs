@@ -32,7 +32,7 @@ info:
     | getDailyAttendance for everyone (otherwise narrowed to the caller), getShiftAttendance, getBusinessAttendanceMatch, getBusinessAttendanceIncidentDailyCounts | ATTENDANCE_VIEW |
     | resolveAttendanceMatch, acceptUnplannedAttendance, approveShiftAttendance, acknowledgeNoShow, notifyShiftClockIn | ATTENDANCE_MANAGE |
     | getRecurringSchedules, getRecurringSchedule, getEffectiveRecurringSchedule, getScheduleExceptions, getBusinessShifts, getBusinessShift, getPlannings, getPlanning, getPlanningSettings, getPlanningGeneration, getPlanningGenerationInput | SCHEDULE_VIEW |
-    | recurring schedule, schedule exception, shift, job role and planning settings writes; createDraftPlanning, replacePlanningScheduledShifts, publishPlanning, requestPlanningGeneration | SCHEDULE_MANAGE |
+    | recurring schedule, schedule exception, shift, job role and planning settings writes; createDraftPlanning, replacePlanningScheduledShifts, publishPlanning, deleteDraftPlanning, requestPlanningGeneration | SCHEDULE_MANAGE |
     | approveShiftExchangeRequest, approveScheduleChangeRequest, createScheduleChangeRequest, cancelScheduleChangeRequest, reviewer view and reviewer rejection of shift-change requests | SHIFT_CHANGES_APPROVE |
     | getBusinessReports, getWeeklyHoursReport | REPORTS_VIEW |
     | exportBusinessWorkedHoursReportPdf, requestBusinessWorkedHoursReport, getBusinessWorkedHoursMonths, getBusinessWorkedHoursRange, getBusinessWorkedHoursPeople | REPORTS_EXPORT |
@@ -384,6 +384,8 @@ paths:
       hedule"
   "/api/v1/businesses/{businessId}/plannings/{planningId}/publish":
     $ref: "v1/services/scheduling/scheduling-operations.yml#/planning/publish"
+  "/api/v1/businesses/{businessId}/plannings/{planningId}/draft":
+    $ref: "v1/services/scheduling/scheduling-operations.yml#/planning/draft"
   "/api/v1/businesses/{businessId}/scheduled-shifts":
     $ref: "v1/services/scheduling/scheduling-operations.yml#/planning/curren\
       tUserScheduledShifts"

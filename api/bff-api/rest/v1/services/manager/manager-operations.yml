@@ -3179,6 +3179,75 @@ manager:
                 $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
               example: {status: 409, detail: "1048 - planning is not ready to publish"}
 
+  delete-draft-planning:
+    delete:
+      summary: Permanently delete a DRAFT weekly planning
+      description: >
+        Forwards to the Main API `deleteDraftPlanning`. Permanently deletes the planning addressed by its
+        `planningId` within the requested business, only while it is a DRAFT (manual or solver-generated),
+        with its draft scheduled shifts. There is no recovery. Afterwards the week has no planning, so
+        `createManagerDraftPlanning` and `requestPlanGeneration` accept it again, and the week has no entry in
+        the `weeks[]` of its generation job (forwarded unchanged). Recorded worklogs (fichajes)
+        and the other plannings of the business are not touched.
+
+        The critical guarantee is that a planning that is already PUBLISHED is never deleted: the Main API
+        checks the status when the delete runs (under the planning lock that publication also takes), not when
+        the app showed the action. A planning that is not a DRAFT answers 409 `1173` and is not deleted, also
+        when it was published after the screen loaded. When a publish and a delete that otherwise meet their
+        requirements run at the same time they are serialized: whichever completes first decides, and the
+        other answers 409 `1173` (delete) or 404 `1046` (publish). A successful delete answers 204; repeating
+        it answers 404 `1046`: the response changes, the effect stays the same. A missing planning, one that
+        was already deleted and one of another business answer the same 404 `1046`, so nothing is revealed
+        about plannings of other businesses. Requires SCHEDULE_MANAGE in the active business (403 `1020`
+        otherwise). The app shows the action only for a DRAFT, only to who holds the permission, and asks for an
+        irreversible-action confirmation first; those are app rules, the API enforces the status and the
+        permission.
+      tags: [Manager]
+      operationId: deleteManagerDraftPlanning
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: businessId
+          in: path
+          required: true
+          description: ID of the business
+          schema: {type: integer, format: int64, minimum: 1}
+        - name: planningId
+          in: path
+          required: true
+          description: ID of the existing DRAFT planning
+          schema: {type: integer, format: int64, minimum: 1, example: 500}
+      responses:
+        '204':
+          description: The DRAFT planning and its draft shifts were permanently deleted; no body
+        '401':
+          description: Authentication is required
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+        '403':
+          description: Authenticated user does not have SCHEDULE_MANAGE in the business
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              example: {status: 403, detail: "1020 - user is not the owner of business"}
+        '404':
+          description: Business not found, or planning ID not found in the requested business or of another business (not distinguishable); nothing is deleted
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              example: {status: 404, detail: "1046 - planning not found"}
+        '409':
+          description: The planning is not a DRAFT (published, archived or being generated, or published meanwhile); nothing is deleted
+          content:
+            application/problem+json:
+              schema:
+                $ref: '../../components/common/components.yml#/components/schemas/ProblemDetail'
+              example: {status: 409, detail: "1173 - planning can only be deleted while it is a draft"}
+      x-functional-errors: [1006, 1020, 1046, 1173]
+
   schedule-exceptions:
     get:
       summary: List schedule exceptions
