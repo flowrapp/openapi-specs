@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.0.129 (proposal, pending approval)
+
+Spec only. No new paths and no required field change. No repository tag is created by this change (planned tag: `v1.0.41`, together with BFF 0.0.123). Main implementation pending approval of this contract.
+
+### Added
+
+- `TeamScheduleDayDTO.source` (`getBusinessTeamSchedule`, optional, not required): `EXCEPTION`, `RECURRING_SCHEDULE` or `NONE`, the same meaning as `PlanningGenerationInputDayDTO.source`. It lets the BFF tell a configured closed date from a date with no configuration. Only the configuration source is exposed: no personal data. Absent in versions before this one. `open` keeps its current value for every date, including `NONE`: `source` is additive and does not change `open`.
+- Main implementation must carry `source` from the effective-day resolution into the team schedule projection, for every day of the returned week, including dates resolved for past periods. An unpublished week returns no days (404 `1046`), so there is no `source` to read.
+- Deployment: Main implementation (sends `source`) must be live before the BFF uses it. A BFF that reads `source` against an older Main would hide closed dates.
+
 ## 0.0.128 (proposal, pending approval)
 
 Spec only. No repository tag is created by this change (planned tag: `v1.0.40`). Main implementation pending approval of this contract.
