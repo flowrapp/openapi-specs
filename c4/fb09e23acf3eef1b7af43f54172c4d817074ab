@@ -1,0 +1,16 @@
+api/bff-api/rest/CHANGELOG.md
+  h_a041df4244d543 15-16
+api/main-api/rest/CHANGELOG.md
+  h_a041df4244d543 9-10
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.6",
+  "base_commit_sha": "c4fb09e23acf3eef1b7af43f54172c4d817074ab",
+  "prompts": {},
+  "humans": {
+    "h_a041df4244d543": {
+      "author": "sergiobpa <sergiobpa@ext.inditex.com>"
+    }
+  }
+}
