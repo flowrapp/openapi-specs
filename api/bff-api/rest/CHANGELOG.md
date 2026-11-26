@@ -12,7 +12,8 @@ Spec only. No new paths. Depends on Main API 0.0.129 (proposal). No repository t
 
 ### Deployment
 
-- Order: contract merged and tagged; then Main implementation (sends `source`); then BFF (uses `source`). The app needs no change. A BFF deployed before Main sends `source` would show closed dates as open.
+- Order: contract merged and tagged; then Main implementation (sends `source`); then BFF (uses `source`). The app needs no change. `open` is unchanged for every day, so apps that read `open` see no new value.
+- Transition: while a BFF that reads `source` can run against a Main without it, the BFF keeps the previous rule (`closed = !open`) for worker views when `source` is absent. Dropping that fallback is a separate step after Main is live everywhere. Without it, configured closed days would show as open during the window.
 - Until the BFF uses `source`, the server still sends `true` for dates with no configuration, so the documented rule and the running behavior differ in that window.
 
 ## 0.0.122 (proposal, pending approval)
