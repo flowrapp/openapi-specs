@@ -1,0 +1,19 @@
+api/main-api/rest/v1/components/scheduling/components.yml
+  s_61d832772a4705::t_56c710353d6385 1605-1606,1616-1623
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.6",
+  "base_commit_sha": "5036fe44cf57af9def8ac2e3af7cd38b73b4824b",
+  "prompts": {},
+  "sessions": {
+    "s_61d832772a4705": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_de7467842ffefKt5t3BVAp21iM",
+        "model": "gpt-6.1-terra"
+      },
+      "human_author": "sergiobpa <sergiobpa@ext.inditex.com>"
+    }
+  }
+}
