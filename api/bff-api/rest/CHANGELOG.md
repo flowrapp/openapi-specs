@@ -2,20 +2,18 @@
 
 ## 0.0.123 (proposal, pending approval)
 
-Spec only. No Main API change and no new paths. No repository tag is created by this change (planned tag: `v1.0.41`). Corrects the closed-day rule for Asistencia: a date without configuration is no longer reported as closed.
+Spec only. No new paths. Depends on Main API 0.0.129 (proposal). No repository tag is created by this change (planned tag: `v1.0.41`). Corrects the closed-day rule: a date without configuration is no longer reported as closed, in Asistencia and in the worker's own views.
 
 ### Changed
 
-- `closed` on `AttendanceHoursDayDTO` (`days[]` of `getAttendanceHours`), `AttendanceDayDTO` (`getAttendanceDay`) and `AttendanceWeekDayDTO` (`days[]` of `getAttendanceWeek`) keeps type `boolean` and name. `true` only for a configured closed date (date exception, otherwise recurring schedule, with no opening intervals). `false` means "not identified as closed": the date has opening intervals, or no configuration covers it (Main `getPlanningGenerationInput` `source: NONE`). It does not mean open. A date with `source: NONE` is never reported as closed.
-- Consumers: no type change, so clients that read `closed === true` keep working and no client must accept `null`. The only behavior change is that `source: NONE` dates stop showing as closed.
-
-### Limitation
-
-- Worker views (team schedule `closed`, week and day history `closed`) are not changed by this version: they use Main `TeamScheduleDayDTO.open` and may still report a date without configuration as closed. A Main field would be needed to fix them; out of scope here.
+- `closed` on `AttendanceHoursDayDTO` (`days[]` of `getAttendanceHours`), `AttendanceDayDTO` (`getAttendanceDay`) and `AttendanceWeekDayDTO` (`days[]` of `getAttendanceWeek`) keeps type `boolean` and name. `true` only for a configured closed date (date exception, otherwise recurring schedule, with no opening intervals). `false` means "not identified as closed": the date has opening intervals, or no configuration covers it (Main `getPlanningGenerationInput` `source: NONE`). It does not mean open.
+- `closed` on `WorkerTeamScheduleDayDTO` (`getWorkerTeamSchedule`), `WorkerWeekDayDTO` (week) and `WorkerDayHistoryResponseDTO` (day history) follows the same rule, using Main `TeamScheduleDayDTO.source` (Main 0.0.129). Type and name unchanged.
+- Consumers: no type change, so clients that read `closed === true` keep working and no client must accept `null`. The only behavior change is that dates with no configuration stop showing as closed. Hours, clock-ins and worklogs are not affected: `closed` is a flag only.
 
 ### Deployment
 
-- Contract first (merge, then tag). Until the BFF excludes `source: NONE` from its closed dates, the server still sends `true` for those dates, so the documented rule and the running behavior differ during that window.
+- Order: contract merged and tagged; then Main implementation (sends `source`); then BFF (uses `source`). The app needs no change. A BFF deployed before Main sends `source` would show closed dates as open.
+- Until the BFF uses `source`, the server still sends `true` for dates with no configuration, so the documented rule and the running behavior differ in that window.
 
 ## 0.0.122 (proposal, pending approval)
 

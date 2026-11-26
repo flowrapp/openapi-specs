@@ -1602,7 +1602,8 @@ components:
         One business-local date in the week. open is false when the effective daily configuration
         has no opening intervals: the date's schedule exception, otherwise the recurring schedule
         effective on that date, otherwise no configuration. A person's lack of shifts does not
-        make an open date closed.
+        make an open date closed. source tells which configuration applies; NONE means no
+        configuration covers the date, which is not a closed date.
       properties:
         date:
           type: string
@@ -1612,6 +1613,14 @@ components:
           type: boolean
           description: Whether the date has at least one opening interval in its effective daily configuration.
           example: true
+        source:
+          type: string
+          description: >
+            Where the effective configuration comes from: EXCEPTION (the schedule exception of the
+            date), RECURRING_SCHEDULE (the recurring schedule effective on the date) or NONE (no
+            configuration covers the date). Optional: absent in Main API versions before 0.0.129.
+          enum: [RECURRING_SCHEDULE, EXCEPTION, NONE]
+          example: RECURRING_SCHEDULE
         shifts:
           type: array
           description: Shifts ordered by start instant and then stable shift ID
