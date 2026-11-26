@@ -1,0 +1,16 @@
+api/bff-api/rest/CHANGELOG.md
+  h_a041df4244d543 3-12
+api/bff-api/rest/v1/components/attendance/components.yml
+  h_a041df4244d543 883,885-889,1310,1312-1317,1600,1602-1607
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.6",
+  "base_commit_sha": "1d62a0405a42e3ab90da5ae1f09342374e5df321",
+  "prompts": {},
+  "humans": {
+    "h_a041df4244d543": {
+      "author": "sergiobpa <sergiobpa@ext.inditex.com>"
+    }
+  }
+}
