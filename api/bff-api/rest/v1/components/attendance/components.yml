@@ -880,11 +880,13 @@ components:
           format: date
           example: "2026-10-30"
         closed:
-          type: boolean
+          type: [boolean, "null"]
           description: >-
-            Whether the business-local date is closed: its effective daily configuration has no
-            opening intervals (date exception, otherwise the recurring schedule effective on the
-            date, otherwise no configuration). Clocked hours on a closed date are still reported.
+            Whether the business-local date is closed: its effective daily configuration (date
+            exception, otherwise the recurring schedule effective on the date) has no opening
+            intervals. `true`: configured and closed. `false`: at least one opening interval.
+            `null`: no configuration covers the date (no exception and no recurring schedule), so
+            it is neither closed nor open. Clocked hours on a closed date are still reported.
           example: false
         isToday:
           type: boolean
@@ -1305,12 +1307,14 @@ components:
           format: date
           example: "2026-10-30"
         closed:
-          type: boolean
+          type: [boolean, "null"]
           description: >-
-            Whether the business-local date is closed: its effective daily configuration has no
-            opening intervals (date exception, otherwise the recurring schedule effective on the
-            date, otherwise no configuration). A person's lack of attendance does not make an open
-            date closed.
+            Whether the business-local date is closed: its effective daily configuration (date
+            exception, otherwise the recurring schedule effective on the date) has no opening
+            intervals. `true`: configured and closed. `false`: at least one opening interval.
+            `null`: no configuration covers the date (no exception and no recurring schedule), so
+            it is neither closed nor open. A person's lack of attendance does not make an open date
+            closed.
           example: false
         now:
           type: string
@@ -1593,12 +1597,14 @@ components:
                 format: date
                 example: "2026-10-26"
               closed:
-                type: boolean
+                type: [boolean, "null"]
                 description: >-
-                  Whether the business-local date is closed: its effective daily configuration has
-                  no opening intervals (date exception, otherwise the recurring schedule effective
-                  on the date, otherwise no configuration). A person's lack of attendance does not
-                  make an open date closed.
+                  Whether the business-local date is closed: its effective daily configuration
+                  (date exception, otherwise the recurring schedule effective on the date) has no
+                  opening intervals. `true`: configured and closed. `false`: at least one opening
+                  interval. `null`: no configuration covers the date (no exception and no recurring
+                  schedule), so it is neither closed nor open. A person's lack of attendance does
+                  not make an open date closed.
                 example: false
               isToday:
                 type: boolean

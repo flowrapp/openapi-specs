@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.0.123 (proposal, pending approval)
+
+Spec only. No Main API change and no new paths. No repository tag is created by this change (planned tag: `v1.0.41`). Corrects the closed-day rule for days without any configuration.
+
+### Changed
+
+- `closed` on `AttendanceHoursDayDTO` (`days[]` of `getAttendanceHours`), `AttendanceDayDTO` (`getAttendanceDay`) and `AttendanceWeekDayDTO` (`days[]` of `getAttendanceWeek`) is now `[boolean, "null"]`, still required. `true`: the date is configured (date exception, otherwise recurring schedule) with no opening intervals. `false`: at least one opening interval. `null`: no configuration covers the date (`source: NONE` of Main `getPlanningGenerationInput`); such a date is no longer reported as closed. Field names and the other values are unchanged.
+- Consumers: a client that reads `closed === true` keeps working; a strictly typed client must accept `null`. The BFF implementation emits `null` only when Main reports `source: NONE`.
+- Deployment: contract merged and tagged first; then BFF (emits `null`); then the app (accepts `null`). Not covered here: the worker DTOs (`closed` on worker team schedule, week and day history) keep the old rule, because Main `TeamScheduleDayDTO` does not expose the source; that needs a separate Main additive field.
+
 ## 0.0.122 (proposal, pending approval)
 
 Spec only. Depends on Main API 0.0.128 (proposal). No repository tag is created by this change (planned tag: `v1.0.40`).
